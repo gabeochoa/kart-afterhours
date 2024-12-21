@@ -10,8 +10,8 @@ FLAGS = -std=c++2c -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow \
 NOFLAGS = -Wno-deprecated-volatile -Wno-missing-field-initializers \
 		  -Wno-c99-extensions -Wno-unused-function -Wno-sign-conversion \
 		  -Wno-implicit-int-float-conversion -Werror
-INCLUDES = -Ivendor/ -Isrc/
-LIBS = -L. -Lvendor/ $(RAYLIB_LIB)
+INCLUDES = -Ivendor/ -Isrc/ 
+LIBS = -L. -Lvendor/ $(RAYLIB_LIB) -Lvendor/box2d/ -lbox2d
 
 SRC_FILES := $(wildcard src/*.cpp src/**/*.cpp)
 H_FILES := $(wildcard src/**/*.h src/**/*.hpp)

@@ -8,6 +8,7 @@ backward::SignalHandling sh;
 #include "std_include.h"
 //
 
+#include "box2d/box2d.h"
 #include "rl.h"
 
 #define AFTER_HOURS_INCLUDE_DERIVED_CHILDREN
@@ -102,6 +103,17 @@ vec2 vec_norm(vec2 v) {
   };
 }
 
+struct HasBody : BaseComponent {
+  b2BodyId id;
+
+  HasBody(b2BodyId id_) : id(id_) {}
+};
+
+float as_deg(float angle) { return static_cast<float>(angle * 180.f / M_PI); }
+float as_rad(float angle) {
+  return static_cast<float>(angle * (M_PI / 180.0f));
+}
+
 struct Transform : BaseComponent {
   vec2 position;
   vec2 velocity;
@@ -131,6 +143,10 @@ struct Transform : BaseComponent {
   }
 
   float as_rad() const { return static_cast<float>(angle * (M_PI / 180.0f)); }
+};
+struct ProvidesB2WorldID : BaseComponent {
+  b2WorldId id;
+  ProvidesB2WorldID(b2WorldId id_) : id(id_) {}
 };
 
 struct PlayerID : BaseComponent {
@@ -187,6 +203,37 @@ struct EQ : public EntityQuery<EQ> {
   EQ &whereOverlaps(const Rectangle r) { return add_mod(new WhereOverlaps(r)); }
 };
 
+struct RenderBodies : System<HasBody> {
+
+  virtual void for_each_with(const Entity &, const HasBody &hasBody,
+                             float) const override {
+
+    auto pos = b2Body_GetPosition(hasBody.id);
+    auto rotation = b2Body_GetRotation(hasBody.id);
+
+    const int32_t MAX_SHAPES = 1;
+    b2ShapeId shapes[MAX_SHAPES];
+    int shape_count = b2Body_GetShapes(hasBody.id, shapes, MAX_SHAPES);
+    if (shape_count <= 0)
+      return;
+    b2ShapeId shapeid = shapes[0];
+    b2Polygon poly = b2Shape_GetPolygon(shapeid);
+    b2AABB b = b2ComputePolygonAABB(&poly, b2Transform_identity);
+    float width = b.upperBound.x - b.lowerBound.x;
+    float height = b.upperBound.y - b.lowerBound.y;
+
+    /*
+
+       b2Vec2 worldCenter = b2Body_GetWorldCenterOfMass(myBodyId);
+b2Vec2 localCenter = b2Body_GetLocalCenterOfMass(myBodyId);
+
+     */
+
+    raylib::DrawRectanglePro({pos.x, pos.y, width, height}, {0, 0},
+                             as_deg(b2Rot_GetAngle(rotation)), raylib::GREEN);
+  }
+};
+
 struct RenderEntities : System<Transform> {
 
   virtual void for_each_with(const Entity &, const Transform &transform,
@@ -199,12 +246,12 @@ struct RenderEntities : System<Transform> {
   }
 };
 
-struct Move : System<PlayerID, Transform> {
+struct Move : System<PlayerID, HasBody, Transform> {
 
   float max_speed = 5.f;
 
-  virtual void for_each_with(Entity &, PlayerID &playerID, Transform &transform,
-                             float dt) override {
+  virtual void for_each_with(Entity &, PlayerID &playerID, HasBody &hasBody,
+                             Transform &transform, float dt) override {
 
     input::PossibleInputCollector<InputAction> inpc =
         input::get_input_collector<InputAction>();
@@ -252,16 +299,48 @@ struct Move : System<PlayerID, Transform> {
 
     transform.position += transform.velocity;
     transform.velocity = transform.velocity * 0.99f;
+
+    b2Body_ApplyForceToCenter(
+        hasBody.id,
+        {
+            200.f,   // std::sin(transform.as_rad()) * mvt * 200.f,
+            10000.f, // -std::cos(transform.as_rad()) * mvt * 200.f,
+        },
+        true);
+
+    // if (playerID.id == 0)
+    // b2Body_SetTransform(hasBody.id,
+    // b2Vec2{
+    // transform.position.x,
+    // transform.position.y,
+    // },
+    // b2MakeRot(transform.as_rad()));
   }
 };
 
-void make_player(input::GamepadID id) {
+void make_player(b2WorldId worldID, input::GamepadID id) {
   auto &entity = EntityHelper::createEntity();
 
   vec2 position = {.x = id == 0 ? 150.f : 1100.f, .y = 720.f / 2.f};
 
   entity.addComponent<PlayerID>(id);
   entity.addComponent<Transform>(position, vec2{30.f, 50.f});
+
+  b2BodyDef bodyDef = b2DefaultBodyDef();
+  bodyDef.type = b2_dynamicBody;
+  bodyDef.position = b2Vec2{position.x, position.y};
+
+  b2BodyId bodyId = b2CreateBody(worldID, &bodyDef);
+  b2Polygon dynamicBox = b2MakeBox(30.0f, 50.0f);
+  b2ShapeDef shapeDef = b2DefaultShapeDef();
+  shapeDef.density = 1.0f;
+  shapeDef.friction = 0.3f;
+  b2CreatePolygonShape(bodyId, &shapeDef, &dynamicBox);
+
+  std::cout << b2Body_GetMass(bodyID) << "\n";
+  std::cout << b2Body_GetRotationalInertia(bodyID) << "\n";
+
+  entity.addComponent<HasBody>(bodyId);
 }
 
 static void load_gamepad_mappings() {
@@ -299,6 +378,9 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
 
     // we need to add a new player
 
+    Entity &sophie =
+        EQ().whereHasComponent<ProvidesB2WorldID>().gen_first_enforce();
+    auto worldID = sophie.get<ProvidesB2WorldID>().id;
     for (int i = 0; i < (int)maxGamepadID.count(); i++) {
       bool found = false;
       for (Entity &player : existing_players) {
@@ -308,7 +390,7 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
         }
       }
       if (!found) {
-        make_player(i);
+        make_player(worldID, i);
       }
     }
   }
@@ -323,17 +405,23 @@ int main(void) {
 
   load_gamepad_mappings();
 
+  float lengthUnitsPerMeter = 128.0f;
+  b2SetLengthUnitsPerMeter(lengthUnitsPerMeter);
+  b2WorldDef worldDef = b2DefaultWorldDef();
+  worldDef.gravity = b2Vec2{0.f, 0.f};
+  b2WorldId worldID = b2CreateWorld(&worldDef);
+
   // sophie
   {
     auto &entity = EntityHelper::createEntity();
     input::add_singleton_components<InputAction>(entity, get_mapping());
     window_manager::add_singleton_components(entity, 200);
+    entity.addComponent<ProvidesB2WorldID>(worldID);
   }
 
-  make_player(0);
-  make_player(1);
-
   SystemManager systems;
+
+  make_player(worldID, 0);
 
   // debug systems
   {
@@ -349,13 +437,16 @@ int main(void) {
 
   systems.register_update_system(std::make_unique<Move>());
   systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
+  systems.register_update_system(
+      [worldID](float dt) { b2World_Step(worldID, dt, 4); });
 
   // renders
   {
     systems.register_render_system(
-        [&]() { raylib::ClearBackground(raylib::DARKGRAY); });
+        [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     systems.register_render_system(std::make_unique<RenderFPS>());
     systems.register_render_system(std::make_unique<RenderEntities>());
+    systems.register_render_system(std::make_unique<RenderBodies>());
   }
 
   while (!raylib::WindowShouldClose()) {
@@ -365,6 +456,7 @@ int main(void) {
   }
 
   raylib::CloseWindow();
+  b2DestroyWorld(worldID);
 
   return 0;
 }
