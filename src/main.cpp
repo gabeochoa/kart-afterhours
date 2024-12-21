@@ -275,6 +275,45 @@ static void load_gamepad_mappings() {
   input::set_gamepad_mappings(buffer.str().c_str());
 }
 
+struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
+
+  virtual void for_each_with(Entity &,
+                             input::ProvidesMaxGamepadID &maxGamepadID,
+                             float dt) override {
+
+    auto existing_players = EQ().whereHasComponent<PlayerID>().gen();
+
+    // we are good
+    if (existing_players.size() == maxGamepadID.count())
+      return;
+
+    if (existing_players.size() > maxGamepadID.count()) {
+      // remove the player that left
+      for (Entity &player : existing_players) {
+        if (input::is_gamepad_available(player.get<PlayerID>().id))
+          continue;
+        player.cleanup = true;
+      }
+      return;
+    }
+
+    // we need to add a new player
+
+    for (int i = 0; i < maxGamepadID.count(); i++) {
+      bool found = false;
+      for (Entity &player : existing_players) {
+        if (i == player.get<PlayerID>().id) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        make_player(i);
+      }
+    }
+  }
+};
+
 int main(void) {
   const int screenWidth = 1280;
   const int screenHeight = 720;
@@ -309,6 +348,7 @@ int main(void) {
   }
 
   systems.register_update_system(std::make_unique<Move>());
+  systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
 
   // renders
   {
