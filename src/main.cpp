@@ -279,7 +279,7 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
 
   virtual void for_each_with(Entity &,
                              input::ProvidesMaxGamepadID &maxGamepadID,
-                             float dt) override {
+                             float) override {
 
     auto existing_players = EQ().whereHasComponent<PlayerID>().gen();
 
@@ -299,7 +299,7 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
 
     // we need to add a new player
 
-    for (int i = 0; i < maxGamepadID.count(); i++) {
+    for (int i = 0; i < (int)maxGamepadID.count(); i++) {
       bool found = false;
       for (Entity &player : existing_players) {
         if (i == player.get<PlayerID>().id) {
