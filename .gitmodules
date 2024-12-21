@@ -1,6 +1,3 @@
 [submodule "vendor/afterhours"]
 	path = vendor/afterhours
 	url = git@github.com:gabeochoa/afterhours.git
-[submodule "vendor/Physac"]
-	path = vendor/Physac
-	url = git@github.com:victorfisac/Physac.git
