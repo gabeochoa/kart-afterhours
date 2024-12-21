@@ -22,7 +22,7 @@ DEPENDS := $(patsubst %.cpp,%.d,$(SOURCES))
 -include $(DEPENDS)
 
 
-OUTPUT_EXE := pong.exe
+OUTPUT_EXE := kart.exe
 
 # CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
 # CXX := clang++
