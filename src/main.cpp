@@ -126,7 +126,9 @@ struct HasTexture : BaseComponent {
 struct HasSprite : BaseComponent {
   Rectangle frame;
   float scale;
-  HasSprite(Rectangle frm, float scl) : frame(frm), scale(scl) {}
+  raylib::Color colorTint;
+  HasSprite(Rectangle frm, float scl, raylib::Color colorTintIn) : frame{frm}, scale{scl}, colorTint{colorTintIn}
+    { }
 };
 
 Rectangle idx_to_sprite_frame(int i, int j) {
@@ -137,13 +139,13 @@ Rectangle idx_to_sprite_frame(int i, int j) {
 }
 
 struct Transform : BaseComponent {
-  vec2 position;
-  vec2 velocity;
-  vec2 size;
+  vec2 position{0.f, 0.f};
+  vec2 velocity{0.f, 0.f};
+  vec2 size{0.f, 0.f};
   float accel = 0.f;
 
-  float angle = 0.f;
-  float angle_prev = 0.f;
+  float angle{0.f};
+  float angle_prev{0.f};
 
   vec2 pos() const { return position; }
   void update(vec2 &v) { position = v; }
@@ -342,9 +344,12 @@ void make_player(input::GamepadID id) {
   entity.addComponent<Transform>(position, vec2{15.f, 25.f});
   entity.addComponent<HasHealth>(10);
   entity.addComponent<TireMarkComponent>();
-  if (id == 0) {
-    entity.addComponent<HasSprite>(idx_to_sprite_frame(0, 1), 1.f);
+  auto tint = raylib::RAYWHITE;
+  if (id != 0) {
+    tint = raylib::ORANGE;
   }
+  
+  entity.addComponent<HasSprite>(idx_to_sprite_frame(0, 1), 1.f, tint);
 
   entity.addComponent<CanShoot>()
       .register_weapon(InputAction::ShootLeft,
@@ -580,8 +585,6 @@ struct ProcessDeath : System<Transform, HasHealth> {
                              float) override {
     if (hasHealth.amount <= 0) {
       entity.cleanup = true;
-      std::cout << "I DIED OMG --------------------------------------------"
-                << std::endl;
     }
   }
 };
@@ -668,6 +671,7 @@ struct RenderSprites : System<Transform, HasSprite> {
 
   virtual void for_each_with(const Entity &, const Transform &transform,
                              const HasSprite &hasSprite, float) const override {
+    
     raylib::DrawTexturePro(sheet, hasSprite.frame,
                            Rectangle{
                                transform.center().x,
@@ -677,7 +681,7 @@ struct RenderSprites : System<Transform, HasSprite> {
                            },
                            vec2{transform.size.x / 2.f,
                                 transform.size.y / 2.f}, // transform.center(),
-                           transform.angle, raylib::RAYWHITE);
+                           transform.angle, hasSprite.colorTint);
   }
 };
 

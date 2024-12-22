@@ -54,3 +54,5 @@ output:
 	$(mkdir_cmd)
 	$(cp_cmd)
 
+run: 
+	$(run_cmd)
