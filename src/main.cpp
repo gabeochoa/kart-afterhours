@@ -20,6 +20,7 @@ using namespace afterhours;
 typedef raylib::Vector2 vec2;
 typedef raylib::Vector3 vec3;
 typedef raylib::Vector4 vec4;
+using raylib::Rectangle;
 
 constexpr float distance_sq(const vec2 a, const vec2 b) {
   return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
@@ -121,6 +122,19 @@ struct HasTexture : BaseComponent {
   raylib::Texture2D texture;
   HasTexture(const raylib::Texture2D tex) : texture(tex) {}
 };
+
+struct HasSprite : BaseComponent {
+  Rectangle frame;
+  float scale;
+  HasSprite(Rectangle frm, float scl) : frame(frm), scale(scl) {}
+};
+
+Rectangle idx_to_sprite_frame(int i, int j) {
+  return Rectangle{.x = (float)i * 32.f,
+                   .y = (float)j * 32.f,
+                   .width = 32.f,
+                   .height = 32.f};
+}
 
 struct Transform : BaseComponent {
   vec2 position;
@@ -260,7 +274,6 @@ struct PlayerID : BaseComponent {
   PlayerID(input::GamepadID i) : id(i) {}
 };
 
-using raylib::Rectangle;
 struct EQ : public EntityQuery<EQ> {
   struct WhereInRange : EntityQuery::Modification {
     vec2 position;
@@ -330,9 +343,7 @@ void make_player(input::GamepadID id) {
   entity.addComponent<HasHealth>(10);
   entity.addComponent<TireMarkComponent>();
   if (id == 0) {
-    raylib::Texture2D texture =
-        raylib::LoadTexture("./resources/Cars/car_blue_4.png");
-    entity.addComponent<HasTexture>(texture);
+    entity.addComponent<HasSprite>(idx_to_sprite_frame(0, 1), 1.f);
   }
 
   entity.addComponent<CanShoot>()
@@ -412,23 +423,6 @@ struct RenderEntities : System<Transform> {
         },
         vec2{transform.size.x / 2.f,
              transform.size.y / 2.f}, // transform.center(),
-        transform.angle, raylib::RAYWHITE);
-  }
-};
-
-struct RenderTexturedEntities : System<Transform, HasTexture> {
-
-  virtual void for_each_with(const Entity &, const Transform &transform,
-                             const HasTexture &texture, float) const override {
-    raylib::DrawTexturePro(
-        texture.texture, Rectangle{0, 0, 71, 131},
-        Rectangle{
-            transform.center().x,
-            transform.center().y,
-            transform.size.x * 2.f,
-            transform.size.y * 2.f,
-        },
-        vec2{transform.size.x, transform.size.y}, // transform.center(),
         transform.angle, raylib::RAYWHITE);
   }
 };
@@ -661,6 +655,32 @@ struct RenderSkid : System<Transform, TireMarkComponent> {
   }
 };
 
+struct RenderSprites : System<Transform, HasSprite> {
+
+  raylib::Texture2D sheet;
+
+  virtual void once(float) {
+    sheet = EQ().whereHasComponent<HasTexture>()
+                .gen_first_enforce()
+                .get<HasTexture>()
+                .texture;
+  }
+
+  virtual void for_each_with(const Entity &, const Transform &transform,
+                             const HasSprite &hasSprite, float) const override {
+    raylib::DrawTexturePro(sheet, hasSprite.frame,
+                           Rectangle{
+                               transform.center().x,
+                               transform.center().y,
+                               hasSprite.frame.width * hasSprite.scale,
+                               hasSprite.frame.height * hasSprite.scale,
+                           },
+                           vec2{transform.size.x / 2.f,
+                                transform.size.y / 2.f}, // transform.center(),
+                           transform.angle, raylib::RAYWHITE);
+  }
+};
+
 int main(void) {
   const int screenWidth = 1920;
   const int screenHeight = 1080;
@@ -675,6 +695,8 @@ int main(void) {
     auto &entity = EntityHelper::createEntity();
     input::add_singleton_components<InputAction>(entity, get_mapping());
     window_manager::add_singleton_components(entity, 200);
+    entity.addComponent<HasTexture>(
+        raylib::LoadTexture("./resources/spritesheet.png"));
   }
 
   SystemManager systems;
@@ -712,7 +734,7 @@ int main(void) {
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     systems.register_render_system(std::make_unique<RenderSkid>());
     systems.register_render_system(std::make_unique<RenderEntities>());
-    systems.register_render_system(std::make_unique<RenderTexturedEntities>());
+    systems.register_render_system(std::make_unique<RenderSprites>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
     //
     systems.register_render_system(std::make_unique<RenderFPS>());
