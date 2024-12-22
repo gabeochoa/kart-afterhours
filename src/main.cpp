@@ -51,7 +51,15 @@ struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
-enum class InputAction { None, Accel, Left, Right, Brake };
+enum class InputAction {
+  None,
+  Accel,
+  Left,
+  Right,
+  Brake,
+  ShootLeft,
+  ShootRight
+};
 
 using afterhours::input;
 
@@ -86,6 +94,16 @@ auto get_mapping() {
           .axis = raylib::GAMEPAD_AXIS_LEFT_X,
           .dir = 1,
       },
+  };
+
+  mapping[InputAction::ShootLeft] = {
+      raylib::KEY_Q,
+      raylib::GAMEPAD_BUTTON_LEFT_TRIGGER_1,
+  };
+
+  mapping[InputAction::ShootRight] = {
+      raylib::KEY_E,
+      raylib::GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
   };
 
   return mapping;
@@ -131,6 +149,37 @@ struct Transform : BaseComponent {
   }
 
   float as_rad() const { return static_cast<float>(angle * (M_PI / 180.0f)); }
+};
+
+struct Weapon {
+  float cooldown;
+  float cooldownReset;
+  Weapon() : cooldown(0.f), cooldownReset(1.5f) {}
+  virtual void fire(float dt) {
+    cooldown -= dt;
+    if (cooldown <= 0) {
+      std::cout << "base" << std::endl;
+      cooldown = cooldownReset;
+    }
+  }
+};
+
+struct CanShoot : BaseComponent {
+  std::map<InputAction, Weapon> weapons;
+
+  CanShoot() {}
+
+  auto &register_weapon(InputAction action, const Weapon &wp) {
+    weapons[action] = wp;
+    return *this;
+  }
+
+  void fire(InputAction action, float dt) {
+    // TODO add warning
+    if (!weapons.contains(action))
+      return;
+    weapons[action].fire(dt);
+  }
 };
 
 struct PlayerID : BaseComponent {
@@ -186,6 +235,30 @@ struct EQ : public EntityQuery<EQ> {
 
   EQ &whereOverlaps(const Rectangle r) { return add_mod(new WhereOverlaps(r)); }
 };
+
+void make_player(input::GamepadID id) {
+  auto &entity = EntityHelper::createEntity();
+
+  vec2 position = {.x = id == 0 ? 150.f : 1100.f, .y = 720.f / 2.f};
+
+  entity.addComponent<PlayerID>(id);
+  entity.addComponent<Transform>(position, vec2{15.f, 25.f});
+
+  entity.addComponent<CanShoot>()
+      .register_weapon(InputAction::ShootLeft, Weapon())
+      .register_weapon(InputAction::ShootRight, Weapon());
+}
+
+static void load_gamepad_mappings() {
+  std::ifstream ifs("gamecontrollerdb.txt");
+  if (!ifs.is_open()) {
+    std::cout << "Failed to load game controller db" << std::endl;
+    return;
+  }
+  std::stringstream buffer;
+  buffer << ifs.rdbuf();
+  input::set_gamepad_mappings(buffer.str().c_str());
+}
 
 struct RenderEntities : System<Transform> {
 
@@ -255,26 +328,6 @@ struct Move : System<PlayerID, Transform> {
   }
 };
 
-void make_player(input::GamepadID id) {
-  auto &entity = EntityHelper::createEntity();
-
-  vec2 position = {.x = id == 0 ? 150.f : 1100.f, .y = 720.f / 2.f};
-
-  entity.addComponent<PlayerID>(id);
-  entity.addComponent<Transform>(position, vec2{15.f, 25.f});
-}
-
-static void load_gamepad_mappings() {
-  std::ifstream ifs("gamecontrollerdb.txt");
-  if (!ifs.is_open()) {
-    std::cout << "Failed to load game controller db" << std::endl;
-    return;
-  }
-  std::stringstream buffer;
-  buffer << ifs.rdbuf();
-  input::set_gamepad_mappings(buffer.str().c_str());
-}
-
 struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
 
   virtual void for_each_with(Entity &,
@@ -314,6 +367,38 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
   }
 };
 
+struct Shoot : System<PlayerID, CanShoot> {
+
+  virtual void for_each_with(Entity &entity, PlayerID &playerID,
+                             CanShoot &canShoot, float dt) override {
+
+    input::PossibleInputCollector<InputAction> inpc =
+        input::get_input_collector<InputAction>();
+    if (!inpc.has_value()) {
+      return;
+    }
+
+    for (auto &actions_done : inpc.inputs()) {
+      if (actions_done.id != playerID.id)
+        continue;
+      canShoot.fire(actions_done.action, dt);
+    }
+
+    // TODO add some knockback
+    /*
+    transform.angle += steer * dt * rad;
+
+    transform.velocity += vec2{
+        std::sin(transform.as_rad()) * mvt * dt,
+        -std::cos(transform.as_rad()) * mvt * dt,
+    };
+
+    transform.position += transform.velocity;
+    transform.velocity = transform.velocity * 0.99f;
+    */
+  }
+};
+
 int main(void) {
   const int screenWidth = 1280;
   const int screenHeight = 720;
@@ -348,6 +433,7 @@ int main(void) {
   }
 
   systems.register_update_system(std::make_unique<Move>());
+  systems.register_update_system(std::make_unique<Shoot>());
   systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
 
   // renders
