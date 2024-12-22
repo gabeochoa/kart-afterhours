@@ -187,8 +187,9 @@ struct TireMarkComponent : BaseComponent {
 struct Weapon {
   float cooldown;
   float cooldownReset;
-  using FireFn = std::function<void(Entity &)>;
+  using FireFn = std::function<void(Entity &, Weapon &)>;
   FireFn on_shoot;
+  float knockback_amt = 1.f;
 
   Weapon(const FireFn &cb)
       : cooldown(0.f), cooldownReset(0.75f), on_shoot(cb) {}
@@ -217,7 +218,7 @@ struct CanShoot : BaseComponent {
 
   CanShoot() = default;
 
-  auto &register_weapon(InputAction action, const Weapon::FireFn cb) {
+  auto &register_weapon(InputAction action, const Weapon::FireFn &cb) {
     weapons[action] = std::make_unique<Weapon>(cb);
     return *this;
   }
@@ -234,7 +235,7 @@ struct CanShoot : BaseComponent {
     if (!weapons.contains(action))
       return false;
     if (weapons[action]->fire(dt)) {
-      weapons[action]->on_shoot(parent);
+      weapons[action]->on_shoot(parent, *weapons[action]);
       return true;
     }
     return false;
@@ -336,9 +337,23 @@ void make_player(input::GamepadID id) {
 
   entity.addComponent<CanShoot>()
       .register_weapon(InputAction::ShootLeft,
-                       [](Entity &parent) { make_cannonball(parent, -1); })
-      .register_weapon(InputAction::ShootRight,
-                       [](Entity &parent) { make_cannonball(parent, 1); });
+                       [](Entity &parent, Weapon &wp) {
+                         make_cannonball(parent, -1);
+
+                         vec2 dir = parent.get<Transform>().velocity;
+                         // opposite of shot direction
+                         dir = vec_norm(vec2{-dir.y, dir.x});
+                         parent.get<Transform>().velocity +=
+                             dir * wp.knockback_amt;
+                       })
+      .register_weapon(InputAction::ShootRight, [](Entity &parent, Weapon &wp) {
+        make_cannonball(parent, 1);
+
+        vec2 dir = parent.get<Transform>().velocity;
+        // opposite of shot direction
+        dir = vec_norm(vec2{dir.y, -dir.x});
+        parent.get<Transform>().velocity += dir * wp.knockback_amt;
+      });
 }
 
 static void load_gamepad_mappings() {
@@ -541,19 +556,6 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
 
       canShoot.fire(entity, actions_done.action, dt);
     }
-
-    // TODO add some knockback
-    /*
-    transform.angle += steer * dt * rad;
-
-    transform.velocity += vec2{
-        std::sin(transform.as_rad()) * mvt * dt,
-        -std::cos(transform.as_rad()) * mvt * dt,
-    };
-
-    transform.position += transform.velocity;
-    transform.velocity = transform.velocity * 0.99f;
-    */
   }
 };
 
