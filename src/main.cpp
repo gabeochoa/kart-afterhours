@@ -261,7 +261,7 @@ void make_player(input::GamepadID id) {
   vec2 position = {.x = id == 0 ? 150.f : 1100.f, .y = 720.f / 2.f};
 
   entity.addComponent<PlayerID>(id);
-  entity.addComponent<Transform>(position, vec2{30.f, 50.f});
+  entity.addComponent<Transform>(position, vec2{15.f, 25.f});
 }
 
 static void load_gamepad_mappings() {
@@ -353,7 +353,7 @@ int main(void) {
   // renders
   {
     systems.register_render_system(
-        [&]() { raylib::ClearBackground(raylib::DARKGRAY); });
+        [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     systems.register_render_system(std::make_unique<RenderFPS>());
     systems.register_render_system(std::make_unique<RenderEntities>());
   }
