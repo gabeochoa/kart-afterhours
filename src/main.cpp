@@ -119,6 +119,7 @@ struct Transform : BaseComponent {
   vec2 position;
   vec2 velocity;
   vec2 size;
+  float accel = 0.f;
   float angle = 0.f;
 
   vec2 pos() const { return position; }
@@ -368,7 +369,7 @@ struct VelFromInput : System<PlayerID, Transform> {
       return;
     }
 
-    float accel = 0.f;
+    transform.accel = 0.f;
     float steer = 0.f;
 
     for (auto &actions_done : inpc.inputs()) {
@@ -376,10 +377,10 @@ struct VelFromInput : System<PlayerID, Transform> {
         continue;
       switch (actions_done.action) {
       case InputAction::Accel:
-        accel = 2.0f;
+        transform.accel = 2.0f;
         break;
       case InputAction::Brake:
-        accel = -0.5f;
+        transform.accel = -0.5f;
         break;
       case InputAction::Left:
         steer = -1.f * actions_done.amount_pressed;
@@ -396,8 +397,8 @@ struct VelFromInput : System<PlayerID, Transform> {
     float maxRadius = 300.0f;
     float rad = lerp(minRadius, maxRadius, transform.speed() / max_speed);
 
-    float mvt =
-        std::max(-max_speed, std::min(max_speed, transform.speed() + accel));
+    float mvt = std::max(
+        -max_speed, std::min(max_speed, transform.speed() + transform.accel));
 
     transform.angle += steer * dt * rad;
 
@@ -412,7 +413,8 @@ struct Move : System<Transform> {
 
   virtual void for_each_with(Entity &, Transform &transform, float) override {
     transform.position += transform.velocity;
-    transform.velocity = transform.velocity * 0.99f;
+    transform.velocity =
+        transform.velocity * (transform.accel != 0 ? 0.99f : 0.98f);
   }
 };
 
