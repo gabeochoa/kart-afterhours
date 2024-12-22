@@ -154,7 +154,7 @@ struct Weapon {
   FireFn on_shoot;
 
   Weapon(const FireFn &cb)
-      : cooldown(0.f), cooldownReset(0.05f), on_shoot(cb) {}
+      : cooldown(0.f), cooldownReset(0.75f), on_shoot(cb) {}
 
   virtual ~Weapon() {}
 
@@ -494,21 +494,23 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
   }
 };
 
-struct ProcessDamage : System<Transform, CanDamage> {
+struct ProcessDamage : System<Transform, HasHealth> {
 
   virtual void for_each_with(Entity &entity, Transform &transform,
-                             CanDamage &canDamage, float) override {
+                             HasHealth &hasHealth, float) override {
 
-    auto healthy_bois = EQ().whereHasComponent<HasHealth>()
-                            .whereNotID(canDamage.id)
-                            .whereNotID(entity.id)
-                            .whereOverlaps(transform.rect())
-                            .gen();
+    auto can_damage = EQ().whereHasComponent<CanDamage>()
+                          .whereNotID(entity.id)
+                          .whereOverlaps(transform.rect())
+                          .gen();
 
-    for (Entity &healthy_boi : healthy_bois) {
-      healthy_boi.get<HasHealth>().amount -= canDamage.amount;
-      entity.cleanup = true;
-      break;
+    for (Entity &damager : can_damage) {
+      CanDamage &cd = damager.get<CanDamage>();
+      if (cd.id == entity.id)
+        continue;
+      hasHealth.amount -= cd.amount;
+
+      damager.cleanup = true;
     }
   }
 };
