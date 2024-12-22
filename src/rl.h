@@ -21,6 +21,25 @@ namespace raylib {
 #include "RaylibOpOverloads.h"
 #include "raylib.h"
 
+void DrawSplineSegmentLinear(Vector2 p1, Vector2 p2, float thick, Color color) {
+  // NOTE: For the linear spline we don't use subdivisions, just a single quad
+
+  Vector2 delta = {p2.x - p1.x, p2.y - p1.y};
+  float length = sqrtf(delta.x * delta.x + delta.y * delta.y);
+
+  if ((length > 0) && (thick > 0)) {
+    float scale = thick / (2 * length);
+
+    Vector2 radius = {-scale * delta.y, scale * delta.x};
+    Vector2 strip[4] = {{p1.x - radius.x, p1.y - radius.y},
+                        {p1.x + radius.x, p1.y + radius.y},
+                        {p2.x - radius.x, p2.y - radius.y},
+                        {p2.x + radius.x, p2.y + radius.y}};
+
+    DrawTriangleStrip(strip, 4, color);
+  }
+}
+
 void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
                       Color color) {
   if (pointCount < 2)

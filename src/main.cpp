@@ -155,11 +155,16 @@ struct TireMarkComponent : BaseComponent {
   struct MarkPoint {
     vec2 position;
     float time;
+    float lifetime;
+    bool gap;
   };
+
+  bool added_last_frame = false;
   std::vector<MarkPoint> points;
 
-  void add_mark(vec2 pos) {
-    points.push_back(MarkPoint{.position = pos, .time = 1.f});
+  void add_mark(vec2 pos, bool gap = false) {
+    points.push_back(
+        MarkPoint{.position = pos, .time = 10.f, .lifetime = 10.f, .gap = gap});
   }
 
   void pass_time(float dt) {
@@ -581,7 +586,13 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
     };
 
     if (should_skid()) {
-      tire.add_mark(transform.pos());
+
+      vec2 pos = transform.center();
+
+      tire.add_mark(pos, !tire.added_last_frame);
+      tire.added_last_frame = true;
+    } else {
+      tire.added_last_frame = false;
     }
 
     transform.angle_prev =
@@ -593,13 +604,30 @@ struct RenderSkid : System<Transform, TireMarkComponent> {
   virtual void for_each_with(const Entity &, const Transform &transform,
                              const TireMarkComponent &tire,
                              float dt) const override {
-    vec2 *points = new vec2[tire.points.size()];
-    int i = 0;
-    for (auto &mp : tire.points) {
-      points[i++] = (mp.position);
+    vec2 off = vec2{7.f, 4.f};
+
+    for (size_t i = 1; i < tire.points.size(); i++) {
+      auto mp0 = tire.points[i - 1];
+      auto mp1 = tire.points[i];
+      if (distance_sq(mp0.position, mp1.position) > 100.f) {
+        continue;
+      }
+      float pct = mp0.time / mp0.lifetime;
+      raylib::DrawSplineSegmentLinear(
+          mp0.position + off, mp1.position + off, 5.f,
+          raylib::Color(20, 20, 20, (unsigned char)(255 * pct)));
     }
-    raylib::DrawSplineLinear(points, tire.points.size(), 5.f, raylib::GREEN);
-    delete[] points;
+    for (size_t i = 1; i < tire.points.size(); i++) {
+      auto mp0 = tire.points[i - 1];
+      auto mp1 = tire.points[i];
+      if (distance_sq(mp0.position, mp1.position) > 100.f) {
+        continue;
+      }
+      float pct = mp0.time / mp0.lifetime;
+      raylib::DrawSplineSegmentLinear(
+          mp0.position - off, mp1.position - off, 5.f,
+          raylib::Color(20, 20, 20, (unsigned char)(255 * pct)));
+    }
   }
 };
 
@@ -652,10 +680,11 @@ int main(void) {
   {
     systems.register_render_system(
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
-    systems.register_render_system(std::make_unique<RenderFPS>());
+    systems.register_render_system(std::make_unique<RenderSkid>());
     systems.register_render_system(std::make_unique<RenderEntities>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
-    systems.register_render_system(std::make_unique<RenderSkid>());
+    //
+    systems.register_render_system(std::make_unique<RenderFPS>());
   }
 
   while (!raylib::WindowShouldClose()) {
