@@ -156,6 +156,8 @@ struct Weapon {
   Weapon(const FireFn &cb)
       : cooldown(0.f), cooldownReset(0.05f), on_shoot(cb) {}
 
+  virtual ~Weapon() {}
+
   virtual bool fire(float) {
     if (cooldown <= 0) {
       cooldown = cooldownReset;
@@ -312,7 +314,6 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
   virtual void for_each_with(const Entity &, const Transform &transform,
                              const CanShoot &canShoot, float) const override {
 
-    int i = 0;
     for (auto it = canShoot.weapons.begin(); it != canShoot.weapons.end();
          ++it) {
       const std::unique_ptr<Weapon> &weapon = it->second;
@@ -333,8 +334,6 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
       raylib::DrawRectanglePro(arm,
                                {nw / 2.f, nh / 2.f}, // rotate around center
                                transform.angle, raylib::RED);
-
-      i++;
     }
   }
 };
@@ -395,7 +394,7 @@ struct VelFromInput : System<PlayerID, Transform> {
 
     float minRadius = 10.0f;
     float maxRadius = 300.0f;
-    float rad = lerp(minRadius, maxRadius, transform.speed() / max_speed);
+    float rad = std::lerp(minRadius, maxRadius, transform.speed() / max_speed);
 
     float mvt = std::max(
         -max_speed, std::min(max_speed, transform.speed() + transform.accel));
@@ -541,9 +540,6 @@ int main(void) {
     input::add_singleton_components<InputAction>(entity, get_mapping());
     window_manager::add_singleton_components(entity, 200);
   }
-
-  make_player(0);
-  make_player(1);
 
   SystemManager systems;
 
