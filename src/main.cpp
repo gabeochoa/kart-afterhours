@@ -25,6 +25,19 @@ constexpr float distance_sq(const vec2 a, const vec2 b) {
   return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 }
 
+float dot(const vec2 &a, const vec2 &b) { return a.x * b.x + a.y * b.y; }
+
+float vec_mag(vec2 v) { return sqrt(v.x * v.x + v.y * v.y); }
+vec2 vec_norm(vec2 v) {
+  float mag = vec_mag(v);
+  if (mag == 0)
+    return v;
+  return vec2{
+      v.x / mag,
+      v.y / mag,
+  };
+}
+
 namespace myutil {
 
 template <class... Ts> struct overloaded : Ts... {
@@ -102,17 +115,6 @@ auto get_mapping() {
   };
 
   return mapping;
-}
-
-float vec_mag(vec2 v) { return sqrt(v.x * v.x + v.y * v.y); }
-vec2 vec_norm(vec2 v) {
-  float mag = vec_mag(v);
-  if (mag == 0)
-    return v;
-  return vec2{
-      v.x / mag,
-      v.y / mag,
-  };
 }
 
 struct Transform : BaseComponent {
