@@ -160,11 +160,18 @@ struct Weapon {
   Weapon(const FireFn &cb)
       : cooldown(0.f), cooldownReset(0.75f), on_shoot(cb) {}
   virtual bool fire(float dt) {
-    cooldown -= dt;
     if (cooldown <= 0) {
       cooldown = cooldownReset;
       return true;
     }
+    return false;
+  }
+
+  virtual bool pass_time(float dt) {
+    if (cooldown <= 0) {
+      return true;
+    }
+    cooldown -= dt;
     return false;
   }
 };
@@ -177,6 +184,13 @@ struct CanShoot : BaseComponent {
   auto &register_weapon(InputAction action, const Weapon::FireFn cb) {
     weapons[action] = std::make_unique<Weapon>(cb);
     return *this;
+  }
+
+  bool pass_time(InputAction action, float dt) {
+    // TODO add warning
+    if (!weapons.contains(action))
+      return false;
+    return weapons[action]->pass_time(dt);
   }
 
   bool fire(Entity &parent, InputAction action, float dt) {
@@ -245,14 +259,14 @@ struct EQ : public EntityQuery<EQ> {
   EQ &whereOverlaps(const Rectangle r) { return add_mod(new WhereOverlaps(r)); }
 };
 
-void make_cannonball(Entity &parent) {
+void make_cannonball(Entity &parent, float direction) {
   Transform &transform = parent.get<Transform>();
 
   auto &bullet = EntityHelper::createEntity();
-  bullet.addComponent<Transform>(transform.pos(), vec2{15.f, 25.f});
-  float rad = transform.as_rad() + (float)(M_PI / 2.f);
+  bullet.addComponent<Transform>(transform.pos(), vec2{10.f, 10.f});
+  float rad = transform.as_rad() + ((float)(M_PI / 2.f) * direction);
   bullet.get<Transform>().velocity =
-      vec2{std::sin(rad) * 10.f, -std::cos(rad) * 10.f};
+      vec2{std::sin(rad) * 5.f, -std::cos(rad) * 5.f};
 }
 
 void make_player(input::GamepadID id) {
@@ -265,9 +279,9 @@ void make_player(input::GamepadID id) {
 
   entity.addComponent<CanShoot>()
       .register_weapon(InputAction::ShootLeft,
-                       [](Entity &parent) { make_cannonball(parent); })
+                       [](Entity &parent) { make_cannonball(parent, -1); })
       .register_weapon(InputAction::ShootRight,
-                       [](Entity &parent) { make_cannonball(parent); });
+                       [](Entity &parent) { make_cannonball(parent, 1); });
 }
 
 static void load_gamepad_mappings() {
@@ -281,14 +295,68 @@ static void load_gamepad_mappings() {
   input::set_gamepad_mappings(buffer.str().c_str());
 }
 
+struct RenderWeaponCooldown : System<Transform, CanShoot> {
+
+  virtual void for_each_with(const Entity &, const Transform &transform,
+                             const CanShoot &canShoot, float) const override {
+
+    int i = 0;
+    for (auto it = canShoot.weapons.begin(); it != canShoot.weapons.end();
+         ++it) {
+      const std::unique_ptr<Weapon> &weapon = it->second;
+
+      vec2 center = transform.center();
+      Rectangle body = transform.rect();
+
+      std::cout << transform.angle << std::endl;
+      float nw = body.width / 2.f;
+      float nh = body.height / 2.f;
+
+      // TODO figure this out when more than 2
+      float off = (nw * (float)(i == 0 ? -1.f : 1.f));
+
+      // off = ((transform.as_rad() > M_PI) ? -1.f : 1.f) * off;
+
+      Rectangle stem = Rectangle{
+          center.x, //
+          center.y, //
+          nw,
+          nh,
+      };
+
+      Rectangle arm = Rectangle{
+          center.x, //
+          center.y, //
+          nw,
+          nh * (weapon->cooldown / weapon->cooldownReset),
+      };
+
+      // raylib::DrawRectanglePro(stem,
+      // {(nw / 2.f), nh / 2.f}, // rotate around center
+      // transform.angle, raylib::GREEN);
+
+      raylib::DrawRectanglePro(arm,
+                               {nw / 2.f, nh / 2.f}, // rotate around center
+                               transform.angle, raylib::RED);
+
+      i++;
+    }
+  }
+};
+
 struct RenderEntities : System<Transform> {
 
   virtual void for_each_with(const Entity &, const Transform &transform,
                              float) const override {
     raylib::DrawRectanglePro(
-        transform.rect(),
+        Rectangle{
+            transform.center().x,
+            transform.center().y,
+            transform.size.x,
+            transform.size.y,
+        },
         vec2{transform.size.x / 2.f,
-             transform.size.y / 4.f}, // transform.center(),
+             transform.size.y / 2.f}, // transform.center(),
         transform.angle, raylib::RAYWHITE);
   }
 };
@@ -398,6 +466,11 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
   virtual void for_each_with(Entity &entity, PlayerID &playerID, Transform &,
                              CanShoot &canShoot, float dt) override {
 
+    magic_enum::enum_for_each<InputAction>([&](auto val) {
+      constexpr InputAction action = val;
+      canShoot.pass_time(action, dt);
+    });
+
     input::PossibleInputCollector<InputAction> inpc =
         input::get_input_collector<InputAction>();
     if (!inpc.has_value()) {
@@ -427,8 +500,8 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
 };
 
 int main(void) {
-  const int screenWidth = 1280;
-  const int screenHeight = 720;
+  const int screenWidth = 1920;
+  const int screenHeight = 1080;
 
   raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
   raylib::SetTargetFPS(200);
@@ -470,6 +543,7 @@ int main(void) {
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     systems.register_render_system(std::make_unique<RenderFPS>());
     systems.register_render_system(std::make_unique<RenderEntities>());
+    systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
   }
 
   while (!raylib::WindowShouldClose()) {
