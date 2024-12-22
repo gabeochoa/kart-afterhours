@@ -586,5 +586,8 @@ int main(void) {
 
   raylib::CloseWindow();
 
+  std::cout << "Num entities: " << EntityHelper::get_entities().size()
+            << std::endl;
+
   return 0;
 }
