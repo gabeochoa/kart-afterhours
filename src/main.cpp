@@ -153,7 +153,7 @@ struct Weapon {
   FireFn on_shoot;
 
   Weapon(const FireFn &cb)
-      : cooldown(0.f), cooldownReset(0.75f), on_shoot(cb) {}
+      : cooldown(0.f), cooldownReset(0.05f), on_shoot(cb) {}
 
   virtual bool fire(float) {
     if (cooldown <= 0) {
@@ -496,10 +496,11 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
 struct ProcessDamage : System<Transform, CanDamage> {
 
   virtual void for_each_with(Entity &entity, Transform &transform,
-                             CanDamage &canDamage, float dt) override {
+                             CanDamage &canDamage, float) override {
+
     auto healthy_bois = EQ().whereHasComponent<HasHealth>()
-                            .whereNotID(entity.id)
                             .whereNotID(canDamage.id)
+                            .whereNotID(entity.id)
                             .whereOverlaps(transform.rect())
                             .gen();
 
@@ -556,12 +557,19 @@ int main(void) {
     window_manager::register_update_systems(systems);
   }
 
-  systems.register_update_system(std::make_unique<VelFromInput>());
-  systems.register_update_system(std::make_unique<Shoot>());
-  systems.register_update_system(std::make_unique<Move>());
-  systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
-  systems.register_update_system(std::make_unique<ProcessDamage>());
-  systems.register_update_system(std::make_unique<ProcessDeath>());
+  // Fixed update
+  {
+    systems.register_fixed_update_system(std::make_unique<VelFromInput>());
+    systems.register_fixed_update_system(std::make_unique<Move>());
+  }
+
+  // normal update
+  {
+    systems.register_update_system(std::make_unique<Shoot>());
+    systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
+    systems.register_update_system(std::make_unique<ProcessDamage>());
+    systems.register_update_system(std::make_unique<ProcessDeath>());
+  }
 
   // renders
   {
