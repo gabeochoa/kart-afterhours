@@ -567,6 +567,7 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
     tire.pass_time(dt);
 
     const auto should_skid = [&]() -> bool {
+      // TODO - dont add skid marks when you are going in reverse
       float steering_angle = transform.angle - transform.angle_prev;
 
       if (transform.speed() > 4.f && steering_angle > 30.f) {
@@ -582,6 +583,7 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
       if (slip_angle > (10.f * (M_PI / 180.f))) {
         return true;
       }
+
       return false;
     };
 
