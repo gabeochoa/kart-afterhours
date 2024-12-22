@@ -4,7 +4,7 @@ RAYLIB_LIB := `pkg-config --libs raylib`
 
 RELEASE_FLAGS = -std=c++2c $(RAYLIB_FLAGS)
 
-FLAGS = -std=c++2c -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow \
+FLAGS = -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow \
 		-Wconversion -g $(RAYLIB_FLAGS)
 
 NOFLAGS = -Wno-deprecated-volatile -Wno-missing-field-initializers \
@@ -25,8 +25,18 @@ DEPENDS := $(patsubst %.cpp,%.d,$(SOURCES))
 OUTPUT_EXE := kart.exe
 
 # CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
-# CXX := clang++
-CXX := g++-14 -fmax-errors=10
+# CXX := clang++ -std=c++2a -Wmost
+CXX := g++-14 -fmax-errors=10 -std=c++2a
+
+ifeq ($(OS),Windows_NT)
+# RAYLIB_FLAGS := -Ivendor/raylib/
+# RAYLIB_LIB := -L/vendor/raylib/ -lraylib
+RAYLIB_FLAGS := 
+RAYLIB_LIB := F:/RayLib/lib/raylib.dll
+CXX := g++
+else
+endif
+
 
 .PHONY: all clean
 
