@@ -1,12 +1,5 @@
 
-
-#include "backward/backward.hpp"
-
-namespace backward {
-backward::SignalHandling sh;
-} // namespace backward
 #include "std_include.h"
-//
 
 #include "rl.h"
 

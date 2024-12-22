@@ -33,7 +33,7 @@ ifeq ($(OS),Windows_NT)
 # RAYLIB_LIB := -L/vendor/raylib/ -lraylib
 RAYLIB_FLAGS := -IF:/RayLib/include
 RAYLIB_LIB := F:/RayLib/lib/raylib.dll
-CXX := g++
+CXX := g++ -std=c++20
 else
 endif
 
@@ -41,4 +41,4 @@ endif
 .PHONY: all clean
 
 all:
-	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp -o $(OUTPUT_EXE) && ./$(OUTPUT_EXE)
+	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp -o $(OUTPUT_EXE)
