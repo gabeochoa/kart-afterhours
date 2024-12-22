@@ -35,7 +35,13 @@ ifeq ($(OS),Windows_NT)
 RAYLIB_FLAGS := -IF:/RayLib/include
 RAYLIB_LIB := F:/RayLib/lib/raylib.dll
 CXX := g++ -std=c++20
+mkdir_cmd = powershell -Command "New-Item -ItemType Directory -Path \"output\" -ErrorAction SilentlyContinue"
+cp_cmd = powershell -Command "Copy-Item \"vendor/raylib/*.dll\" \"output/\""
+
 else
+mkdir_cmd = mkdir -p output
+cp_cmd = cp vendor/raylib/*.dll output/
+
 endif
 
 
@@ -46,6 +52,6 @@ all:
 	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp -o $(OUTPUT_EXE) && ./$(OUTPUT_EXE)
 
 output:
-	mkdir -p output
-	cp vendor/raylib/*.dll output/
+	$(mkdir_cmd)
+	$(cp_cmd)
 
