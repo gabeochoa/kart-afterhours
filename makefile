@@ -21,26 +21,25 @@ OBJ_FILES := $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
 DEPENDS := $(patsubst %.cpp,%.d,$(SOURCES))
 -include $(DEPENDS)
 
-
 OUTPUT_FOLDER:= output
 OUTPUT_EXE := $(OUTPUT_FOLDER)/kart.exe
 
-# CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
-# CXX := clang++ -std=c++2a -Wmost
-CXX := g++-14 -fmax-errors=10 -std=c++2a
-
 ifeq ($(OS),Windows_NT)
-# RAYLIB_FLAGS := -Ivendor/raylib/
-# RAYLIB_LIB := -L/vendor/raylib/ -lraylib
 RAYLIB_FLAGS := -IF:/RayLib/include
 RAYLIB_LIB := F:/RayLib/lib/raylib.dll
 CXX := g++ -std=c++20
-mkdir_cmd = powershell -Command "New-Item -ItemType Directory -Path \"output\" -ErrorAction SilentlyContinue"
-cp_cmd = powershell -Command "Copy-Item \"vendor/raylib/*.dll\" \"output/\""
+
+mkdir_cmd = powershell -command "& {&'New-Item' -Path .\ -Name output -ItemType directory -ErrorAction SilentlyContinue}";
+cp_cmd = powershell -command  "& {&'Copy-Item' .\vendor\raylib\*.dll output -ErrorAction SilentlyContinue}";
+run_cmd := powershell -command "& {&'$(OUTPUT_FOLDER)/kart.exe'}";
 
 else
 mkdir_cmd = mkdir -p output
 cp_cmd = cp vendor/raylib/*.dll output/
+run_cmd := ./${OUTPUT_EXE}
+# CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
+# CXX := clang++ -std=c++2a -Wmost
+CXX := g++-14 -fmax-errors=10 -std=c++2a
 
 endif
 
@@ -49,7 +48,7 @@ endif
 
 
 all:
-	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp -o $(OUTPUT_EXE) && ./$(OUTPUT_EXE)
+	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp -o $(OUTPUT_EXE) && $(run_cmd)
 
 output:
 	$(mkdir_cmd)
