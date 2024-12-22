@@ -154,7 +154,8 @@ struct Weapon {
 
   Weapon(const FireFn &cb)
       : cooldown(0.f), cooldownReset(0.75f), on_shoot(cb) {}
-  virtual bool fire(float dt) {
+
+  virtual bool fire(float) {
     if (cooldown <= 0) {
       cooldown = cooldownReset;
       return true;
@@ -204,18 +205,13 @@ struct CanDamage : BaseComponent {
   EntityID id;
   int amount;
 
-  CanDamage(EntityID id_in, int amount_in) 
-    : id{id_in}
-    , amount{amount_in}
-    { }
+  CanDamage(EntityID id_in, int amount_in) : id{id_in}, amount{amount_in} {}
 };
 
 struct HasHealth : BaseComponent {
   int amount;
 
-  HasHealth(int amount_in) 
-    : amount{amount_in}
-    { }
+  HasHealth(int amount_in) : amount{amount_in} {}
 };
 
 struct PlayerID : BaseComponent {
@@ -323,21 +319,8 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
       vec2 center = transform.center();
       Rectangle body = transform.rect();
 
-      //std::cout << transform.angle << std::endl;
       float nw = body.width / 2.f;
       float nh = body.height / 2.f;
-
-      // TODO figure this out when more than 2
-      float off = (nw * (float)(i == 0 ? -1.f : 1.f));
-
-      // off = ((transform.as_rad() > M_PI) ? -1.f : 1.f) * off;
-
-      Rectangle stem = Rectangle{
-          center.x, //
-          center.y, //
-          nw,
-          nh,
-      };
 
       Rectangle arm = Rectangle{
           center.x, //
@@ -345,10 +328,6 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
           nw,
           nh * (weapon->cooldown / weapon->cooldownReset),
       };
-
-      // raylib::DrawRectanglePro(stem,
-      // {(nw / 2.f), nh / 2.f}, // rotate around center
-      // transform.angle, raylib::GREEN);
 
       raylib::DrawRectanglePro(arm,
                                {nw / 2.f, nh / 2.f}, // rotate around center
@@ -517,16 +496,14 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
 struct ProcessDamage : System<Transform, CanDamage> {
 
   virtual void for_each_with(Entity &entity, Transform &transform,
-                             CanDamage &canDamage, float dt) override 
-  {
-    auto healthy_bois = EQ()
-      .whereHasComponent<HasHealth>()
-      .whereNotID(entity.id)
-      .whereNotID(canDamage.id)
-      .whereOverlaps(transform.rect()).gen();
-    
-    for(Entity& healthy_boi : healthy_bois)
-    {
+                             CanDamage &canDamage, float dt) override {
+    auto healthy_bois = EQ().whereHasComponent<HasHealth>()
+                            .whereNotID(entity.id)
+                            .whereNotID(canDamage.id)
+                            .whereOverlaps(transform.rect())
+                            .gen();
+
+    for (Entity &healthy_boi : healthy_bois) {
       healthy_boi.get<HasHealth>().amount -= canDamage.amount;
       entity.cleanup = true;
       break;
@@ -536,12 +513,12 @@ struct ProcessDamage : System<Transform, CanDamage> {
 
 struct ProcessDeath : System<Transform, HasHealth> {
 
-  virtual void for_each_with(Entity &entity, Transform &transform,
-                             HasHealth &hasHealth, float dt) override 
-  {
-    if(hasHealth.amount <= 0){
+  virtual void for_each_with(Entity &entity, Transform &, HasHealth &hasHealth,
+                             float) override {
+    if (hasHealth.amount <= 0) {
       entity.cleanup = true;
-      std::cout << "I DIED OMG --------------------------------------------" << std::endl;
+      std::cout << "I DIED OMG --------------------------------------------"
+                << std::endl;
     }
   }
 };
