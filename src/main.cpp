@@ -154,31 +154,40 @@ struct Transform : BaseComponent {
 struct Weapon {
   float cooldown;
   float cooldownReset;
-  Weapon() : cooldown(0.f), cooldownReset(1.5f) {}
-  virtual void fire(float dt) {
+  using FireFn = std::function<void(Entity &)>;
+  FireFn on_shoot;
+
+  Weapon(const FireFn &cb)
+      : cooldown(0.f), cooldownReset(0.75f), on_shoot(cb) {}
+  virtual bool fire(float dt) {
     cooldown -= dt;
     if (cooldown <= 0) {
-      std::cout << "base" << std::endl;
       cooldown = cooldownReset;
+      return true;
     }
+    return false;
   }
 };
 
 struct CanShoot : BaseComponent {
-  std::map<InputAction, Weapon> weapons;
+  std::map<InputAction, std::unique_ptr<Weapon>> weapons;
 
   CanShoot() {}
 
-  auto &register_weapon(InputAction action, const Weapon &wp) {
-    weapons[action] = wp;
+  auto &register_weapon(InputAction action, const Weapon::FireFn cb) {
+    weapons[action] = std::make_unique<Weapon>(cb);
     return *this;
   }
 
-  void fire(InputAction action, float dt) {
+  bool fire(Entity &parent, InputAction action, float dt) {
     // TODO add warning
     if (!weapons.contains(action))
-      return;
-    weapons[action].fire(dt);
+      return false;
+    if (weapons[action]->fire(dt)) {
+      weapons[action]->on_shoot(parent);
+      return true;
+    }
+    return false;
   }
 };
 
@@ -236,6 +245,16 @@ struct EQ : public EntityQuery<EQ> {
   EQ &whereOverlaps(const Rectangle r) { return add_mod(new WhereOverlaps(r)); }
 };
 
+void make_cannonball(Entity &parent) {
+  Transform &transform = parent.get<Transform>();
+
+  auto &bullet = EntityHelper::createEntity();
+  bullet.addComponent<Transform>(transform.pos(), vec2{15.f, 25.f});
+  float rad = transform.as_rad() + (float)(M_PI / 2.f);
+  bullet.get<Transform>().velocity =
+      vec2{std::sin(rad) * 10.f, -std::cos(rad) * 10.f};
+}
+
 void make_player(input::GamepadID id) {
   auto &entity = EntityHelper::createEntity();
 
@@ -245,8 +264,10 @@ void make_player(input::GamepadID id) {
   entity.addComponent<Transform>(position, vec2{15.f, 25.f});
 
   entity.addComponent<CanShoot>()
-      .register_weapon(InputAction::ShootLeft, Weapon())
-      .register_weapon(InputAction::ShootRight, Weapon());
+      .register_weapon(InputAction::ShootLeft,
+                       [](Entity &parent) { make_cannonball(parent); })
+      .register_weapon(InputAction::ShootRight,
+                       [](Entity &parent) { make_cannonball(parent); });
 }
 
 static void load_gamepad_mappings() {
@@ -272,7 +293,7 @@ struct RenderEntities : System<Transform> {
   }
 };
 
-struct Move : System<PlayerID, Transform> {
+struct VelFromInput : System<PlayerID, Transform> {
 
   float max_speed = 5.f;
 
@@ -322,7 +343,12 @@ struct Move : System<PlayerID, Transform> {
         std::sin(transform.as_rad()) * mvt * dt,
         -std::cos(transform.as_rad()) * mvt * dt,
     };
+  }
+};
 
+struct Move : System<Transform> {
+
+  virtual void for_each_with(Entity &, Transform &transform, float) override {
     transform.position += transform.velocity;
     transform.velocity = transform.velocity * 0.99f;
   }
@@ -367,9 +393,9 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
   }
 };
 
-struct Shoot : System<PlayerID, CanShoot> {
+struct Shoot : System<PlayerID, Transform, CanShoot> {
 
-  virtual void for_each_with(Entity &entity, PlayerID &playerID,
+  virtual void for_each_with(Entity &entity, PlayerID &playerID, Transform &,
                              CanShoot &canShoot, float dt) override {
 
     input::PossibleInputCollector<InputAction> inpc =
@@ -381,7 +407,8 @@ struct Shoot : System<PlayerID, CanShoot> {
     for (auto &actions_done : inpc.inputs()) {
       if (actions_done.id != playerID.id)
         continue;
-      canShoot.fire(actions_done.action, dt);
+
+      canShoot.fire(entity, actions_done.action, dt);
     }
 
     // TODO add some knockback
@@ -432,8 +459,9 @@ int main(void) {
     window_manager::register_update_systems(systems);
   }
 
-  systems.register_update_system(std::make_unique<Move>());
+  systems.register_update_system(std::make_unique<VelFromInput>());
   systems.register_update_system(std::make_unique<Shoot>());
+  systems.register_update_system(std::make_unique<Move>());
   systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
 
   // renders
