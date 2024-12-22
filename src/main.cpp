@@ -117,6 +117,11 @@ auto get_mapping() {
   return mapping;
 }
 
+struct HasTexture : BaseComponent {
+  raylib::Texture2D texture;
+  HasTexture(const raylib::Texture2D tex) : texture(tex) {}
+};
+
 struct Transform : BaseComponent {
   vec2 position;
   vec2 velocity;
@@ -323,6 +328,11 @@ void make_player(input::GamepadID id) {
   entity.addComponent<Transform>(position, vec2{15.f, 25.f});
   entity.addComponent<HasHealth>(10);
   entity.addComponent<TireMarkComponent>();
+  if (id == 0) {
+    raylib::Texture2D texture =
+        raylib::LoadTexture("./resources/Cars/car_blue_4.png");
+    entity.addComponent<HasTexture>(texture);
+  }
 
   entity.addComponent<CanShoot>()
       .register_weapon(InputAction::ShootLeft,
@@ -373,8 +383,11 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
 
 struct RenderEntities : System<Transform> {
 
-  virtual void for_each_with(const Entity &, const Transform &transform,
+  virtual void for_each_with(const Entity &entity, const Transform &transform,
                              float) const override {
+    if (entity.has<HasTexture>())
+      return;
+
     raylib::DrawRectanglePro(
         Rectangle{
             transform.center().x,
@@ -384,6 +397,23 @@ struct RenderEntities : System<Transform> {
         },
         vec2{transform.size.x / 2.f,
              transform.size.y / 2.f}, // transform.center(),
+        transform.angle, raylib::RAYWHITE);
+  }
+};
+
+struct RenderTexturedEntities : System<Transform, HasTexture> {
+
+  virtual void for_each_with(const Entity &, const Transform &transform,
+                             const HasTexture &texture, float) const override {
+    raylib::DrawTexturePro(
+        texture.texture, Rectangle{0, 0, 71, 131},
+        Rectangle{
+            transform.center().x,
+            transform.center().y,
+            transform.size.x * 2.f,
+            transform.size.y * 2.f,
+        },
+        vec2{transform.size.x, transform.size.y}, // transform.center(),
         transform.angle, raylib::RAYWHITE);
   }
 };
@@ -603,9 +633,9 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
 };
 
 struct RenderSkid : System<Transform, TireMarkComponent> {
-  virtual void for_each_with(const Entity &, const Transform &transform,
+  virtual void for_each_with(const Entity &, const Transform &,
                              const TireMarkComponent &tire,
-                             float dt) const override {
+                             float) const override {
     vec2 off = vec2{7.f, 4.f};
 
     for (size_t i = 1; i < tire.points.size(); i++) {
@@ -684,6 +714,7 @@ int main(void) {
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     systems.register_render_system(std::make_unique<RenderSkid>());
     systems.register_render_system(std::make_unique<RenderEntities>());
+    systems.register_render_system(std::make_unique<RenderTexturedEntities>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
     //
     systems.register_render_system(std::make_unique<RenderFPS>());
