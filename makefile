@@ -22,7 +22,8 @@ DEPENDS := $(patsubst %.cpp,%.d,$(SOURCES))
 -include $(DEPENDS)
 
 
-OUTPUT_EXE := kart.exe
+OUTPUT_FOLDER:= output
+OUTPUT_EXE := $(OUTPUT_FOLDER)/kart.exe
 
 # CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
 # CXX := clang++ -std=c++2a -Wmost
@@ -38,7 +39,13 @@ else
 endif
 
 
-.PHONY: all clean
+.PHONY: all clean output
+
 
 all:
-	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp -o $(OUTPUT_EXE)
+	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp -o $(OUTPUT_EXE) && ./$(OUTPUT_EXE)
+
+output:
+	mkdir -p output
+	cp vendor/raylib/*.dll output/
+
