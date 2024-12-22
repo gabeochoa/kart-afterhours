@@ -122,7 +122,9 @@ struct Transform : BaseComponent {
   vec2 velocity;
   vec2 size;
   float accel = 0.f;
+
   float angle = 0.f;
+  float angle_prev = 0.f;
 
   vec2 pos() const { return position; }
   void update(vec2 &v) { position = v; }
@@ -147,6 +149,29 @@ struct Transform : BaseComponent {
   }
 
   float as_rad() const { return static_cast<float>(angle * (M_PI / 180.0f)); }
+};
+
+struct TireMarkComponent : BaseComponent {
+  struct MarkPoint {
+    vec2 position;
+    float time;
+  };
+  std::vector<MarkPoint> points;
+
+  void add_mark(vec2 pos) {
+    points.push_back(MarkPoint{.position = pos, .time = 1.f});
+  }
+
+  void pass_time(float dt) {
+    for (auto it = points.begin(); it != points.end();) {
+      it->time -= dt;
+      if (it->time <= 0.0f) {
+        it = points.erase(it);
+      } else {
+        ++it;
+      }
+    }
+  }
 };
 
 struct Weapon {
@@ -292,6 +317,7 @@ void make_player(input::GamepadID id) {
   entity.addComponent<PlayerID>(id);
   entity.addComponent<Transform>(position, vec2{15.f, 25.f});
   entity.addComponent<HasHealth>(10);
+  entity.addComponent<TireMarkComponent>();
 
   entity.addComponent<CanShoot>()
       .register_weapon(InputAction::ShootLeft,
@@ -529,6 +555,54 @@ struct ProcessDeath : System<Transform, HasHealth> {
   }
 };
 
+struct SkidMarks : System<Transform, TireMarkComponent> {
+  virtual void for_each_with(Entity &, Transform &transform,
+                             TireMarkComponent &tire, float dt) override {
+
+    tire.pass_time(dt);
+
+    const auto should_skid = [&]() -> bool {
+      float steering_angle = transform.angle - transform.angle_prev;
+
+      if (transform.speed() > 4.f && steering_angle > 30.f) {
+        return true;
+      }
+
+      float slip_angle =
+          std::atan2(transform.velocity.y, transform.velocity.x) -
+          std::atan2(transform.velocity.y,
+                     transform.velocity.x -
+                         (transform.velocity.y * std::tan(steering_angle)));
+
+      if (slip_angle > (10.f * (M_PI / 180.f))) {
+        return true;
+      }
+      return false;
+    };
+
+    if (should_skid()) {
+      tire.add_mark(transform.pos());
+    }
+
+    transform.angle_prev =
+        std::atan2(transform.velocity.y, transform.velocity.x);
+  }
+};
+
+struct RenderSkid : System<Transform, TireMarkComponent> {
+  virtual void for_each_with(const Entity &, const Transform &transform,
+                             const TireMarkComponent &tire,
+                             float dt) const override {
+    vec2 *points = new vec2[tire.points.size()];
+    int i = 0;
+    for (auto &mp : tire.points) {
+      points[i++] = (mp.position);
+    }
+    raylib::DrawSplineLinear(points, tire.points.size(), 5.f, raylib::GREEN);
+    delete[] points;
+  }
+};
+
 int main(void) {
   const int screenWidth = 1920;
   const int screenHeight = 1080;
@@ -571,6 +645,7 @@ int main(void) {
     systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
     systems.register_update_system(std::make_unique<ProcessDamage>());
     systems.register_update_system(std::make_unique<ProcessDeath>());
+    systems.register_update_system(std::make_unique<SkidMarks>());
   }
 
   // renders
@@ -580,6 +655,7 @@ int main(void) {
     systems.register_render_system(std::make_unique<RenderFPS>());
     systems.register_render_system(std::make_unique<RenderEntities>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
+    systems.register_render_system(std::make_unique<RenderSkid>());
   }
 
   while (!raylib::WindowShouldClose()) {
