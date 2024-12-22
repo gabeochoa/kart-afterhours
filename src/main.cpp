@@ -58,6 +58,7 @@ using afterhours::input;
 
 auto get_mapping() {
   std::map<InputAction, input::ValidInputs> mapping;
+
   mapping[InputAction::Accel] = {
       raylib::KEY_UP,
       input::GamepadAxisWithDir{
@@ -65,6 +66,7 @@ auto get_mapping() {
           .dir = -1,
       },
   };
+
   mapping[InputAction::Brake] = {
       raylib::KEY_DOWN,
       input::GamepadAxisWithDir{
@@ -117,7 +119,7 @@ struct Transform : BaseComponent {
   vec2 position;
   vec2 velocity;
   vec2 size;
-  float angle = 0;
+  float angle = 0.f;
 
   vec2 pos() const { return position; }
   void update(vec2 &v) { position = v; }
@@ -172,7 +174,7 @@ struct Weapon {
 struct CanShoot : BaseComponent {
   std::map<InputAction, std::unique_ptr<Weapon>> weapons;
 
-  CanShoot() {}
+  CanShoot() = default;
 
   auto &register_weapon(InputAction action, const Weapon::FireFn cb) {
     weapons[action] = std::make_unique<Weapon>(cb);
@@ -196,6 +198,24 @@ struct CanShoot : BaseComponent {
     }
     return false;
   }
+};
+
+struct CanDamage : BaseComponent {
+  EntityID id;
+  int amount;
+
+  CanDamage(EntityID id_in, int amount_in) 
+    : id{id_in}
+    , amount{amount_in}
+    { }
+};
+
+struct HasHealth : BaseComponent {
+  int amount;
+
+  HasHealth(int amount_in) 
+    : amount{amount_in}
+    { }
 };
 
 struct PlayerID : BaseComponent {
@@ -258,6 +278,7 @@ void make_cannonball(Entity &parent, float direction) {
   auto &bullet = EntityHelper::createEntity();
   bullet.addComponent<Transform>(transform.pos(), vec2{10.f, 10.f});
   float rad = transform.as_rad() + ((float)(M_PI / 2.f) * direction);
+  bullet.addComponent<CanDamage>(parent.id, 5);
   bullet.get<Transform>().velocity =
       vec2{std::sin(rad) * 5.f, -std::cos(rad) * 5.f};
 }
@@ -269,6 +290,7 @@ void make_player(input::GamepadID id) {
 
   entity.addComponent<PlayerID>(id);
   entity.addComponent<Transform>(position, vec2{15.f, 25.f});
+  entity.addComponent<HasHealth>(10);
 
   entity.addComponent<CanShoot>()
       .register_weapon(InputAction::ShootLeft,
@@ -301,7 +323,7 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
       vec2 center = transform.center();
       Rectangle body = transform.rect();
 
-      std::cout << transform.angle << std::endl;
+      //std::cout << transform.angle << std::endl;
       float nw = body.width / 2.f;
       float nh = body.height / 2.f;
 
@@ -492,6 +514,38 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
   }
 };
 
+struct ProcessDamage : System<Transform, CanDamage> {
+
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             CanDamage &canDamage, float dt) override 
+  {
+    auto healthy_bois = EQ()
+      .whereHasComponent<HasHealth>()
+      .whereNotID(entity.id)
+      .whereNotID(canDamage.id)
+      .whereOverlaps(transform.rect()).gen();
+    
+    for(Entity& healthy_boi : healthy_bois)
+    {
+      healthy_boi.get<HasHealth>().amount -= canDamage.amount;
+      entity.cleanup = true;
+      break;
+    }
+  }
+};
+
+struct ProcessDeath : System<Transform, HasHealth> {
+
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             HasHealth &hasHealth, float dt) override 
+  {
+    if(hasHealth.amount <= 0){
+      entity.cleanup = true;
+      std::cout << "I DIED OMG --------------------------------------------" << std::endl;
+    }
+  }
+};
+
 int main(void) {
   const int screenWidth = 1920;
   const int screenHeight = 1080;
@@ -529,6 +583,8 @@ int main(void) {
   systems.register_update_system(std::make_unique<Shoot>());
   systems.register_update_system(std::make_unique<Move>());
   systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
+  systems.register_update_system(std::make_unique<ProcessDamage>());
+  systems.register_update_system(std::make_unique<ProcessDeath>());
 
   // renders
   {
