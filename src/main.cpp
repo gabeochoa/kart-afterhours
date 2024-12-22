@@ -636,30 +636,26 @@ struct RenderSkid : System<Transform, TireMarkComponent> {
   virtual void for_each_with(const Entity &, const Transform &,
                              const TireMarkComponent &tire,
                              float) const override {
-    vec2 off = vec2{7.f, 4.f};
 
-    for (size_t i = 1; i < tire.points.size(); i++) {
-      auto mp0 = tire.points[i - 1];
-      auto mp1 = tire.points[i];
-      if (distance_sq(mp0.position, mp1.position) > 100.f) {
-        continue;
+    const auto single_tire = [&](vec2 off) {
+      for (size_t i = 1; i < tire.points.size(); i++) {
+        auto mp0 = tire.points[i - 1];
+        auto mp1 = tire.points[i];
+        if (distance_sq(mp0.position, mp1.position) > 100.f) {
+          continue;
+        }
+        float pct = mp0.time / mp0.lifetime;
+        raylib::DrawSplineSegmentLinear(
+            mp0.position + off, mp1.position + off, 5.f,
+            raylib::Color(20, 20, 20, (unsigned char)(255 * pct)));
       }
-      float pct = mp0.time / mp0.lifetime;
-      raylib::DrawSplineSegmentLinear(
-          mp0.position + off, mp1.position + off, 5.f,
-          raylib::Color(20, 20, 20, (unsigned char)(255 * pct)));
-    }
-    for (size_t i = 1; i < tire.points.size(); i++) {
-      auto mp0 = tire.points[i - 1];
-      auto mp1 = tire.points[i];
-      if (distance_sq(mp0.position, mp1.position) > 100.f) {
-        continue;
-      }
-      float pct = mp0.time / mp0.lifetime;
-      raylib::DrawSplineSegmentLinear(
-          mp0.position - off, mp1.position - off, 5.f,
-          raylib::Color(20, 20, 20, (unsigned char)(255 * pct)));
-    }
+    };
+
+    float x = 7.f;
+    float y = 4.f;
+    // i tried 4 tires but it was kinda too crowded
+    single_tire(vec2{x, y});
+    single_tire(vec2{-x, -y});
   }
 };
 
