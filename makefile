@@ -31,7 +31,7 @@ CXX := g++-14 -fmax-errors=10 -std=c++2a
 ifeq ($(OS),Windows_NT)
 # RAYLIB_FLAGS := -Ivendor/raylib/
 # RAYLIB_LIB := -L/vendor/raylib/ -lraylib
-RAYLIB_FLAGS := 
+RAYLIB_FLAGS := -IF:/RayLib/include
 RAYLIB_LIB := F:/RayLib/lib/raylib.dll
 CXX := g++
 else
