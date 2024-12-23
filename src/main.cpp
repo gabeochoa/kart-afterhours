@@ -320,6 +320,14 @@ struct HasHealth : BaseComponent {
   int max_amount{0};
   int amount{0};
 
+  float iframes = 0.5f;
+  float iframesReset = 0.5f;
+
+  void pass_time(float dt) {
+    if (iframes > 0)
+      iframes -= dt;
+  }
+
   HasHealth(int max_amount_in)
       : max_amount{max_amount_in}, amount{max_amount_in} {}
 
@@ -440,7 +448,7 @@ void make_player(input::GamepadID id) {
   vec2 position = {.x = id == 0 ? 150.f : 1100.f, .y = 720.f / 2.f};
 
   entity.addComponent<PlayerID>(id);
-  entity.addComponent<HasMultipleLives>(1);
+  entity.addComponent<HasMultipleLives>(3);
   entity.addComponent<Transform>(position, vec2{15.f, 25.f});
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(15);
@@ -557,10 +565,12 @@ struct UpdateColorBasedOnEntityID : System<HasEntityIDBasedColor> {
   }
 };
 
-struct RenderHealth : System<Transform, HasHealth> {
+struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
 
   virtual void for_each_with(const Entity &, const Transform &transform,
-                             const HasHealth &hasHealth, float) const override {
+                             const HasHealth &hasHealth,
+                             const HasMultipleLives &hasMultipleLives,
+                             float) const override {
     // Calculate the percentage of the height by the percentage of the health
     // max against its current value Scaling factors for bar length and height
     const float scale_x = 2.f;
@@ -568,6 +578,8 @@ struct RenderHealth : System<Transform, HasHealth> {
 
     float health_as_percent = static_cast<float>(hasHealth.amount) /
                               static_cast<float>(hasHealth.max_amount);
+
+    vec2 rotation_origin{0, 0};
 
     // Render the red background bar
     raylib::DrawRectanglePro(
@@ -579,8 +591,7 @@ struct RenderHealth : System<Transform, HasHealth> {
             transform.size.x * scale_x,        // Adjust length
             (transform.size.y / 4.f) * scale_y // Adjust height
         },
-        vec2{0.0f, 0.0f}, // No rotation
-        0.0f, raylib::RED);
+        rotation_origin, 0.0f, raylib::RED);
 
     // Render the green health bar
     raylib::DrawRectanglePro(
@@ -593,8 +604,17 @@ struct RenderHealth : System<Transform, HasHealth> {
                 health_as_percent, // Adjust length based on health percentage
             (transform.size.y / 4.f) * scale_y // Adjust height
         },
-        vec2{0.0f, 0.0f}, // No rotation
-        0.0f, raylib::GREEN);
+        rotation_origin, 0.0f, raylib::GREEN);
+
+    float rad = 5.f;
+    vec2 off{rad * 2 + 2, 0.f};
+    for (int i = 0; i < hasMultipleLives.num_lives_remaining; i++) {
+      raylib::DrawCircleV(
+          transform.pos() -
+              vec2{transform.size.x / 2.f, transform.size.y + 15.f + rad} +
+              (off * i),
+          rad, raylib::GREEN);
+    }
   }
 };
 
@@ -727,7 +747,12 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
 struct ProcessDamage : System<Transform, HasHealth> {
 
   virtual void for_each_with(Entity &entity, Transform &transform,
-                             HasHealth &hasHealth, float) override {
+                             HasHealth &hasHealth, float dt) override {
+
+    hasHealth.pass_time(dt);
+    if (hasHealth.iframes > 0.f) {
+      return;
+    }
 
     auto can_damage = EQ().whereHasComponent<CanDamage>()
                           .whereNotID(entity.id)
@@ -739,7 +764,7 @@ struct ProcessDamage : System<Transform, HasHealth> {
       if (cd.id == entity.id)
         continue;
       hasHealth.amount -= cd.amount;
-
+      hasHealth.iframes = hasHealth.iframesReset;
       damager.cleanup = true;
     }
   }
@@ -749,12 +774,22 @@ struct ProcessDeath : System<Transform, HasHealth> {
 
   virtual void for_each_with(Entity &entity, Transform &, HasHealth &hasHealth,
                              float) override {
-    if (hasHealth.amount <= 0) {
-      if (entity.has<HasMultipleLives>()) {
-        entity.get<HasMultipleLives>().num_lives_remaining -= 1;
-      }
-      entity.cleanup = true;
+    if (hasHealth.amount > 0) {
+      return;
     }
+
+    if (entity.has<HasMultipleLives>()) {
+      entity.get<HasMultipleLives>().num_lives_remaining -= 1;
+      if (entity.get<HasMultipleLives>().num_lives_remaining) {
+        hasHealth.amount = hasHealth.max_amount;
+        std::cout << "stil have lives rem"
+                  << entity.get<HasMultipleLives>().num_lives_remaining
+                  << std::endl;
+        return;
+      }
+    }
+
+    entity.cleanup = true;
   }
 };
 
@@ -1005,7 +1040,7 @@ int main(void) {
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     systems.register_render_system(std::make_unique<RenderSkid>());
     systems.register_render_system(std::make_unique<RenderEntities>());
-    systems.register_render_system(std::make_unique<RenderHealth>());
+    systems.register_render_system(std::make_unique<RenderHealthAndLives>());
     systems.register_render_system(std::make_unique<RenderSprites>());
     systems.register_render_system(std::make_unique<RenderAnimation>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
