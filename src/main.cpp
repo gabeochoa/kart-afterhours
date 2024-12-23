@@ -340,6 +340,21 @@ struct PlayerID : BaseComponent {
   PlayerID(input::GamepadID i) : id(i) {}
 };
 
+raylib::Color get_color_for_player(size_t id) {
+  constexpr std::array<raylib::Color, input::MAX_GAMEPAD_ID> colors = {{
+      raylib::BLUE,
+      raylib::ORANGE,
+      raylib::PURPLE,
+      raylib::SKYBLUE,
+      raylib::DARKGREEN,
+      raylib::BEIGE,
+      raylib::MAROON,
+      raylib::GOLD,
+  }};
+  size_t index = id % colors.size();
+  return colors[index];
+}
+
 struct HasMultipleLives : BaseComponent {
   int num_lives_remaining;
   HasMultipleLives(int num_lives) : num_lives_remaining(num_lives) {}
@@ -451,10 +466,8 @@ void make_player(input::GamepadID id) {
   entity.addComponent<HasHealth>(15);
   entity.addComponent<TireMarkComponent>();
 
-  auto tint = raylib::BLUE;
-  if (id != 0) {
-    tint = raylib::ORANGE;
-  }
+  auto tint = get_color_for_player((size_t)id);
+
   entity.addComponent<HasColor>(tint);
 
   entity.addComponent<HasSprite>(idx_to_sprite_frame(0, 1), 1.f, tint);
