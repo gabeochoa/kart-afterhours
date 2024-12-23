@@ -123,6 +123,20 @@ struct HasColor : BaseComponent {
   HasColor(raylib::Color col) : color(col) {}
 };
 
+struct HasEntityIDBasedColor : BaseComponent {
+  EntityID id{-1};
+  raylib::Color entity_based_color{raylib::RAYWHITE};
+  raylib::Color non_entity_based_color{raylib::RAYWHITE};
+  HasEntityIDBasedColor(
+    EntityID id_in,
+    raylib::Color entity_based_color_in,
+    raylib::Color non_entity_based_color_in)
+    : id{id_in} 
+    , entity_based_color(entity_based_color_in)
+    , non_entity_based_color(non_entity_based_color_in)
+     {}
+};
+
 struct HasTexture : BaseComponent {
   raylib::Texture2D texture;
   HasTexture(const raylib::Texture2D tex) : texture(tex) {}
@@ -325,6 +339,16 @@ struct PlayerID : BaseComponent {
   PlayerID(input::GamepadID i) : id(i) {}
 };
 
+struct HasMultipleLives : BaseComponent {
+  int current_life;
+  HasMultipleLives(int current_life_in) : current_life{current_life_in} {}
+};
+
+/// @brief Used to make a component whose transform
+/// can move during the game loop to wrap around the screen.
+/// e.g. if you go passed the width of the screen (right-side),
+/// you'll wrap around the the left-side.
+/// This applies vertically as well.
 struct CanWrapAround : BaseComponent {
   CanWrapAround() = default;
 };
@@ -395,16 +419,22 @@ void make_poof_anim(Entity &parent, float direction) {
   poof.addComponent<HasAnimation>(anim);
 }
 
-void make_cannonball(Entity &parent, float direction) {
+void make_bullet(Entity &parent, float direction) {
   Transform &transform = parent.get<Transform>();
 
   auto &bullet = EntityHelper::createEntity();
   bullet.addComponent<Transform>(transform.pos() + vec2{0, 10.f},
                                  vec2{10.f, 10.f});
-  float rad = transform.as_rad() + ((float)(M_PI / 2.f) * direction);
+  
   bullet.addComponent<CanDamage>(parent.id, 5);
+  
   bullet.addComponent<CanWrapAround>();
-  bullet.addComponent<HasColor>(parent.id == 0 ? raylib::BLUE : raylib::GREEN);
+   
+  auto bullet_color = parent.get<PlayerID>().id == 0 ? raylib::BLUE : raylib::GREEN;
+  bullet.addComponent<HasColor>(bullet_color);
+  bullet.addComponent<HasEntityIDBasedColor>(parent.id, bullet_color, raylib::RED);
+
+  float rad = transform.as_rad() + ((float)(M_PI / 2.f) * direction);
   bullet.get<Transform>().velocity =
       vec2{std::sin(rad) * 5.f, -std::cos(rad) * 5.f};
 }
@@ -415,6 +445,7 @@ void make_player(input::GamepadID id) {
   vec2 position = {.x = id == 0 ? 150.f : 1100.f, .y = 720.f / 2.f};
 
   entity.addComponent<PlayerID>(id);
+  entity.addComponent<HasMultipleLives>(1);
   entity.addComponent<Transform>(position, vec2{15.f, 25.f});
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(15);
@@ -431,7 +462,7 @@ void make_player(input::GamepadID id) {
       .register_weapon(InputAction::ShootLeft,
                        [](Entity &parent, Weapon &wp) {
                          make_poof_anim(parent, -1);
-                         make_cannonball(parent, -1);
+                         make_bullet(parent, -1);
 
                          vec2 dir = parent.get<Transform>().velocity;
                          // opposite of shot direction
@@ -441,7 +472,7 @@ void make_player(input::GamepadID id) {
                        })
       .register_weapon(InputAction::ShootRight, [](Entity &parent, Weapon &wp) {
         make_poof_anim(parent, 1);
-        make_cannonball(parent, 1);
+        make_bullet(parent, 1);
 
         vec2 dir = parent.get<Transform>().velocity;
         // opposite of shot direction
@@ -499,6 +530,10 @@ struct RenderEntities : System<Transform> {
     if (entity.has<HasAnimation>())
       return;
 
+    auto entitiy_color = entity.has<HasColor>() 
+      ? entity.get<HasColor>().color
+      : raylib::RAYWHITE;
+
     raylib::DrawRectanglePro(
         Rectangle{
             transform.center().x,
@@ -509,8 +544,25 @@ struct RenderEntities : System<Transform> {
         vec2{transform.size.x / 2.f,
              transform.size.y / 2.f}, // transform.center(),
         transform.angle,
-        entity.has<HasColor>() ? entity.get<HasColor>().color
-                               : raylib::RAYWHITE);
+        entitiy_color);
+  }
+};
+
+struct UpdateColorBasedOnEntityID : System<HasColor, HasEntityIDBasedColor> {
+
+  virtual void for_each_with(Entity &,
+                             HasColor &hasColor,
+                             HasEntityIDBasedColor &hasEntityIDBasedColor,
+                             float) override
+  {
+    const auto parent_is_alive =
+      EQ().whereID(hasEntityIDBasedColor.id).has_values();
+
+    hasColor.color = hasEntityIDBasedColor.entity_based_color;
+    
+    if (!parent_is_alive) {
+      hasColor.color = hasEntityIDBasedColor.non_entity_based_color;
+    }
   }
 };
 
@@ -707,6 +759,9 @@ struct ProcessDeath : System<Transform, HasHealth> {
   virtual void for_each_with(Entity &entity, Transform &, HasHealth &hasHealth,
                              float) override {
     if (hasHealth.amount <= 0) {
+      if (entity.has<HasMultipleLives>()) {
+        entity.get<HasMultipleLives>().current_life += 1;
+      }
       entity.cleanup = true;
     }
   }
@@ -949,6 +1004,7 @@ int main(void) {
     systems.register_update_system(std::make_unique<WrapAroundTransform>());
     systems.register_update_system(
         std::make_unique<AnimationUpdateCurrentFrame>());
+    systems.register_update_system(std::make_unique<UpdateColorBasedOnEntityID>());
   }
 
   // renders
