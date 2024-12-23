@@ -489,11 +489,7 @@ void make_player(input::GamepadID id) {
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(15);
   entity.addComponent<TireMarkComponent>();
-
-  auto tint = get_color_for_player((size_t)id);
-
-  entity.addComponent<HasColor>(tint);
-
+  entity.addComponent<HasColor>(get_color_for_player((size_t)id));
   entity.addComponent<HasSprite>(idx_to_sprite_frame(0, 1), 1.f, tint);
 
   entity.addComponent<CanShoot>()
