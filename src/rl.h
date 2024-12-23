@@ -142,22 +142,6 @@ void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
   }
 #endif
 }
-#define CLAY_IMPLEMENTATION
-#include "clay.h"
-#include "claylib.h"
-
-void clay_init(float screenWidth, float screenHeight) {
-  // Note: malloc is only used here as an example, any allocator that provides
-  // a pointer to addressable memory of at least totalMemorySize will work
-  uint64_t totalMemorySize = Clay_MinMemorySize();
-  Clay_Arena arena = Clay_CreateArenaWithCapacityAndMemory(
-      totalMemorySize, malloc(totalMemorySize));
-
-  Clay_Initialize(arena, (Clay_Dimensions){screenWidth, screenHeight});
-
-  // Tell clay how to measure text
-  Clay_SetMeasureTextFunction(Raylib_MeasureText);
-}
 
 } // namespace raylib
 
