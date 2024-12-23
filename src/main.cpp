@@ -118,6 +118,11 @@ auto get_mapping() {
   return mapping;
 }
 
+struct HasColor : BaseComponent {
+  raylib::Color color = raylib::WHITE;
+  HasColor(raylib::Color col) : color(col) {}
+};
+
 struct HasTexture : BaseComponent {
   raylib::Texture2D texture;
   HasTexture(const raylib::Texture2D tex) : texture(tex) {}
@@ -398,7 +403,11 @@ void make_cannonball(Entity &parent, float direction) {
                                  vec2{10.f, 10.f});
   float rad = transform.as_rad() + ((float)(M_PI / 2.f) * direction);
   bullet.addComponent<CanDamage>(parent.id, 5);
+<<<<<<< HEAD
   bullet.addComponent<CanWrapAround>();
+=======
+  bullet.addComponent<HasColor>(parent.id == 0 ? raylib::BLUE : raylib::GREEN);
+>>>>>>> 2659658 (bullets have color)
   bullet.get<Transform>().velocity =
       vec2{std::sin(rad) * 5.f, -std::cos(rad) * 5.f};
 }
@@ -490,6 +499,8 @@ struct RenderEntities : System<Transform> {
                              float) const override {
     if (entity.has<HasTexture>())
       return;
+    if (entity.has<HasAnimation>())
+      return;
 
     raylib::DrawRectanglePro(
         Rectangle{
@@ -500,7 +511,9 @@ struct RenderEntities : System<Transform> {
         },
         vec2{transform.size.x / 2.f,
              transform.size.y / 2.f}, // transform.center(),
-        transform.angle, raylib::RAYWHITE);
+        transform.angle,
+        entity.has<HasColor>() ? entity.get<HasColor>().color
+                               : raylib::RAYWHITE);
   }
 };
 
