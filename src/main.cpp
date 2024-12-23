@@ -333,8 +333,8 @@ struct PlayerID : BaseComponent {
 };
 
 struct HasMultipleLives : BaseComponent {
-  int current_life;
-  HasMultipleLives(int current_life_in) : current_life{current_life_in} {}
+  int num_lives_remaining;
+  HasMultipleLives(int num_lives) : num_lives_remaining(num_lives) {}
 };
 
 /// @brief Used to make a component whose transform
@@ -751,7 +751,7 @@ struct ProcessDeath : System<Transform, HasHealth> {
                              float) override {
     if (hasHealth.amount <= 0) {
       if (entity.has<HasMultipleLives>()) {
-        entity.get<HasMultipleLives>().current_life += 1;
+        entity.get<HasMultipleLives>().num_lives_remaining -= 1;
       }
       entity.cleanup = true;
     }
