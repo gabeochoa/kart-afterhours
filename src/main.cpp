@@ -266,14 +266,25 @@ struct CanDamage : BaseComponent {
 };
 
 struct HasHealth : BaseComponent {
-  int amount;
+  int max_amount{0};
+  int amount{0};
 
-  HasHealth(int amount_in) : amount{amount_in} {}
+  HasHealth(int max_amount_in) 
+  : max_amount{max_amount_in},
+    amount{max_amount_in} {}
+
+  HasHealth(int max_amount_in, int amount_in) 
+  : max_amount{max_amount_in},
+    amount{amount_in} {}
 };
 
 struct PlayerID : BaseComponent {
   input::GamepadID id;
   PlayerID(input::GamepadID i) : id(i) {}
+};
+
+struct CanWrapAround : BaseComponent {
+  CanWrapAround() = default;
 };
 
 struct EQ : public EntityQuery<EQ> {
@@ -331,6 +342,7 @@ void make_cannonball(Entity &parent, float direction) {
   bullet.addComponent<Transform>(transform.pos(), vec2{10.f, 10.f});
   float rad = transform.as_rad() + ((float)(M_PI / 2.f) * direction);
   bullet.addComponent<CanDamage>(parent.id, 5);
+  bullet.addComponent<CanWrapAround>();
   bullet.get<Transform>().velocity =
       vec2{std::sin(rad) * 5.f, -std::cos(rad) * 5.f};
 }
@@ -342,8 +354,10 @@ void make_player(input::GamepadID id) {
 
   entity.addComponent<PlayerID>(id);
   entity.addComponent<Transform>(position, vec2{15.f, 25.f});
-  entity.addComponent<HasHealth>(10);
+  entity.addComponent<CanWrapAround>();
+  entity.addComponent<HasHealth>(15);
   entity.addComponent<TireMarkComponent>();
+  
   auto tint = raylib::RAYWHITE;
   if (id != 0) {
     tint = raylib::ORANGE;
@@ -429,6 +443,45 @@ struct RenderEntities : System<Transform> {
         vec2{transform.size.x / 2.f,
              transform.size.y / 2.f}, // transform.center(),
         transform.angle, raylib::RAYWHITE);
+  }
+};
+
+struct RenderHealth : System<Transform, HasHealth> {
+
+  virtual void for_each_with(const Entity &, const Transform &transform,  const HasHealth &hasHealth,
+                             float) const override {
+    // Calculate the percentage of the height by the percentage of the health max
+    // against its current value
+    // Scaling factors for bar length and height
+    const float scale_x = 2.f;
+    const float scale_y = 1.25f;
+
+    float health_as_percent = static_cast<float>(hasHealth.amount) / static_cast<float>(hasHealth.max_amount);
+
+    // Render the red background bar
+    raylib::DrawRectanglePro(
+        Rectangle{
+            transform.pos().x - ((transform.size.x * scale_x) / 2.f) + 5.f,  // Center with scaling
+            transform.pos().y - (transform.size.y + 10.0f),  // Slightly above the entity
+            transform.size.x * scale_x,  // Adjust length
+            (transform.size.y / 4.f) * scale_y  // Adjust height
+        },
+        vec2{0.0f, 0.0f},  // No rotation
+        0.0f,
+        raylib::RED);
+
+    // Render the green health bar
+    raylib::DrawRectanglePro(
+        Rectangle{
+            transform.pos().x - ((transform.size.x * scale_x) / 2.f) + 5.f,  // Start at the same position as red bar
+            transform.pos().y - (transform.size.y + 10.0f),  // Same vertical position as red bar
+            (transform.size.x * scale_x) * health_as_percent,  // Adjust length based on health percentage
+            (transform.size.y / 4.f) * scale_y  // Adjust height
+        },
+        vec2{0.0f, 0.0f},  // No rotation
+        0.0f,
+        raylib::GREEN);
+
   }
 };
 
@@ -589,6 +642,37 @@ struct ProcessDeath : System<Transform, HasHealth> {
   }
 };
 
+struct WrapAroundTransform : System<Transform, CanWrapAround> {
+
+  window_manager::Resolution currrentResolution;
+
+  virtual void once(float) {
+    currrentResolution = EQ().whereHasComponent<afterhours::window_manager::ProvidesCurrentResolution>()
+                .gen_first_enforce()
+                .get<afterhours::window_manager::ProvidesCurrentResolution>()
+                .current_resolution;
+  }
+
+  virtual void for_each_with(Entity &, Transform &transform,
+                             CanWrapAround &, float) override {
+    if(transform.rect().x > currrentResolution.width){
+      transform.position.x = 0;
+    }
+
+    if(transform.rect().x < 0){
+      transform.position.x = currrentResolution.width;
+    }
+
+    if(transform.rect().y < 0){
+      transform.position.y = currrentResolution.height;
+    }
+
+    if(transform.rect().y > currrentResolution.height){
+      transform.position.y = 0;
+    }
+  }
+};
+
 struct SkidMarks : System<Transform, TireMarkComponent> {
   virtual void for_each_with(Entity &, Transform &transform,
                              TireMarkComponent &tire, float dt) override {
@@ -730,6 +814,7 @@ int main(void) {
     systems.register_update_system(std::make_unique<ProcessDamage>());
     systems.register_update_system(std::make_unique<ProcessDeath>());
     systems.register_update_system(std::make_unique<SkidMarks>());
+    systems.register_update_system(std::make_unique<WrapAroundTransform>());
   }
 
   // renders
@@ -738,6 +823,7 @@ int main(void) {
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     systems.register_render_system(std::make_unique<RenderSkid>());
     systems.register_render_system(std::make_unique<RenderEntities>());
+    systems.register_render_system(std::make_unique<RenderHealth>());
     systems.register_render_system(std::make_unique<RenderSprites>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
     //
