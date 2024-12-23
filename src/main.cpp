@@ -256,7 +256,7 @@ struct Weapon {
   float cooldownReset;
   using FireFn = std::function<void(Entity &, Weapon &)>;
   FireFn on_shoot;
-  float knockback_amt = 1.f;
+  float knockback_amt = 0.25f;
 
   Weapon(const FireFn &cb)
       : cooldown(0.f), cooldownReset(0.05f), on_shoot(cb) {}
@@ -431,11 +431,8 @@ void make_bullet(Entity &parent, float direction) {
 
   bullet.addComponent<CanWrapAround>();
 
-  auto bullet_color =
-      parent.get<PlayerID>().id == 0 ? raylib::BLUE : raylib::GREEN;
-  bullet.addComponent<HasColor>(bullet_color);
-  bullet.addComponent<HasEntityIDBasedColor>(parent.id, bullet_color,
-                                             raylib::RED);
+  bullet.addComponent<HasEntityIDBasedColor>(
+      parent.id, parent.get<HasColor>().color, raylib::RED);
 
   float rad = transform.as_rad() + ((float)(M_PI / 2.f) * direction);
   bullet.get<Transform>().velocity =
@@ -454,10 +451,11 @@ void make_player(input::GamepadID id) {
   entity.addComponent<HasHealth>(15);
   entity.addComponent<TireMarkComponent>();
 
-  auto tint = raylib::RAYWHITE;
+  auto tint = raylib::BLUE;
   if (id != 0) {
     tint = raylib::ORANGE;
   }
+  entity.addComponent<HasColor>(tint);
 
   entity.addComponent<HasSprite>(idx_to_sprite_frame(0, 1), 1.f, tint);
 
@@ -567,7 +565,7 @@ struct UpdateColorBasedOnEntityID : System<HasEntityIDBasedColor> {
 
 struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
 
-  virtual void for_each_with(const Entity &, const Transform &transform,
+  virtual void for_each_with(const Entity &entity, const Transform &transform,
                              const HasHealth &hasHealth,
                              const HasMultipleLives &hasMultipleLives,
                              float) const override {
@@ -575,6 +573,10 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
     // max against its current value Scaling factors for bar length and height
     const float scale_x = 2.f;
     const float scale_y = 1.25f;
+
+    raylib::Color color = entity.has_child_of<HasColor>()
+                              ? entity.get_with_child<HasColor>().color
+                              : raylib::GREEN;
 
     float health_as_percent = static_cast<float>(hasHealth.amount) /
                               static_cast<float>(hasHealth.max_amount);
@@ -604,7 +606,7 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
                 health_as_percent, // Adjust length based on health percentage
             (transform.size.y / 4.f) * scale_y // Adjust height
         },
-        rotation_origin, 0.0f, raylib::GREEN);
+        rotation_origin, 0.0f, color);
 
     float rad = 5.f;
     vec2 off{rad * 2 + 2, 0.f};
@@ -612,8 +614,8 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
       raylib::DrawCircleV(
           transform.pos() -
               vec2{transform.size.x / 2.f, transform.size.y + 15.f + rad} +
-              (off * i),
-          rad, raylib::GREEN);
+              (off * (float)i),
+          rad, color);
     }
   }
 };
