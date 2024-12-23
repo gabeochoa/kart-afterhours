@@ -197,6 +197,7 @@ struct Transform : BaseComponent {
 
   float angle{0.f};
   float angle_prev{0.f};
+  float speed_dot_angle{0.f};
 
   vec2 pos() const { return position; }
   void update(vec2 &v) { position = v; }
@@ -658,11 +659,8 @@ struct VelFromInput : System<PlayerID, Transform> {
 
   float max_speed = 5.f;
 
-  virtual void for_each_with(Entity &, PlayerID &playerID, Transform &transform,
-                             float dt) override {
-
-    input::PossibleInputCollector<InputAction> inpc =
-        input::get_input_collector<InputAction>();
+  virtual void for_each_with(Entity &, PlayerID &playerID, Transform &transform, float dt) override {
+    input::PossibleInputCollector<InputAction> inpc = input::get_input_collector<InputAction>();
     if (!inpc.has_value()) {
       return;
     }
@@ -670,15 +668,29 @@ struct VelFromInput : System<PlayerID, Transform> {
     transform.accel = 0.f;
     float steer = 0.f;
 
+    // Adjust for the "front" of the car
+    bool isReversing = transform.speed_dot_angle < 0;
+
     for (auto &actions_done : inpc.inputs()) {
       if (actions_done.id != playerID.id)
         continue;
+
       switch (actions_done.action) {
       case InputAction::Accel:
-        transform.accel = 2.0f;
+        if (isReversing) {
+          transform.accel = -1.f; // Reverse acceleration is slower
+        } else {
+          transform.accel = 2.f;   // Normal acceleration
+          max_speed = 5.f;         // Normal max speed
+        }
         break;
       case InputAction::Brake:
-        transform.accel = -0.5f;
+        if (isReversing) {
+          transform.accel = -5.f;  // Faster reverse acceleration
+          max_speed = 10.f;        // Higher reverse max speed
+        } else {
+          transform.accel = -1.f;  // Normal brake
+        }
         break;
       case InputAction::Left:
         steer = -1.f * actions_done.amount_pressed;
@@ -695,8 +707,7 @@ struct VelFromInput : System<PlayerID, Transform> {
     float maxRadius = 300.0f;
     float rad = std::lerp(minRadius, maxRadius, transform.speed() / max_speed);
 
-    float mvt = std::max(
-        -max_speed, std::min(max_speed, transform.speed() + transform.accel));
+    float mvt = std::max(-max_speed, std::min(max_speed, transform.speed() + transform.accel));
 
     transform.angle += steer * dt * rad;
 
@@ -704,6 +715,14 @@ struct VelFromInput : System<PlayerID, Transform> {
         std::sin(transform.as_rad()) * mvt * dt,
         -std::cos(transform.as_rad()) * mvt * dt,
     };
+
+    // Update speed_dot_angle based on new velocity direction and magnitude
+    transform.speed_dot_angle = transform.velocity.x * std::sin(transform.as_rad()) + transform.velocity.y * -std::cos(transform.as_rad());
+
+    // Flip speed_dot_angle when reversing to keep consistent front-facing behavior
+    if (isReversing) {
+      transform.speed_dot_angle = -transform.speed_dot_angle;
+    }
   }
 };
 
