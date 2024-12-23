@@ -127,8 +127,38 @@ struct HasSprite : BaseComponent {
   Rectangle frame;
   float scale;
   raylib::Color colorTint;
-  HasSprite(Rectangle frm, float scl, raylib::Color colorTintIn) : frame{frm}, scale{scl}, colorTint{colorTintIn}
-    { }
+  HasSprite(Rectangle frm, float scl, raylib::Color colorTintIn)
+      : frame{frm}, scale{scl}, colorTint{colorTintIn} {}
+};
+
+struct HasAnimation : BaseComponent {
+  vec2 start_position;
+  vec2 cur_frame_position;
+  int total_frames = 10;
+  int cur_frame = 0;
+  float rotation = 0;
+  float frame_dur = 1.f / 20.f;
+  float frame_time = 1.f / 20.f;
+  bool once = false;
+  float scale = 1.f;
+
+  HasAnimation(vec2 start_position_, int total_frames_, float frame_dur_,
+               bool once_, float scale_)
+      : start_position(start_position_), cur_frame_position(start_position_),
+        total_frames(total_frames_), frame_dur(frame_dur_),
+        frame_time(frame_dur_), once(once_), scale(scale_) {}
+
+  HasAnimation(const HasAnimation &other) {
+    start_position = other.start_position;
+    cur_frame_position = other.cur_frame_position;
+    total_frames = other.total_frames;
+    cur_frame = other.cur_frame;
+    rotation = other.rotation;
+    frame_dur = other.frame_dur;
+    frame_time = other.frame_time;
+    once = other.once;
+    scale = other.scale;
+  }
 };
 
 Rectangle idx_to_sprite_frame(int i, int j) {
@@ -136,6 +166,15 @@ Rectangle idx_to_sprite_frame(int i, int j) {
                    .y = (float)j * 32.f,
                    .width = 32.f,
                    .height = 32.f};
+}
+
+std::pair<int, int> idx_to_next_sprite_location(int i, int j) {
+  i++;
+  if (i == 32) {
+    i = 0;
+    j++;
+  }
+  return {i, j};
 }
 
 struct Transform : BaseComponent {
@@ -269,13 +308,11 @@ struct HasHealth : BaseComponent {
   int max_amount{0};
   int amount{0};
 
-  HasHealth(int max_amount_in) 
-  : max_amount{max_amount_in},
-    amount{max_amount_in} {}
+  HasHealth(int max_amount_in)
+      : max_amount{max_amount_in}, amount{max_amount_in} {}
 
-  HasHealth(int max_amount_in, int amount_in) 
-  : max_amount{max_amount_in},
-    amount{amount_in} {}
+  HasHealth(int max_amount_in, int amount_in)
+      : max_amount{max_amount_in}, amount{amount_in} {}
 };
 
 struct PlayerID : BaseComponent {
@@ -335,11 +372,30 @@ struct EQ : public EntityQuery<EQ> {
   EQ &whereOverlaps(const Rectangle r) { return add_mod(new WhereOverlaps(r)); }
 };
 
+void make_poof_anim(Entity &parent, float direction) {
+  Transform &transform = parent.get<Transform>();
+
+  auto &poof = EntityHelper::createEntity();
+  poof.addComponent<Transform>(transform.pos() + vec2{direction * 20.f, 10.f},
+                               vec2{10.f, 10.f})
+      .angle = transform.angle;
+  HasAnimation anim(vec2{0, 0}, // start_position
+                    14,         // total_frames
+                    1.f / 20.f, // frame_dur
+                    true,       // once
+                    1.f         // scale
+  );
+  anim.cur_frame = 0;
+  anim.rotation = (direction > 0 ? 90 : -90);
+  poof.addComponent<HasAnimation>(anim);
+}
+
 void make_cannonball(Entity &parent, float direction) {
   Transform &transform = parent.get<Transform>();
 
   auto &bullet = EntityHelper::createEntity();
-  bullet.addComponent<Transform>(transform.pos(), vec2{10.f, 10.f});
+  bullet.addComponent<Transform>(transform.pos() + vec2{0, 10.f},
+                                 vec2{10.f, 10.f});
   float rad = transform.as_rad() + ((float)(M_PI / 2.f) * direction);
   bullet.addComponent<CanDamage>(parent.id, 5);
   bullet.addComponent<CanWrapAround>();
@@ -357,17 +413,18 @@ void make_player(input::GamepadID id) {
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(15);
   entity.addComponent<TireMarkComponent>();
-  
+
   auto tint = raylib::RAYWHITE;
   if (id != 0) {
     tint = raylib::ORANGE;
   }
-  
+
   entity.addComponent<HasSprite>(idx_to_sprite_frame(0, 1), 1.f, tint);
 
   entity.addComponent<CanShoot>()
       .register_weapon(InputAction::ShootLeft,
                        [](Entity &parent, Weapon &wp) {
+                         make_poof_anim(parent, -1);
                          make_cannonball(parent, -1);
 
                          vec2 dir = parent.get<Transform>().velocity;
@@ -377,6 +434,7 @@ void make_player(input::GamepadID id) {
                              dir * wp.knockback_amt;
                        })
       .register_weapon(InputAction::ShootRight, [](Entity &parent, Weapon &wp) {
+        make_poof_anim(parent, 1);
         make_cannonball(parent, 1);
 
         vec2 dir = parent.get<Transform>().velocity;
@@ -448,40 +506,42 @@ struct RenderEntities : System<Transform> {
 
 struct RenderHealth : System<Transform, HasHealth> {
 
-  virtual void for_each_with(const Entity &, const Transform &transform,  const HasHealth &hasHealth,
-                             float) const override {
-    // Calculate the percentage of the height by the percentage of the health max
-    // against its current value
-    // Scaling factors for bar length and height
+  virtual void for_each_with(const Entity &, const Transform &transform,
+                             const HasHealth &hasHealth, float) const override {
+    // Calculate the percentage of the height by the percentage of the health
+    // max against its current value Scaling factors for bar length and height
     const float scale_x = 2.f;
     const float scale_y = 1.25f;
 
-    float health_as_percent = static_cast<float>(hasHealth.amount) / static_cast<float>(hasHealth.max_amount);
+    float health_as_percent = static_cast<float>(hasHealth.amount) /
+                              static_cast<float>(hasHealth.max_amount);
 
     // Render the red background bar
     raylib::DrawRectanglePro(
         Rectangle{
-            transform.pos().x - ((transform.size.x * scale_x) / 2.f) + 5.f,  // Center with scaling
-            transform.pos().y - (transform.size.y + 10.0f),  // Slightly above the entity
-            transform.size.x * scale_x,  // Adjust length
-            (transform.size.y / 4.f) * scale_y  // Adjust height
+            transform.pos().x - ((transform.size.x * scale_x) / 2.f) +
+                5.f, // Center with scaling
+            transform.pos().y -
+                (transform.size.y + 10.0f),    // Slightly above the entity
+            transform.size.x * scale_x,        // Adjust length
+            (transform.size.y / 4.f) * scale_y // Adjust height
         },
-        vec2{0.0f, 0.0f},  // No rotation
-        0.0f,
-        raylib::RED);
+        vec2{0.0f, 0.0f}, // No rotation
+        0.0f, raylib::RED);
 
     // Render the green health bar
     raylib::DrawRectanglePro(
         Rectangle{
-            transform.pos().x - ((transform.size.x * scale_x) / 2.f) + 5.f,  // Start at the same position as red bar
-            transform.pos().y - (transform.size.y + 10.0f),  // Same vertical position as red bar
-            (transform.size.x * scale_x) * health_as_percent,  // Adjust length based on health percentage
-            (transform.size.y / 4.f) * scale_y  // Adjust height
+            transform.pos().x - ((transform.size.x * scale_x) / 2.f) +
+                5.f, // Start at the same position as red bar
+            transform.pos().y -
+                (transform.size.y + 10.0f), // Same vertical position as red bar
+            (transform.size.x * scale_x) *
+                health_as_percent, // Adjust length based on health percentage
+            (transform.size.y / 4.f) * scale_y // Adjust height
         },
-        vec2{0.0f, 0.0f},  // No rotation
-        0.0f,
-        raylib::GREEN);
-
+        vec2{0.0f, 0.0f}, // No rotation
+        0.0f, raylib::GREEN);
   }
 };
 
@@ -647,27 +707,29 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
   window_manager::Resolution currrentResolution;
 
   virtual void once(float) {
-    currrentResolution = EQ().whereHasComponent<afterhours::window_manager::ProvidesCurrentResolution>()
-                .gen_first_enforce()
-                .get<afterhours::window_manager::ProvidesCurrentResolution>()
-                .current_resolution;
+    currrentResolution =
+        EQ().whereHasComponent<
+                afterhours::window_manager::ProvidesCurrentResolution>()
+            .gen_first_enforce()
+            .get<afterhours::window_manager::ProvidesCurrentResolution>()
+            .current_resolution;
   }
 
-  virtual void for_each_with(Entity &, Transform &transform,
-                             CanWrapAround &, float) override {
-    if(transform.rect().x > currrentResolution.width){
+  virtual void for_each_with(Entity &, Transform &transform, CanWrapAround &,
+                             float) override {
+    if (transform.rect().x > currrentResolution.width) {
       transform.position.x = 0;
     }
 
-    if(transform.rect().x < 0){
+    if (transform.rect().x < 0) {
       transform.position.x = currrentResolution.width;
     }
 
-    if(transform.rect().y < 0){
+    if (transform.rect().y < 0) {
       transform.position.y = currrentResolution.height;
     }
 
-    if(transform.rect().y > currrentResolution.height){
+    if (transform.rect().y > currrentResolution.height) {
       transform.position.y = 0;
     }
   }
@@ -755,7 +817,7 @@ struct RenderSprites : System<Transform, HasSprite> {
 
   virtual void for_each_with(const Entity &, const Transform &transform,
                              const HasSprite &hasSprite, float) const override {
-    
+
     raylib::DrawTexturePro(sheet, hasSprite.frame,
                            Rectangle{
                                transform.center().x,
@@ -766,6 +828,64 @@ struct RenderSprites : System<Transform, HasSprite> {
                            vec2{transform.size.x / 2.f,
                                 transform.size.y / 2.f}, // transform.center(),
                            transform.angle, hasSprite.colorTint);
+  }
+};
+
+struct AnimationUpdateCurrentFrame : System<HasAnimation> {
+
+  virtual void for_each_with(Entity &entity, HasAnimation &hasAnimation,
+                             float dt) override {
+    hasAnimation.frame_time -= dt;
+    if (hasAnimation.frame_time > 0) {
+      return;
+    }
+    hasAnimation.frame_time = hasAnimation.frame_dur;
+
+    if (hasAnimation.cur_frame >= hasAnimation.total_frames) {
+      if (hasAnimation.once) {
+        entity.cleanup = true;
+        return;
+      }
+      hasAnimation.cur_frame = 0;
+    }
+
+    auto [i, j] =
+        idx_to_next_sprite_location((int)hasAnimation.cur_frame_position.x,
+                                    (int)hasAnimation.cur_frame_position.y);
+
+    hasAnimation.cur_frame_position = vec2{(float)i, (float)j};
+    hasAnimation.cur_frame++;
+  }
+};
+
+struct RenderAnimation : System<Transform, HasAnimation> {
+
+  raylib::Texture2D sheet;
+
+  virtual void once(float) {
+    sheet = EQ().whereHasComponent<HasTexture>()
+                .gen_first_enforce()
+                .get<HasTexture>()
+                .texture;
+  }
+
+  virtual void for_each_with(const Entity &, const Transform &transform,
+                             const HasAnimation &hasAnimation,
+                             float) const override {
+
+    auto [i, j] = hasAnimation.cur_frame_position;
+    Rectangle frame = idx_to_sprite_frame((int)i, (int)j);
+
+    raylib::DrawTexturePro(
+        sheet, frame,
+        Rectangle{
+            transform.center().x,
+            transform.center().y,
+            frame.width * hasAnimation.scale,
+            frame.height * hasAnimation.scale,
+        },
+        vec2{frame.width / 2.f, frame.height / 2.f}, // transform.center(),
+        transform.angle + hasAnimation.rotation, raylib::RAYWHITE);
   }
 };
 
@@ -815,6 +935,8 @@ int main(void) {
     systems.register_update_system(std::make_unique<ProcessDeath>());
     systems.register_update_system(std::make_unique<SkidMarks>());
     systems.register_update_system(std::make_unique<WrapAroundTransform>());
+    systems.register_update_system(
+        std::make_unique<AnimationUpdateCurrentFrame>());
   }
 
   // renders
@@ -825,6 +947,7 @@ int main(void) {
     systems.register_render_system(std::make_unique<RenderEntities>());
     systems.register_render_system(std::make_unique<RenderHealth>());
     systems.register_render_system(std::make_unique<RenderSprites>());
+    systems.register_render_system(std::make_unique<RenderAnimation>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
     //
     systems.register_render_system(std::make_unique<RenderFPS>());
