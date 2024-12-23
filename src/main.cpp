@@ -689,7 +689,7 @@ struct VelFromInput : System<PlayerID, Transform> {
           transform.accel = -5.f;  // Faster reverse acceleration
           max_speed = 10.f;        // Higher reverse max speed
         } else {
-          transform.accel = -2.5f;  // Normal brake
+          transform.accel = -1.75f;  // Normal brake
         }
         break;
       case InputAction::Left:
