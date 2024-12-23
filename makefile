@@ -29,13 +29,15 @@ RAYLIB_FLAGS := -IF:/RayLib/include
 RAYLIB_LIB := F:/RayLib/lib/raylib.dll
 CXX := g++ -std=c++20
 
-mkdir_cmd = powershell -command "& {&'New-Item' -Path .\ -Name output -ItemType directory -ErrorAction SilentlyContinue}";
-cp_cmd = powershell -command  "& {&'Copy-Item' .\vendor\raylib\*.dll output -ErrorAction SilentlyContinue}";
+mkdir_cmd = powershell -command "& {&'New-Item' -Path .\ -Name output\resources -ItemType directory -ErrorAction SilentlyContinue}";
+cp_lib_cmd = powershell -command  "& {&'Copy-Item' .\vendor\raylib\*.dll output -ErrorAction SilentlyContinue}";
+cp_resources_cmd = powershell -command  "& {&'Copy-Item' .\resources\* output\resources -ErrorAction SilentlyContinue}";
 run_cmd := powershell -command "& {&'$(OUTPUT_FOLDER)/kart.exe'}";
 
 else
-mkdir_cmd = mkdir -p output
-cp_cmd = cp vendor/raylib/*.dll output/
+mkdir_cmd = mkdir -p output/resources/
+cp_lib_cmd = cp vendor/raylib/*.dll output/
+cp_resources_cmd = cp resources/* output/resources/
 run_cmd := ./${OUTPUT_EXE}
 # CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
 # CXX := clang++ -std=c++2a -Wmost
@@ -52,7 +54,10 @@ all:
 
 output:
 	$(mkdir_cmd)
-	$(cp_cmd)
+	$(cp_lib_cmd)
+	$(cp_resources_cmd)
 
 run: 
+	$(mkdir_cmd)
+	$(cp_resources_cmd)
 	$(run_cmd)
