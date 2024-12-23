@@ -14,9 +14,6 @@
 #include "afterhours/src/plugins/window_manager.h"
 #include <cassert>
 
-#define CLAY_IMPLEMENTATION
-#include "clay.h"
-
 //
 using namespace afterhours;
 
