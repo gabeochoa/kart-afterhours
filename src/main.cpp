@@ -259,7 +259,7 @@ struct Weapon {
   float knockback_amt = 0.25f;
 
   Weapon(const FireFn &cb)
-      : cooldown(0.f), cooldownReset(0.05f), on_shoot(cb) {}
+      : cooldown(0.f), cooldownReset(0.75f), on_shoot(cb) {}
 
   virtual ~Weapon() {}
 
