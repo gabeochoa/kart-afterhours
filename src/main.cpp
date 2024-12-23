@@ -123,14 +123,11 @@ struct HasColor : BaseComponent {
   HasColor(raylib::Color col) : color(col) {}
 };
 
-struct HasEntityIDBasedColor : BaseComponent {
+struct HasEntityIDBasedColor : HasColor {
   EntityID id{-1};
-  raylib::Color entity_based_color{raylib::RAYWHITE};
-  raylib::Color non_entity_based_color{raylib::RAYWHITE};
-  HasEntityIDBasedColor(EntityID id_in, raylib::Color entity_based_color_in,
-                        raylib::Color non_entity_based_color_in)
-      : id{id_in}, entity_based_color(entity_based_color_in),
-        non_entity_based_color(non_entity_based_color_in) {}
+  raylib::Color default_{raylib::RAYWHITE};
+  HasEntityIDBasedColor(EntityID id_in, raylib::Color col, raylib::Color backup)
+      : HasColor(col), id(id_in), default_(backup) {}
 };
 
 struct HasTexture : BaseComponent {
@@ -528,8 +525,9 @@ struct RenderEntities : System<Transform> {
     if (entity.has<HasAnimation>())
       return;
 
-    auto entitiy_color = entity.has<HasColor>() ? entity.get<HasColor>().color
-                                                : raylib::RAYWHITE;
+    auto entitiy_color = entity.has_child_of<HasColor>()
+                             ? entity.get_with_child<HasColor>().color
+                             : raylib::RAYWHITE;
 
     raylib::DrawRectanglePro(
         Rectangle{
@@ -544,19 +542,18 @@ struct RenderEntities : System<Transform> {
   }
 };
 
-struct UpdateColorBasedOnEntityID : System<HasColor, HasEntityIDBasedColor> {
+struct UpdateColorBasedOnEntityID : System<HasEntityIDBasedColor> {
 
-  virtual void for_each_with(Entity &, HasColor &hasColor,
+  virtual void for_each_with(Entity &,
                              HasEntityIDBasedColor &hasEntityIDBasedColor,
                              float) override {
-    const auto parent_is_alive =
-        EQ().whereID(hasEntityIDBasedColor.id).has_values();
 
-    hasColor.color = hasEntityIDBasedColor.entity_based_color;
-
-    if (!parent_is_alive) {
-      hasColor.color = hasEntityIDBasedColor.non_entity_based_color;
-    }
+    const auto parent_is_alive = EQ() //
+                                     .whereID(hasEntityIDBasedColor.id)
+                                     .has_values();
+    if (parent_is_alive)
+      return;
+    hasEntityIDBasedColor.color = hasEntityIDBasedColor.default_;
   }
 };
 
