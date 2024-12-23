@@ -259,7 +259,7 @@ struct Weapon {
   float knockback_amt = 1.f;
 
   Weapon(const FireFn &cb)
-      : cooldown(0.f), cooldownReset(0.75f), on_shoot(cb) {}
+      : cooldown(0.f), cooldownReset(0.05f), on_shoot(cb) {}
 
   virtual ~Weapon() {}
 
@@ -782,9 +782,6 @@ struct ProcessDeath : System<Transform, HasHealth> {
       entity.get<HasMultipleLives>().num_lives_remaining -= 1;
       if (entity.get<HasMultipleLives>().num_lives_remaining) {
         hasHealth.amount = hasHealth.max_amount;
-        std::cout << "stil have lives rem"
-                  << entity.get<HasMultipleLives>().num_lives_remaining
-                  << std::endl;
         return;
       }
     }
