@@ -127,14 +127,10 @@ struct HasEntityIDBasedColor : BaseComponent {
   EntityID id{-1};
   raylib::Color entity_based_color{raylib::RAYWHITE};
   raylib::Color non_entity_based_color{raylib::RAYWHITE};
-  HasEntityIDBasedColor(
-    EntityID id_in,
-    raylib::Color entity_based_color_in,
-    raylib::Color non_entity_based_color_in)
-    : id{id_in} 
-    , entity_based_color(entity_based_color_in)
-    , non_entity_based_color(non_entity_based_color_in)
-     {}
+  HasEntityIDBasedColor(EntityID id_in, raylib::Color entity_based_color_in,
+                        raylib::Color non_entity_based_color_in)
+      : id{id_in}, entity_based_color(entity_based_color_in),
+        non_entity_based_color(non_entity_based_color_in) {}
 };
 
 struct HasTexture : BaseComponent {
@@ -425,14 +421,16 @@ void make_bullet(Entity &parent, float direction) {
   auto &bullet = EntityHelper::createEntity();
   bullet.addComponent<Transform>(transform.pos() + vec2{0, 10.f},
                                  vec2{10.f, 10.f});
-  
+
   bullet.addComponent<CanDamage>(parent.id, 5);
-  
+
   bullet.addComponent<CanWrapAround>();
-   
-  auto bullet_color = parent.get<PlayerID>().id == 0 ? raylib::BLUE : raylib::GREEN;
+
+  auto bullet_color =
+      parent.get<PlayerID>().id == 0 ? raylib::BLUE : raylib::GREEN;
   bullet.addComponent<HasColor>(bullet_color);
-  bullet.addComponent<HasEntityIDBasedColor>(parent.id, bullet_color, raylib::RED);
+  bullet.addComponent<HasEntityIDBasedColor>(parent.id, bullet_color,
+                                             raylib::RED);
 
   float rad = transform.as_rad() + ((float)(M_PI / 2.f) * direction);
   bullet.get<Transform>().velocity =
@@ -530,9 +528,8 @@ struct RenderEntities : System<Transform> {
     if (entity.has<HasAnimation>())
       return;
 
-    auto entitiy_color = entity.has<HasColor>() 
-      ? entity.get<HasColor>().color
-      : raylib::RAYWHITE;
+    auto entitiy_color = entity.has<HasColor>() ? entity.get<HasColor>().color
+                                                : raylib::RAYWHITE;
 
     raylib::DrawRectanglePro(
         Rectangle{
@@ -543,23 +540,20 @@ struct RenderEntities : System<Transform> {
         },
         vec2{transform.size.x / 2.f,
              transform.size.y / 2.f}, // transform.center(),
-        transform.angle,
-        entitiy_color);
+        transform.angle, entitiy_color);
   }
 };
 
 struct UpdateColorBasedOnEntityID : System<HasColor, HasEntityIDBasedColor> {
 
-  virtual void for_each_with(Entity &,
-                             HasColor &hasColor,
+  virtual void for_each_with(Entity &, HasColor &hasColor,
                              HasEntityIDBasedColor &hasEntityIDBasedColor,
-                             float) override
-  {
+                             float) override {
     const auto parent_is_alive =
-      EQ().whereID(hasEntityIDBasedColor.id).has_values();
+        EQ().whereID(hasEntityIDBasedColor.id).has_values();
 
     hasColor.color = hasEntityIDBasedColor.entity_based_color;
-    
+
     if (!parent_is_alive) {
       hasColor.color = hasEntityIDBasedColor.non_entity_based_color;
     }
@@ -1004,7 +998,8 @@ int main(void) {
     systems.register_update_system(std::make_unique<WrapAroundTransform>());
     systems.register_update_system(
         std::make_unique<AnimationUpdateCurrentFrame>());
-    systems.register_update_system(std::make_unique<UpdateColorBasedOnEntityID>());
+    systems.register_update_system(
+        std::make_unique<UpdateColorBasedOnEntityID>());
   }
 
   // renders
