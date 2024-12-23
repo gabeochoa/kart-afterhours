@@ -355,6 +355,28 @@ raylib::Color get_color_for_player(size_t id) {
   return colors[index];
 }
 
+vec2 get_spawn_position(size_t id, int width, int height) {
+  constexpr std::array<vec2, input::MAX_GAMEPAD_ID> pct_location = {{
+      vec2{0.1f, 0.5f},
+      vec2{0.9f, 0.5f},
+      //
+      vec2{0.1f, 0.1f},
+      vec2{0.9f, 0.1f},
+      //
+      vec2{0.1f, 0.9f},
+      vec2{0.9f, 0.9f},
+      //
+      vec2{0.5f, 0.1f},
+      vec2{0.5f, 0.9f},
+  }};
+  size_t index = (id) % pct_location.size();
+  vec2 pct = pct_location[index];
+  return vec2{
+      pct.x * (float)width,
+      pct.y * (float)height,
+  };
+}
+
 struct HasMultipleLives : BaseComponent {
   int num_lives_remaining;
   HasMultipleLives(int num_lives) : num_lives_remaining(num_lives) {}
@@ -457,11 +479,13 @@ void make_bullet(Entity &parent, float direction) {
 void make_player(input::GamepadID id) {
   auto &entity = EntityHelper::createEntity();
 
-  vec2 position = {.x = id == 0 ? 150.f : 1100.f, .y = 720.f / 2.f};
-
   entity.addComponent<PlayerID>(id);
   entity.addComponent<HasMultipleLives>(3);
-  entity.addComponent<Transform>(position, vec2{15.f, 25.f});
+  entity.addComponent<Transform>(
+      get_spawn_position(id,
+                         // TODO use current resolution
+                         raylib::GetRenderWidth(), raylib::GetRenderHeight()),
+      vec2{15.f, 25.f});
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(15);
   entity.addComponent<TireMarkComponent>();
