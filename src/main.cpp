@@ -168,6 +168,12 @@ struct HasEntityIDBasedColor : HasColor {
       : HasColor(col), id(id_in), default_(backup) {}
 };
 
+struct TracksEntity : BaseComponent {
+  EntityID id{-1};
+  vec2 offset = vec2{0, 0};
+  TracksEntity(EntityID id_, vec2 off) : id(id_), offset(off) {}
+};
+
 struct HasTexture : BaseComponent {
   raylib::Texture2D texture;
   HasTexture(const raylib::Texture2D tex) : texture(tex) {}
@@ -482,6 +488,7 @@ void make_poof_anim(Entity &parent, float direction) {
   Transform &transform = parent.get<Transform>();
 
   auto &poof = EntityHelper::createEntity();
+  poof.addComponent<TracksEntity>(parent.id, vec2{20.f, 10.f});
   poof.addComponent<Transform>(transform.pos() + vec2{direction * 20.f, 10.f},
                                vec2{10.f, 10.f})
       .angle = transform.angle;
@@ -1086,6 +1093,18 @@ struct CarRumble : System<Transform, CanShoot> {
   }
 };
 
+struct UpdateTrackingEntities : System<Transform, TracksEntity> {
+  virtual void for_each_with(Entity &, Transform &transform,
+                             TracksEntity &tracker, float) override {
+
+    OptEntity opte = EQ().whereID(tracker.id).gen_first();
+    if (!opte.valid())
+      return;
+    transform.position = (opte->get<Transform>().pos() + tracker.offset);
+    transform.angle = opte->get<Transform>().angle;
+  }
+};
+
 int main(void) {
   const int screenWidth = 1920;
   const int screenHeight = 1080;
@@ -1141,6 +1160,7 @@ int main(void) {
         std::make_unique<AnimationUpdateCurrentFrame>());
     systems.register_update_system(
         std::make_unique<UpdateColorBasedOnEntityID>());
+    systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
   }
 
   // renders
