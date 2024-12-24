@@ -156,6 +156,8 @@ static void play_sound(SoundFile sf) {
   raylib::PlaySound(sounds[sf]);
 }
 
+struct AIControlled : BaseComponent {};
+
 struct HasColor : BaseComponent {
   raylib::Color color = raylib::WHITE;
   HasColor(raylib::Color col) : color(col) {}
@@ -522,16 +524,16 @@ void make_bullet(Entity &parent, float direction) {
       vec2{std::sin(rad) * 5.f, -std::cos(rad) * 5.f};
 }
 
-void make_player(input::GamepadID id) {
+Entity &make_car(input::GamepadID id) {
   auto &entity = EntityHelper::createEntity();
 
-  entity.addComponent<PlayerID>(id);
   entity.addComponent<HasMultipleLives>(3);
   entity.addComponent<Transform>(
       get_spawn_position(id,
                          // TODO use current resolution
                          raylib::GetRenderWidth(), raylib::GetRenderHeight()),
       vec2{15.f, 25.f});
+
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(15);
   entity.addComponent<TireMarkComponent>();
@@ -560,6 +562,22 @@ void make_player(input::GamepadID id) {
         dir = vec_norm(vec2{dir.y, -dir.x});
         parent.get<Transform>().velocity += dir * wp.knockback_amt;
       });
+
+  return entity;
+}
+
+void make_player(input::GamepadID id) {
+  int num_players = EQ().whereHasComponent<PlayerID>().gen_count();
+  int num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
+  auto &entity = make_car(num_players + num_ai + 1);
+  entity.addComponent<PlayerID>(id);
+}
+
+void make_ai() {
+  int num_players = EQ().whereHasComponent<PlayerID>().gen_count();
+  int num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
+  auto &entity = make_car(num_players + num_ai + 1);
+  entity.addComponent<AIControlled>();
 }
 
 static void load_gamepad_mappings() {
@@ -1137,6 +1155,8 @@ int main(void) {
     entity.addComponent<HasTexture>(
         raylib::LoadTexture("./resources/spritesheet.png"));
   }
+
+  make_ai();
 
   SystemManager systems;
 
