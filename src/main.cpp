@@ -118,6 +118,44 @@ auto get_mapping() {
   return mapping;
 }
 
+enum struct SoundFile {
+  Rumble,
+  Skrt_Start,
+  Skrt_Mid,
+  Skrt_End,
+};
+
+std::map<SoundFile, raylib::Sound> sounds;
+
+static void load_sounds() {
+  magic_enum::enum_for_each<SoundFile>([](auto val) {
+    constexpr SoundFile file = val;
+    std::string filename;
+    switch (file) {
+    case SoundFile::Rumble:
+      filename = "./resources/rumble.wav";
+      filename = "./resources/4.mp3";
+      break;
+    case SoundFile::Skrt_Start:
+      filename = "./resources/skrt_start.wav";
+      break;
+    case SoundFile::Skrt_Mid:
+      filename = "./resources/skrt_mid.wav";
+      break;
+    case SoundFile::Skrt_End:
+      filename = "./resources/skrt_end.wav";
+      break;
+    }
+    raylib::Sound sound = raylib::LoadSound(filename.c_str());
+    sounds[file] = sound;
+  });
+}
+
+static void play_sound(SoundFile sf) {
+  raylib::SetSoundVolume(sounds[sf], 1.f);
+  raylib::PlaySound(sounds[sf]);
+}
+
 struct HasColor : BaseComponent {
   raylib::Color color = raylib::WHITE;
   HasColor(raylib::Color col) : color(col) {}
@@ -1040,6 +1078,14 @@ struct RenderAnimation : System<Transform, HasAnimation> {
   }
 };
 
+// For lack of a better filter
+struct CarRumble : System<Transform, CanShoot> {
+  virtual void for_each_with(const Entity &, const Transform &,
+                             const CanShoot &, float) const override {
+    play_sound(SoundFile::Rumble);
+  }
+};
+
 int main(void) {
   const int screenWidth = 1920;
   const int screenHeight = 1080;
@@ -1047,7 +1093,12 @@ int main(void) {
   raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
   raylib::SetTargetFPS(200);
 
+  raylib::InitAudioDevice();
+  raylib::SetMasterVolume(1.f);
+
   load_gamepad_mappings();
+
+  load_sounds();
 
   // sophie
   {
@@ -1102,6 +1153,7 @@ int main(void) {
     systems.register_render_system(std::make_unique<RenderSprites>());
     systems.register_render_system(std::make_unique<RenderAnimation>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
+    systems.register_render_system(std::make_unique<CarRumble>());
     //
     systems.register_render_system(std::make_unique<RenderFPS>());
   }
@@ -1112,6 +1164,7 @@ int main(void) {
     raylib::EndDrawing();
   }
 
+  raylib::CloseAudioDevice();
   raylib::CloseWindow();
 
   std::cout << "Num entities: " << EntityHelper::get_entities().size()
