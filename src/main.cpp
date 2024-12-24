@@ -22,6 +22,11 @@ typedef raylib::Vector3 vec3;
 typedef raylib::Vector4 vec4;
 using raylib::Rectangle;
 
+#define RectangleType raylib::Rectangle
+#define Vector2Type vec2
+#include "afterhours/src/plugins/autolayout.h"
+#include "afterhours/src/plugins/ui.h"
+
 constexpr float distance_sq(const vec2 a, const vec2 b) {
   return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 }
@@ -66,7 +71,13 @@ enum class InputAction {
   Right,
   Brake,
   ShootLeft,
-  ShootRight
+  ShootRight,
+  //
+  WidgetNext,
+  WidgetPress,
+  WidgetMod,
+  ValueUp,
+  ValueDown,
 };
 
 using afterhours::input;
@@ -114,6 +125,18 @@ auto get_mapping() {
   mapping[InputAction::ShootRight] = {
       raylib::KEY_E,
       raylib::GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
+  };
+
+  mapping[InputAction::WidgetNext] = {
+      raylib::KEY_TAB,
+  };
+
+  mapping[InputAction::WidgetPress] = {
+      raylib::KEY_ENTER,
+  };
+
+  mapping[InputAction::WidgetMod] = {
+      raylib::KEY_LEFT_SHIFT,
   };
 
   return mapping;
@@ -1175,6 +1198,8 @@ struct UpdateTrackingEntities : System<Transform, TracksEntity> {
   }
 };
 
+const vec2 button_size = vec2{100, 50};
+
 int main(void) {
   const int screenWidth = 1920;
   const int screenHeight = 1080;
@@ -1192,20 +1217,58 @@ int main(void) {
   load_sounds();
 
   // sophie
+  auto &sophie = EntityHelper::createEntity();
   {
-    auto &entity = EntityHelper::createEntity();
-    input::add_singleton_components<InputAction>(entity, get_mapping());
-    window_manager::add_singleton_components(entity, 200);
-    entity.addComponent<HasTexture>(
+    input::add_singleton_components<InputAction>(sophie, get_mapping());
+    window_manager::add_singleton_components(sophie, 200);
+    ui::add_singleton_components<InputAction>(sophie);
+    sophie.addComponent<HasTexture>(
         raylib::LoadTexture("./resources/spritesheet.png"));
+
+    // making a root component to attach the UI to
+    sophie.addComponent<ui::AutoLayoutRoot>();
+    sophie.addComponent<ui::UIComponent>(sophie.id)
+        .set_desired_width(ui::Size{
+            // TODO figure out how to update this
+            // when resolution changes
+            .dim = ui::Dim::Pixels,
+            .value = screenWidth,
+        })
+        .set_desired_height(ui::Size{
+            .dim = ui::Dim::Pixels,
+            .value = screenHeight,
+        });
   }
+
   make_ai();
+
+  {
+    auto &dropdown =
+        ui::make_dropdown<window_manager::ProvidesAvailableWindowResolutions>(
+            sophie);
+    dropdown.get<ui::UIComponent>()
+        .set_desired_width(ui::Size{
+            .dim = ui::Dim::Pixels,
+            .value = button_size.x,
+        })
+        .set_desired_height(ui::Size{
+            .dim = ui::Dim::Children,
+            .value = button_size.y,
+        });
+    dropdown.get<ui::HasChildrenComponent>().register_on_child_add(
+        [](Entity &child) {
+          if (child.is_missing<ui::HasColor>()) {
+            child.addComponent<ui::HasColor>(raylib::PURPLE);
+          }
+        });
+  }
 
   SystemManager systems;
 
   // debug systems
   {
     window_manager::enforce_singletons(systems);
+    ui::enforce_singletons<InputAction>(systems);
     input::enforce_singletons<InputAction>(systems);
   }
 
@@ -1235,6 +1298,8 @@ int main(void) {
         std::make_unique<UpdateColorBasedOnEntityID>());
     systems.register_update_system(std::make_unique<AIVelocity>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
+
+    ui::register_update_systems<InputAction>(systems);
   }
 
   // renders
@@ -1249,6 +1314,7 @@ int main(void) {
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
     systems.register_render_system(std::make_unique<CarRumble>());
     //
+    ui::register_render_systems<InputAction>(systems);
     systems.register_render_system(std::make_unique<RenderFPS>());
   }
 
