@@ -26,7 +26,8 @@ constexpr float distance_sq(const vec2 a, const vec2 b) {
   return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 }
 
-float dot(const vec2 &a, const vec2 &b) { return a.x * b.x + a.y * b.y; }
+float vec_dot(const vec2 &a, const vec2 &b) { return a.x * b.x + a.y * b.y; }
+float vec_cross(const vec2 &a, const vec2 &b) { return a.x * b.y - a.y * b.x; }
 
 float vec_mag(vec2 v) { return sqrt(v.x * v.x + v.y * v.y); }
 vec2 vec_norm(vec2 v) {
@@ -156,7 +157,9 @@ static void play_sound(SoundFile sf) {
   raylib::PlaySound(sounds[sf]);
 }
 
-struct AIControlled : BaseComponent {};
+struct AIControlled : BaseComponent {
+  vec2 target{0.f, 0.f};
+};
 
 struct HasColor : BaseComponent {
   raylib::Color color = raylib::WHITE;
@@ -567,15 +570,15 @@ Entity &make_car(input::GamepadID id) {
 }
 
 void make_player(input::GamepadID id) {
-  int num_players = EQ().whereHasComponent<PlayerID>().gen_count();
-  int num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
+  size_t num_players = EQ().whereHasComponent<PlayerID>().gen_count();
+  size_t num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
   auto &entity = make_car(num_players + num_ai + 1);
   entity.addComponent<PlayerID>(id);
 }
 
 void make_ai() {
-  int num_players = EQ().whereHasComponent<PlayerID>().gen_count();
-  int num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
+  size_t num_players = EQ().whereHasComponent<PlayerID>().gen_count();
+  size_t num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
   auto &entity = make_car(num_players + num_ai + 1);
   entity.addComponent<AIControlled>();
 }
@@ -792,6 +795,45 @@ struct VelFromInput : System<PlayerID, Transform> {
     if (isReversing) {
       transform.speed_dot_angle = -transform.speed_dot_angle;
     }
+  }
+};
+
+struct AIVelocity : System<AIControlled, Transform> {
+
+  float max_speed = 5.f;
+
+  virtual void for_each_with(Entity &, AIControlled &ai, Transform &transform,
+                             float dt) override {
+
+    bool needs_target = (ai.target.x == 0 && ai.target.y == 0) ||
+                        distance_sq(ai.target, transform.pos()) < 10.f;
+
+    if (needs_target) {
+      // TODO replace
+      ai.target = vec2{
+          rand() % raylib::GetRenderWidth(),
+          rand() % raylib::GetRenderHeight(),
+      };
+    }
+
+    vec2 direction = vec_norm(transform.pos() - ai.target);
+
+    float accel = 1.f;
+    float steer = atan2(-direction.y, direction.x);
+
+    float minRadius = 10.0f;
+    float maxRadius = 300.0f;
+    float rad = lerp(minRadius, maxRadius, transform.speed() / max_speed);
+
+    float mvt =
+        std::max(-max_speed, std::min(max_speed, transform.speed() + accel));
+
+    transform.angle += steer * dt * rad;
+
+    transform.velocity += vec2{
+        std::sin(transform.as_rad()) * mvt * dt,
+        -std::cos(transform.as_rad()) * mvt * dt,
+    };
   }
 };
 
@@ -1155,7 +1197,6 @@ int main(void) {
     entity.addComponent<HasTexture>(
         raylib::LoadTexture("./resources/spritesheet.png"));
   }
-
   make_ai();
 
   SystemManager systems;
@@ -1190,6 +1231,7 @@ int main(void) {
         std::make_unique<AnimationUpdateCurrentFrame>());
     systems.register_update_system(
         std::make_unique<UpdateColorBasedOnEntityID>());
+    systems.register_update_system(std::make_unique<AIVelocity>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
   }
 
