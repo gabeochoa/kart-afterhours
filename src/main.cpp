@@ -1182,6 +1182,8 @@ int main(void) {
   raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
   raylib::SetTargetFPS(200);
 
+  raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
+
   raylib::InitAudioDevice();
   raylib::SetMasterVolume(1.f);
 
