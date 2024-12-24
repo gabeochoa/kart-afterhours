@@ -152,7 +152,7 @@ static void load_sounds() {
 }
 
 static void play_sound(SoundFile sf) {
-  raylib::SetSoundVolume(sounds[sf], 1.f);
+  raylib::SetSoundVolume(sounds[sf], 0.25f);
   raylib::PlaySound(sounds[sf]);
 }
 
@@ -191,30 +191,20 @@ struct HasAnimation : BaseComponent {
   vec2 start_position;
   vec2 cur_frame_position;
   int total_frames = 10;
-  int cur_frame = 0;
-  float rotation = 0;
   float frame_dur = 1.f / 20.f;
   float frame_time = 1.f / 20.f;
   bool once = false;
   float scale = 1.f;
 
+  int cur_frame = 0;
+  float rotation = 0;
+
   HasAnimation(vec2 start_position_, int total_frames_, float frame_dur_,
-               bool once_, float scale_)
+               bool once_, float scale_, int cur_frame_, float rot)
       : start_position(start_position_), cur_frame_position(start_position_),
         total_frames(total_frames_), frame_dur(frame_dur_),
-        frame_time(frame_dur_), once(once_), scale(scale_) {}
-
-  HasAnimation(const HasAnimation &other) {
-    start_position = other.start_position;
-    cur_frame_position = other.cur_frame_position;
-    total_frames = other.total_frames;
-    cur_frame = other.cur_frame;
-    rotation = other.rotation;
-    frame_dur = other.frame_dur;
-    frame_time = other.frame_time;
-    once = other.once;
-    scale = other.scale;
-  }
+        frame_time(frame_dur_), once(once_), scale(scale_),
+        cur_frame(cur_frame_), rotation(rot) {}
 };
 
 Rectangle idx_to_sprite_frame(int i, int j) {
@@ -484,6 +474,20 @@ struct EQ : public EntityQuery<EQ> {
   EQ &whereOverlaps(const Rectangle r) { return add_mod(new WhereOverlaps(r)); }
 };
 
+void make_explosion_anim(Entity &parent) {
+  Transform &transform = parent.get<Transform>();
+
+  auto &poof = EntityHelper::createEntity();
+  poof.addComponent<Transform>(transform.pos(), vec2{10.f, 10.f});
+
+  poof.addComponent<HasAnimation>(vec2{0, 3},
+                                  9,          // total_frames
+                                  1.f / 20.f, // frame_dur
+                                  true,       // once
+                                  2.f,        // scale
+                                  0, 0);
+}
+
 void make_poof_anim(Entity &parent, float direction) {
   Transform &transform = parent.get<Transform>();
 
@@ -492,15 +496,11 @@ void make_poof_anim(Entity &parent, float direction) {
   poof.addComponent<Transform>(transform.pos() + vec2{direction * 20.f, 10.f},
                                vec2{10.f, 10.f})
       .angle = transform.angle;
-  HasAnimation anim(vec2{0, 0}, // start_position
-                    14,         // total_frames
-                    1.f / 20.f, // frame_dur
-                    true,       // once
-                    1.f         // scale
-  );
-  anim.cur_frame = 0;
-  anim.rotation = (direction > 0 ? 90 : -90);
-  poof.addComponent<HasAnimation>(anim);
+  poof.addComponent<HasAnimation>(vec2{0, 0},
+                                  14,         // total_frames
+                                  1.f / 20.f, // frame_dur
+                                  true,       // once
+                                  1.f, 0, (direction > 0 ? 90 : -90));
 }
 
 void make_bullet(Entity &parent, float direction) {
@@ -878,10 +878,20 @@ struct ProcessDamage : System<Transform, HasHealth> {
 
 struct ProcessDeath : System<Transform, HasHealth> {
 
-  virtual void for_each_with(Entity &entity, Transform &, HasHealth &hasHealth,
-                             float) override {
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             HasHealth &hasHealth, float) override {
     if (hasHealth.amount > 0) {
       return;
+    }
+
+    make_explosion_anim(entity);
+
+    // TODO find a better place to do this
+    if (entity.has<PlayerID>()) {
+      transform.position = get_spawn_position(entity.get<PlayerID>().id,
+                                              // TODO use current resolution
+                                              raylib::GetRenderWidth(),
+                                              raylib::GetRenderHeight());
     }
 
     if (entity.has<HasMultipleLives>()) {
