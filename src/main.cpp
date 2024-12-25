@@ -5,6 +5,8 @@
 
 #define ENABLE_SOUNDS
 
+const float max_speed = 10.f;
+
 //
 using namespace afterhours;
 
@@ -45,7 +47,7 @@ struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
-char *GetAssetsDirectory() {
+const char *GetAssetsDirectory() {
   static char assetDir[1024] = {0};
 
   // 1. Check environment variable
@@ -88,7 +90,7 @@ char *GetAssetsDirectory() {
 
 // Use this path to load the asset immediately, once called again original value
 // is replaced!
-char *GetAssetPath(const char *filename) {
+const char *GetAssetPath(const char *filename) {
   static char path[1024] = {0};
   strcpy(path, GetAssetsDirectory());
   strcat(path, filename);
@@ -288,6 +290,7 @@ struct Transform : BaseComponent {
   vec2 position{0.f, 0.f};
   vec2 velocity{0.f, 0.f};
   vec2 size{0.f, 0.f};
+  float mass = 1.f;
   float accel = 0.f;
 
   float angle{0.f};
@@ -588,7 +591,7 @@ Entity &make_car(int id) {
 
   entity.addComponent<HasMultipleLives>(3);
   entity.addComponent<Transform>(
-      get_spawn_position(id,
+      get_spawn_position((size_t)id,
                          // TODO use current resolution
                          raylib::GetRenderWidth(), raylib::GetRenderHeight()),
       vec2{15.f, 25.f});
@@ -779,8 +782,6 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
 
 struct VelFromInput : System<PlayerID, Transform> {
 
-  float max_speed = 5.f;
-
   virtual void for_each_with(Entity &, PlayerID &playerID, Transform &transform,
                              float dt) override {
     input::PossibleInputCollector<InputAction> inpc =
@@ -805,13 +806,11 @@ struct VelFromInput : System<PlayerID, Transform> {
           transform.accel = -1.f; // Reverse acceleration is slower
         } else {
           transform.accel = 2.f; // Normal acceleration
-          max_speed = 5.f;       // Normal max speed
         }
         break;
       case InputAction::Brake:
         if (isReversing) {
           transform.accel = -5.f; // Faster reverse acceleration
-          max_speed = 10.f;       // Higher reverse max speed
         } else {
           transform.accel = -1.75f; // Normal brake
         }
@@ -856,8 +855,6 @@ struct VelFromInput : System<PlayerID, Transform> {
 
 struct AIVelocity : System<AIControlled, Transform> {
 
-  float max_speed = 5.f;
-
   virtual void for_each_with(Entity &, AIControlled &ai, Transform &transform,
                              float dt) override {
 
@@ -882,7 +879,7 @@ struct AIVelocity : System<AIControlled, Transform> {
 
     float minRadius = 10.0f;
     float maxRadius = 300.0f;
-    float rad = lerp(minRadius, maxRadius, transform.speed() / max_speed);
+    float rad = std::lerp(minRadius, maxRadius, transform.speed() / max_speed);
 
     transform.angle = ang;
 
@@ -1009,7 +1006,7 @@ struct ProcessDeath : System<Transform, HasHealth> {
 
     // TODO find a better place to do this
     if (entity.has<PlayerID>()) {
-      transform.position = get_spawn_position(entity.get<PlayerID>().id,
+      transform.position = get_spawn_position((int)entity.get<PlayerID>().id,
                                               // TODO use current resolution
                                               raylib::GetRenderWidth(),
                                               raylib::GetRenderHeight());
@@ -1031,7 +1028,7 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
 
   window_manager::Resolution resolution;
 
-  virtual void once(float) {
+  virtual void once(float) override {
     resolution =
         EQ().whereHasComponent<
                 afterhours::window_manager::ProvidesCurrentResolution>()
@@ -1189,7 +1186,7 @@ struct RenderAnimation : System<Transform, HasAnimation> {
 
   raylib::Texture2D sheet;
 
-  virtual void once(float) {
+  virtual void once(float) override {
     sheet = EQ().whereHasComponent<HasTexture>()
                 .gen_first_enforce()
                 .get<HasTexture>()
