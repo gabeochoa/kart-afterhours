@@ -3,6 +3,8 @@
 
 #include "rl.h"
 
+#define ENABLE_SOUNDS
+
 //
 using namespace afterhours;
 
@@ -172,6 +174,7 @@ auto get_mapping() {
   return mapping;
 }
 
+#ifdef ENABLE_SOUNDS
 enum struct SoundFile {
   Rumble,
   Skrt_Start,
@@ -208,6 +211,7 @@ static void play_sound(SoundFile sf) {
   raylib::SetSoundVolume(sounds[sf], 0.25f);
   raylib::PlaySound(sounds[sf]);
 }
+#endif
 
 struct AIControlled : BaseComponent {
   vec2 target{0.f, 0.f};
@@ -1207,6 +1211,7 @@ struct RenderAnimation : System<Transform, HasAnimation> {
   }
 };
 
+#ifdef ENABLE_SOUNDS
 // For lack of a better filter
 struct CarRumble : System<Transform, CanShoot> {
   virtual void for_each_with(const Entity &, const Transform &,
@@ -1214,6 +1219,7 @@ struct CarRumble : System<Transform, CanShoot> {
     play_sound(SoundFile::Rumble);
   }
 };
+#endif
 
 struct UpdateTrackingEntities : System<Transform, TracksEntity> {
   virtual void for_each_with(Entity &, Transform &transform,
