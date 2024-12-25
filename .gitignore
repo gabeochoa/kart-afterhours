@@ -5,7 +5,6 @@
 .DS_Store
 **/.vs
 .vscode/
-log
 game.obj
 WinPharmaSea/**/
 pharmasea/WinPharmaSea/**/
