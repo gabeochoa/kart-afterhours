@@ -416,6 +416,11 @@ struct CanDamage : BaseComponent {
   CanDamage(EntityID id_in, int amount_in) : id{id_in}, amount{amount_in} {}
 };
 
+struct HasLifetime : BaseComponent {
+  float lifetime;
+  HasLifetime(float life) : lifetime(life) {}
+};
+
 struct HasHealth : BaseComponent {
   int max_amount{0};
   int amount{0};
@@ -576,6 +581,7 @@ void make_bullet(Entity &parent, float direction) {
                                  vec2{10.f, 10.f});
 
   bullet.addComponent<CanDamage>(parent.id, 5);
+  bullet.addComponent<HasLifetime>(10.f);
 
   bullet.addComponent<CanWrapAround>();
 
@@ -967,6 +973,18 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
         continue;
 
       canShoot.fire(entity, actions_done.action, dt);
+    }
+  }
+};
+
+struct DrainLife : System<HasLifetime> {
+
+  virtual void for_each_with(Entity &entity, HasLifetime &hasLifetime,
+                             float dt) override {
+
+    hasLifetime.lifetime -= dt;
+    if (hasLifetime.lifetime <= 0) {
+      entity.cleanup = true;
     }
   }
 };
@@ -1384,6 +1402,7 @@ int main(void) {
     systems.register_update_system(
         std::make_unique<UpdateColorBasedOnEntityID>());
     systems.register_update_system(std::make_unique<AIVelocity>());
+    systems.register_update_system(std::make_unique<DrainLife>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
 
     ui::register_update_systems<InputAction>(systems);
