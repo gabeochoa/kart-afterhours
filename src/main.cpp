@@ -1235,6 +1235,48 @@ struct UpdateTrackingEntities : System<Transform, TracksEntity> {
   }
 };
 
+struct UpdateCollidingEntities : System<Transform, CanShoot> {
+
+  std::set<int> ids;
+
+  virtual void once(float) override { ids.clear(); }
+
+  void resolve_collision(Transform &a, Transform &b) {
+    vec2 collisionNormal = vec_norm(b.position - a.position);
+    float impulse = calculate_impulse(a, b, collisionNormal);
+    a.velocity += collisionNormal * impulse / a.mass;
+    b.velocity -= collisionNormal * impulse / b.mass;
+  }
+
+  float calculate_impulse(Transform &a, Transform &b, vec2 collisionNormal) {
+    vec2 relativeVelocity = b.velocity - a.velocity;
+    float impulse =
+        vec_dot(-relativeVelocity, collisionNormal) / (1 / a.mass + 1 / b.mass);
+
+    // scale it down
+    return impulse * 0.1f;
+  }
+
+  virtual void for_each_with(Entity &entity, Transform &transform, CanShoot &,
+                             float) override {
+
+    // skip any already resolved
+    if (ids.contains(entity.id))
+      return;
+
+    auto can_shoot = EQ().whereHasComponent<CanShoot>()
+                         .whereNotID(entity.id)
+                         .whereOverlaps(transform.rect())
+                         .gen();
+
+    for (Entity &other : can_shoot) {
+      Transform &b = other.get<Transform>();
+      resolve_collision(transform, b);
+      ids.insert(other.id);
+    }
+  }
+};
+
 const vec2 button_size = vec2{100, 50};
 
 int main(void) {
@@ -1328,6 +1370,7 @@ int main(void) {
     systems.register_update_system(std::make_unique<ProcessDamage>());
     systems.register_update_system(std::make_unique<ProcessDeath>());
     systems.register_update_system(std::make_unique<SkidMarks>());
+    systems.register_update_system(std::make_unique<UpdateCollidingEntities>());
     systems.register_update_system(std::make_unique<WrapAroundTransform>());
     systems.register_update_system(
         std::make_unique<AnimationUpdateCurrentFrame>());
