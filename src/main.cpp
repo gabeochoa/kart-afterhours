@@ -1319,7 +1319,8 @@ int main(void) {
         });
   }
 
-  make_ai();
+  make_player(0);
+  // make_ai();
 
   {
     auto &dropdown =
