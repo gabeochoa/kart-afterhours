@@ -102,9 +102,7 @@ char *GetAssetsDirectory() {
     strcpy(searchDir, raylib::GetPrevDirectoryPath(searchDir));
   }
 
-  // Failed to locate, write the error and kill the program.
-  // TraceLog(LOG_ERROR, "Failed to locate asset directory!");
-  exit(1);
+  return "/Users/gabeochoa/p/kart-afterhours/resources/";
 }
 
 // Use this path to load the asset immediately, once called again original value
@@ -113,6 +111,7 @@ char *GetAssetPath(const char *filename) {
   static char path[1024] = {0};
   strcpy(path, GetAssetsDirectory());
   strcat(path, filename);
+  std::cout << "Loading asset: " << path << std::endl;
   return path;
 }
 
@@ -883,10 +882,10 @@ struct AIVelocity : System<AIControlled, Transform> {
                         distance_sq(ai.target, transform.pos()) < 10.f;
 
     if (needs_target) {
-      // TODO replace
       ai.target = vec2{
-          rand() % raylib::GetRenderWidth(),
-          rand() % raylib::GetRenderHeight(),
+          // TODO replace
+          static_cast<float>(rand() % (int)raylib::GetRenderWidth()),
+          static_cast<float>(rand() % (int)raylib::GetRenderHeight()),
       };
     }
 
@@ -897,7 +896,7 @@ struct AIVelocity : System<AIControlled, Transform> {
 
     float minRadius = 10.0f;
     float maxRadius = 300.0f;
-    float rad = lerp(minRadius, maxRadius, transform.speed() / max_speed);
+    float rad = std::lerp(minRadius, maxRadius, transform.speed() / max_speed);
 
     float mvt =
         std::max(-max_speed, std::min(max_speed, transform.speed() + accel));
