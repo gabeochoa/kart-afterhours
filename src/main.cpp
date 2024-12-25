@@ -64,6 +64,58 @@ struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
+char *GetAssetsDirectory() {
+  static char assetDir[1024] = {0};
+
+  // 1. Check environment variable
+  const char *assetsEnv = getenv("RESOURCES");
+  if (assetsEnv != NULL) {
+    strcpy(assetDir, assetsEnv);
+
+    // Ensure trailing slash.
+    if (assetDir[strlen(assetDir) - 1] != '/') {
+      strcat(assetDir, "/");
+    }
+    return assetDir;
+  }
+
+  // 2. Check working directory
+  char wd[1024] = {0};
+  strcpy(wd, raylib::GetWorkingDirectory());
+  char *d = strcat(wd, "/resources/");
+  if (raylib::DirectoryExists(d)) {
+    strcpy(assetDir, d);
+    return assetDir;
+  }
+
+  // 3. Seek out git root
+  char searchDir[1024] = {0};
+  strcpy(searchDir, raylib::GetWorkingDirectory());
+  for (int i = 0; i < 10; i++) {
+    char gitDir[1024] = {0};
+    strcpy(gitDir, searchDir);
+    strcat(gitDir, "/.git");
+    if (raylib::DirectoryExists(gitDir)) {
+      strcpy(assetDir, searchDir);
+      return strcat(assetDir, "/resources/");
+    }
+    strcpy(searchDir, raylib::GetPrevDirectoryPath(searchDir));
+  }
+
+  // Failed to locate, write the error and kill the program.
+  // TraceLog(LOG_ERROR, "Failed to locate asset directory!");
+  exit(1);
+}
+
+// Use this path to load the asset immediately, once called again original value
+// is replaced!
+char *GetAssetPath(const char *filename) {
+  static char path[1024] = {0};
+  strcpy(path, GetAssetsDirectory());
+  strcat(path, filename);
+  return path;
+}
+
 enum class InputAction {
   None,
   Accel,
@@ -157,20 +209,19 @@ static void load_sounds() {
     std::string filename;
     switch (file) {
     case SoundFile::Rumble:
-      filename = "./resources/rumble.wav";
-      filename = "./resources/4.mp3";
+      filename = "rumble.wav";
       break;
     case SoundFile::Skrt_Start:
-      filename = "./resources/skrt_start.wav";
+      filename = "skrt_start.wav";
       break;
     case SoundFile::Skrt_Mid:
-      filename = "./resources/skrt_mid.wav";
+      filename = "skrt_mid.wav";
       break;
     case SoundFile::Skrt_End:
-      filename = "./resources/skrt_end.wav";
+      filename = "skrt_end.wav";
       break;
     }
-    raylib::Sound sound = raylib::LoadSound(filename.c_str());
+    raylib::Sound sound = raylib::LoadSound(GetAssetPath(filename.c_str()));
     sounds[file] = sound;
   });
 }
@@ -1223,7 +1274,7 @@ int main(void) {
     window_manager::add_singleton_components(sophie, 200);
     ui::add_singleton_components<InputAction>(sophie);
     sophie.addComponent<HasTexture>(
-        raylib::LoadTexture("./resources/spritesheet.png"));
+        raylib::LoadTexture(GetAssetPath("spritesheet.png")));
 
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();
