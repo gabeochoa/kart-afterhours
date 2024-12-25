@@ -861,25 +861,30 @@ struct AIVelocity : System<AIControlled, Transform> {
   virtual void for_each_with(Entity &, AIControlled &ai, Transform &transform,
                              float dt) override {
 
-    bool needs_target = (ai.target.x == 0 && ai.target.y == 0) ||
-                        distance_sq(ai.target, transform.pos()) < 10.f;
-
-    if (needs_target) {
-      ai.target = vec2{
-          // TODO replace
-          static_cast<float>(rand() % (int)raylib::GetRenderWidth()),
-          static_cast<float>(rand() % (int)raylib::GetRenderHeight()),
-      };
+    // bool needs_target = (ai.target.x == 0 && ai.target.y == 0) ||
+    // distance_sq(ai.target, transform.pos()) < 10.f;
+    auto opt_entity = EQ().whereHasComponent<PlayerID>().gen_first();
+    if (opt_entity.valid()) {
+      ai.target = opt_entity->get<Transform>().pos();
     }
 
-    vec2 direction = vec_norm(transform.pos() - ai.target);
+    vec2 dir = vec_norm(transform.pos() - ai.target);
+    float ang = (atan2(dir.y, dir.x) * 180.f / M_PI) - 90;
 
-    float accel = 1.f;
-    float steer = atan2(-direction.y, direction.x);
+    float steer = 0.f;
+    float accel = 5.f;
+
+    if (ang < transform.angle) {
+      steer = -1.f;
+    } else if (ang > transform.angle) {
+      steer = 1.f;
+    }
 
     float minRadius = 10.0f;
     float maxRadius = 300.0f;
-    float rad = std::lerp(minRadius, maxRadius, transform.speed() / max_speed);
+    float rad = lerp(minRadius, maxRadius, transform.speed() / max_speed);
+
+    transform.angle = ang;
 
     float mvt =
         std::max(-max_speed, std::min(max_speed, transform.speed() + accel));
