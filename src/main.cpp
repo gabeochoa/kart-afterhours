@@ -834,6 +834,10 @@ struct VelFromInput : System<PlayerID, Transform> {
         -max_speed, std::min(max_speed, transform.speed() + transform.accel));
 
     transform.angle += steer * dt * rad;
+    if (transform.angle > 360.f)
+      transform.angle -= 360.f;
+    if (transform.angle < -360.f)
+      transform.angle += 360.f;
 
     transform.velocity += vec2{
         std::sin(transform.as_rad()) * mvt * dt,
@@ -1069,7 +1073,8 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
       // TODO - dont add skid marks when you are going in reverse
       float steering_angle = transform.angle - transform.angle_prev;
 
-      if (transform.speed() > 4.f && steering_angle > 30.f) {
+      if (transform.speed() > 4.f && std::abs(steering_angle) > 30.f &&
+          std::abs(steering_angle) < 270.f) {
         return true;
       }
 
@@ -1079,7 +1084,7 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
                      transform.velocity.x -
                          (transform.velocity.y * std::tan(steering_angle)));
 
-      if (slip_angle > (10.f * (M_PI / 180.f))) {
+      if (slip_angle > (15.f * (M_PI / 180.f))) {
         return true;
       }
 
@@ -1097,7 +1102,9 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
     }
 
     transform.angle_prev =
-        std::atan2(transform.velocity.y, transform.velocity.x);
+        (std::atan2(transform.velocity.y, transform.velocity.x) * 180.f /
+         M_PI) +
+        90.f;
   }
 };
 
