@@ -18,6 +18,7 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wdangling-reference"
 #endif
 
 namespace raylib {
@@ -151,6 +152,41 @@ void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
 #undef MAGIC_ENUM_RANGE_MAX
 #define MAGIC_ENUM_RANGE_MAX 400
 #include <magic_enum/magic_enum.hpp>
+
+#ifdef BACKWARD
+#include "backward/backward.hpp"
+namespace backward {
+backward::SignalHandling sh;
+} // namespace backward
+#endif
+
+#define FMT_HEADER_ONLY
+#include <fmt/args.h>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
+#define AFTER_HOURS_REPLACE_LOGGING
+#include "log/log.h"
+
+#define AFTER_HOURS_INCLUDE_DERIVED_CHILDREN
+#define AFTER_HOURS_ENTITY_HELPER
+#define AFTER_HOURS_ENTITY_QUERY
+#define AFTER_HOURS_SYSTEM
+#include "afterhours/ah.h"
+#define AFTER_HOURS_USE_RAYLIB
+#include "afterhours/src/developer.h"
+#include "afterhours/src/plugins/input_system.h"
+#include "afterhours/src/plugins/window_manager.h"
+#include <cassert>
+
+typedef raylib::Vector2 vec2;
+typedef raylib::Vector3 vec3;
+typedef raylib::Vector4 vec4;
+using raylib::Rectangle;
+
+#define RectangleType raylib::Rectangle
+#define Vector2Type vec2
+#include "afterhours/src/plugins/autolayout.h"
+#include "afterhours/src/plugins/ui.h"
 
 #ifdef __clang__
 #pragma clang diagnostic pop

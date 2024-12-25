@@ -3,29 +3,8 @@
 
 #include "rl.h"
 
-#define AFTER_HOURS_INCLUDE_DERIVED_CHILDREN
-#define AFTER_HOURS_ENTITY_HELPER
-#define AFTER_HOURS_ENTITY_QUERY
-#define AFTER_HOURS_SYSTEM
-#include "afterhours/ah.h"
-#define AFTER_HOURS_USE_RAYLIB
-#include "afterhours/src/developer.h"
-#include "afterhours/src/plugins/input_system.h"
-#include "afterhours/src/plugins/window_manager.h"
-#include <cassert>
-
 //
 using namespace afterhours;
-
-typedef raylib::Vector2 vec2;
-typedef raylib::Vector3 vec3;
-typedef raylib::Vector4 vec4;
-using raylib::Rectangle;
-
-#define RectangleType raylib::Rectangle
-#define Vector2Type vec2
-#include "afterhours/src/plugins/autolayout.h"
-#include "afterhours/src/plugins/ui.h"
 
 constexpr float distance_sq(const vec2 a, const vec2 b) {
   return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
@@ -600,7 +579,7 @@ void make_bullet(Entity &parent, float direction) {
       vec2{std::sin(rad) * 5.f, -std::cos(rad) * 5.f};
 }
 
-Entity &make_car(input::GamepadID id) {
+Entity &make_car(int id) {
   auto &entity = EntityHelper::createEntity();
 
   entity.addComponent<HasMultipleLives>(3);
@@ -645,14 +624,14 @@ Entity &make_car(input::GamepadID id) {
 void make_player(input::GamepadID id) {
   size_t num_players = EQ().whereHasComponent<PlayerID>().gen_count();
   size_t num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
-  auto &entity = make_car(num_players + num_ai + 1);
+  auto &entity = make_car((int)(num_players + num_ai + 1));
   entity.addComponent<PlayerID>(id);
 }
 
 void make_ai() {
   size_t num_players = EQ().whereHasComponent<PlayerID>().gen_count();
   size_t num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
-  auto &entity = make_car(num_players + num_ai + 1);
+  auto &entity = make_car((int)(num_players + num_ai + 1));
   entity.addComponent<AIControlled>();
 }
 
