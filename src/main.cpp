@@ -6,6 +6,7 @@
 #define ENABLE_SOUNDS
 
 const float max_speed = 10.f;
+static int next_id = 0;
 
 //
 using namespace afterhours;
@@ -629,16 +630,14 @@ Entity &make_car(int id) {
 }
 
 void make_player(input::GamepadID id) {
-  size_t num_players = EQ().whereHasComponent<PlayerID>().gen_count();
-  size_t num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
-  auto &entity = make_car((int)(num_players + num_ai + 1));
+  auto &entity = make_car(next_id++);
   entity.addComponent<PlayerID>(id);
 }
 
 void make_ai() {
   size_t num_players = EQ().whereHasComponent<PlayerID>().gen_count();
   size_t num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
-  auto &entity = make_car((int)(num_players + num_ai + 1));
+  auto &entity = make_car(next_id++);
   entity.addComponent<AIControlled>();
 }
 
