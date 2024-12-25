@@ -658,7 +658,7 @@ void make_ai() {
 }
 
 static void load_gamepad_mappings() {
-  std::ifstream ifs("gamecontrollerdb.txt");
+  std::ifstream ifs(GetAssetPath("gamecontrollerdb.txt"));
   if (!ifs.is_open()) {
     std::cout << "Failed to load game controller db" << std::endl;
     return;
