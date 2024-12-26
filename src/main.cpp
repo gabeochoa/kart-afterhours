@@ -1511,9 +1511,35 @@ int main(void) {
   make_player(0);
   // main_menu(sophie);
 
-  afterhours::ui::make_slider(sophie, button_size, [](float pct){
-          config.max_speed.set_pct(pct);
-          });
+  {
+      using afterhours::ui::make_div;
+      using afterhours::ui::make_slider;
+      using afterhours::ui::pixels;
+      using afterhours::ui::children_xy;
+      using afterhours::ui::FlexDirection;
+
+      auto &div = make_div(sophie, children_xy());
+      div.get<ui::UIComponent>().flex_direction = FlexDirection::Row;
+      {
+      auto& max_speed = ui::make_div(div, 
+              {
+              pixels(button_size.x),
+              pixels(button_size.y / 2.f),
+              }
+              );
+      max_speed.addComponent<ui::HasColor>(raylib::GRAY);
+      max_speed.addComponent<ui::HasLabel>("Max Speed: ");
+
+      make_slider(div, 
+              vec2{
+              button_size.x,
+              button_size.y / 2.f,
+              }
+              , [](float pct){
+              config.max_speed.set_pct(pct);
+              });
+      }
+  }
 
   ui::force_layout_and_print(sophie);
 
