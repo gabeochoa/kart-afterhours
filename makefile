@@ -49,7 +49,7 @@ CXX := g++-14 -fmax-errors=10 -std=c++2a -DBACKWARD
 endif
 
 
-.PHONY: all clean output
+.PHONY: all clean output count countall
 
 
 all:
@@ -64,3 +64,10 @@ run:
 	$(mkdir_cmd)
 	$(cp_resources_cmd)
 	$(run_cmd)
+
+count: 
+	git ls-files | grep "src" | grep -v "resources" | grep -v "vendor" | xargs wc -l | sort -rn | pr -2 -t -w 100
+	make -C vendor/afterhours
+
+countall: 
+	git ls-files | xargs wc -l | sort -rn
