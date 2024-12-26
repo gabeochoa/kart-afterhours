@@ -1087,41 +1087,38 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
     tire.pass_time(dt);
 
     const auto should_skid = [&]() -> bool {
-      // TODO - dont add skid marks when you are going in reverse
-      float steering_angle = transform.angle - transform.angle_prev;
-
-      if (transform.speed() > 4.f && std::abs(steering_angle) > 30.f &&
-          std::abs(steering_angle) < 270.f) {
-        return true;
+      if (transform.speed() == 0.f) {
+        return false;
       }
 
-      float slip_angle =
-          std::atan2(transform.velocity.y, transform.velocity.x) -
-          std::atan2(transform.velocity.y,
-                     transform.velocity.x -
-                         (transform.velocity.y * std::tan(steering_angle)));
+      // Normalize the velocity vector
+      const auto velocity_normalized = transform.velocity / transform.speed();
 
-      if (slip_angle > (15.f * (M_PI / 180.f))) {
-        return true;
-      }
+      // Forward direction based on car's angle
+      const auto angle_rads = (transform.angle - 90.f) * (M_PI / 180.f);
+      const vec2 car_forward = {std::cos(angle_rads), std::sin(angle_rads)};
 
-      return false;
+      // Calculate the dot product
+      const auto dot = vec_dot(velocity_normalized, car_forward);
+
+      // The closer the dot product is close to 0,
+      // the more the car is moving sideways.
+      // (perpendicular to its heading)
+      const auto sideways_threshold = 0.7f;
+      const auto is_moving_sideways = std::fabs(dot) < sideways_threshold;
+
+      return is_moving_sideways;
     };
 
     if (should_skid()) {
 
-      vec2 pos = transform.center();
+      const auto pos = transform.center();
 
       tire.add_mark(pos, !tire.added_last_frame);
       tire.added_last_frame = true;
     } else {
       tire.added_last_frame = false;
     }
-
-    transform.angle_prev =
-        (std::atan2(transform.velocity.y, transform.velocity.x) * 180.f /
-         M_PI) +
-        90.f;
   }
 };
 
@@ -1462,7 +1459,9 @@ int main(void) {
 
   while (!raylib::WindowShouldClose()) {
     raylib::BeginDrawing();
-    { systems.run(raylib::GetFrameTime()); }
+    {
+      systems.run(raylib::GetFrameTime());
+    }
     raylib::EndDrawing();
   }
 
