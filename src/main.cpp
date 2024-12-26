@@ -1097,22 +1097,26 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
 
   virtual void for_each_with(Entity &, Transform &transform, CanWrapAround &,
                              float) override {
+
     float width = (float)resolution.width;
     float height = (float)resolution.height;
-    if (transform.rect().x > width) {
-      transform.position.x = 0;
+
+    float padding = 50;
+
+    if (transform.rect().x > width+padding) {
+      transform.position.x = -padding;
     }
 
-    if (transform.rect().x < 0) {
-      transform.position.x = width;
+    if (transform.rect().x < 0 - padding) {
+      transform.position.x = width+padding;
     }
 
-    if (transform.rect().y < 0) {
-      transform.position.y = height;
+    if (transform.rect().y < 0 - padding) {
+      transform.position.y = height+padding;
     }
 
-    if (transform.rect().y > height) {
-      transform.position.y = 0;
+    if (transform.rect().y > height + padding) {
+      transform.position.y = -padding;
     }
   }
 };
