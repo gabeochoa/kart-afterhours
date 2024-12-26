@@ -1308,6 +1308,7 @@ void main_menu(Entity &sophie) {
   using afterhours::ui::make_div;
   using afterhours::ui::padding_;
   using afterhours::ui::pixels;
+  using afterhours::ui::Padding;
 
   {
     auto &dropdown =
@@ -1330,30 +1331,56 @@ void main_menu(Entity &sophie) {
         });
   }
 
-  // TODO figure out how to update this
-  // when resolution changes
-  auto &div = make_div(sophie, {padding_(1.f, 1.f), padding_(1.f, 1.f)});
+  auto &div = make_div(sophie, 
+          {padding_(1.f, 0.9f), padding_(1.f, 0.9f)}, Padding{
+            .top=pixels(100), 
+            .bottom=pixels(0), 
+            .left=pixels(0), 
+            .right=pixels(0), 
+          });
 
-  auto &buttons = make_div(div, afterhours::ui::children_xy());
+  // afterhours::ui::pad_component(buttons, afterhours::ui::Padding{
+                                             // .top = 1.f,
+                                             // .bottom = 1.f,
+                                             // .left = 0.8f,
+                                             // .right = 1.f,
+                                         // });
+    const Padding button_group_padding = Padding{
+            .top=pixels(0), 
+            .bottom=pixels(0), 
+            .left=pixels(0), 
+            .right=pixels(0), 
+            };
+  auto &buttons = make_div(div,
+          {
+          ui::Size{
+            .dim = ui::Dim::Children,
+            .value = button_size.x,
+        },
+        ui::Size{
+            .dim = ui::Dim::Children,
+            .value = button_size.y,
+        }}
+         , button_group_padding);
+  buttons.addComponent<HasColor>(raylib::BEIGE);
 
   {
     const auto close_menu = [&div](Entity &) {
       div.get<ui::UIComponent>().should_hide = true;
     };
+    const Padding button_padding = Padding{
+            .top=pixels(5), 
+            .bottom=pixels(5), 
+            .left=pixels(50), 
+            .right=pixels(50), 
+            };
     make_button(buttons, "play", button_size, close_menu);
-    make_button(buttons, "about", button_size, close_menu);
+    make_button(buttons, "about", button_size, close_menu, button_padding);
     make_button(buttons, "settings", button_size, close_menu);
     make_button(buttons, "exit", button_size, [&](Entity&){
             running = false;
             });
   }
-
-  afterhours::ui::pad_component(buttons, afterhours::ui::Padding{
-                                             .top = 1.f,
-                                             .bottom = 1.f,
-                                             .left = 0.8f,
-                                             .right = 1.f,
-                                         });
 }
 
 
