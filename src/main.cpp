@@ -1303,9 +1303,62 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
 
 const vec2 button_size = vec2{100, 50};
 
+void main_menu(Entity &sophie) {
+  using afterhours::ui::children;
+  using afterhours::ui::ComponentSize;
+  using afterhours::ui::make_button;
+  using afterhours::ui::make_div;
+  using afterhours::ui::padding_;
+  using afterhours::ui::pixels;
+
+  {
+    auto &dropdown =
+        ui::make_dropdown<window_manager::ProvidesAvailableWindowResolutions>(
+            sophie);
+    dropdown.get<ui::UIComponent>()
+        .set_desired_width(ui::Size{
+            .dim = ui::Dim::Pixels,
+            .value = button_size.x,
+        })
+        .set_desired_height(ui::Size{
+            .dim = ui::Dim::Children,
+            .value = button_size.y,
+        });
+    dropdown.get<ui::HasChildrenComponent>().register_on_child_add(
+        [](Entity &child) {
+          if (child.is_missing<ui::HasColor>()) {
+            child.addComponent<ui::HasColor>(raylib::PURPLE);
+          }
+        });
+  }
+
+  // TODO figure out how to update this
+  // when resolution changes
+  auto &div = make_div(sophie, {padding_(1.f, 1.f), padding_(1.f, 1.f)});
+
+  auto &buttons = make_div(div, afterhours::ui::children_xy());
+
+  {
+    const auto close_menu = [&div](Entity &) {
+      div.get<ui::UIComponent>().should_hide = true;
+    };
+    make_button(buttons, "play", button_size, close_menu);
+    make_button(buttons, "about", button_size, close_menu);
+    make_button(buttons, "settings", button_size, close_menu);
+    make_button(buttons, "exit", button_size);
+  }
+
+  afterhours::ui::pad_component(buttons, afterhours::ui::Padding{
+                                             .top = 1.f,
+                                             .bottom = 1.f,
+                                             .left = 0.8f,
+                                             .right = 1.f,
+                                         });
+}
+
 int main(void) {
-  const int screenWidth = 1920;
-  const int screenHeight = 1080;
+  const int screenWidth = 1280;
+  const int screenHeight = 720;
 
   raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
   raylib::SetTargetFPS(200);
@@ -1344,28 +1397,11 @@ int main(void) {
   }
 
   make_player(0);
-  // make_ai();
+  main_menu(sophie);
 
-  {
-    auto &dropdown =
-        ui::make_dropdown<window_manager::ProvidesAvailableWindowResolutions>(
-            sophie);
-    dropdown.get<ui::UIComponent>()
-        .set_desired_width(ui::Size{
-            .dim = ui::Dim::Pixels,
-            .value = button_size.x,
-        })
-        .set_desired_height(ui::Size{
-            .dim = ui::Dim::Children,
-            .value = button_size.y,
-        });
-    dropdown.get<ui::HasChildrenComponent>().register_on_child_add(
-        [](Entity &child) {
-          if (child.is_missing<ui::HasColor>()) {
-            child.addComponent<ui::HasColor>(raylib::PURPLE);
-          }
-        });
-  }
+  ui::force_layout_and_print(sophie);
+
+  // make_ai();
 
   SystemManager systems;
 
