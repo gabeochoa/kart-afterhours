@@ -1520,6 +1520,7 @@ int main(void) {
   {
     systems.register_render_system(
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
+    ui::register_render_systems<InputAction>(systems);
     systems.register_render_system(std::make_unique<RenderSkid>());
     systems.register_render_system(std::make_unique<RenderEntities>());
     systems.register_render_system(std::make_unique<RenderHealthAndLives>());
@@ -1529,7 +1530,6 @@ int main(void) {
     systems.register_render_system(std::make_unique<RenderOOB>());
     systems.register_render_system(std::make_unique<CarRumble>());
     //
-    ui::register_render_systems<InputAction>(systems);
     systems.register_render_system(std::make_unique<RenderFPS>());
   }
 
