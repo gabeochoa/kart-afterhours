@@ -5,9 +5,49 @@
 
 #define ENABLE_SOUNDS
 
-const float max_speed = 10.f;
 static int next_id = 0;
 bool running = true;
+
+struct ConfigurableValues {
+
+    template<typename T>
+    struct ValueInRange {
+        T data;
+        T min;
+        T max;
+
+        ValueInRange(T default_, T min_, T max_): data(default_), min(min_), max(max_) {}
+
+        void operator=(ValueInRange<T>& new_value){
+            set(new_value.data);
+        }
+
+        void set(T& nv){
+            data = std::min(max, std::max(min, nv));
+        }
+
+        void set_pct(const float& pct){
+            // lerp
+            T nv = min+ pct * (max- min);
+            set(nv);
+        }
+        operator T() {
+            return data;
+        }
+
+        operator T() const {
+            return data;
+        }
+        operator T&(){
+            return data;
+        }
+    };
+
+    ValueInRange<float> max_speed{10.f, 1.f, 20.f};
+};
+
+static ConfigurableValues config;
+
 
 //
 using namespace afterhours;
@@ -870,10 +910,10 @@ struct VelFromInput : System<PlayerID, Transform> {
 
     float minRadius = 10.0f;
     float maxRadius = 300.0f;
-    float rad = std::lerp(minRadius, maxRadius, transform.speed() / max_speed);
+    float rad = std::lerp(minRadius, maxRadius, transform.speed() / config.max_speed.data);
 
     float mvt = std::max(
-        -max_speed, std::min(max_speed, transform.speed() + transform.accel));
+        -config.max_speed.data, std::min(config.max_speed.data, transform.speed() + transform.accel));
 
     transform.angle += steer * dt * rad;
     if (transform.angle > 360.f)
@@ -925,12 +965,12 @@ struct AIVelocity : System<AIControlled, Transform> {
 
     float minRadius = 10.0f;
     float maxRadius = 300.0f;
-    float rad = std::lerp(minRadius, maxRadius, transform.speed() / max_speed);
+    float rad = std::lerp(minRadius, maxRadius, transform.speed() / config.max_speed.data);
 
     transform.angle = ang;
 
     float mvt =
-        std::max(-max_speed, std::min(max_speed, transform.speed() + accel));
+        std::max(-config.max_speed.data, std::min(config.max_speed.data, transform.speed() + accel));
 
     transform.angle += steer * dt * rad;
 
@@ -1469,7 +1509,11 @@ int main(void) {
   }
 
   make_player(0);
-  main_menu(sophie);
+  // main_menu(sophie);
+
+  afterhours::ui::make_slider(sophie, button_size, [](float pct){
+          config.max_speed.set_pct(pct);
+          });
 
   ui::force_layout_and_print(sophie);
 
