@@ -7,6 +7,7 @@
 
 const float max_speed = 10.f;
 static int next_id = 0;
+bool running = true;
 
 //
 using namespace afterhours;
@@ -1096,7 +1097,7 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
 
       // Forward direction based on car's angle
       const auto angle_rads = (transform.angle - 90.f) * (M_PI / 180.f);
-      const vec2 car_forward = {std::cos(angle_rads), std::sin(angle_rads)};
+      const vec2 car_forward = {(float)std::cos(angle_rads), (float)std::sin(angle_rads)};
 
       // Calculate the dot product
       const auto dot = vec_dot(velocity_normalized, car_forward);
@@ -1342,7 +1343,9 @@ void main_menu(Entity &sophie) {
     make_button(buttons, "play", button_size, close_menu);
     make_button(buttons, "about", button_size, close_menu);
     make_button(buttons, "settings", button_size, close_menu);
-    make_button(buttons, "exit", button_size);
+    make_button(buttons, "exit", button_size, [&](Entity&){
+            running = false;
+            });
   }
 
   afterhours::ui::pad_component(buttons, afterhours::ui::Padding{
@@ -1352,6 +1355,7 @@ void main_menu(Entity &sophie) {
                                              .right = 1.f,
                                          });
 }
+
 
 int main(void) {
   const int screenWidth = 1280;
@@ -1457,7 +1461,7 @@ int main(void) {
     systems.register_render_system(std::make_unique<RenderFPS>());
   }
 
-  while (!raylib::WindowShouldClose()) {
+  while (running && !raylib::WindowShouldClose()) {
     raylib::BeginDrawing();
     {
       systems.run(raylib::GetFrameTime());
