@@ -10,51 +10,40 @@ bool running = true;
 
 struct ConfigurableValues {
 
-    template<typename T>
-    struct ValueInRange {
-        T data;
-        T min;
-        T max;
+  template <typename T> struct ValueInRange {
+    T data;
+    T min;
+    T max;
 
-        ValueInRange(T default_, T min_, T max_): data(default_), min(min_), max(max_) {}
+    ValueInRange(T default_, T min_, T max_)
+        : data(default_), min(min_), max(max_) {}
 
-        void operator=(ValueInRange<T>& new_value){
-            set(new_value.data);
-        }
+    void operator=(ValueInRange<T> &new_value) { set(new_value.data); }
 
-        void set(T& nv){
-            data = std::min(max, std::max(min, nv));
-        }
+    void set(T &nv) { data = std::min(max, std::max(min, nv)); }
 
-        void set_pct(const float& pct){
-            // lerp
-            T nv = min+ pct * (max- min);
-            set(nv);
-        }
-        operator T() {
-            return data;
-        }
+    void set_pct(const float &pct) {
+      // lerp
+      T nv = min + pct * (max - min);
+      set(nv);
+    }
+    operator T() { return data; }
 
-        operator T() const {
-            return data;
-        }
-        operator T&(){
-            return data;
-        }
-    };
+    operator T() const { return data; }
+    operator T &() { return data; }
+  };
 
-    ValueInRange<float> max_speed{10.f, 1.f, 20.f};
+  ValueInRange<float> max_speed{10.f, 1.f, 20.f};
+  ValueInRange<float> skid_threshold{98.5f, 0.f, 100.f};
+  ValueInRange<float> steering_sensitivity{2.f, 1.f, 10.f};
 };
 
 static ConfigurableValues config;
 
-
 //
 using namespace afterhours;
 
-template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
-}
+template <typename T> int sgn(T val) { return (T(0) < val) - (val < T(0)); }
 
 constexpr float distance_sq(const vec2 a, const vec2 b) {
   return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
@@ -74,36 +63,35 @@ vec2 vec_norm(vec2 v) {
   };
 }
 
-static bool is_point_inside(const vec2 point,
-                            const RectangleType &rect) {
+static bool is_point_inside(const vec2 point, const RectangleType &rect) {
   return point.x >= rect.x && point.x <= rect.x + rect.width &&
          point.y >= rect.y && point.y <= rect.y + rect.height;
 }
-vec2 rect_center(const Rectangle& rect){
-    return vec2{
-        rect.x + (rect.width/2.f),
-        rect.y + (rect.height/2.f),
-    };
+vec2 rect_center(const Rectangle &rect) {
+  return vec2{
+      rect.x + (rect.width / 2.f),
+      rect.y + (rect.height / 2.f),
+  };
 }
 
-vec2 calc(const Rectangle& rect, const vec2& point ){
-    vec2 center = rect_center(rect);
-    float s = (point.y - center.y) / (point.x - center.x);
-    float h = rect.height;
-    float w = rect.width;
-    float h2 = h/2.f;
-    float w2 = w/2.f;
-    float h2s = h2/s;
+vec2 calc(const Rectangle &rect, const vec2 &point) {
+  vec2 center = rect_center(rect);
+  float s = (point.y - center.y) / (point.x - center.x);
+  float h = rect.height;
+  float w = rect.width;
+  float h2 = h / 2.f;
+  float w2 = w / 2.f;
+  float h2s = h2 / s;
 
-    if( (-h2 <= s * w2) && (s * w2 <= h2)){
-        float dir = (point.x > center.x)? 1.f : -1.f;
-        return {center.x + (dir*w2), center.y + dir*(s*w2)};
-    }
-    if( (-w2 <= h2s ) && ( h2s <= w2)){
-        float dir = (point.y > center.y) ? 1.f : -1.f;
-        return {center.x + dir*h2s ,center.y+ (dir*h2)};
-    }
-    return {0,0};
+  if ((-h2 <= s * w2) && (s * w2 <= h2)) {
+    float dir = (point.x > center.x) ? 1.f : -1.f;
+    return {center.x + (dir * w2), center.y + dir * (s * w2)};
+  }
+  if ((-w2 <= h2s) && (h2s <= w2)) {
+    float dir = (point.y > center.y) ? 1.f : -1.f;
+    return {center.x + dir * h2s, center.y + (dir * h2)};
+  }
+  return {0, 0};
 }
 
 namespace myutil {
@@ -863,7 +851,6 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
 };
 
 struct VelFromInput : System<PlayerID, Transform> {
-
   virtual void for_each_with(Entity &, PlayerID &playerID, Transform &transform,
                              float dt) override {
     input::PossibleInputCollector<InputAction> inpc =
@@ -873,32 +860,24 @@ struct VelFromInput : System<PlayerID, Transform> {
     }
 
     transform.accel = 0.f;
-    float steer = 0.f;
+    auto steer = 0.f;
 
-    // Adjust for the "front" of the car
-    bool isReversing = transform.speed_dot_angle < 0;
+    const auto is_reversing = transform.speed_dot_angle < 0.f;
 
     for (auto &actions_done : inpc.inputs()) {
-      if (actions_done.id != playerID.id)
+      if (actions_done.id != playerID.id) {
         continue;
+      }
 
       switch (actions_done.action) {
       case InputAction::Accel:
-        if (isReversing) {
-          transform.accel = -1.f; // Reverse acceleration is slower
-        } else {
-          transform.accel = 2.f; // Normal acceleration
-        }
+        transform.accel = is_reversing ? -1.f : 2.f;
         break;
       case InputAction::Brake:
-        if (isReversing) {
-          transform.accel = -5.f; // Faster reverse acceleration
-        } else {
-          transform.accel = -1.75f; // Normal brake
-        }
+        transform.accel = is_reversing ? -5.f : -1.75f;
         break;
       case InputAction::Left:
-        steer = -1.f * actions_done.amount_pressed;
+        steer = -actions_done.amount_pressed;
         break;
       case InputAction::Right:
         steer = actions_done.amount_pressed;
@@ -908,32 +887,28 @@ struct VelFromInput : System<PlayerID, Transform> {
       }
     }
 
-    float minRadius = 10.0f;
-    float maxRadius = 300.0f;
-    float rad = std::lerp(minRadius, maxRadius, transform.speed() / config.max_speed.data);
+    const auto minRadius = 10.f;
+    const auto maxRadius = 300.f;
+    const auto rad = std::lerp(minRadius, maxRadius,
+                               transform.speed() / config.max_speed.data);
 
-    float mvt = std::max(
-        -config.max_speed.data, std::min(config.max_speed.data, transform.speed() + transform.accel));
+    transform.angle += steer * config.steering_sensitivity.data * dt * rad;
+    transform.angle = std::fmod(transform.angle + 360.f, 360.f);
 
-    transform.angle += steer * dt * rad;
-    if (transform.angle > 360.f)
-      transform.angle -= 360.f;
-    if (transform.angle < -360.f)
-      transform.angle += 360.f;
+    const auto mvt = std::max(
+        -config.max_speed.data,
+        std::min(config.max_speed.data, transform.speed() + transform.accel));
 
     transform.velocity += vec2{
         std::sin(transform.as_rad()) * mvt * dt,
         -std::cos(transform.as_rad()) * mvt * dt,
     };
 
-    // Update speed_dot_angle based on new velocity direction and magnitude
     transform.speed_dot_angle =
         transform.velocity.x * std::sin(transform.as_rad()) +
         transform.velocity.y * -std::cos(transform.as_rad());
 
-    // Flip speed_dot_angle when reversing to keep consistent front-facing
-    // behavior
-    if (isReversing) {
+    if (is_reversing) {
       transform.speed_dot_angle = -transform.speed_dot_angle;
     }
   }
@@ -965,12 +940,14 @@ struct AIVelocity : System<AIControlled, Transform> {
 
     float minRadius = 10.0f;
     float maxRadius = 300.0f;
-    float rad = std::lerp(minRadius, maxRadius, transform.speed() / config.max_speed.data);
+    float rad = std::lerp(minRadius, maxRadius,
+                          transform.speed() / config.max_speed.data);
 
     transform.angle = ang;
 
     float mvt =
-        std::max(-config.max_speed.data, std::min(config.max_speed.data, transform.speed() + accel));
+        std::max(-config.max_speed.data,
+                 std::min(config.max_speed.data, transform.speed() + accel));
 
     transform.angle += steer * dt * rad;
 
@@ -1143,16 +1120,16 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
 
     float padding = 50;
 
-    if (transform.rect().x > width+padding) {
+    if (transform.rect().x > width + padding) {
       transform.position.x = -padding;
     }
 
     if (transform.rect().x < 0 - padding) {
-      transform.position.x = width+padding;
+      transform.position.x = width + padding;
     }
 
     if (transform.rect().y < 0 - padding) {
-      transform.position.y = height+padding;
+      transform.position.y = height + padding;
     }
 
     if (transform.rect().y > height + padding) {
@@ -1177,7 +1154,8 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
 
       // Forward direction based on car's angle
       const auto angle_rads = (transform.angle - 90.f) * (M_PI / 180.f);
-      const vec2 car_forward = {(float)std::cos(angle_rads), (float)std::sin(angle_rads)};
+      const vec2 car_forward = {(float)std::cos(angle_rads),
+                                (float)std::sin(angle_rads)};
 
       // Calculate the dot product
       const auto dot = vec_dot(velocity_normalized, car_forward);
@@ -1185,8 +1163,8 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
       // The closer the dot product is close to 0,
       // the more the car is moving sideways.
       // (perpendicular to its heading)
-      const auto sideways_threshold = 0.7f;
-      const auto is_moving_sideways = std::fabs(dot) < sideways_threshold;
+      const auto is_moving_sideways =
+          std::fabs(dot) < (config.skid_threshold.data / 100.f);
 
       return is_moving_sideways;
     };
@@ -1242,31 +1220,25 @@ struct RenderOOB : System<Transform> {
             .get<afterhours::window_manager::ProvidesCurrentResolution>()
             .current_resolution;
 
-    screen = Rectangle{0,0, (float)resolution.width, (float)resolution.height};
+    screen = Rectangle{0, 0, (float)resolution.width, (float)resolution.height};
   }
 
-  virtual void for_each_with(const Entity & entity, const Transform & transform,
+  virtual void for_each_with(const Entity &entity, const Transform &transform,
                              float) const override {
-      if(is_point_inside(transform.pos(), screen)) return;
+    if (is_point_inside(transform.pos(), screen))
+      return;
 
-      float size = std::max(5.f, //
-              std::lerp(20.f, 5.f, 
-                  (
-                   distance_sq(transform.pos(), rect_center(screen))
-                   / (screen.width*screen.height) 
-                  )
-              ));
+    float size =
+        std::max(5.f, //
+                 std::lerp(20.f, 5.f,
+                           (distance_sq(transform.pos(), rect_center(screen)) /
+                            (screen.width * screen.height))));
 
-      raylib::DrawCircleV(
-              calc(screen, transform.pos()), 
-              size, 
-              entity.has<HasColor>() 
-                  ? entity.get<HasColor>().color 
-                  : raylib::PINK
-              );
+    raylib::DrawCircleV(calc(screen, transform.pos()), size,
+                        entity.has<HasColor>() ? entity.get<HasColor>().color
+                                               : raylib::PINK);
   }
 };
-
 
 struct RenderSprites : System<Transform, HasSprite> {
 
@@ -1461,12 +1433,10 @@ void main_menu(Entity &sophie) {
     make_button(buttons, "play", button_size, close_menu);
     make_button(buttons, "about", button_size, close_menu);
     make_button(buttons, "settings", button_size, close_menu);
-    make_button(buttons, "exit", button_size, [&](Entity&){
-            running = false;
-            });
+    make_button(buttons, "exit", button_size,
+                [&](Entity &) { running = false; });
   }
 }
-
 
 int main(void) {
   const int screenWidth = 1280;
@@ -1512,33 +1482,78 @@ int main(void) {
   // main_menu(sophie);
 
   {
-      using afterhours::ui::make_div;
-      using afterhours::ui::make_slider;
-      using afterhours::ui::pixels;
-      using afterhours::ui::children_xy;
-      using afterhours::ui::FlexDirection;
+    using afterhours::ui::children_xy;
+    using afterhours::ui::FlexDirection;
+    using afterhours::ui::make_div;
+    using afterhours::ui::make_slider;
+    using afterhours::ui::pixels;
 
-      auto &div = make_div(sophie, children_xy());
-      div.get<ui::UIComponent>().flex_direction = FlexDirection::Row;
-      {
-      auto& max_speed = ui::make_div(div, 
-              {
-              pixels(button_size.x),
-              pixels(button_size.y / 2.f),
-              }
-              );
+    auto &div = make_div(sophie, children_xy());
+    div.get<ui::UIComponent>().flex_direction = FlexDirection::Row;
+    {
+      auto &max_speed = ui::make_div(div, {
+                                              pixels(button_size.x),
+                                              pixels(button_size.y / 2.f),
+                                          });
       max_speed.addComponent<ui::HasColor>(raylib::GRAY);
-      max_speed.addComponent<ui::HasLabel>("Max Speed: ");
+      max_speed.addComponent<ui::HasLabel>(
+          "Max Speed\n" + std::to_string(config.max_speed.data) + " m/s");
 
-      make_slider(div, 
-              vec2{
-              button_size.x,
-              button_size.y / 2.f,
-              }
-              , [](float pct){
-              config.max_speed.set_pct(pct);
-              });
-      }
+      make_slider(div,
+                  vec2{
+                      button_size.x,
+                      button_size.y / 2.f,
+                  },
+                  [&](const float pct) {
+                    config.max_speed.set_pct(pct);
+                    max_speed.get<ui::HasLabel>().label =
+                        "Max Speed\n" + std::to_string(config.max_speed.data) +
+                        " m/s";
+                  });
+
+      auto &skid_threshold = ui::make_div(div, {
+                                                   pixels(button_size.x),
+                                                   pixels(button_size.y / 2.f),
+                                               });
+      skid_threshold.addComponent<ui::HasColor>(raylib::GRAY);
+      skid_threshold.addComponent<ui::HasLabel>(
+          "Skid Threshold\n" + std::to_string(config.skid_threshold.data) +
+          "%");
+
+      make_slider(div,
+                  vec2{
+                      button_size.x,
+                      button_size.y / 2.f,
+                  },
+                  [&](const float pct) {
+                    config.skid_threshold.set_pct(pct);
+                    skid_threshold.get<ui::HasLabel>().label =
+                        "Skid Threshold\n" +
+                        std::to_string(config.skid_threshold.data) + "%";
+                  });
+
+      auto &steering_sensitivity =
+          ui::make_div(div, {
+                                pixels(button_size.x),
+                                pixels(button_size.y / 2.f),
+                            });
+      steering_sensitivity.addComponent<ui::HasColor>(raylib::GRAY);
+      steering_sensitivity.addComponent<ui::HasLabel>(
+          "Steering Sensitivity\n" +
+          std::to_string(config.steering_sensitivity.data));
+
+      make_slider(div,
+                  vec2{
+                      button_size.x,
+                      button_size.y / 2.f,
+                  },
+                  [&](const float pct) {
+                    config.steering_sensitivity.set_pct(pct);
+                    steering_sensitivity.get<ui::HasLabel>().label =
+                        "Steering Sensitivity\n" +
+                        std::to_string(config.steering_sensitivity.data);
+                  });
+    }
   }
 
   ui::force_layout_and_print(sophie);
