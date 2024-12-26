@@ -40,7 +40,7 @@ mkdir_cmd = mkdir -p output/resources/
 cp_lib_cmd = cp vendor/raylib/*.dll output/
 cp_resources_cmd = cp resources/* output/resources/
 run_cmd := ./${OUTPUT_EXE}
-sign_cmd := codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
+sign_cmd := && codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
 # CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
 # CXX := clang++ -std=c++2a -Wmost #-fsanitize=undefined
 CXX := g++-14 -fmax-errors=10 -std=c++2a -DBACKWARD
@@ -53,7 +53,7 @@ endif
 
 
 all:
-	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp -o $(OUTPUT_EXE) && $(sign_cmd) && $(run_cmd)
+	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
 
 output:
 	$(mkdir_cmd)
