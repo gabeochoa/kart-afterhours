@@ -1347,13 +1347,6 @@ void main_menu(Entity &sophie) {
             running = false;
             });
   }
-
-  afterhours::ui::pad_component(buttons, afterhours::ui::Padding{
-                                             .top = 1.f,
-                                             .bottom = 1.f,
-                                             .left = 0.8f,
-                                             .right = 1.f,
-                                         });
 }
 
 
