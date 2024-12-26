@@ -34,6 +34,38 @@ vec2 vec_norm(vec2 v) {
   };
 }
 
+static bool is_point_inside(const vec2 point,
+                            const RectangleType &rect) {
+  return point.x >= rect.x && point.x <= rect.x + rect.width &&
+         point.y >= rect.y && point.y <= rect.y + rect.height;
+}
+vec2 rect_center(const Rectangle& rect){
+    return vec2{
+        rect.x + (rect.width/2.f),
+        rect.y + (rect.height/2.f),
+    };
+}
+
+vec2 calc(const Rectangle& rect, const vec2& point ){
+    vec2 center = rect_center(rect);
+    float s = (point.y - center.y) / (point.x - center.x);
+    float h = rect.height;
+    float w = rect.width;
+    float h2 = h/2.f;
+    float w2 = w/2.f;
+    float h2s = h2/s;
+
+    if( (-h2 <= s * w2) && (s * w2 <= h2)){
+        float dir = (point.x > center.x)? 1.f : -1.f;
+        return {center.x + (dir*w2), center.y + dir*(s*w2)};
+    }
+    if( (-w2 <= h2s ) && ( h2s <= w2)){
+        float dir = (point.y > center.y) ? 1.f : -1.f;
+        return {center.x + dir*h2s ,center.y+ (dir*h2)};
+    }
+    return {0,0};
+}
+
 namespace myutil {
 
 template <class... Ts> struct overloaded : Ts... {
@@ -1154,6 +1186,44 @@ struct RenderSkid : System<Transform, TireMarkComponent> {
   }
 };
 
+struct RenderOOB : System<Transform> {
+  window_manager::Resolution resolution;
+  Rectangle screen;
+
+  virtual void once(float) override {
+    resolution =
+        EQ().whereHasComponent<
+                afterhours::window_manager::ProvidesCurrentResolution>()
+            .gen_first_enforce()
+            .get<afterhours::window_manager::ProvidesCurrentResolution>()
+            .current_resolution;
+
+    screen = Rectangle{0,0, (float)resolution.width, (float)resolution.height};
+  }
+
+  virtual void for_each_with(const Entity & entity, const Transform & transform,
+                             float) const override {
+      if(is_point_inside(transform.pos(), screen)) return;
+
+      float size = std::max(5.f, //
+              std::lerp(20.f, 5.f, 
+                  (
+                   distance_sq(transform.pos(), rect_center(screen))
+                   / (screen.width*screen.height) 
+                  )
+              ));
+
+      raylib::DrawCircleV(
+              calc(screen, transform.pos()), 
+              size, 
+              entity.has<HasColor>() 
+                  ? entity.get<HasColor>().color 
+                  : raylib::PINK
+              );
+  }
+};
+
+
 struct RenderSprites : System<Transform, HasSprite> {
 
   raylib::Texture2D sheet;
@@ -1452,6 +1522,7 @@ int main(void) {
     systems.register_render_system(std::make_unique<RenderSprites>());
     systems.register_render_system(std::make_unique<RenderAnimation>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
+    systems.register_render_system(std::make_unique<RenderOOB>());
     systems.register_render_system(std::make_unique<CarRumble>());
     //
     ui::register_render_systems<InputAction>(systems);
