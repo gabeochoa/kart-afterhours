@@ -430,20 +430,36 @@ struct TireMarkComponent : BaseComponent {
 };
 
 struct Weapon {
-  float cooldown;
-  float cooldownReset;
   using FireFn = std::function<void(Entity &, Weapon &)>;
-  FireFn on_shoot;
-  float knockback_amt = 0.25f;
 
-  Weapon(const FireFn &cb)
-      : cooldown(0.f), cooldownReset(0.75f), on_shoot(cb) {}
+  enum struct Type {
+    Cannon,
+  } type;
+
+  struct Config {
+    float cooldownReset;
+    FireFn on_shoot;
+
+    float knockback_amt = 0.25f;
+  } config;
+
+  enum struct FiringDirection {
+    Forward,
+    Left,
+    Right,
+    Back,
+  } firing_direction = FiringDirection::Forward;
+
+  float cooldown;
+
+  Weapon(const Type &type_, const Config &config_, const FiringDirection &fd)
+      : type(type_), config(config_), firing_direction(fd), cooldown(0.f) {}
 
   virtual ~Weapon() {}
 
   virtual bool fire(float) {
     if (cooldown <= 0) {
-      cooldown = cooldownReset;
+      cooldown = config.cooldownReset;
       return true;
     }
     return false;
@@ -458,13 +474,47 @@ struct Weapon {
   }
 };
 
+void make_poof_anim(Entity &parent, Weapon::FiringDirection direction);
+void make_bullet(Entity &parent, Weapon::FiringDirection direction);
+
+struct Cannon : Weapon {
+
+  Cannon(const Weapon::FiringDirection &fd)
+      : Weapon(Weapon::Type::Cannon, //
+               Weapon::Config{.cooldownReset = 1.f,
+                              .on_shoot =
+                                  [](Entity &parent, Weapon &wp) {
+                                    make_poof_anim(parent, wp.firing_direction);
+                                    make_bullet(parent, wp.firing_direction);
+
+                                    vec2 dir = parent.get<Transform>().velocity;
+                                    // opposite of shot direction
+                                    dir = vec_norm(vec2{-dir.y, dir.x});
+                                    parent.get<Transform>().velocity +=
+                                        dir * wp.config.knockback_amt;
+                                  },
+                              .knockback_amt = 0.25f},
+               fd) {}
+};
+
 struct CanShoot : BaseComponent {
   std::map<InputAction, std::unique_ptr<Weapon>> weapons;
 
   CanShoot() = default;
 
-  auto &register_weapon(InputAction action, const Weapon::FireFn &cb) {
-    weapons[action] = std::make_unique<Weapon>(cb);
+  auto &register_weapon(InputAction action,
+                        const Weapon::FiringDirection &direction,
+                        const Weapon::Type &type) {
+    switch (type) {
+    case Weapon::Type::Cannon: {
+      weapons[action] = std::make_unique<Cannon>(direction);
+    } break;
+    default:
+      log_warn(
+          "Trying to register weapon of type {} but not supported by CanShoot",
+          magic_enum::enum_name<Weapon::Type>(type));
+      break;
+    }
     return *this;
   }
 
@@ -480,7 +530,7 @@ struct CanShoot : BaseComponent {
     if (!weapons.contains(action))
       return false;
     if (weapons[action]->fire(dt)) {
-      weapons[action]->on_shoot(parent, *weapons[action]);
+      weapons[action]->config.on_shoot(parent, *weapons[action]);
       return true;
     }
     return false;
@@ -636,23 +686,66 @@ void make_explosion_anim(Entity &parent) {
                                   0, 0);
 }
 
-void make_poof_anim(Entity &parent, float direction) {
+void make_poof_anim(Entity &parent, Weapon::FiringDirection direction) {
   Transform &transform = parent.get<Transform>();
 
+  vec2 off;
+  float angle = 0;
+  switch (direction) {
+  case Weapon::FiringDirection::Forward:
+    // TODO
+    off = {0.f, 0.f};
+    angle = 0.f;
+    break;
+  case Weapon::FiringDirection::Left:
+    off = {
+        -20.f,
+        10.f,
+    };
+    angle = -90.f;
+    break;
+  case Weapon::FiringDirection::Right:
+    off = {
+        20.f,
+        10.f,
+    };
+    angle = 90.f;
+    break;
+  case Weapon::FiringDirection::Back:
+    // TODO
+    off = {0.f, 0.f};
+    angle = 180.f;
+    break;
+  }
+
   auto &poof = EntityHelper::createEntity();
-  poof.addComponent<TracksEntity>(parent.id, vec2{20.f, 10.f});
-  poof.addComponent<Transform>(transform.pos() + vec2{direction * 20.f, 10.f},
-                               vec2{10.f, 10.f})
-      .angle = transform.angle;
+  poof.addComponent<TracksEntity>(parent.id, off);
+  poof.addComponent<Transform>(transform.pos() + off, vec2{10.f, 10.f})
+      .set_angle(transform.angle);
   poof.addComponent<HasAnimation>(vec2{0, 0},
                                   14,         // total_frames
                                   1.f / 20.f, // frame_dur
                                   true,       // once
-                                  1.f, 0, (direction > 0 ? 90 : -90));
+                                  1.f, 0, angle);
 }
 
-void make_bullet(Entity &parent, float direction) {
+void make_bullet(Entity &parent, Weapon::FiringDirection direction) {
   Transform &transform = parent.get<Transform>();
+
+  float angle = 0;
+  switch (direction) {
+  case Weapon::FiringDirection::Forward:
+    break;
+  case Weapon::FiringDirection::Left:
+    angle = -90.f;
+    break;
+  case Weapon::FiringDirection::Right:
+    angle = 90.f;
+    break;
+  case Weapon::FiringDirection::Back:
+    angle = 180.f;
+    break;
+  }
 
   auto &bullet = EntityHelper::createEntity();
   bullet.addComponent<Transform>(transform.pos() + vec2{0, 10.f},
@@ -689,26 +782,10 @@ Entity &make_car(int id) {
   entity.addComponent<HasSprite>(idx_to_sprite_frame(0, 1), 1.f, tint);
 
   entity.addComponent<CanShoot>()
-      .register_weapon(InputAction::ShootLeft,
-                       [](Entity &parent, Weapon &wp) {
-                         make_poof_anim(parent, -1);
-                         make_bullet(parent, -1);
-
-                         vec2 dir = parent.get<Transform>().velocity;
-                         // opposite of shot direction
-                         dir = vec_norm(vec2{-dir.y, dir.x});
-                         parent.get<Transform>().velocity +=
-                             dir * wp.knockback_amt;
-                       })
-      .register_weapon(InputAction::ShootRight, [](Entity &parent, Weapon &wp) {
-        make_poof_anim(parent, 1);
-        make_bullet(parent, 1);
-
-        vec2 dir = parent.get<Transform>().velocity;
-        // opposite of shot direction
-        dir = vec_norm(vec2{dir.y, -dir.x});
-        parent.get<Transform>().velocity += dir * wp.knockback_amt;
-      });
+      .register_weapon(InputAction::ShootLeft, Weapon::FiringDirection::Left,
+                       Weapon::Type::Cannon)
+      .register_weapon(InputAction::ShootRight, Weapon::FiringDirection::Right,
+                       Weapon::Type::Cannon);
 
   return entity;
 }
@@ -753,7 +830,7 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
           center.x, //
           center.y, //
           nw,
-          nh * (weapon->cooldown / weapon->cooldownReset),
+          nh * (weapon->cooldown / weapon->config.cooldownReset),
       };
 
       raylib::DrawRectanglePro(arm,
