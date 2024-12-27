@@ -63,6 +63,14 @@ vec2 vec_norm(vec2 v) {
   };
 }
 
+constexpr static float to_radians(float angle) {
+  return angle * (float)(M_PI / 180.f);
+}
+
+constexpr static float to_degrees(float radians) {
+  return radians * 180.f / (float)M_PI;
+}
+
 static bool is_point_inside(const vec2 point, const RectangleType &rect) {
   return point.x >= rect.x && point.x <= rect.x + rect.width &&
          point.y >= rect.y && point.y <= rect.y + rect.height;
@@ -653,7 +661,7 @@ void make_bullet(Entity &parent, float direction) {
   bullet.addComponent<HasEntityIDBasedColor>(
       parent.id, parent.get<HasColor>().color, raylib::RED);
 
-  float rad = transform.as_rad() + ((float)(M_PI / 2.f) * direction);
+  float rad = transform.as_rad() + to_radians(angle);
   bullet.get<Transform>().velocity =
       vec2{std::sin(rad) * 5.f, -std::cos(rad) * 5.f};
 }
@@ -706,8 +714,6 @@ void make_player(input::GamepadID id) {
 }
 
 void make_ai() {
-  size_t num_players = EQ().whereHasComponent<PlayerID>().gen_count();
-  size_t num_ai = EQ().whereHasComponent<AIControlled>().gen_count();
   auto &entity = make_car(next_id++);
   entity.addComponent<AIControlled>();
 }
@@ -927,7 +933,7 @@ struct AIVelocity : System<AIControlled, Transform> {
     }
 
     vec2 dir = vec_norm(transform.pos() - ai.target);
-    float ang = (atan2(dir.y, dir.x) * 180.f / M_PI) - 90;
+    float ang = to_degrees(atan2(dir.y, dir.x)) - 90;
 
     float steer = 0.f;
     float accel = 5.f;
@@ -1153,7 +1159,8 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
       const auto velocity_normalized = transform.velocity / transform.speed();
 
       // Forward direction based on car's angle
-      const auto angle_rads = (transform.angle - 90.f) * (M_PI / 180.f);
+      const auto angle_rads = to_radians(transform.angle - 90.f);
+      ;
       const vec2 car_forward = {(float)std::cos(angle_rads),
                                 (float)std::sin(angle_rads)};
 
@@ -1620,9 +1627,7 @@ int main(void) {
 
   while (running && !raylib::WindowShouldClose()) {
     raylib::BeginDrawing();
-    {
-      systems.run(raylib::GetFrameTime());
-    }
+    { systems.run(raylib::GetFrameTime()); }
     raylib::EndDrawing();
   }
 
