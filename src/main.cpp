@@ -378,6 +378,11 @@ struct Transform : BaseComponent {
     return raylib::Rectangle{position.x, position.y, size.x, size.y};
   }
 
+  auto &set_angle(float ang) {
+    angle = ang;
+    return *this;
+  }
+
   float speed() const { return vec_mag(velocity); }
 
   vec2 center() const {
