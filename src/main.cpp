@@ -7,6 +7,7 @@
 
 static int next_id = 0;
 bool running = true;
+const vec2 button_size = vec2{100, 50};
 
 // 12 gives us these options:
 // 1,2,3,4,6,12
@@ -202,6 +203,7 @@ enum class InputAction {
   ValueUp,
   ValueDown,
   ToggleUIDebug,
+  ToggleUILayoutDebug,
 };
 
 using afterhours::input;
@@ -265,6 +267,10 @@ auto get_mapping() {
 
   mapping[InputAction::ToggleUIDebug] = {
       raylib::KEY_GRAVE,
+  };
+
+  mapping[InputAction::ToggleUILayoutDebug] = {
+      raylib::KEY_EQUAL,
   };
 
   return mapping;
@@ -1566,106 +1572,156 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
   }
 };
 
-const vec2 button_size = vec2{100, 50};
+// TODO at the moment we are half imm mode and have retained
+// at some point we should transition to fully imm
+struct UISystem : System<ui::AutoLayoutRoot> {
+  bool init = false;
+  Entity *screen_ptr;
 
-void main_menu(Entity &sophie) {
-  using afterhours::ui::children;
-  using afterhours::ui::ComponentSize;
-  using afterhours::ui::make_button;
-  using afterhours::ui::make_div;
-  using afterhours::ui::padding_;
-  using afterhours::ui::pixels;
-
-  {
-    auto &dropdown =
-        ui::make_dropdown<window_manager::ProvidesAvailableWindowResolutions>(
-            sophie);
-    dropdown.get<ui::UIComponent>()
-        .set_desired_width(ui::Size{
-            .dim = ui::Dim::Pixels,
-            .value = button_size.x,
-        })
-        .set_desired_height(ui::Size{
-            .dim = ui::Dim::Children,
-            .value = button_size.y,
-        });
-    dropdown.get<ui::HasChildrenComponent>().register_on_child_add(
-        [](Entity &child) {
-          if (child.is_missing<ui::HasColor>()) {
-            child.addComponent<ui::HasColor>(raylib::PURPLE);
-          }
-        });
+  virtual void once(float) override {
+    if (!init || screen_ptr == nullptr)
+      init_screen();
   }
 
-  // TODO figure out how to update this
-  // when resolution changes
-  auto &div = make_div(sophie, {padding_(1.f, 1.f), padding_(1.f, 1.f)});
-
-  auto &buttons = make_div(div, afterhours::ui::children_xy());
-
-  {
-    const auto close_menu = [&div](Entity &) {
-      div.get<ui::UIComponent>().should_hide = true;
-    };
-    make_button(buttons, "play", button_size, close_menu);
-    make_button(buttons, "about", button_size, close_menu);
-    make_button(buttons, "settings", button_size, close_menu);
-    make_button(buttons, "exit", button_size,
-                [&](Entity &) { running = false; });
-  }
-}
-
-int main(void) {
-  const int screenWidth = 1280;
-  const int screenHeight = 720;
-
-  raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
-  raylib::SetTargetFPS(200);
-
-  raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
-
-  raylib::InitAudioDevice();
-  raylib::SetMasterVolume(1.f);
-
-  load_gamepad_mappings();
-
-  load_sounds();
-
-  // sophie
-  auto &sophie = EntityHelper::createEntity();
-  {
-    input::add_singleton_components<InputAction>(sophie, get_mapping());
-    window_manager::add_singleton_components(sophie, 200);
-    ui::add_singleton_components<InputAction>(sophie);
-    sophie.addComponent<HasTexture>(
-        raylib::LoadTexture(GetAssetPath("spritesheet.png")));
-
-    // making a root component to attach the UI to
-    sophie.addComponent<ui::AutoLayoutRoot>();
-    sophie.addComponent<ui::UIComponent>(sophie.id)
-        .set_desired_width(ui::Size{
-            // TODO figure out how to update this
-            // when resolution changes
-            .dim = ui::Dim::Pixels,
-            .value = screenWidth,
-        })
-        .set_desired_height(ui::Size{
-            .dim = ui::Dim::Pixels,
-            .value = screenHeight,
-        });
+  void init_screen() {
+    auto &entity = EntityQuery()
+                       .whereHasComponent<ui::AutoLayoutRoot>()
+                       .gen_first_enforce();
+    setup_ui(entity);
+    init = true;
   }
 
-  make_player(0);
-  // main_menu(sophie);
+  virtual ~UISystem() {}
+  virtual void setup_ui(Entity &) = 0;
+};
 
-  {
+struct RenderMainMenuUI : UISystem {
+  RenderMainMenuUI() : UISystem() {}
+  virtual ~RenderMainMenuUI() {}
+
+  virtual void setup_ui(Entity &root) override {
+    using afterhours::ui::children;
+    using afterhours::ui::ComponentSize;
+    using afterhours::ui::make_button;
+    using afterhours::ui::make_div;
+    using afterhours::ui::padding_;
+    using afterhours::ui::pixels;
+
+    auto &screen = EntityHelper::createEntity();
+    screen_ptr = &screen;
+    {
+      // making a root component to attach the UI to
+      screen.addComponent<ui::AutoLayoutRoot>();
+      screen.addComponent<ui::UIComponent>(screen.id)
+          .set_desired_width(ui::Size{
+              // TODO figure out how to update this
+              // when resolution changes
+              .dim = ui::Dim::Pixels,
+              .value = raylib::GetRenderWidth(),
+          })
+          .set_desired_height(ui::Size{
+              .dim = ui::Dim::Pixels,
+              .value = raylib::GetRenderHeight(),
+          })
+          .set_parent(root)
+          .make_absolute();
+    }
+
+    if (0) {
+      auto &dropdown =
+          ui::make_dropdown<window_manager::ProvidesAvailableWindowResolutions>(
+              screen);
+      dropdown.get<ui::UIComponent>()
+          .set_desired_width(ui::Size{
+              .dim = ui::Dim::Pixels,
+              .value = button_size.x,
+          })
+          .set_desired_height(ui::Size{
+              .dim = ui::Dim::Children,
+              .value = button_size.y,
+          });
+      dropdown.get<ui::HasChildrenComponent>().register_on_child_add(
+          [](Entity &child) {
+            if (child.is_missing<ui::HasColor>()) {
+              child.addComponent<ui::HasColor>(raylib::PURPLE);
+            }
+          });
+    }
+
+    // TODO figure out how to update this
+    // when resolution changes
+    auto &div = make_div(screen, {padding_(1.f, 1.f), padding_(1.f, 1.f)});
+
+    auto &buttons = make_div(div, afterhours::ui::children_xy());
+
+    {
+      const auto close_menu = [&div](Entity &) {
+        div.get<ui::UIComponent>().should_hide = true;
+      };
+      make_button(buttons, "play", button_size, close_menu);
+      make_button(buttons, "about", button_size, close_menu);
+      make_button(buttons, "settings", button_size, close_menu);
+      make_button(buttons, "exit", button_size,
+                  [&](Entity &) { running = false; });
+    }
+  }
+};
+
+struct RenderDebugUI : UISystem {
+  bool enabled = true;
+  float enableCooldown = 0.f;
+  float enableCooldownReset = 0.2f;
+
+  RenderDebugUI() : UISystem() {}
+  virtual ~RenderDebugUI() {}
+
+  virtual bool should_run(float dt) override {
+    enableCooldown -= dt;
+
+    if (enableCooldown < 0) {
+      enableCooldown = enableCooldownReset;
+      input::PossibleInputCollector<InputAction> inpc =
+          input::get_input_collector<InputAction>();
+      for (auto &actions_done : inpc.inputs()) {
+        if (actions_done.action == InputAction::ToggleUIDebug) {
+          enabled = !enabled;
+          screen_ptr->get<ui::UIComponent>().should_hide = enabled;
+          break;
+        }
+      }
+    }
+    return enabled;
+  }
+
+  virtual void setup_ui(Entity &root) override {
     using afterhours::ui::children_xy;
     using afterhours::ui::FlexDirection;
     using afterhours::ui::make_div;
     using afterhours::ui::make_slider;
     using afterhours::ui::pixels;
 
-    auto &div = make_div(sophie, children_xy());
+    // TODO just replace all of these with autolayout roots....
+    auto &screen = EntityHelper::createEntity();
+    screen_ptr = &screen;
+    {
+      // making a root component to attach the UI to
+      screen.addComponent<ui::AutoLayoutRoot>();
+      screen.addComponent<ui::UIComponent>(screen.id)
+          .set_desired_width(ui::Size{
+              // TODO figure out how to update this
+              // when resolution changes
+              .dim = ui::Dim::Pixels,
+              .value = raylib::GetRenderWidth(),
+          })
+          .set_desired_height(ui::Size{
+              .dim = ui::Dim::Pixels,
+              .value = raylib::GetRenderHeight(),
+          })
+          .set_parent(root)
+          .make_absolute();
+    }
+
+    auto &div = make_div(screen, children_xy());
     div.get<ui::UIComponent>().flex_direction = FlexDirection::Row;
     {
       auto &max_speed = ui::make_div(div, {
@@ -1732,8 +1788,49 @@ int main(void) {
                   });
     }
   }
+};
 
-  ui::force_layout_and_print(sophie);
+int main(void) {
+  const int screenWidth = 1280;
+  const int screenHeight = 720;
+
+  raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
+  raylib::SetTargetFPS(200);
+
+  raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
+
+  raylib::InitAudioDevice();
+  raylib::SetMasterVolume(1.f);
+
+  load_gamepad_mappings();
+
+  load_sounds();
+
+  // sophie
+  auto &sophie = EntityHelper::createEntity();
+  {
+    input::add_singleton_components<InputAction>(sophie, get_mapping());
+    window_manager::add_singleton_components(sophie, 200);
+    ui::add_singleton_components<InputAction>(sophie);
+    sophie.addComponent<HasTexture>(
+        raylib::LoadTexture(GetAssetPath("spritesheet.png")));
+
+    // making a root component to attach the UI to
+    sophie.addComponent<ui::AutoLayoutRoot>();
+    sophie.addComponent<ui::UIComponent>(sophie.id)
+        .set_desired_width(ui::Size{
+            // TODO figure out how to update this
+            // when resolution changes
+            .dim = ui::Dim::Pixels,
+            .value = screenWidth,
+        })
+        .set_desired_height(ui::Size{
+            .dim = ui::Dim::Pixels,
+            .value = screenHeight,
+        });
+  }
+
+  make_player(0);
 
   // make_ai();
 
@@ -1782,8 +1879,11 @@ int main(void) {
   {
     systems.register_render_system(
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
+    systems.register_render_system(std::make_unique<RenderDebugUI>());
+    // TODO disabling main menu for right now
+    // systems.register_render_system(std::make_unique<RenderMainMenuUI>());
     ui::register_render_systems<InputAction>(systems,
-                                             InputAction::ToggleUIDebug);
+                                             InputAction::ToggleUILayoutDebug);
     systems.register_render_system(std::make_unique<RenderSkid>());
     systems.register_render_system(std::make_unique<RenderEntities>());
     systems.register_render_system(std::make_unique<RenderHealthAndLives>());
