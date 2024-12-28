@@ -442,6 +442,7 @@ struct Weapon {
 
   enum struct Type {
     Cannon,
+    Sniper,
   } type;
 
   struct Config {
@@ -449,6 +450,7 @@ struct Weapon {
     FireFn on_shoot;
 
     float knockback_amt = 0.25f;
+    int base_damage = 1;
   } config;
 
   enum struct FiringDirection {
@@ -482,26 +484,52 @@ struct Weapon {
   }
 };
 
-void make_poof_anim(Entity &parent, Weapon::FiringDirection direction);
-void make_bullet(Entity &parent, Weapon::FiringDirection direction);
+void make_poof_anim(Entity &, Weapon &);
+void make_bullet(Entity &, Weapon &);
 
 struct Cannon : Weapon {
 
   Cannon(const Weapon::FiringDirection &fd)
       : Weapon(Weapon::Type::Cannon, //
-               Weapon::Config{.cooldownReset = 1.f,
-                              .on_shoot =
-                                  [](Entity &parent, Weapon &wp) {
-                                    make_poof_anim(parent, wp.firing_direction);
-                                    make_bullet(parent, wp.firing_direction);
+               Weapon::Config{
+                   .cooldownReset = 1.f,
+                   .on_shoot =
+                       [](Entity &parent, Weapon &wp) {
+                         make_poof_anim(parent, wp);
+                         make_bullet(parent, wp);
 
-                                    vec2 dir = parent.get<Transform>().velocity;
-                                    // opposite of shot direction
-                                    dir = vec_norm(vec2{-dir.y, dir.x});
-                                    parent.get<Transform>().velocity +=
-                                        dir * wp.config.knockback_amt;
-                                  },
-                              .knockback_amt = 0.25f},
+                         vec2 dir = parent.get<Transform>().velocity;
+                         // opposite of shot direction
+                         dir = vec_norm(vec2{-dir.y, dir.x});
+                         parent.get<Transform>().velocity +=
+                             dir * wp.config.knockback_amt;
+                       },
+                   .knockback_amt = 0.25f,
+                   .base_damage = 1,
+               },
+               fd) {}
+};
+
+struct Sniper : Weapon {
+
+  Sniper(const Weapon::FiringDirection &fd)
+      : Weapon(Weapon::Type::Sniper, //
+               Weapon::Config{
+                   .cooldownReset = 3.f,
+                   .on_shoot =
+                       [](Entity &parent, Weapon &wp) {
+                         make_poof_anim(parent, wp);
+                         make_bullet(parent, wp);
+
+                         vec2 dir = parent.get<Transform>().velocity;
+                         // opposite of shot direction
+                         dir = vec_norm(vec2{-dir.y, dir.x});
+                         parent.get<Transform>().velocity +=
+                             dir * wp.config.knockback_amt;
+                       },
+                   .knockback_amt = 0.50f,
+                   .base_damage = 3,
+               },
                fd) {}
 };
 
@@ -516,6 +544,9 @@ struct CanShoot : BaseComponent {
     switch (type) {
     case Weapon::Type::Cannon: {
       weapons[action] = std::make_unique<Cannon>(direction);
+    } break;
+    case Weapon::Type::Sniper: {
+      weapons[action] = std::make_unique<Sniper>(direction);
     } break;
     default:
       log_warn(
@@ -697,12 +728,12 @@ void make_explosion_anim(Entity &parent) {
                                   0, 0);
 }
 
-void make_poof_anim(Entity &parent, Weapon::FiringDirection direction) {
+void make_poof_anim(Entity &parent, Weapon &wp) {
   Transform &transform = parent.get<Transform>();
 
   vec2 off;
   float angle = 0;
-  switch (direction) {
+  switch (wp.firing_direction) {
   case Weapon::FiringDirection::Forward:
     // TODO
     off = {0.f, 0.f};
@@ -740,11 +771,11 @@ void make_poof_anim(Entity &parent, Weapon::FiringDirection direction) {
                                   1.f, 0, angle);
 }
 
-void make_bullet(Entity &parent, Weapon::FiringDirection direction) {
+void make_bullet(Entity &parent, Weapon &wp) {
   Transform &transform = parent.get<Transform>();
 
   float angle = 0;
-  switch (direction) {
+  switch (wp.firing_direction) {
   case Weapon::FiringDirection::Forward:
     break;
   case Weapon::FiringDirection::Left:
@@ -762,7 +793,7 @@ void make_bullet(Entity &parent, Weapon::FiringDirection direction) {
   bullet.addComponent<Transform>(transform.pos() + vec2{0, 10.f},
                                  vec2{10.f, 10.f});
 
-  bullet.addComponent<CanDamage>(parent.id, 5);
+  bullet.addComponent<CanDamage>(parent.id, wp.config.base_damage);
   bullet.addComponent<HasLifetime>(10.f);
 
   bullet.addComponent<CanWrapAround>(0.f);
@@ -786,7 +817,7 @@ Entity &make_car(int id) {
       vec2{15.f, 25.f});
 
   entity.addComponent<CanWrapAround>();
-  entity.addComponent<HasHealth>(15);
+  entity.addComponent<HasHealth>(3);
   entity.addComponent<TireMarkComponent>();
   auto tint = get_color_for_player((size_t)id);
   entity.addComponent<HasColor>(tint);
