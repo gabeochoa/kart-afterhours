@@ -189,6 +189,7 @@ enum class InputAction {
   WidgetMod,
   ValueUp,
   ValueDown,
+  ToggleUIDebug,
 };
 
 using afterhours::input;
@@ -248,6 +249,10 @@ auto get_mapping() {
 
   mapping[InputAction::WidgetMod] = {
       raylib::KEY_LEFT_SHIFT,
+  };
+
+  mapping[InputAction::ToggleUIDebug] = {
+      raylib::KEY_GRAVE,
   };
 
   return mapping;
@@ -1697,7 +1702,8 @@ int main(void) {
   {
     systems.register_render_system(
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
-    ui::register_render_systems<InputAction>(systems);
+    ui::register_render_systems<InputAction>(systems,
+                                             InputAction::ToggleUIDebug);
     systems.register_render_system(std::make_unique<RenderSkid>());
     systems.register_render_system(std::make_unique<RenderEntities>());
     systems.register_render_system(std::make_unique<RenderHealthAndLives>());
