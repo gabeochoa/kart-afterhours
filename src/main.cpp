@@ -27,6 +27,9 @@ struct ConfigurableValues {
       T nv = min + pct * (max - min);
       set(nv);
     }
+
+    float get_pct() const { return (data - min) / (max - min); }
+
     operator T() { return data; }
 
     operator T() const { return data; }
@@ -1593,7 +1596,7 @@ int main(void) {
                       button_size.x,
                       button_size.y / 2.f,
                   },
-                  [&](const float pct) {
+                  config.max_speed.get_pct(), [&](const float pct) {
                     config.max_speed.set_pct(pct);
                     max_speed.get<ui::HasLabel>().label =
                         "Max Speed\n" + std::to_string(config.max_speed.data) +
@@ -1614,7 +1617,7 @@ int main(void) {
                       button_size.x,
                       button_size.y / 2.f,
                   },
-                  [&](const float pct) {
+                  config.skid_threshold.get_pct(), [&](const float pct) {
                     config.skid_threshold.set_pct(pct);
                     skid_threshold.get<ui::HasLabel>().label =
                         "Skid Threshold\n" +
@@ -1636,7 +1639,7 @@ int main(void) {
                       button_size.x,
                       button_size.y / 2.f,
                   },
-                  [&](const float pct) {
+                  config.steering_sensitivity.get_pct(), [&](const float pct) {
                     config.steering_sensitivity.set_pct(pct);
                     steering_sensitivity.get<ui::HasLabel>().label =
                         "Steering Sensitivity\n" +
