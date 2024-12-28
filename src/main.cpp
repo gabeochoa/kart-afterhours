@@ -455,6 +455,7 @@ struct Weapon {
   enum struct Type {
     Cannon,
     Sniper,
+    Shotgun,
   } type;
 
   struct Config {
@@ -496,8 +497,8 @@ struct Weapon {
   }
 };
 
-void make_poof_anim(Entity &, Weapon &);
-void make_bullet(Entity &, Weapon &);
+void make_poof_anim(Entity &, Weapon &, float angle_offset = 0);
+void make_bullet(Entity &, Weapon &, float angle_offset = 0);
 
 struct Cannon : Weapon {
 
@@ -545,6 +546,34 @@ struct Sniper : Weapon {
                fd) {}
 };
 
+struct Shotgun : Weapon {
+
+  Shotgun(const Weapon::FiringDirection &fd)
+      : Weapon(Weapon::Type::Shotgun, //
+               Weapon::Config{
+                   .cooldownReset = 3.f,
+                   .on_shoot =
+                       [](Entity &parent, Weapon &wp) {
+                         // TODO more poofs
+                         make_poof_anim(parent, wp);
+                         make_bullet(parent, wp, -15);
+                         make_bullet(parent, wp, -5);
+                         make_bullet(parent, wp, 5);
+                         make_bullet(parent, wp, 15);
+
+                         vec2 dir = parent.get<Transform>().velocity;
+                         // opposite of shot direction
+                         dir = vec_norm(vec2{-dir.y, dir.x});
+                         parent.get<Transform>().velocity +=
+                             dir * wp.config.knockback_amt;
+                       },
+                   .knockback_amt = 0.50f,
+                   // This is per bullet
+                   .base_damage = kill_shots_to_base_dmg(4),
+               },
+               fd) {}
+};
+
 struct CanShoot : BaseComponent {
   std::map<InputAction, std::unique_ptr<Weapon>> weapons;
 
@@ -559,6 +588,9 @@ struct CanShoot : BaseComponent {
     } break;
     case Weapon::Type::Sniper: {
       weapons[action] = std::make_unique<Sniper>(direction);
+    } break;
+    case Weapon::Type::Shotgun: {
+      weapons[action] = std::make_unique<Shotgun>(direction);
     } break;
     default:
       log_warn(
@@ -740,7 +772,7 @@ void make_explosion_anim(Entity &parent) {
                                   0, 0);
 }
 
-void make_poof_anim(Entity &parent, Weapon &wp) {
+void make_poof_anim(Entity &parent, Weapon &wp, float angle_offset) {
   Transform &transform = parent.get<Transform>();
 
   vec2 off;
@@ -775,7 +807,7 @@ void make_poof_anim(Entity &parent, Weapon &wp) {
   auto &poof = EntityHelper::createEntity();
   poof.addComponent<TracksEntity>(parent.id, off);
   poof.addComponent<Transform>(transform.pos() + off, vec2{10.f, 10.f})
-      .set_angle(transform.angle);
+      .set_angle(transform.angle + angle_offset);
   poof.addComponent<HasAnimation>(vec2{0, 0},
                                   14,         // total_frames
                                   1.f / 20.f, // frame_dur
@@ -783,7 +815,7 @@ void make_poof_anim(Entity &parent, Weapon &wp) {
                                   1.f, 0, angle);
 }
 
-void make_bullet(Entity &parent, Weapon &wp) {
+void make_bullet(Entity &parent, Weapon &wp, float angle_offset) {
   Transform &transform = parent.get<Transform>();
 
   float angle = 0;
@@ -802,8 +834,10 @@ void make_bullet(Entity &parent, Weapon &wp) {
   }
 
   auto &bullet = EntityHelper::createEntity();
-  bullet.addComponent<Transform>(transform.pos() + vec2{0, 10.f},
-                                 vec2{10.f, 10.f});
+  bullet
+      .addComponent<Transform>(transform.pos() + vec2{0, 10.f},
+                               vec2{10.f, 10.f})
+      .set_angle(angle_offset);
 
   bullet.addComponent<CanDamage>(parent.id, wp.config.base_damage);
   bullet.addComponent<HasLifetime>(10.f);
@@ -813,7 +847,7 @@ void make_bullet(Entity &parent, Weapon &wp) {
   bullet.addComponent<HasEntityIDBasedColor>(
       parent.id, parent.get<HasColor>().color, raylib::RED);
 
-  float rad = transform.as_rad() + to_radians(angle);
+  float rad = transform.as_rad() + to_radians(angle + angle_offset);
   bullet.get<Transform>().velocity =
       vec2{std::sin(rad) * 5.f, -std::cos(rad) * 5.f};
 }
