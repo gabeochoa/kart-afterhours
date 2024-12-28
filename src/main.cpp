@@ -8,6 +8,18 @@
 static int next_id = 0;
 bool running = true;
 
+// 12 gives us these options:
+// 1,2,3,4,6,12
+int MAX_HEALTH = 120;
+
+int kill_shots_to_base_dmg(int num_shots) {
+  if (!(num_shots == 1 || num_shots == 2 || num_shots == 3 || num_shots == 4 ||
+        num_shots == 6 || num_shots == 12)) {
+    log_error("You are setting a non divisible number of shots: {}", num_shots);
+  }
+  return MAX_HEALTH / num_shots;
+}
+
 struct ConfigurableValues {
 
   template <typename T> struct ValueInRange {
@@ -505,7 +517,7 @@ struct Cannon : Weapon {
                              dir * wp.config.knockback_amt;
                        },
                    .knockback_amt = 0.25f,
-                   .base_damage = 1,
+                   .base_damage = kill_shots_to_base_dmg(3),
                },
                fd) {}
 };
@@ -528,7 +540,7 @@ struct Sniper : Weapon {
                              dir * wp.config.knockback_amt;
                        },
                    .knockback_amt = 0.50f,
-                   .base_damage = 3,
+                   .base_damage = kill_shots_to_base_dmg(1),
                },
                fd) {}
 };
@@ -817,7 +829,7 @@ Entity &make_car(int id) {
       vec2{15.f, 25.f});
 
   entity.addComponent<CanWrapAround>();
-  entity.addComponent<HasHealth>(3);
+  entity.addComponent<HasHealth>(MAX_HEALTH);
   entity.addComponent<TireMarkComponent>();
   auto tint = get_color_for_player((size_t)id);
   entity.addComponent<HasColor>(tint);
