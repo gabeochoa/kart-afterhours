@@ -628,8 +628,11 @@ struct HasMultipleLives : BaseComponent {
 /// e.g. if you go passed the width of the screen (right-side),
 /// you'll wrap around the the left-side.
 /// This applies vertically as well.
+///
+/// @param padding - this will wait X pixels before wrapping
 struct CanWrapAround : BaseComponent {
-  CanWrapAround() = default;
+  float padding;
+  CanWrapAround(float padd = 50.f) : padding(padd) {}
 };
 
 struct EQ : public EntityQuery<EQ> {
@@ -762,7 +765,7 @@ void make_bullet(Entity &parent, Weapon::FiringDirection direction) {
   bullet.addComponent<CanDamage>(parent.id, 5);
   bullet.addComponent<HasLifetime>(10.f);
 
-  bullet.addComponent<CanWrapAround>();
+  bullet.addComponent<CanWrapAround>(0.f);
 
   bullet.addComponent<HasEntityIDBasedColor>(
       parent.id, parent.get<HasColor>().color, raylib::RED);
@@ -792,8 +795,8 @@ Entity &make_car(int id) {
   entity.addComponent<CanShoot>()
       .register_weapon(InputAction::ShootLeft, Weapon::FiringDirection::Left,
                        Weapon::Type::Cannon)
-      .register_weapon(InputAction::ShootRight, Weapon::FiringDirection::Right,
-                       Weapon::Type::Cannon);
+      .register_weapon(InputAction::ShootRight,
+                       Weapon::FiringDirection::Forward, Weapon::Type::Cannon);
 
   return entity;
 }
@@ -1208,13 +1211,13 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
             .current_resolution;
   }
 
-  virtual void for_each_with(Entity &, Transform &transform, CanWrapAround &,
-                             float) override {
+  virtual void for_each_with(Entity &, Transform &transform,
+                             CanWrapAround &canWrap, float) override {
 
     float width = (float)resolution.width;
     float height = (float)resolution.height;
 
-    float padding = 50;
+    float padding = canWrap.padding;
 
     if (transform.rect().x > width + padding) {
       transform.position.x = -padding;
