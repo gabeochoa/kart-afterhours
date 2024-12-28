@@ -1612,6 +1612,7 @@ struct RenderMainMenuUI : UISystem {
     {
       // making a root component to attach the UI to
       screen.addComponent<ui::AutoLayoutRoot>();
+      screen.addComponent<ui::UIComponentDebug>("main_screen");
       screen.addComponent<ui::UIComponent>(screen.id)
           .set_desired_width(ui::Size{
               // TODO figure out how to update this
@@ -1653,6 +1654,7 @@ struct RenderMainMenuUI : UISystem {
     auto &div = make_div(screen, {padding_(1.f, 1.f), padding_(1.f, 1.f)});
 
     auto &buttons = make_div(div, afterhours::ui::children_xy());
+    buttons.addComponent<ui::UIComponentDebug>("button_group");
 
     {
       const auto close_menu = [&div](Entity &) {
@@ -1706,6 +1708,7 @@ struct RenderDebugUI : UISystem {
     {
       // making a root component to attach the UI to
       screen.addComponent<ui::AutoLayoutRoot>();
+      screen.addComponent<ui::UIComponentDebug>("debug_screen");
       screen.addComponent<ui::UIComponent>(screen.id)
           .set_desired_width(ui::Size{
               // TODO figure out how to update this
@@ -1817,6 +1820,7 @@ int main(void) {
 
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();
+    sophie.addComponent<ui::UIComponentDebug>("sophie");
     sophie.addComponent<ui::UIComponent>(sophie.id)
         .set_desired_width(ui::Size{
             // TODO figure out how to update this
