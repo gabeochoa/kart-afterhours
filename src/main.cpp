@@ -1,6 +1,7 @@
 
 #include "std_include.h"
 
+#include "argh.h"
 #include "rl.h"
 
 #define ENABLE_SOUNDS
@@ -2006,9 +2007,14 @@ void game() {
             << std::endl;
 }
 
-int main(void) {
-  const int screenWidth = 1280;
-  const int screenHeight = 720;
+int main(int argc, char *argv[]) {
+  int screenWidth = 1280;
+  int screenHeight = 720;
+
+  argh::parser cmdl(argc, argv, argh::parser::PREFER_PARAM_FOR_UNREG_OPTION);
+
+  cmdl({"-w", "--width"}) >> screenWidth;
+  cmdl({"-h", "--height"}) >> screenHeight;
 
   raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
   raylib::SetTargetFPS(200);
