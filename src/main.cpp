@@ -1797,8 +1797,8 @@ struct IntroScreens : System<> {
 
   enum struct State {
     None,
-    Raylib,
     Us,
+    Raylib,
     Complete,
   } state = State::None;
 
@@ -1823,10 +1823,11 @@ struct IntroScreens : System<> {
 
   State render_raylib() {
 
-    float anim_duration = 1.25f;
+    float anim_duration = 1.20f;
 
-    vec2 start_position{500.f, 160.f};
-    int font_size = 40;
+    int font_size = (int)(raylib::GetRenderHeight() / 15);
+
+    vec2 start_position{raylib::GetRenderWidth() * 0.4f, font_size * 4.f};
     float font_size_f = static_cast<float>(font_size);
 
     float thicc = 5.f;
@@ -1886,7 +1887,7 @@ struct IntroScreens : System<> {
     }
 
     if (timeInState > (anim_duration * 4.f)) {
-      return State::Us;
+      return State::Complete;
     }
 
     return State::Raylib;
@@ -1896,14 +1897,14 @@ struct IntroScreens : System<> {
     auto before = state;
     switch (before) {
     case State::None: {
-      state = timeInState < 1.f ? State::None : State::Raylib;
-    } break;
-    case State::Raylib: {
-      state = render_raylib();
+      state = timeInState < 0.15f ? State::None : State::Us;
     } break;
     case State::Us: {
       // TODO
-      state = State::Complete;
+      state = State::Raylib;
+    } break;
+    case State::Raylib: {
+      state = render_raylib();
     } break;
     case State::Complete: {
       running = false;
