@@ -1792,51 +1792,145 @@ struct RenderDebugUI : UISystem {
   }
 };
 
-int main(void) {
-  const int screenWidth = 1280;
-  const int screenHeight = 720;
+struct IntroScreens : System<> {
 
-  raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
-  raylib::SetTargetFPS(200);
+  enum struct State {
+    None,
+    Raylib,
+    Us,
+    Complete,
+  } state = State::None;
 
-  raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
+  raylib::Font raylibFont;
+  float timeInState = 0.f;
 
-  raylib::InitAudioDevice();
-  raylib::SetMasterVolume(1.f);
+  IntroScreens() { this->raylibFont = raylib::GetFontDefault(); }
 
-  load_gamepad_mappings();
-
-  load_sounds();
-
-  // sophie
-  auto &sophie = EntityHelper::createEntity();
-  {
-    input::add_singleton_components<InputAction>(sophie, get_mapping());
-    window_manager::add_singleton_components(sophie, 200);
-    ui::add_singleton_components<InputAction>(sophie);
-    sophie.addComponent<HasTexture>(
-        raylib::LoadTexture(GetAssetPath("spritesheet.png")));
-
-    // making a root component to attach the UI to
-    sophie.addComponent<ui::AutoLayoutRoot>();
-    sophie.addComponent<ui::UIComponentDebug>("sophie");
-    sophie.addComponent<ui::UIComponent>(sophie.id)
-        .set_desired_width(ui::Size{
-            // TODO figure out how to update this
-            // when resolution changes
-            .dim = ui::Dim::Pixels,
-            .value = screenWidth,
-        })
-        .set_desired_height(ui::Size{
-            .dim = ui::Dim::Pixels,
-            .value = screenHeight,
-        });
+  virtual bool should_run(float dt) {
+    timeInState += dt;
+    if (state == State::Complete) {
+      return timeInState < 0.2f;
+    }
+    return true;
   }
 
-  make_player(0);
+  raylib::Color get_white_alpha(float start = 0.f, float length = 1.f) {
+    int alpha = (int)std::min(
+        255.f, std::lerp(0.f, 255.f, ((timeInState - start) / length)));
+    return {255, 255, 255, (unsigned char)alpha};
+  }
 
-  // make_ai();
+  State render_raylib() {
 
+    float anim_duration = 1.25f;
+
+    vec2 start_position{500.f, 160.f};
+    int font_size = 40;
+    float font_size_f = static_cast<float>(font_size);
+
+    float thicc = 5.f;
+    vec2 box_top_left = start_position + vec2{0, font_size_f * 1.5f};
+
+    std::string powered_by_str = "POWERED BY";
+    float powered_width =
+        (float)raylib::MeasureText(powered_by_str.c_str(), font_size);
+    raylib::DrawTextEx(this->raylibFont, powered_by_str.c_str(),
+                       start_position - vec2{font_size_f / 4.f, 0}, font_size,
+                       1.f, get_white_alpha(0.f, anim_duration));
+
+    float width = powered_width * 0.80f;
+    // first two lines
+    if (timeInState > anim_duration) {
+      float pct_complete =
+          std::max(0.f,
+                   std::min(anim_duration, (timeInState - anim_duration))) /
+          anim_duration;
+      // top line
+      raylib::DrawLineEx(box_top_left,
+                         box_top_left + vec2{width * pct_complete, 0}, thicc,
+                         get_white_alpha(anim_duration, anim_duration));
+      // left line
+      raylib::DrawLineEx(box_top_left,
+                         box_top_left + vec2{0, width * pct_complete}, thicc,
+                         get_white_alpha(anim_duration, anim_duration));
+    }
+
+    if (timeInState > (anim_duration * 2.f)) {
+      float pct_complete =
+          std::max(0.f, std::min(anim_duration,
+                                 (timeInState - (anim_duration * 2.f)))) /
+          anim_duration;
+      // right line
+      raylib::DrawLineEx(box_top_left + vec2{width, 0},
+                         box_top_left + vec2{width, 0} +
+                             vec2{0, width * pct_complete},
+                         thicc, get_white_alpha(anim_duration, anim_duration));
+      // bottom line
+      raylib::DrawLineEx(box_top_left + vec2{0, width},
+                         box_top_left + vec2{0, width} +
+                             vec2{width * pct_complete, 0.f},
+                         thicc, get_white_alpha(anim_duration, anim_duration));
+    }
+
+    vec2 box_bottom_right = box_top_left + vec2{width, width};
+    if (timeInState > (anim_duration * 3.f)) {
+      std::string raylib_str = "raylib";
+      float raylib_width =
+          (float)raylib::MeasureText(raylib_str.c_str(), font_size);
+
+      raylib::DrawTextEx(
+          this->raylibFont, raylib_str.c_str(),
+          box_bottom_right - vec2{raylib_width, font_size_f}, font_size, 1.f,
+          get_white_alpha((anim_duration * 3.f), anim_duration * 3.f));
+    }
+
+    if (timeInState > (anim_duration * 4.f)) {
+      return State::Us;
+    }
+
+    return State::Raylib;
+  }
+
+  void once(float) {
+    auto before = state;
+    switch (before) {
+    case State::None: {
+      state = timeInState < 1.f ? State::None : State::Raylib;
+    } break;
+    case State::Raylib: {
+      state = render_raylib();
+    } break;
+    case State::Us: {
+      // TODO
+      state = State::Complete;
+    } break;
+    case State::Complete: {
+      running = false;
+    } break;
+    }
+
+    if (before != state) {
+      timeInState = 0.f;
+    }
+  }
+};
+
+void intro() {
+  SystemManager systems;
+
+  input::register_update_systems<InputAction>(systems);
+  window_manager::register_update_systems(systems);
+  systems.register_render_system(std::make_unique<IntroScreens>());
+
+  while (running && !raylib::WindowShouldClose()) {
+    raylib::BeginDrawing();
+    { systems.run(raylib::GetFrameTime()); }
+    raylib::EndDrawing();
+  }
+  running = true;
+}
+
+void game() {
   SystemManager systems;
 
   // debug systems
@@ -1910,6 +2004,55 @@ int main(void) {
 
   std::cout << "Num entities: " << EntityHelper::get_entities().size()
             << std::endl;
+}
+
+int main(void) {
+  const int screenWidth = 1280;
+  const int screenHeight = 720;
+
+  raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
+  raylib::SetTargetFPS(200);
+
+  raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
+
+  raylib::InitAudioDevice();
+  raylib::SetMasterVolume(1.f);
+
+  load_gamepad_mappings();
+
+  load_sounds();
+
+  // sophie
+  auto &sophie = EntityHelper::createEntity();
+  {
+    input::add_singleton_components<InputAction>(sophie, get_mapping());
+    window_manager::add_singleton_components(sophie, 200);
+    ui::add_singleton_components<InputAction>(sophie);
+    sophie.addComponent<HasTexture>(
+        raylib::LoadTexture(GetAssetPath("spritesheet.png")));
+
+    // making a root component to attach the UI to
+    sophie.addComponent<ui::AutoLayoutRoot>();
+    sophie.addComponent<ui::UIComponentDebug>("sophie");
+    sophie.addComponent<ui::UIComponent>(sophie.id)
+        .set_desired_width(ui::Size{
+            // TODO figure out how to update this
+            // when resolution changes
+            .dim = ui::Dim::Pixels,
+            .value = screenWidth,
+        })
+        .set_desired_height(ui::Size{
+            .dim = ui::Dim::Pixels,
+            .value = screenHeight,
+        });
+  }
+
+  make_player(0);
+
+  // make_ai();
+
+  intro();
+  game();
 
   return 0;
 }
