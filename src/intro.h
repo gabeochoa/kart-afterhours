@@ -148,5 +148,7 @@ void intro() {
     { systems.run(raylib::GetFrameTime()); }
     raylib::EndDrawing();
   }
+
+  // turn back on running for the next screen
   running = true;
 }

@@ -4,6 +4,7 @@
 #include "argh.h"
 #include "rl.h"
 //
+int sophie_id = -1;
 bool running = true;
 //
 #include "intro.h"
@@ -1898,6 +1899,7 @@ int main(int argc, char *argv[]) {
 
   // sophie
   auto &sophie = EntityHelper::createEntity();
+  sophie_id = sophie.id;
   {
     input::add_singleton_components<InputAction>(sophie, get_mapping());
     window_manager::add_singleton_components(sophie, 200);
