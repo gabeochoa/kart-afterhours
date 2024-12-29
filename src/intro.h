@@ -5,7 +5,7 @@
 
 using namespace afterhours;
 
-struct IntroScreens : System<> {
+struct IntroScreens : System<window_manager::ProvidesCurrentResolution> {
 
   enum struct State {
     None,
@@ -13,6 +13,8 @@ struct IntroScreens : System<> {
     Raylib,
     Complete,
   } state = State::None;
+
+  window_manager::Resolution resolution;
 
   raylib::Font raylibFont;
   float timeInState = 0.f;
@@ -37,9 +39,9 @@ struct IntroScreens : System<> {
 
     float anim_duration = 1.20f;
 
-    int font_size = (int)(raylib::GetRenderHeight() / 15);
+    int font_size = (int)(resolution.height / 15);
 
-    vec2 start_position{raylib::GetRenderWidth() * 0.4f, font_size * 4.f};
+    vec2 start_position{resolution.width * 0.4f, font_size * 4.f};
     float font_size_f = static_cast<float>(font_size);
 
     float thicc = 5.f;
@@ -98,14 +100,20 @@ struct IntroScreens : System<> {
           get_white_alpha((anim_duration * 3.f), anim_duration * 3.f));
     }
 
-    if (timeInState > (anim_duration * 4.f)) {
+    if (timeInState > (anim_duration * 4.5f)) {
       return State::Complete;
     }
 
     return State::Raylib;
   }
 
-  void once(float) {
+  virtual void
+  for_each_with(Entity &,
+                window_manager::ProvidesCurrentResolution &pCurrentResolution,
+                float dt) override {
+
+    resolution = pCurrentResolution.current_resolution;
+
     auto before = state;
     switch (before) {
     case State::None: {
@@ -133,7 +141,7 @@ void intro() {
   SystemManager systems;
 
   window_manager::register_update_systems(systems);
-  systems.register_render_system(std::make_unique<IntroScreens>());
+  systems.register_update_system(std::make_unique<IntroScreens>());
 
   while (running && !raylib::WindowShouldClose()) {
     raylib::BeginDrawing();
