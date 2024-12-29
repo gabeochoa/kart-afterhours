@@ -1707,7 +1707,6 @@ struct RenderDebugUI : UISystem {
     screen_ptr = &screen;
     {
       // making a root component to attach the UI to
-      screen.addComponent<ui::AutoLayoutRoot>();
       screen.addComponent<ui::UIComponentDebug>("debug_screen");
       screen.addComponent<ui::UIComponent>(screen.id)
           .set_desired_width(ui::Size{
