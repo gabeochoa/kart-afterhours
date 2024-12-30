@@ -1619,14 +1619,12 @@ struct RenderMainMenuUI : UISystem {
       screen.addComponent<ui::UIComponentDebug>("main_screen");
       screen.addComponent<ui::UIComponent>(screen.id)
           .set_desired_width(ui::Size{
-              // TODO figure out how to update this
-              // when resolution changes
-              .dim = ui::Dim::Pixels,
-              .value = raylib::GetRenderWidth(),
+              .dim = ui::Dim::ScreenPercent,
+              .value = 1.f,
           })
           .set_desired_height(ui::Size{
-              .dim = ui::Dim::Pixels,
-              .value = raylib::GetRenderHeight(),
+              .dim = ui::Dim::ScreenPercent,
+              .value = 1.f
           })
           .set_parent(root)
           .make_absolute();
@@ -1713,16 +1711,12 @@ struct RenderDebugUI : UISystem {
       // making a root component to attach the UI to
       screen.addComponent<ui::UIComponentDebug>("debug_screen");
       screen.addComponent<ui::UIComponent>(screen.id)
-          .set_desired_width(ui::Size{
-              // TODO figure out how to update this
-              // when resolution changes
-              .dim = ui::Dim::Pixels,
-              .value = raylib::GetRenderWidth(),
-          })
-          .set_desired_height(ui::Size{
-              .dim = ui::Dim::Pixels,
-              .value = raylib::GetRenderHeight(),
-          })
+        .set_desired_width(
+          afterhours::ui::screen_pct(1.f)
+        )
+        .set_desired_height(
+          afterhours::ui::screen_pct(1.f)
+        )
           .set_parent(root)
           .make_absolute();
     }
@@ -1906,16 +1900,12 @@ int main(int argc, char *argv[]) {
     sophie.addComponent<ui::AutoLayoutRoot>();
     sophie.addComponent<ui::UIComponentDebug>("sophie");
     sophie.addComponent<ui::UIComponent>(sophie.id)
-        .set_desired_width(ui::Size{
-            // TODO figure out how to update this
-            // when resolution changes
-            .dim = ui::Dim::Pixels,
-            .value = screenWidth,
-        })
-        .set_desired_height(ui::Size{
-            .dim = ui::Dim::Pixels,
-            .value = screenHeight,
-        });
+        .set_desired_width(
+          afterhours::ui::screen_pct(1.f)
+        )
+        .set_desired_height(
+          afterhours::ui::screen_pct(1.f)
+        );
   }
 
   make_player(0);
