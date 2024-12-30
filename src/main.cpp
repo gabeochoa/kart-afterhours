@@ -1609,6 +1609,8 @@ struct RenderMainMenuUI : UISystem {
     using afterhours::ui::make_button;
     using afterhours::ui::make_div;
     using afterhours::ui::padding_;
+    using afterhours::ui::screen_pct;
+    using afterhours::ui::Padding;
     using afterhours::ui::pixels;
 
     auto &screen = EntityHelper::createEntity();
@@ -1651,22 +1653,30 @@ struct RenderMainMenuUI : UISystem {
           });
     }
 
-    // TODO figure out how to update this
-    // when resolution changes
-    auto &div = make_div(screen, {padding_(1.f, 1.f), padding_(1.f, 1.f)});
+    auto &div = make_div(screen, {screen_pct(1.f, 1.f), screen_pct(1.f, 1.f)});
 
-    auto &buttons = make_div(div, afterhours::ui::children_xy());
+    auto &buttons = make_div(div, afterhours::ui::children_xy(),
+            Padding{
+            .left =screen_pct(0.4f),
+            .top=screen_pct(0.4f),
+                }
+            );
     buttons.addComponent<ui::UIComponentDebug>("button_group");
 
     {
+        Padding button_padding = {
+            .top=pixels(button_size.y / 10.f),
+           .bottom=pixels(button_size.y / 10.f),
+        };
+
       const auto close_menu = [&div](Entity &) {
         div.get<ui::UIComponent>().should_hide = true;
       };
-      make_button(buttons, "play", button_size, close_menu);
-      make_button(buttons, "about", button_size, close_menu);
-      make_button(buttons, "settings", button_size, close_menu);
+      make_button(buttons, "play", button_size, close_menu, button_padding);
+      make_button(buttons, "about", button_size, close_menu, button_padding);
+      make_button(buttons, "settings", button_size, close_menu, button_padding);
       make_button(buttons, "exit", button_size,
-                  [&](Entity &) { running = false; });
+                  [&](Entity &) { running = false; }, button_padding);
     }
   }
 };
@@ -1837,7 +1847,6 @@ void game() {
     systems.register_render_system(
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     systems.register_render_system(std::make_unique<RenderDebugUI>());
-    // TODO disabling main menu for right now
     // systems.register_render_system(std::make_unique<RenderMainMenuUI>());
     ui::register_render_systems<InputAction>(systems,
                                              InputAction::ToggleUILayoutDebug);
