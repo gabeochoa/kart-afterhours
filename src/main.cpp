@@ -1415,12 +1415,9 @@ struct RenderOOB : System<Transform> {
   Rectangle screen;
 
   virtual void once(float) override {
-    resolution =
-        EQ().whereHasComponent<
-                afterhours::window_manager::ProvidesCurrentResolution>()
-            .gen_first_enforce()
-            .get<afterhours::window_manager::ProvidesCurrentResolution>()
-            .current_resolution;
+    resolution = EntityHelper::get_singleton_cmp<
+                     afterhours::window_manager::ProvidesCurrentResolution>()
+                     ->current_resolution;
 
     screen = Rectangle{0, 0, (float)resolution.width, (float)resolution.height};
   }
@@ -1501,10 +1498,7 @@ struct RenderAnimation : System<Transform, HasAnimation> {
   raylib::Texture2D sheet;
 
   virtual void once(float) override {
-    sheet = EQ().whereHasComponent<HasTexture>()
-                .gen_first_enforce()
-                .get<HasTexture>()
-                .texture;
+    sheet = EntityHelper::get_singleton_cmp<HasTexture>()->texture;
   }
 
   virtual void for_each_with(const Entity &, const Transform &transform,
@@ -1916,6 +1910,7 @@ int main(int argc, char *argv[]) {
     ui::add_singleton_components<InputAction>(sophie);
     sophie.addComponent<HasTexture>(
         raylib::LoadTexture(GetAssetPath("spritesheet.png")));
+    EntityHelper::registerSingleton<HasTexture>(sophie);
 
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();
@@ -1929,7 +1924,7 @@ int main(int argc, char *argv[]) {
         get_font_name(FontID::EQPro), GetAssetPath("eqprorounded-regular.ttf"));
   }
 
-  // make_player(0);
+  make_player(0);
 
   // make_ai();
 
