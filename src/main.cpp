@@ -1789,77 +1789,72 @@ struct RenderDebugUI : UISystem {
     auto &div = make_div(screen, children_xy());
     div.get<ui::UIComponent>().flex_direction = FlexDirection::Row;
     {
-      auto &max_speed = ui::make_div(div, {
-                                              pixels(button_size.x),
-                                              pixels(button_size.y / 2.f),
-                                          });
-      max_speed.addComponent<ui::HasColor>(raylib::GRAY);
-      max_speed.addComponent<ui::HasLabel>(
-          "Max Speed\n" + std::to_string(config.max_speed.data) + " m/s");
 
-      make_slider(div,
-                  SliderConfig{.size =
-                                   vec2{
-                                       button_size.x,
-                                       button_size.y / 2.f,
-                                   },
-                               .starting_pct = config.max_speed.get_pct(),
-                               .on_slider_changed = [&](const float pct) {
+      make_slider(div, SliderConfig{
+                           .size =
+                               vec2{
+                                   button_size.x * 2.f,
+                                   button_size.y / 2.f,
+                               },
+                           .starting_pct = config.max_speed.get_pct(),
+                           .on_slider_changed =
+                               [&](const float pct) {
                                  config.max_speed.set_pct(pct);
-                                 max_speed.get<ui::HasLabel>().label =
-                                     "Max Speed\n" +
-                                     std::to_string(config.max_speed.data) +
-                                     " m/s";
-                               }});
 
-      auto &skid_threshold = ui::make_div(div, {
-                                                   pixels(button_size.x),
-                                                   pixels(button_size.y / 2.f),
-                                               });
-      skid_threshold.addComponent<ui::HasColor>(raylib::GRAY);
-      skid_threshold.addComponent<ui::HasLabel>(
-          "Skid Threshold\n" + std::to_string(config.skid_threshold.data) +
-          "%");
+                                 // TODO id love for this to move into the
+                                 // actual make_slider config but we dont yet
+                                 // have a way to convert from pct back to value
+                                 // inside the ui.h
+                                 return std::to_string(config.max_speed.data);
+                               },
+                           .label = "Max Speed\n {} m/s",
+                           .label_is_format_string = true,
+                       });
 
-      const auto skid_changed = [&](const float pct) {
-        config.skid_threshold.set_pct(pct);
-        skid_threshold.get<ui::HasLabel>().label =
-            "Skid Threshold\n" + std::to_string(config.skid_threshold.data) +
-            "%";
-      };
       make_slider(div,
-                  SliderConfig{.size =
-                                   vec2{
-                                       button_size.x,
-                                       button_size.y / 2.f,
-                                   },
-                               .starting_pct = config.skid_threshold.get_pct(),
-                               .on_slider_changed = skid_changed});
+                  SliderConfig{
+                      .size =
+                          vec2{
+                              button_size.x * 2.f,
+                              button_size.y / 2.f,
+                          },
+                      .starting_pct = config.skid_threshold.get_pct(),
+                      .on_slider_changed =
+                          [&](const float pct) {
+                            config.skid_threshold.set_pct(pct);
 
-      auto &steering_sensitivity =
-          ui::make_div(div, {
-                                pixels(button_size.x),
-                                pixels(button_size.y / 2.f),
-                            });
-      steering_sensitivity.addComponent<ui::HasColor>(raylib::GRAY);
-      steering_sensitivity.addComponent<ui::HasLabel>(
-          "Steering Sensitivity\n" +
-          std::to_string(config.steering_sensitivity.data));
+                            // TODO id love for this to move into the
+                            // actual make_slider config but we dont yet
+                            // have a way to convert from pct back to value
+                            // inside the ui.h
+                            return std::to_string(config.skid_threshold.data);
+                          },
+                      .label = "Skid Threshold\n {}%",
+                      .label_is_format_string = true,
+                  });
 
-      make_slider(
-          div,
-          SliderConfig{.size =
-                           vec2{
-                               button_size.x,
-                               button_size.y / 2.f,
-                           },
-                       .starting_pct = config.steering_sensitivity.get_pct(),
-                       .on_slider_changed = [&](const float pct) {
-                         config.steering_sensitivity.set_pct(pct);
-                         steering_sensitivity.get<ui::HasLabel>().label =
-                             "Steering Sensitivity\n" +
-                             std::to_string(config.steering_sensitivity.data);
-                       }});
+      make_slider(div,
+                  SliderConfig{
+                      .size =
+                          vec2{
+                              button_size.x * 2.f,
+                              button_size.y / 2.f,
+                          },
+                      .starting_pct = config.steering_sensitivity.get_pct(),
+                      .on_slider_changed =
+                          [&](const float pct) {
+                            config.steering_sensitivity.set_pct(pct);
+
+                            // TODO id love for this to move into the
+                            // actual make_slider config but we dont yet
+                            // have a way to convert from pct back to value
+                            // inside the ui.h
+                            return std::to_string(
+                                config.steering_sensitivity.data);
+                          },
+                      .label = "Steering Sensitivity\n {}%",
+                      .label_is_format_string = true,
+                  });
     }
   }
 };
