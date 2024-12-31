@@ -39,7 +39,7 @@ struct IntroScreens
 
     raylib::Font raylibFont = fm.get_font(get_font_name(FontID::raylibFont));
 
-    float anim_duration = 1.20f;
+    float anim_duration = 0.90f;
 
     int font_size = (int)(resolution.height / 15);
 
@@ -109,10 +109,38 @@ struct IntroScreens
     return State::Raylib;
   }
 
+  State render_us(ui::FontManager &fm) {
+
+    raylib::Font font = fm.get_font(get_font_name(FontID::EQPro));
+    float anim_duration = 0.80f;
+
+    // the extra spaces are to center it
+    std::string title_str = "Cart Chaos";
+
+    float font_size = (resolution.height / 3.5f);
+    float width = (float)raylib::MeasureText(title_str.c_str(), font_size);
+
+    vec2 position = {(resolution.width - width) * 2.f,
+                     (resolution.height / 2.f) - (font_size / 2.f)};
+
+    raylib::DrawTextEx(
+        font, title_str.c_str(), position, font_size, 1.f,
+        {255, 255, 255,
+         255 - (unsigned char)(255 * timeInState / (anim_duration * 2.f))});
+
+    if (timeInState > (anim_duration * 2.0f)) {
+      return State::Raylib;
+    }
+
+    return State::Us;
+  }
+
   virtual void
   for_each_with(Entity &,
                 window_manager::ProvidesCurrentResolution &pCurrentResolution,
                 ui::FontManager &fm, float dt) override {
+
+    raylib::ClearBackground(raylib::BLACK);
 
     resolution = pCurrentResolution.current_resolution;
 
@@ -122,8 +150,7 @@ struct IntroScreens
       state = timeInState < 0.15f ? State::None : State::Us;
     } break;
     case State::Us: {
-      // TODO
-      state = State::Raylib;
+      state = render_us(fm);
     } break;
     case State::Raylib: {
       state = render_raylib(fm);
