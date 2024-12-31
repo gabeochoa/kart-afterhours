@@ -881,10 +881,12 @@ Entity &make_car(int id) {
   entity.addComponent<HasSprite>(idx_to_sprite_frame(0, 1), 1.f, tint);
 
   entity.addComponent<CanShoot>()
-      .register_weapon(InputAction::ShootLeft, Weapon::FiringDirection::Left,
-                       Weapon::Type::Cannon)
-      .register_weapon(InputAction::ShootRight,
-                       Weapon::FiringDirection::Forward, Weapon::Type::Cannon);
+      .register_weapon(InputAction::ShootLeft, Weapon::FiringDirection::Forward,
+                       Weapon::Type::Shotgun)
+      // .register_weapon(InputAction::ShootLeft, Weapon::FiringDirection::Left,
+      // Weapon::Type::Cannon)
+      .register_weapon(InputAction::ShootRight, Weapon::FiringDirection::Right,
+                       Weapon::Type::Cannon);
 
   return entity;
 }
@@ -1163,10 +1165,10 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
     auto existing_players = EQ().whereHasComponent<PlayerID>().gen();
 
     // we are good
-    if (existing_players.size() == maxGamepadID.count())
+    if (existing_players.size() + 1 == maxGamepadID.count())
       return;
 
-    if (existing_players.size() > maxGamepadID.count()) {
+    if (existing_players.size() > maxGamepadID.count() + 1) {
       // remove the player that left
       for (Entity &player : existing_players) {
         if (input::is_gamepad_available(player.get<PlayerID>().id))
@@ -1178,7 +1180,7 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
 
     // we need to add a new player
 
-    for (int i = 0; i < (int)maxGamepadID.count(); i++) {
+    for (int i = 0; i < (int)maxGamepadID.count() + 1; i++) {
       bool found = false;
       for (Entity &player : existing_players) {
         if (i == player.get<PlayerID>().id) {
@@ -1617,8 +1619,6 @@ struct RenderMainMenuUI : UISystem {
     auto &screen = EntityHelper::createEntity();
     screen_ptr = &screen;
     {
-      // making a root component to attach the UI to
-      screen.addComponent<ui::AutoLayoutRoot>();
       screen.addComponent<ui::UIComponentDebug>("main_screen");
       screen.addComponent<ui::UIComponent>(screen.id)
           .set_desired_width(ui::Size{
@@ -1633,7 +1633,7 @@ struct RenderMainMenuUI : UISystem {
           .make_absolute();
     }
 
-    if (0) {
+    if (1) {
       auto &dropdown =
           ui::make_dropdown<window_manager::ProvidesAvailableWindowResolutions>(
               screen);
@@ -1848,7 +1848,7 @@ void game() {
     systems.register_render_system(
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     systems.register_render_system(std::make_unique<RenderDebugUI>());
-    // systems.register_render_system(std::make_unique<RenderMainMenuUI>());
+    systems.register_render_system(std::make_unique<RenderMainMenuUI>());
     ui::register_render_systems<InputAction>(systems,
                                              InputAction::ToggleUILayoutDebug);
     systems.register_render_system(std::make_unique<RenderSkid>());
@@ -1923,7 +1923,7 @@ int main(int argc, char *argv[]) {
 
   // make_ai();
 
-  intro();
+  // intro();
   game();
 
   return 0;
