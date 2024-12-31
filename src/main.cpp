@@ -1615,6 +1615,65 @@ struct RenderMainMenuUI : UISystem {
   RenderMainMenuUI() : UISystem() {}
   virtual ~RenderMainMenuUI() {}
 
+  Entity &setup_settings(Entity &root) {
+    using afterhours::ui::children;
+    using afterhours::ui::ComponentSize;
+    using afterhours::ui::make_button;
+    using afterhours::ui::make_div;
+    using afterhours::ui::Padding;
+    using afterhours::ui::padding_;
+    using afterhours::ui::pixels;
+    using afterhours::ui::screen_pct;
+
+    auto &screen = EntityHelper::createEntity();
+    screen_ptr = &screen;
+    {
+      screen.addComponent<ui::UIComponentDebug>("settings_screen");
+      screen.addComponent<ui::UIComponent>(screen.id)
+          .set_desired_width(ui::Size{
+              .dim = ui::Dim::ScreenPercent,
+              .value = 1.f,
+          })
+          .set_desired_height(
+              ui::Size{.dim = ui::Dim::ScreenPercent, .value = 1.f})
+          .set_parent(root)
+          .make_absolute();
+    }
+
+    auto &div = make_div(screen, {screen_pct(1.f, 1.f), screen_pct(1.f, 1.f)});
+
+    auto &controls = make_div(div, afterhours::ui::children_xy(),
+                              Padding{
+                                  .top = screen_pct(0.4f),
+                                  .left = screen_pct(0.4f),
+                                  .bottom = pixels(0.f),
+                                  .right = pixels(0.f),
+                              });
+    controls.addComponent<ui::UIComponentDebug>("controls_group");
+
+    auto &dropdown =
+        ui::make_dropdown<window_manager::ProvidesAvailableWindowResolutions>(
+            controls);
+    dropdown.get<ui::UIComponent>()
+        .set_desired_width(ui::Size{
+            .dim = ui::Dim::Pixels,
+            .value = button_size.x,
+        })
+        .set_desired_height(ui::Size{
+            .dim = ui::Dim::Children,
+            .value = button_size.y,
+        });
+    dropdown.get<ui::HasChildrenComponent>().register_on_child_add(
+        [](Entity &child) {
+          if (child.is_missing<ui::HasColor>()) {
+            child.addComponent<ui::HasColor>(raylib::PURPLE);
+          }
+        });
+
+    screen.get<ui::UIComponent>().should_hide = true;
+    return screen;
+  }
+
   virtual void setup_ui(Entity &root) override {
     using afterhours::ui::children;
     using afterhours::ui::ComponentSize;
@@ -1624,6 +1683,8 @@ struct RenderMainMenuUI : UISystem {
     using afterhours::ui::padding_;
     using afterhours::ui::pixels;
     using afterhours::ui::screen_pct;
+
+    auto &settings_root = setup_settings(root);
 
     auto &screen = EntityHelper::createEntity();
     screen_ptr = &screen;
@@ -1638,27 +1699,6 @@ struct RenderMainMenuUI : UISystem {
               ui::Size{.dim = ui::Dim::ScreenPercent, .value = 1.f})
           .set_parent(root)
           .make_absolute();
-    }
-
-    if (1) {
-      auto &dropdown =
-          ui::make_dropdown<window_manager::ProvidesAvailableWindowResolutions>(
-              screen);
-      dropdown.get<ui::UIComponent>()
-          .set_desired_width(ui::Size{
-              .dim = ui::Dim::Pixels,
-              .value = button_size.x,
-          })
-          .set_desired_height(ui::Size{
-              .dim = ui::Dim::Children,
-              .value = button_size.y,
-          });
-      dropdown.get<ui::HasChildrenComponent>().register_on_child_add(
-          [](Entity &child) {
-            if (child.is_missing<ui::HasColor>()) {
-              child.addComponent<ui::HasColor>(raylib::PURPLE);
-            }
-          });
     }
 
     auto &div = make_div(screen, {screen_pct(1.f, 1.f), screen_pct(1.f, 1.f)});
@@ -1683,9 +1723,15 @@ struct RenderMainMenuUI : UISystem {
       const auto close_menu = [&div](Entity &) {
         div.get<ui::UIComponent>().should_hide = true;
       };
+
+      const auto open_settings = [&](Entity &) {
+        div.get<ui::UIComponent>().should_hide = true;
+        settings_root.get<ui::UIComponent>().should_hide = false;
+      };
       make_button(buttons, "play", button_size, close_menu, button_padding);
       make_button(buttons, "about", button_size, close_menu, button_padding);
-      make_button(buttons, "settings", button_size, close_menu, button_padding);
+      make_button(buttons, "settings", button_size, open_settings,
+                  button_padding);
       make_button(
           buttons, "exit", button_size, [&](Entity &) { running = false; },
           button_padding);
@@ -1929,9 +1975,9 @@ int main(int argc, char *argv[]) {
 
   make_player(0);
 
-  // make_ai();
+  make_ai();
 
-  intro();
+  // intro();
   game();
 
   return 0;
