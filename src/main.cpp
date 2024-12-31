@@ -1771,6 +1771,7 @@ struct RenderDebugUI : UISystem {
     using afterhours::ui::make_div;
     using afterhours::ui::make_slider;
     using afterhours::ui::pixels;
+    using afterhours::ui::SliderConfig;
 
     // TODO just replace all of these with autolayout roots....
     auto &screen = EntityHelper::createEntity();
@@ -1797,16 +1798,19 @@ struct RenderDebugUI : UISystem {
           "Max Speed\n" + std::to_string(config.max_speed.data) + " m/s");
 
       make_slider(div,
-                  vec2{
-                      button_size.x,
-                      button_size.y / 2.f,
-                  },
-                  config.max_speed.get_pct(), [&](const float pct) {
-                    config.max_speed.set_pct(pct);
-                    max_speed.get<ui::HasLabel>().label =
-                        "Max Speed\n" + std::to_string(config.max_speed.data) +
-                        " m/s";
-                  });
+                  SliderConfig{.size =
+                                   vec2{
+                                       button_size.x,
+                                       button_size.y / 2.f,
+                                   },
+                               .starting_pct = config.max_speed.get_pct(),
+                               .on_slider_changed = [&](const float pct) {
+                                 config.max_speed.set_pct(pct);
+                                 max_speed.get<ui::HasLabel>().label =
+                                     "Max Speed\n" +
+                                     std::to_string(config.max_speed.data) +
+                                     " m/s";
+                               }});
 
       auto &skid_threshold = ui::make_div(div, {
                                                    pixels(button_size.x),
@@ -1817,17 +1821,20 @@ struct RenderDebugUI : UISystem {
           "Skid Threshold\n" + std::to_string(config.skid_threshold.data) +
           "%");
 
+      const auto skid_changed = [&](const float pct) {
+        config.skid_threshold.set_pct(pct);
+        skid_threshold.get<ui::HasLabel>().label =
+            "Skid Threshold\n" + std::to_string(config.skid_threshold.data) +
+            "%";
+      };
       make_slider(div,
-                  vec2{
-                      button_size.x,
-                      button_size.y / 2.f,
-                  },
-                  config.skid_threshold.get_pct(), [&](const float pct) {
-                    config.skid_threshold.set_pct(pct);
-                    skid_threshold.get<ui::HasLabel>().label =
-                        "Skid Threshold\n" +
-                        std::to_string(config.skid_threshold.data) + "%";
-                  });
+                  SliderConfig{.size =
+                                   vec2{
+                                       button_size.x,
+                                       button_size.y / 2.f,
+                                   },
+                               .starting_pct = config.skid_threshold.get_pct(),
+                               .on_slider_changed = skid_changed});
 
       auto &steering_sensitivity =
           ui::make_div(div, {
@@ -1839,17 +1846,20 @@ struct RenderDebugUI : UISystem {
           "Steering Sensitivity\n" +
           std::to_string(config.steering_sensitivity.data));
 
-      make_slider(div,
-                  vec2{
-                      button_size.x,
-                      button_size.y / 2.f,
-                  },
-                  config.steering_sensitivity.get_pct(), [&](const float pct) {
-                    config.steering_sensitivity.set_pct(pct);
-                    steering_sensitivity.get<ui::HasLabel>().label =
-                        "Steering Sensitivity\n" +
-                        std::to_string(config.steering_sensitivity.data);
-                  });
+      make_slider(
+          div,
+          SliderConfig{.size =
+                           vec2{
+                               button_size.x,
+                               button_size.y / 2.f,
+                           },
+                       .starting_pct = config.steering_sensitivity.get_pct(),
+                       .on_slider_changed = [&](const float pct) {
+                         config.steering_sensitivity.set_pct(pct);
+                         steering_sensitivity.get<ui::HasLabel>().label =
+                             "Steering Sensitivity\n" +
+                             std::to_string(config.steering_sensitivity.data);
+                       }});
     }
   }
 };
