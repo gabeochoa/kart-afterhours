@@ -1967,7 +1967,7 @@ int main(int argc, char *argv[]) {
     sophie.addComponent<ui::UIComponent>(sophie.id)
         .set_desired_width(afterhours::ui::screen_pct(1.f))
         .set_desired_height(afterhours::ui::screen_pct(1.f))
-        .enable_font(get_font_name(FontID::EQPro));
+        .enable_font(get_font_name(FontID::EQPro), 75.f);
 
     sophie.get<ui::FontManager>().load_font(
         get_font_name(FontID::EQPro), GetAssetPath("eqprorounded-regular.ttf"));
