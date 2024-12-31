@@ -7,24 +7,27 @@
 int sophie_id = -1;
 bool running = true;
 //
-#include "intro.h"
-
-#define ENABLE_SOUNDS
-
-static int next_id = 0;
-const vec2 button_size = vec2{100, 50};
-
+//
 enum FontID {
   EQPro,
+  raylibFont,
 };
 
 std::string get_font_name(FontID id) {
   switch (id) {
   case FontID::EQPro:
     return "eqpro";
+  case FontID::raylibFont:
+    return afterhours::ui::UIComponent::DEFAULT_FONT;
   }
   return afterhours::ui::UIComponent::DEFAULT_FONT;
 }
+#include "intro.h"
+
+#define ENABLE_SOUNDS
+
+static int next_id = 0;
+const vec2 button_size = vec2{100, 50};
 
 // 12 gives us these options:
 // 1,2,3,4,6,12
@@ -1928,7 +1931,7 @@ int main(int argc, char *argv[]) {
 
   // make_ai();
 
-  // intro();
+  intro();
   game();
 
   return 0;

@@ -5,7 +5,8 @@
 
 using namespace afterhours;
 
-struct IntroScreens : System<window_manager::ProvidesCurrentResolution> {
+struct IntroScreens
+    : System<window_manager::ProvidesCurrentResolution, ui::FontManager> {
 
   enum struct State {
     None,
@@ -16,10 +17,9 @@ struct IntroScreens : System<window_manager::ProvidesCurrentResolution> {
 
   window_manager::Resolution resolution;
 
-  raylib::Font raylibFont;
   float timeInState = 0.f;
 
-  IntroScreens() { this->raylibFont = raylib::GetFontDefault(); }
+  IntroScreens() {}
 
   virtual bool should_run(float dt) {
     timeInState += dt;
@@ -35,7 +35,9 @@ struct IntroScreens : System<window_manager::ProvidesCurrentResolution> {
     return {255, 255, 255, (unsigned char)alpha};
   }
 
-  State render_raylib() {
+  State render_raylib(ui::FontManager &fm) {
+
+    raylib::Font raylibFont = fm.get_font(get_font_name(FontID::raylibFont));
 
     float anim_duration = 1.20f;
 
@@ -50,7 +52,7 @@ struct IntroScreens : System<window_manager::ProvidesCurrentResolution> {
     std::string powered_by_str = "POWERED BY";
     float powered_width =
         (float)raylib::MeasureText(powered_by_str.c_str(), font_size);
-    raylib::DrawTextEx(this->raylibFont, powered_by_str.c_str(),
+    raylib::DrawTextEx(raylibFont, powered_by_str.c_str(),
                        start_position - vec2{font_size_f / 4.f, 0}, font_size,
                        1.f, get_white_alpha(0.f, anim_duration));
 
@@ -95,7 +97,7 @@ struct IntroScreens : System<window_manager::ProvidesCurrentResolution> {
           (float)raylib::MeasureText(raylib_str.c_str(), font_size);
 
       raylib::DrawTextEx(
-          this->raylibFont, raylib_str.c_str(),
+          raylibFont, raylib_str.c_str(),
           box_bottom_right - vec2{raylib_width, font_size_f}, font_size, 1.f,
           get_white_alpha((anim_duration * 3.f), anim_duration * 3.f));
     }
@@ -110,7 +112,7 @@ struct IntroScreens : System<window_manager::ProvidesCurrentResolution> {
   virtual void
   for_each_with(Entity &,
                 window_manager::ProvidesCurrentResolution &pCurrentResolution,
-                float dt) override {
+                ui::FontManager &fm, float dt) override {
 
     resolution = pCurrentResolution.current_resolution;
 
@@ -124,7 +126,7 @@ struct IntroScreens : System<window_manager::ProvidesCurrentResolution> {
       state = State::Raylib;
     } break;
     case State::Raylib: {
-      state = render_raylib();
+      state = render_raylib(fm);
     } break;
     case State::Complete: {
       running = false;
