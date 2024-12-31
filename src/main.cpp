@@ -1045,12 +1045,11 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
     float rad = 5.f;
     vec2 off{rad * 2 + 2, 0.f};
     for (int i = 0; i < hasMultipleLives.num_lives_remaining; i++) {
-      raylib::DrawCircleV(transform.pos() - vec2{
-        transform.size.x / src /
-            intro.h : 127 : LOG_INFO : 1280 1334 font_size 230 2.f,
-        transform.size.y + 15.f + rad
-      } + (off * (float)i),
-                          rad, color);
+      raylib::DrawCircleV(
+          transform.pos() -
+              vec2{transform.size.x / 2.f, transform.size.y + 15.f + rad} +
+              (off * (float)i),
+          rad, color);
     }
   }
 };
@@ -1496,9 +1495,8 @@ struct AnimationUpdateCurrentFrame : System<HasAnimation> {
     hasAnimation.cur_frame++;
   }
 };
-src / intro.h : 127 : LOG_INFO : 1280 1334 font_size 230
 
-                      struct RenderAnimation : System<Transform, HasAnimation> {
+struct RenderAnimation : System<Transform, HasAnimation> {
 
   raylib::Texture2D sheet;
 

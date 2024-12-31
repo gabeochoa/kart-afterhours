@@ -112,7 +112,7 @@ struct IntroScreens
   State render_us(ui::FontManager &fm) {
 
     raylib::Font font = fm.get_font(get_font_name(FontID::EQPro));
-    float anim_duration = 0.80f;
+    float anim_duration = 0.50f;
 
     // the extra spaces are to center it
     std::string title_str = "Cart Chaos";
