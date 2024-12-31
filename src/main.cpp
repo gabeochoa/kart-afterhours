@@ -14,6 +14,18 @@ bool running = true;
 static int next_id = 0;
 const vec2 button_size = vec2{100, 50};
 
+enum FontID {
+  EQPro,
+};
+
+std::string get_font_name(FontID id) {
+  switch (id) {
+  case FontID::EQPro:
+    return "eqpro";
+  }
+  return afterhours::ui::UIComponent::DEFAULT_FONT;
+}
+
 // 12 gives us these options:
 // 1,2,3,4,6,12
 int MAX_HEALTH = 120;
@@ -1611,10 +1623,10 @@ struct RenderMainMenuUI : UISystem {
     using afterhours::ui::ComponentSize;
     using afterhours::ui::make_button;
     using afterhours::ui::make_div;
-    using afterhours::ui::padding_;
-    using afterhours::ui::screen_pct;
     using afterhours::ui::Padding;
+    using afterhours::ui::padding_;
     using afterhours::ui::pixels;
+    using afterhours::ui::screen_pct;
 
     auto &screen = EntityHelper::createEntity();
     screen_ptr = &screen;
@@ -1625,10 +1637,8 @@ struct RenderMainMenuUI : UISystem {
               .dim = ui::Dim::ScreenPercent,
               .value = 1.f,
           })
-          .set_desired_height(ui::Size{
-              .dim = ui::Dim::ScreenPercent,
-              .value = 1.f
-          })
+          .set_desired_height(
+              ui::Size{.dim = ui::Dim::ScreenPercent, .value = 1.f})
           .set_parent(root)
           .make_absolute();
     }
@@ -1657,18 +1667,21 @@ struct RenderMainMenuUI : UISystem {
     auto &div = make_div(screen, {screen_pct(1.f, 1.f), screen_pct(1.f, 1.f)});
 
     auto &buttons = make_div(div, afterhours::ui::children_xy(),
-            Padding{
-            .left =screen_pct(0.4f),
-            .top=screen_pct(0.4f),
-                }
-            );
+                             Padding{
+                                 .top = screen_pct(0.4f),
+                                 .left = screen_pct(0.4f),
+                                 .bottom = pixels(0.f),
+                                 .right = pixels(0.f),
+                             });
     buttons.addComponent<ui::UIComponentDebug>("button_group");
 
     {
-        Padding button_padding = {
-            .top=pixels(button_size.y / 10.f),
-           .bottom=pixels(button_size.y / 10.f),
-        };
+      Padding button_padding = {
+          .top = pixels(button_size.y / 10.f),
+          .left = pixels(0.f),
+          .bottom = pixels(button_size.y / 10.f),
+          .right = pixels(0.f),
+      };
 
       const auto close_menu = [&div](Entity &) {
         div.get<ui::UIComponent>().should_hide = true;
@@ -1676,8 +1689,9 @@ struct RenderMainMenuUI : UISystem {
       make_button(buttons, "play", button_size, close_menu, button_padding);
       make_button(buttons, "about", button_size, close_menu, button_padding);
       make_button(buttons, "settings", button_size, close_menu, button_padding);
-      make_button(buttons, "exit", button_size,
-                  [&](Entity &) { running = false; }, button_padding);
+      make_button(
+          buttons, "exit", button_size, [&](Entity &) { running = false; },
+          button_padding);
     }
   }
 };
@@ -1722,12 +1736,8 @@ struct RenderDebugUI : UISystem {
       // making a root component to attach the UI to
       screen.addComponent<ui::UIComponentDebug>("debug_screen");
       screen.addComponent<ui::UIComponent>(screen.id)
-        .set_desired_width(
-          afterhours::ui::screen_pct(1.f)
-        )
-        .set_desired_height(
-          afterhours::ui::screen_pct(1.f)
-        )
+          .set_desired_width(afterhours::ui::screen_pct(1.f))
+          .set_desired_height(afterhours::ui::screen_pct(1.f))
           .set_parent(root)
           .make_absolute();
     }
@@ -1911,15 +1921,15 @@ int main(int argc, char *argv[]) {
     sophie.addComponent<ui::AutoLayoutRoot>();
     sophie.addComponent<ui::UIComponentDebug>("sophie");
     sophie.addComponent<ui::UIComponent>(sophie.id)
-        .set_desired_width(
-          afterhours::ui::screen_pct(1.f)
-        )
-        .set_desired_height(
-          afterhours::ui::screen_pct(1.f)
-        );
+        .set_desired_width(afterhours::ui::screen_pct(1.f))
+        .set_desired_height(afterhours::ui::screen_pct(1.f))
+        .enable_font(get_font_name(FontID::EQPro));
+
+    sophie.get<ui::FontManager>().load_font(
+        get_font_name(FontID::EQPro), GetAssetPath("eqprorounded-regular.ttf"));
   }
 
-  make_player(0);
+  // make_player(0);
 
   // make_ai();
 
