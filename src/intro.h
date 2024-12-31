@@ -43,17 +43,17 @@ struct IntroScreens
 
     int font_size = (int)(resolution.height / 15);
 
-    vec2 start_position{resolution.width * 0.4f, font_size * 4.f};
     float font_size_f = static_cast<float>(font_size);
+    vec2 start_position{(float)resolution.width * 0.4f, font_size_f * 4.f};
 
     float thicc = 5.f;
-    vec2 box_top_left = start_position + vec2{0, font_size_f * 1.5f};
+    vec2 box_top_left = start_position + vec2{0.f, font_size_f * 1.5f};
 
     std::string powered_by_str = "POWERED BY";
     float powered_width =
         (float)raylib::MeasureText(powered_by_str.c_str(), font_size);
     raylib::DrawTextEx(raylibFont, powered_by_str.c_str(),
-                       start_position - vec2{font_size_f / 4.f, 0}, font_size,
+                       start_position - vec2{font_size_f / 4.f, 0}, font_size_f,
                        1.f, get_white_alpha(0.f, anim_duration));
 
     float width = powered_width * 0.80f;
@@ -98,7 +98,7 @@ struct IntroScreens
 
       raylib::DrawTextEx(
           raylibFont, raylib_str.c_str(),
-          box_bottom_right - vec2{raylib_width, font_size_f}, font_size, 1.f,
+          box_bottom_right - vec2{raylib_width, font_size_f}, font_size_f, 1.f,
           get_white_alpha((anim_duration * 3.f), anim_duration * 3.f));
     }
 
@@ -117,14 +117,16 @@ struct IntroScreens
     // the extra spaces are to center it
     std::string title_str = "Cart Chaos";
 
-    float font_size = (resolution.height / 3.5f);
-    float width = (float)raylib::MeasureText(title_str.c_str(), font_size);
+    float font_size = ((float)resolution.height / 3.5f);
+    float width = (float)raylib::MeasureText(title_str.c_str(), (int)font_size);
 
-    vec2 position = {(resolution.width - width) * 2.f,
-                     (resolution.height / 2.f) - (font_size / 2.f)};
+    vec2 position = {((float)resolution.width - width) * 2.f,
+                     ((float)resolution.height / 2.f) - (font_size / 2.f)};
 
     unsigned char alpha = 255;
-    if (timeInState < (anim_duration * 2.0f)) {
+    if (timeInState < (anim_duration * 1.0f)) {
+      alpha = 255;
+    } else if (timeInState < (anim_duration * 2.0f)) {
       alpha -= (unsigned char)(255 * (timeInState / (anim_duration * 2.f)));
     } else {
       alpha = 0;
@@ -143,7 +145,7 @@ struct IntroScreens
   virtual void
   for_each_with(Entity &,
                 window_manager::ProvidesCurrentResolution &pCurrentResolution,
-                ui::FontManager &fm, float dt) override {
+                ui::FontManager &fm, float) override {
 
     raylib::ClearBackground(raylib::BLACK);
 
