@@ -23,6 +23,7 @@
 #include <optional>
 #include <ostream>
 #include <set>
+#include <source_location>
 #include <sstream>
 #include <stack>
 #include <string_view>
@@ -32,6 +33,6 @@
 #include <variant>
 #include <vector>
 
-#if !defined(M_PI) 
+#if !defined(M_PI)
 #define M_PI 3.14159265358979323846f
 #endif
