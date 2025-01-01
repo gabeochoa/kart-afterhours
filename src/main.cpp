@@ -276,6 +276,8 @@ void game() {
     systems.register_update_system(std::make_unique<DrainLife>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
 
+    systems.register_update_system(std::make_unique<ScheduleDebugUI>());
+
     ui::register_update_systems<InputAction>(systems);
   }
 
@@ -283,8 +285,7 @@ void game() {
   {
     systems.register_render_system(
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
-    systems.register_render_system(std::make_unique<RenderDebugUI>());
-    systems.register_render_system(std::make_unique<RenderMainMenuUI>());
+    // systems.register_render_system(std::make_unique<RenderMainMenuUI>());
     ui::register_render_systems<InputAction>(systems,
                                              InputAction::ToggleUILayoutDebug);
     systems.register_render_system(std::make_unique<RenderSkid>());
@@ -357,7 +358,6 @@ int main(int argc, char *argv[]) {
   }
 
   make_player(0);
-
   make_ai();
 
   // intro();

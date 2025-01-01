@@ -172,8 +172,9 @@ backward::SignalHandling sh;
 #define AFTER_HOURS_ENTITY_HELPER
 #define AFTER_HOURS_ENTITY_QUERY
 #define AFTER_HOURS_SYSTEM
-#include "afterhours/ah.h"
+#define AFTER_HOURS_IMM_UI
 #define AFTER_HOURS_USE_RAYLIB
+#include "afterhours/ah.h"
 #include "afterhours/src/developer.h"
 #include "afterhours/src/plugins/input_system.h"
 #include "afterhours/src/plugins/window_manager.h"

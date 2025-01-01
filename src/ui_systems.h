@@ -155,13 +155,12 @@ struct RenderMainMenuUI : UISystem {
   }
 };
 
-struct RenderDebugUI : UISystem {
+using namespace afterhours::ui;
+using namespace afterhours::ui::imm;
+struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
   bool enabled = false;
   float enableCooldown = 0.f;
   float enableCooldownReset = 0.2f;
-
-  RenderDebugUI() : UISystem() {}
-  virtual ~RenderDebugUI() {}
 
   virtual bool should_run(float dt) override {
     enableCooldown -= dt;
@@ -173,7 +172,6 @@ struct RenderDebugUI : UISystem {
       for (auto &actions_done : inpc.inputs()) {
         if (actions_done.action == InputAction::ToggleUIDebug) {
           enabled = !enabled;
-          screen_ptr->get<ui::UIComponent>().should_hide = enabled;
           break;
         }
       }
@@ -181,117 +179,50 @@ struct RenderDebugUI : UISystem {
     return enabled;
   }
 
-  virtual void setup_ui(Entity &root) override {
-    using afterhours::ui::children_xy;
-    using afterhours::ui::FlexDirection;
-    using afterhours::ui::make_div;
-    using afterhours::ui::make_slider;
-    using afterhours::ui::pixels;
-    using afterhours::ui::SliderConfig;
+  virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
+                             float) override {
 
-    // TODO just replace all of these with autolayout roots....
-    auto &screen = EntityHelper::createEntity();
-    screen_ptr = &screen;
-    {
-      // making a root component to attach the UI to
-      screen.addComponent<ui::UIComponentDebug>("debug_screen");
-      screen.addComponent<ui::UIComponent>(screen.id)
-          .set_desired_width(afterhours::ui::screen_pct(1.f))
-          .set_desired_height(afterhours::ui::screen_pct(1.f))
-          .set_parent(root)
-          .make_absolute();
+    if (!enabled) {
+      return;
     }
 
-    auto &div = make_div(screen, children_xy());
-    div.get<ui::UIComponent>().flex_direction = FlexDirection::Row;
+    auto &div_ent = mk(entity.id);
+    auto elem = div(context, div_ent, entity);
+    // TODO use config once it exists
+    div_ent.get<UIComponent>().set_flex_direction(FlexDirection::Row);
+
+    // Max speed
     {
+      auto max_speed_label =
+          fmt::format("Max Speed\n {:.2f} m/s", config.max_speed.data);
+      float pct = config.max_speed.get_pct();
+      if (auto result =
+              slider(context, mk(elem.id()), elem, pct, max_speed_label);
+          result) {
+        config.max_speed.set_pct(result.as<float>());
+      }
+    }
 
-      make_slider(div, SliderConfig{
-                           .size =
-                               vec2{
-                                   button_size.x * 2.f,
-                                   button_size.y / 2.f,
-                               },
-                           .starting_pct = config.max_speed.get_pct(),
-                           .on_slider_changed =
-                               [&](const float pct) {
-                                 config.max_speed.set_pct(pct);
+    // Skid Threshold
+    {
+      auto label =
+          fmt::format("Skid Threshold \n {:.2f} %", config.skid_threshold.data);
+      float pct = config.skid_threshold.get_pct();
+      if (auto result = slider(context, mk(elem.id()), elem, pct, label);
+          result) {
+        config.skid_threshold.set_pct(result.as<float>());
+      }
+    }
 
-                                 // TODO id love for this to move into the
-                                 // actual make_slider config but we dont yet
-                                 // have a way to convert from pct back to value
-                                 // inside the ui.h
-                                 return std::to_string(config.max_speed.data);
-                               },
-                           .label = "Max Speed\n {} m/s",
-                           .label_is_format_string = true,
-                       });
-
-      make_slider(div, SliderConfig{
-                           .size =
-                               vec2{
-                                   button_size.x * 2.f,
-                                   button_size.y / 2.f,
-                               },
-                           .starting_pct = config.max_speed.get_pct(),
-                           .on_slider_changed =
-                               [&](const float pct) {
-                                 config.max_speed.set_pct(pct);
-
-                                 // TODO id love for this to move into the
-                                 // actual make_slider config but we dont yet
-                                 // have a way to convert from pct back to value
-                                 // inside the ui.h
-                                 return std::to_string(config.max_speed.data);
-                               },
-                           .label = "Max Speed\n {} m/s",
-                           .label_is_format_string = true,
-                       });
-
-      make_slider(div,
-                  SliderConfig{
-                      .size =
-                          vec2{
-                              button_size.x * 2.f,
-                              button_size.y / 2.f,
-                          },
-                      .starting_pct = config.skid_threshold.get_pct(),
-                      .on_slider_changed =
-                          [&](const float pct) {
-                            config.skid_threshold.set_pct(pct);
-
-                            // TODO id love for this to move into the
-                            // actual make_slider config but we dont yet
-                            // have a way to convert from pct back to value
-                            // inside the ui.h
-                            return std::to_string(config.skid_threshold.data);
-                          },
-                      .label = "Skid Threshold\n {}%",
-                      .label_is_format_string = true,
-                  });
-
-      make_slider(div,
-                  SliderConfig{
-                      .size =
-                          vec2{
-                              button_size.x * 2.f,
-                              button_size.y / 2.f,
-                          },
-                      .starting_pct = config.steering_sensitivity.get_pct(),
-                      .on_slider_changed =
-                          [&](const float pct) {
-                            config.steering_sensitivity.set_pct(pct);
-
-                            // TODO id love for this to move into the
-                            // actual make_slider config but we dont yet
-                            // have a way to convert from pct back to value
-                            // inside the ui.h
-                            return std::to_string(
-                                config.steering_sensitivity.data);
-                          },
-                      .label = "Steering Sensitivity\n {}%",
-                      .label_is_format_string = true,
-                  });
+    // Steering Sensitivity
+    {
+      auto label = fmt::format("Steering Sensitivity \n {:.2f} %",
+                               config.steering_sensitivity.data);
+      float pct = config.steering_sensitivity.get_pct();
+      if (auto result = slider(context, mk(elem.id()), elem, pct, label);
+          result) {
+        config.steering_sensitivity.set_pct(result.as<float>());
+      }
     }
   }
 };
