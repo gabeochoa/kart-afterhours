@@ -83,15 +83,6 @@ using namespace afterhours;
 #include "resources.h"
 #include "utils.h"
 
-struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {
-  virtual ~RenderFPS() {}
-  virtual void for_each_with(
-      const Entity &,
-      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
-      float) const override {
-    raylib::DrawFPS((int)(pCurrentResolution.width() - 80), 0);
-  }
-};
 enum class InputAction {
   None,
   Accel,

@@ -4,6 +4,16 @@
 #include "components.h"
 #include "query.h"
 
+struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {
+  virtual ~RenderFPS() {}
+  virtual void for_each_with(
+      const Entity &,
+      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
+      float) const override {
+    raylib::DrawFPS((int)(pCurrentResolution.width() - 80), 0);
+  }
+};
+
 struct RenderEntities : System<Transform> {
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,
