@@ -156,7 +156,7 @@ struct RenderMainMenuUI : UISystem {
 };
 
 struct RenderDebugUI : UISystem {
-  bool enabled = true;
+  bool enabled = false;
   float enableCooldown = 0.f;
   float enableCooldownReset = 0.2f;
 
