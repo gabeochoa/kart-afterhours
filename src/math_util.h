@@ -1,6 +1,9 @@
 
 #pragma once
 
+#include "std_include.h"
+#include <optional>
+
 #include "rl.h"
 
 template <typename T> int sgn(T val) { return (T(0) < val) - (val < T(0)); }

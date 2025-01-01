@@ -79,7 +79,7 @@ static ConfigurableValues config;
 //
 using namespace afterhours;
 
-#include "math.h"
+#include "math_util.h"
 #include "resources.h"
 #include "utils.h"
 
