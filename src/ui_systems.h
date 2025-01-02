@@ -4,159 +4,117 @@
 #include "components.h"
 #include "query.h"
 
-// TODO at the moment we are half imm mode and have retained
-// at some point we should transition to fully imm
-struct UISystem : System<ui::AutoLayoutRoot> {
-  bool init = false;
-  Entity *screen_ptr;
-
-  virtual void once(float) override {
-    if (!init || screen_ptr == nullptr)
-      init_screen();
-  }
-
-  void init_screen() {
-    auto &entity = EntityQuery()
-                       .whereHasComponent<ui::AutoLayoutRoot>()
-                       .gen_first_enforce();
-    setup_ui(entity);
-    init = true;
-  }
-
-  virtual ~UISystem() {}
-  virtual void setup_ui(Entity &) = 0;
-};
-
-struct RenderMainMenuUI : UISystem {
-  RenderMainMenuUI() : UISystem() {}
-  virtual ~RenderMainMenuUI() {}
-
-  Entity &setup_settings(Entity &root) {
-    using afterhours::ui::children;
-    using afterhours::ui::ComponentSize;
-    using afterhours::ui::make_button;
-    using afterhours::ui::make_div;
-    using afterhours::ui::Padding;
-    using afterhours::ui::padding_;
-    using afterhours::ui::pixels;
-    using afterhours::ui::screen_pct;
-
-    auto &screen = EntityHelper::createEntity();
-    screen_ptr = &screen;
-    {
-      screen.addComponent<ui::UIComponentDebug>("settings_screen");
-      screen.addComponent<ui::UIComponent>(screen.id)
-          .set_desired_width(ui::Size{
-              .dim = ui::Dim::ScreenPercent,
-              .value = 1.f,
-          })
-          .set_desired_height(
-              ui::Size{.dim = ui::Dim::ScreenPercent, .value = 1.f})
-          .set_parent(root)
-          .make_absolute();
-    }
-
-    auto &div = make_div(screen, {screen_pct(1.f, 1.f), screen_pct(1.f, 1.f)});
-
-    auto &controls = make_div(div, afterhours::ui::children_xy(),
-                              Padding{
-                                  .top = screen_pct(0.4f),
-                                  .left = screen_pct(0.4f),
-                                  .bottom = pixels(0.f),
-                                  .right = pixels(0.f),
-                              });
-    controls.addComponent<ui::UIComponentDebug>("controls_group");
-
-    auto &dropdown =
-        ui::make_dropdown<window_manager::ProvidesAvailableWindowResolutions>(
-            controls);
-    dropdown.get<ui::UIComponent>()
-        .set_desired_width(ui::Size{
-            .dim = ui::Dim::Pixels,
-            .value = button_size.x,
-        })
-        .set_desired_height(ui::Size{
-            .dim = ui::Dim::Children,
-            .value = button_size.y,
-        });
-    dropdown.get<ui::HasChildrenComponent>().register_on_child_add(
-        [](Entity &child) {
-          if (child.is_missing<ui::HasColor>()) {
-            child.addComponent<ui::HasColor>(raylib::PURPLE);
-          }
-        });
-
-    screen.get<ui::UIComponent>().should_hide = true;
-    return screen;
-  }
-
-  virtual void setup_ui(Entity &root) override {
-    using afterhours::ui::children;
-    using afterhours::ui::ComponentSize;
-    using afterhours::ui::make_button;
-    using afterhours::ui::make_div;
-    using afterhours::ui::Padding;
-    using afterhours::ui::padding_;
-    using afterhours::ui::pixels;
-    using afterhours::ui::screen_pct;
-
-    auto &settings_root = setup_settings(root);
-
-    auto &screen = EntityHelper::createEntity();
-    screen_ptr = &screen;
-    {
-      screen.addComponent<ui::UIComponentDebug>("main_screen");
-      screen.addComponent<ui::UIComponent>(screen.id)
-          .set_desired_width(ui::Size{
-              .dim = ui::Dim::ScreenPercent,
-              .value = 1.f,
-          })
-          .set_desired_height(
-              ui::Size{.dim = ui::Dim::ScreenPercent, .value = 1.f})
-          .set_parent(root)
-          .make_absolute();
-    }
-
-    auto &div = make_div(screen, {screen_pct(1.f, 1.f), screen_pct(1.f, 1.f)});
-
-    auto &buttons = make_div(div, afterhours::ui::children_xy(),
-                             Padding{
-                                 .top = screen_pct(0.4f),
-                                 .left = screen_pct(0.4f),
-                                 .bottom = pixels(0.f),
-                                 .right = pixels(0.f),
-                             });
-    buttons.addComponent<ui::UIComponentDebug>("button_group");
-
-    {
-      Padding button_padding = {
-          .top = pixels(button_size.y / 10.f),
-          .left = pixels(0.f),
-          .bottom = pixels(button_size.y / 10.f),
-          .right = pixels(0.f),
-      };
-
-      const auto close_menu = [&div](Entity &) {
-        div.get<ui::UIComponent>().should_hide = true;
-      };
-
-      const auto open_settings = [&](Entity &) {
-        div.get<ui::UIComponent>().should_hide = true;
-        settings_root.get<ui::UIComponent>().should_hide = false;
-      };
-      make_button(buttons, "play", button_size, close_menu, button_padding);
-      make_button(buttons, "about", button_size, close_menu, button_padding);
-      make_button(buttons, "settings", button_size, open_settings,
-                  button_padding);
-      make_button(
-          buttons, "exit", button_size, [&](Entity &) { running = false; },
-          button_padding);
-    }
-  }
-};
-
 using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
+struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
+
+  virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
+                             float) override {
+
+    auto elem = imm::div(context, mk(entity));
+    {
+      elem.ent()
+          .get<UIComponent>()
+          .set_desired_width(ui::Size{
+              .dim = ui::Dim::ScreenPercent,
+              .value = 1.f,
+          })
+          .set_desired_height(
+              ui::Size{.dim = ui::Dim::ScreenPercent, .value = 1.f})
+          .make_absolute();
+      elem.ent().get<ui::UIComponentDebug>().set(
+          ui::UIComponentDebug::Type::custom, "main_screen");
+    }
+
+    auto button_group = imm::div(context, mk(elem.ent()));
+    {
+      button_group.ent()
+          .get<UIComponent>()
+          .set_desired_width(ui::Size{
+              .dim = ui::Dim::ScreenPercent,
+              .value = 1.f,
+          })
+          .set_desired_height(
+              ui::Size{.dim = ui::Dim::ScreenPercent, .value = 1.f})
+          .set_desired_padding(screen_pct(0.4f), ui::Axis::top)
+          .set_desired_padding(screen_pct(0.4f), ui::Axis::left)
+          .set_desired_padding(pixels(0.f), ui::Axis::bottom)
+          .set_desired_padding(pixels(0.f), ui::Axis::right)
+          .make_absolute();
+      button_group.ent().get<ui::UIComponentDebug>().set(
+          ui::UIComponentDebug::Type::custom, "button_group");
+    }
+
+    auto play_button = imm::button(context, mk(button_group.ent()));
+    {
+      play_button.ent()
+          .get<UIComponent>()
+          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::top)
+          .set_desired_padding(pixels(0.f), ui::Axis::left)
+          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::bottom)
+          .set_desired_padding(pixels(0.f), ui::Axis::right);
+
+      play_button.ent().get<HasLabel>().label = "play";
+    }
+
+    auto about_button = imm::button(context, mk(button_group.ent()));
+    {
+      about_button.ent()
+          .get<UIComponent>()
+          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::top)
+          .set_desired_padding(pixels(0.f), ui::Axis::left)
+          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::bottom)
+          .set_desired_padding(pixels(0.f), ui::Axis::right);
+
+      about_button.ent().get<HasLabel>().label = "about";
+    }
+
+    auto settings_button = imm::button(context, mk(button_group.ent()));
+    {
+      settings_button.ent()
+          .get<UIComponent>()
+          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::top)
+          .set_desired_padding(pixels(0.f), ui::Axis::left)
+          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::bottom)
+          .set_desired_padding(pixels(0.f), ui::Axis::right);
+
+      settings_button.ent().get<HasLabel>().label = "settings";
+    }
+
+    auto exit_button = imm::button(context, mk(button_group.ent()));
+    {
+      exit_button.ent()
+          .get<UIComponent>()
+          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::top)
+          .set_desired_padding(pixels(0.f), ui::Axis::left)
+          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::bottom)
+          .set_desired_padding(pixels(0.f), ui::Axis::right);
+
+      exit_button.ent().get<HasLabel>().label = "exit";
+    }
+
+    ///////////////
+
+    if (play_button) {
+      elem.ent().get<ui::UIComponent>().should_hide = true;
+    }
+
+    if (about_button) {
+      elem.ent().get<ui::UIComponent>().should_hide = true;
+    }
+
+    if (settings_button) {
+      elem.ent().get<ui::UIComponent>().should_hide = true;
+    }
+
+    if (exit_button) {
+      running = false;
+    }
+
+    //
+  }
+};
+
 struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
   bool enabled = false;
   float enableCooldown = 0.f;
