@@ -186,18 +186,18 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
       return;
     }
 
-    auto &div_ent = mk(entity.id);
-    auto elem = div(context, div_ent, entity);
-    // TODO use config once it exists
-    div_ent.get<UIComponent>().set_flex_direction(FlexDirection::Row);
+    auto elem = imm::div(context, mk(entity));
+    elem.ent()
+        .get<UIComponent>()
+        // TODO use config once it exists
+        .set_flex_direction(FlexDirection::Row);
 
     // Max speed
     {
       auto max_speed_label =
           fmt::format("Max Speed\n {:.2f} m/s", config.max_speed.data);
       float pct = config.max_speed.get_pct();
-      if (auto result =
-              slider(context, mk(elem.id()), elem, pct, max_speed_label);
+      if (auto result = slider(context, mk(elem.ent()), pct, max_speed_label);
           result) {
         config.max_speed.set_pct(result.as<float>());
       }
@@ -208,8 +208,7 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
       auto label =
           fmt::format("Skid Threshold \n {:.2f} %", config.skid_threshold.data);
       float pct = config.skid_threshold.get_pct();
-      if (auto result = slider(context, mk(elem.id()), elem, pct, label);
-          result) {
+      if (auto result = slider(context, mk(elem.ent()), pct, label); result) {
         config.skid_threshold.set_pct(result.as<float>());
       }
     }
@@ -219,8 +218,7 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
       auto label = fmt::format("Steering Sensitivity \n {:.2f} %",
                                config.steering_sensitivity.data);
       float pct = config.steering_sensitivity.get_pct();
-      if (auto result = slider(context, mk(elem.id()), elem, pct, label);
-          result) {
+      if (auto result = slider(context, mk(elem.ent()), pct, label); result) {
         config.steering_sensitivity.set_pct(result.as<float>());
       }
     }
