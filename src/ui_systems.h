@@ -48,42 +48,43 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           ui::UIComponentDebug::Type::custom, "button_group");
     }
 
-    auto play_button = imm::button(context, mk(button_group.ent()));
-    {
-      play_button.ent().get<UIComponent>().set_desired_padding(button_padding);
-
-      play_button.ent().get<HasLabel>().label = "play";
-    }
-
-    if (play_button) {
+    if (imm::button(context, mk(button_group.ent()),
+                    ComponentConfig{
+                        .padding = button_padding,
+                        .label = "play",
+                    })
+        //
+    ) {
       elem.ent().get<ui::UIComponent>().should_hide = true;
     }
 
-    auto about_button = imm::button(context, mk(button_group.ent()));
-    {
-      about_button.ent().get<UIComponent>().set_desired_padding(button_padding);
-      about_button.ent().get<HasLabel>().label = "about";
-    }
-    if (about_button) {
+    if (imm::button(context, mk(button_group.ent()),
+                    ComponentConfig{
+                        .padding = button_padding,
+                        .label = "about",
+                    })
+        //
+    ) {
       elem.ent().get<ui::UIComponent>().should_hide = true;
     }
 
-    auto settings_button = imm::button(context, mk(button_group.ent()));
-    {
-      settings_button.ent().get<UIComponent>().set_desired_padding(
-          button_padding);
-      settings_button.ent().get<HasLabel>().label = "settings";
-    }
-    if (settings_button) {
+    if (imm::button(context, mk(button_group.ent()),
+                    ComponentConfig{
+                        .padding = button_padding,
+                        .label = "settings",
+                    })
+        //
+    ) {
       elem.ent().get<ui::UIComponent>().should_hide = true;
     }
 
-    auto exit_button = imm::button(context, mk(button_group.ent()));
-    {
-      exit_button.ent().get<UIComponent>().set_desired_padding(button_padding);
-      exit_button.ent().get<HasLabel>().label = "exit";
-    }
-    if (exit_button) {
+    if (imm::button(context, mk(button_group.ent()),
+                    ComponentConfig{
+                        .padding = button_padding,
+                        .label = "exit",
+                    })
+        //
+    ) {
       running = false;
     }
 
@@ -131,7 +132,8 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
       auto max_speed_label =
           fmt::format("Max Speed\n {:.2f} m/s", config.max_speed.data);
       float pct = config.max_speed.get_pct();
-      if (auto result = slider(context, mk(elem.ent()), pct, max_speed_label);
+      if (auto result = slider(context, mk(elem.ent()), pct,
+                               ComponentConfig{.label = max_speed_label});
           result) {
         config.max_speed.set_pct(result.as<float>());
       }
@@ -142,7 +144,9 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
       auto label =
           fmt::format("Skid Threshold \n {:.2f} %", config.skid_threshold.data);
       float pct = config.skid_threshold.get_pct();
-      if (auto result = slider(context, mk(elem.ent()), pct, label); result) {
+      if (auto result = slider(context, mk(elem.ent()), pct,
+                               ComponentConfig{.label = label});
+          result) {
         config.skid_threshold.set_pct(result.as<float>());
       }
     }
@@ -152,7 +156,9 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
       auto label = fmt::format("Steering Sensitivity \n {:.2f} %",
                                config.steering_sensitivity.data);
       float pct = config.steering_sensitivity.get_pct();
-      if (auto result = slider(context, mk(elem.ent()), pct, label); result) {
+      if (auto result = slider(context, mk(elem.ent()), pct,
+                               ComponentConfig{.label = label});
+          result) {
         config.steering_sensitivity.set_pct(result.as<float>());
       }
     }
