@@ -95,8 +95,7 @@ enum class InputAction {
   WidgetNext,
   WidgetPress,
   WidgetMod,
-  ValueUp,
-  ValueDown,
+  WidgetBack,
   ToggleUIDebug,
   ToggleUILayoutDebug,
 };
@@ -148,12 +147,18 @@ auto get_mapping() {
       raylib::GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
   };
 
+  mapping[InputAction::WidgetBack] = {
+      raylib::GAMEPAD_BUTTON_LEFT_FACE_UP,
+  };
+
   mapping[InputAction::WidgetNext] = {
       raylib::KEY_TAB,
+      raylib::GAMEPAD_BUTTON_LEFT_FACE_DOWN,
   };
 
   mapping[InputAction::WidgetPress] = {
       raylib::KEY_ENTER,
+      raylib::GAMEPAD_BUTTON_RIGHT_FACE_DOWN,
   };
 
   mapping[InputAction::WidgetMod] = {
