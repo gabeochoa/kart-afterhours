@@ -8,6 +8,20 @@ using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
 struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
+  Padding button_group_padding = Padding{
+      .top = screen_pct(0.4f),
+      .left = screen_pct(0.4f),
+      .bottom = pixels(0.f),
+      .right = pixels(0.f),
+  };
+
+  Padding button_padding = Padding{
+      .top = pixels(button_size.y / 10.f),
+      .left = pixels(0.f),
+      .bottom = pixels(button_size.y / 10.f),
+      .right = pixels(0.f),
+  };
+
   virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
                              float) override {
 
@@ -15,12 +29,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     {
       elem.ent()
           .get<UIComponent>()
-          .set_desired_width(ui::Size{
-              .dim = ui::Dim::ScreenPercent,
-              .value = 1.f,
-          })
-          .set_desired_height(
-              ui::Size{.dim = ui::Dim::ScreenPercent, .value = 1.f})
+          .set_desired_width(screen_pct(1.f))
+          .set_desired_height(screen_pct(1.f))
           .make_absolute();
       elem.ent().get<ui::UIComponentDebug>().set(
           ui::UIComponentDebug::Type::custom, "main_screen");
@@ -30,16 +40,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     {
       button_group.ent()
           .get<UIComponent>()
-          .set_desired_width(ui::Size{
-              .dim = ui::Dim::ScreenPercent,
-              .value = 1.f,
-          })
-          .set_desired_height(
-              ui::Size{.dim = ui::Dim::ScreenPercent, .value = 1.f})
-          .set_desired_padding(screen_pct(0.4f), ui::Axis::top)
-          .set_desired_padding(screen_pct(0.4f), ui::Axis::left)
-          .set_desired_padding(pixels(0.f), ui::Axis::bottom)
-          .set_desired_padding(pixels(0.f), ui::Axis::right)
+          .set_desired_width(screen_pct(1.f))
+          .set_desired_height(screen_pct(1.f))
+          .set_desired_padding(button_group_padding)
           .make_absolute();
       button_group.ent().get<ui::UIComponentDebug>().set(
           ui::UIComponentDebug::Type::custom, "button_group");
@@ -47,66 +50,39 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     auto play_button = imm::button(context, mk(button_group.ent()));
     {
-      play_button.ent()
-          .get<UIComponent>()
-          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::top)
-          .set_desired_padding(pixels(0.f), ui::Axis::left)
-          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::bottom)
-          .set_desired_padding(pixels(0.f), ui::Axis::right);
+      play_button.ent().get<UIComponent>().set_desired_padding(button_padding);
 
       play_button.ent().get<HasLabel>().label = "play";
     }
-
-    auto about_button = imm::button(context, mk(button_group.ent()));
-    {
-      about_button.ent()
-          .get<UIComponent>()
-          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::top)
-          .set_desired_padding(pixels(0.f), ui::Axis::left)
-          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::bottom)
-          .set_desired_padding(pixels(0.f), ui::Axis::right);
-
-      about_button.ent().get<HasLabel>().label = "about";
-    }
-
-    auto settings_button = imm::button(context, mk(button_group.ent()));
-    {
-      settings_button.ent()
-          .get<UIComponent>()
-          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::top)
-          .set_desired_padding(pixels(0.f), ui::Axis::left)
-          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::bottom)
-          .set_desired_padding(pixels(0.f), ui::Axis::right);
-
-      settings_button.ent().get<HasLabel>().label = "settings";
-    }
-
-    auto exit_button = imm::button(context, mk(button_group.ent()));
-    {
-      exit_button.ent()
-          .get<UIComponent>()
-          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::top)
-          .set_desired_padding(pixels(0.f), ui::Axis::left)
-          .set_desired_padding(pixels(button_size.y / 10.f), ui::Axis::bottom)
-          .set_desired_padding(pixels(0.f), ui::Axis::right);
-
-      exit_button.ent().get<HasLabel>().label = "exit";
-    }
-
-    ///////////////
 
     if (play_button) {
       elem.ent().get<ui::UIComponent>().should_hide = true;
     }
 
+    auto about_button = imm::button(context, mk(button_group.ent()));
+    {
+      about_button.ent().get<UIComponent>().set_desired_padding(button_padding);
+      about_button.ent().get<HasLabel>().label = "about";
+    }
     if (about_button) {
       elem.ent().get<ui::UIComponent>().should_hide = true;
     }
 
+    auto settings_button = imm::button(context, mk(button_group.ent()));
+    {
+      settings_button.ent().get<UIComponent>().set_desired_padding(
+          button_padding);
+      settings_button.ent().get<HasLabel>().label = "settings";
+    }
     if (settings_button) {
       elem.ent().get<ui::UIComponent>().should_hide = true;
     }
 
+    auto exit_button = imm::button(context, mk(button_group.ent()));
+    {
+      exit_button.ent().get<UIComponent>().set_desired_padding(button_padding);
+      exit_button.ent().get<HasLabel>().label = "exit";
+    }
     if (exit_button) {
       running = false;
     }
