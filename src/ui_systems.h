@@ -129,8 +129,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     {
       auto label =
           fmt::format("Master Volume\n {:2.0f}", master_volume * 100.f);
-      float pct = config.max_speed.get_pct();
-      if (auto result = slider(context, mk(button_group.ent()), pct,
+      if (auto result = slider(context, mk(button_group.ent()), master_volume,
                                ComponentConfig{.label = label});
           result) {
         master_volume = result.as<float>();
@@ -140,8 +139,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     {
       auto label =
           fmt::format("Music Volume\n {:2.0f}", music_volume * 100.f);
-      float pct = config.max_speed.get_pct();
-      if (auto result = slider(context, mk(button_group.ent()), pct,
+      if (auto result = slider(context, mk(button_group.ent()), music_volume,
                                ComponentConfig{.label = label});
           result) {
         music_volume = result.as<float>();
