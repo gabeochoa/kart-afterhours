@@ -29,6 +29,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       .right = pixels(0.f),
   };
 
+
+  // settings stuff for now 
+  float master_volume = 0.5f;
+  float music_volume = 0.5f;
+
   void main_screen(Entity& entity, UIContext<InputAction>& context){
     auto elem = imm::div(context, mk(entity));
     {
@@ -96,12 +101,74 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
   }
 
+  void settings_screen(Entity& entity, UIContext<InputAction>& context){
+    auto elem = imm::div(context, mk(entity));
+    {
+      elem.ent()
+          .get<UIComponent>()
+          .enable_font(get_font_name(FontID::EQPro), 75.f)
+          .set_desired_width(screen_pct(1.f))
+          .set_desired_height(screen_pct(1.f))
+          .make_absolute();
+      elem.ent().get<ui::UIComponentDebug>().set(
+          ui::UIComponentDebug::Type::custom, "main_screen");
+    }
+
+    auto button_group = imm::div(context, mk(elem.ent()));
+    {
+      button_group.ent()
+          .get<UIComponent>()
+          .set_desired_width(screen_pct(1.f))
+          .set_desired_height(screen_pct(1.f))
+          .set_desired_padding(button_group_padding)
+          .make_absolute();
+      button_group.ent().get<ui::UIComponentDebug>().set(
+          ui::UIComponentDebug::Type::custom, "button_group");
+    }
+
+    {
+      auto label =
+          fmt::format("Master Volume\n {:2.0f}", master_volume * 100.f);
+      float pct = config.max_speed.get_pct();
+      if (auto result = slider(context, mk(button_group.ent()), pct,
+                               ComponentConfig{.label = label});
+          result) {
+        master_volume = result.as<float>();
+      }
+    }
+
+    {
+      auto label =
+          fmt::format("Music Volume\n {:2.0f}", music_volume * 100.f);
+      float pct = config.max_speed.get_pct();
+      if (auto result = slider(context, mk(button_group.ent()), pct,
+                               ComponentConfig{.label = label});
+          result) {
+        music_volume = result.as<float>();
+      }
+    }
+
+
+    if (imm::button(context, mk(button_group.ent()),
+                    ComponentConfig{
+                        .padding = button_padding,
+                        .label = "back",
+                    })
+        //
+    ) {
+      active_screen = Screen::Main;
+    }
+
+  }
+
   virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
                              float) override {
       switch(active_screen){
           case Screen::None:
           case Screen::About:
+              break;
           case Screen::Settings:
+              settings_screen(entity, context);
               break;
           case Screen::Main:
               main_screen(entity, context);
