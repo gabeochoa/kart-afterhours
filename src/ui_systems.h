@@ -105,7 +105,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 };
 
 struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
-  bool enabled = false;
+  bool enabled = true;
   float enableCooldown = 0.f;
   float enableCooldownReset = 0.2f;
 
@@ -150,7 +150,6 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
         config.max_speed.set_pct(result.as<float>());
       }
     }
-    return;
 
     // Skid Threshold
     {
