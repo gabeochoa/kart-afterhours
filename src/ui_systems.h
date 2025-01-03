@@ -8,6 +8,13 @@ using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
 struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
+  enum struct Screen {
+    None,
+    Main,
+    About,
+    Settings,
+  } active_screen = Screen::Main;
+
   Padding button_group_padding = Padding{
       .top = screen_pct(0.4f),
       .left = screen_pct(0.4f),
@@ -25,10 +32,15 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
                              float) override {
 
+    if (active_screen != Screen::Main) {
+      return;
+    }
+
     auto elem = imm::div(context, mk(entity));
     {
       elem.ent()
           .get<UIComponent>()
+          .enable_font(get_font_name(FontID::EQPro), 75.f)
           .set_desired_width(screen_pct(1.f))
           .set_desired_height(screen_pct(1.f))
           .make_absolute();
@@ -55,7 +67,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                     })
         //
     ) {
-      elem.ent().get<ui::UIComponent>().should_hide = true;
+      active_screen = Screen::None;
     }
 
     if (imm::button(context, mk(button_group.ent()),
@@ -65,7 +77,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                     })
         //
     ) {
-      elem.ent().get<ui::UIComponent>().should_hide = true;
+      active_screen = Screen::About;
     }
 
     if (imm::button(context, mk(button_group.ent()),
@@ -75,7 +87,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                     })
         //
     ) {
-      elem.ent().get<ui::UIComponent>().should_hide = true;
+      active_screen = Screen::Settings;
     }
 
     if (imm::button(context, mk(button_group.ent()),
@@ -138,6 +150,7 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
         config.max_speed.set_pct(result.as<float>());
       }
     }
+    return;
 
     // Skid Threshold
     {

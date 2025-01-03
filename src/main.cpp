@@ -346,9 +346,13 @@ int main(int argc, char *argv[]) {
     input::add_singleton_components<InputAction>(sophie, get_mapping());
     window_manager::add_singleton_components(sophie, 200);
     ui::add_singleton_components<InputAction>(sophie);
+
     sophie.addComponent<HasTexture>(
         raylib::LoadTexture(GetAssetPath("spritesheet.png")));
     EntityHelper::registerSingleton<HasTexture>(sophie);
+
+    sophie.get<ui::FontManager>().load_font(
+        get_font_name(FontID::EQPro), GetAssetPath("eqprorounded-regular.ttf"));
 
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();
@@ -357,9 +361,6 @@ int main(int argc, char *argv[]) {
         .set_desired_width(afterhours::ui::screen_pct(1.f))
         .set_desired_height(afterhours::ui::screen_pct(1.f))
         .enable_font(get_font_name(FontID::EQPro), 75.f);
-
-    sophie.get<ui::FontManager>().load_font(
-        get_font_name(FontID::EQPro), GetAssetPath("eqprorounded-regular.ttf"));
   }
 
   make_player(0);
