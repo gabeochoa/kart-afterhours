@@ -29,13 +29,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       .right = pixels(0.f),
   };
 
-  virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
-                             float) override {
-
-    if (active_screen != Screen::Main) {
-      return;
-    }
-
+  void main_screen(Entity& entity, UIContext<InputAction>& context){
     auto elem = imm::div(context, mk(entity));
     {
       elem.ent()
@@ -100,7 +94,19 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       running = false;
     }
 
-    //
+  }
+
+  virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
+                             float) override {
+      switch(active_screen){
+          case Screen::None:
+          case Screen::About:
+          case Screen::Settings:
+              break;
+          case Screen::Main:
+              main_screen(entity, context);
+              break;
+      }
   }
 };
 
