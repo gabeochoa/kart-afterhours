@@ -123,13 +123,12 @@ inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
 #else // !SUPPORT_SPLINE_MITERS
 
   Vector2 delta = {0};
-  float length = 0.0f;
   float scale = 0.0f;
 
   for (int i = 0; i < pointCount - 1; i++) {
     delta =
         (Vector2){points[i + 1].x - points[i].x, points[i + 1].y - points[i].y};
-    length = sqrtf(delta.x * delta.x + delta.y * delta.y);
+    float length = sqrtf(delta.x * delta.x + delta.y * delta.y);
 
     if (length > 0)
       scale = thick / (2 * length);

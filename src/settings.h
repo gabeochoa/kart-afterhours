@@ -19,6 +19,9 @@ struct Settings {
   Settings();
   ~Settings();
 
+  Settings(const Settings &) = delete;
+  void operator=(const Settings &) = delete;
+
   void reset();
   void refresh_settings();
 

@@ -86,7 +86,7 @@ struct Transform : BaseComponent {
   float speed_dot_angle{0.f};
 
   vec2 pos() const { return position; }
-  void update(vec2 &v) { position = v; }
+  void update(const vec2 &v) { position = v; }
   Transform(vec2 pos, vec2 sz) : position(pos), size(sz) {}
   raylib::Rectangle rect() const {
     return raylib::Rectangle{position.x, position.y, size.x, size.y};
@@ -191,8 +191,8 @@ struct Weapon {
   }
 };
 
-void make_poof_anim(Entity &, Weapon &, float angle_offset = 0);
-void make_bullet(Entity &, Weapon &, float angle_offset = 0);
+void make_poof_anim(Entity &, const Weapon &, float angle_offset = 0);
+void make_bullet(Entity &, const Weapon &, float angle_offset = 0);
 
 struct Cannon : Weapon {
 

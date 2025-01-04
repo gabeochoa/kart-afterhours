@@ -221,7 +221,7 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
       return;
     }
 
-    for (auto &actions_done : inpc.inputs()) {
+    for (const auto &actions_done : inpc.inputs()) {
       if (actions_done.id != playerID.id)
         continue;
 
@@ -394,7 +394,8 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
     b.velocity -= collisionNormal * impulse / b.mass;
   }
 
-  float calculate_impulse(Transform &a, Transform &b, vec2 collisionNormal) {
+  float calculate_impulse(const Transform &a, const Transform &b,
+                          const vec2 &collisionNormal) {
     vec2 relativeVelocity = b.velocity - a.velocity;
     float impulse =
         vec_dot(-relativeVelocity, collisionNormal) / (1 / a.mass + 1 / b.mass);
@@ -437,7 +438,7 @@ struct VelFromInput : System<PlayerID, Transform> {
 
     const auto is_reversing = transform.speed_dot_angle < 0.f;
 
-    for (auto &actions_done : inpc.inputs()) {
+    for (const auto &actions_done : inpc.inputs()) {
       if (actions_done.id != playerID.id) {
         continue;
       }
@@ -568,7 +569,7 @@ struct ProcessDamage : System<Transform, HasHealth> {
                           .gen();
 
     for (Entity &damager : can_damage) {
-      CanDamage &cd = damager.get<CanDamage>();
+      const CanDamage &cd = damager.get<CanDamage>();
       if (cd.id == entity.id)
         continue;
       hasHealth.amount -= cd.amount;

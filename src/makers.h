@@ -4,7 +4,7 @@
 #include "components.h"
 
 void make_explosion_anim(Entity &parent) {
-  Transform &transform = parent.get<Transform>();
+  const Transform &transform = parent.get<Transform>();
 
   auto &poof = EntityHelper::createEntity();
   poof.addComponent<Transform>(transform.pos(), vec2{10.f, 10.f});
@@ -17,8 +17,8 @@ void make_explosion_anim(Entity &parent) {
                                   0, 0);
 }
 
-void make_poof_anim(Entity &parent, Weapon &wp, float angle_offset) {
-  Transform &transform = parent.get<Transform>();
+void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
+  const Transform &transform = parent.get<Transform>();
 
   vec2 off;
   float angle = 0;
@@ -60,8 +60,8 @@ void make_poof_anim(Entity &parent, Weapon &wp, float angle_offset) {
                                   1.f, 0, angle);
 }
 
-void make_bullet(Entity &parent, Weapon &wp, float angle_offset) {
-  Transform &transform = parent.get<Transform>();
+void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
+  const Transform &transform = parent.get<Transform>();
 
   float angle = 0;
   switch (wp.firing_direction) {

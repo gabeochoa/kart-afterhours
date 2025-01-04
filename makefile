@@ -72,3 +72,7 @@ count:
 
 countall: 
 	git ls-files | xargs wc -l | sort -rn
+
+cppcheck:
+	cppcheck src/ -Ivendor/afterhours --enable=all --std=c++23 --language=c++ --suppress=noConstructor --suppress=noExplicitConstructor --suppress=useStlAlgorithm --suppress=unusedStructMember --suppress=useInitializationList --suppress=duplicateCondition --suppress=nullPointerRedundantCheck --suppress=cstyleCast
+

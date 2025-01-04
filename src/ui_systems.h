@@ -227,11 +227,13 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
       enableCooldown = enableCooldownReset;
       input::PossibleInputCollector<InputAction> inpc =
           input::get_input_collector<InputAction>();
-      for (auto &actions_done : inpc.inputs()) {
-        if (actions_done.action == InputAction::ToggleUIDebug) {
-          enabled = !enabled;
-          break;
-        }
+
+      bool debug_pressed =
+          std::ranges::any_of(inpc.inputs(), [](const auto &actions_done) {
+            return actions_done.action == InputAction::ToggleUIDebug;
+          });
+      if (debug_pressed) {
+        enabled = !enabled;
       }
     }
     return enabled;
