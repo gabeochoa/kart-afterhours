@@ -40,22 +40,31 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   float music_volume = 0.5f;
   float sfx_volume = 0.5f;
 
-  ScheduleMainMenuUI() {}
+  void update_resolution_cache() {
+    resolution_provider =
+        &(EQ().whereHasComponent<
+                  window_manager::ProvidesAvailableWindowResolutions>()
+              .gen_first_enforce()
+              .get<window_manager::ProvidesAvailableWindowResolutions>());
+
+    resolution_strs.clear();
+
+    std::vector<std::string> temp;
+    std::ranges::transform(resolution_provider->fetch_data(),
+                           std::back_inserter(temp),
+                           [](const auto &rez) { return std::string(rez); });
+    resolution_strs = std::move(temp);
+    resolution_index = resolution_provider->current_index();
+  }
+
+  ScheduleMainMenuUI() { update_resolution_cache(); }
+
   ~ScheduleMainMenuUI() {}
 
   void once(float dt) override {
 
     if (active_screen == Screen::Settings) {
-      resolution_provider =
-          &(EQ().whereHasComponent<
-                    window_manager::ProvidesAvailableWindowResolutions>()
-                .gen_first_enforce()
-                .get<window_manager::ProvidesAvailableWindowResolutions>());
-
-      resolution_strs.clear();
-      for (auto &rez : resolution_provider->fetch_data()) {
-        resolution_strs.push_back(std::string(rez));
-      }
+      update_resolution_cache();
     }
   }
 
