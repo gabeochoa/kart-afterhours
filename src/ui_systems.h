@@ -23,6 +23,13 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       .right = pixels(0.f),
   };
 
+  Padding control_group_padding = Padding{
+      .top = screen_pct(0.4f),
+      .left = screen_pct(0.4f),
+      .bottom = pixels(0.f),
+      .right = pixels(0.f),
+  };
+
   Padding button_padding = Padding{
       .top = pixels(button_size.y / 10.f),
       .left = pixels(0.f),
@@ -147,17 +154,14 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           ui::UIComponentDebug::Type::custom, "main_screen");
     }
 
-    auto control_group = imm::div(context, mk(elem.ent()));
-    {
-      control_group.ent()
-          .get<UIComponent>()
-          .set_desired_width(screen_pct(1.f))
-          .set_desired_height(screen_pct(1.f))
-          .set_desired_padding(button_group_padding)
-          .make_absolute();
-      control_group.ent().get<ui::UIComponentDebug>().set(
-          ui::UIComponentDebug::Type::custom, "control_group");
-    }
+    auto control_group =
+        imm::div(context, mk(elem.ent()),
+                 ComponentConfig{
+                     .size = {screen_pct(1.f), screen_pct(1.f)},
+                     .padding = control_group_padding,
+                     .is_absolute = true,
+                     .debug_name = "control_group",
+                 });
 
     {
       auto label =
