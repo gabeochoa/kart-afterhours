@@ -30,10 +30,34 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       .right = pixels(0.f),
   };
 
-  // settings stuff for now
+  // settings cache stuff for now
+  window_manager::ProvidesAvailableWindowResolutions
+      *resolution_provider; // non owning ptr
+                            // eventually std::observer_ptr?
+  std::vector<std::string> resolution_strs;
+  int resolution_index = 0;
   float master_volume = 0.5f;
   float music_volume = 0.5f;
   float sfx_volume = 0.5f;
+
+  ScheduleMainMenuUI() {}
+  ~ScheduleMainMenuUI() {}
+
+  void once(float dt) override {
+
+    if (active_screen == Screen::Settings) {
+      resolution_provider =
+          &(EQ().whereHasComponent<
+                    window_manager::ProvidesAvailableWindowResolutions>()
+                .gen_first_enforce()
+                .get<window_manager::ProvidesAvailableWindowResolutions>());
+
+      resolution_strs.clear();
+      for (auto &rez : resolution_provider->fetch_data()) {
+        resolution_strs.push_back(std::string(rez));
+      }
+    }
+  }
 
   void main_screen(Entity &entity, UIContext<InputAction> &context) {
     auto elem = imm::div(context, mk(entity));
@@ -154,6 +178,13 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           result) {
         sfx_volume = result.as<float>();
         Settings::get().update_sfx_volume(sfx_volume);
+      }
+    }
+
+    {
+      if (imm::dropdown(context, mk(control_group.ent()), resolution_strs,
+                        resolution_index)) {
+        resolution_provider->on_data_changed(resolution_index);
       }
     }
 
