@@ -155,11 +155,13 @@ auto get_mapping() {
 
   mapping[InputAction::WidgetBack] = {
       raylib::GAMEPAD_BUTTON_LEFT_FACE_UP,
+      raylib::KEY_UP,
   };
 
   mapping[InputAction::WidgetNext] = {
       raylib::KEY_TAB,
       raylib::GAMEPAD_BUTTON_LEFT_FACE_DOWN,
+      raylib::KEY_DOWN,
   };
 
   mapping[InputAction::WidgetPress] = {
