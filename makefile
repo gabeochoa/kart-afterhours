@@ -27,7 +27,7 @@ OUTPUT_EXE := $(OUTPUT_FOLDER)/kart.exe
 ifeq ($(OS),Windows_NT)
 RAYLIB_FLAGS := -IF:/RayLib/include
 RAYLIB_LIB := F:/RayLib/lib/raylib.dll
-CXX := g++ -std=c++20
+CXX := g++ -std=c++23
 
 mkdir_cmd = powershell -command "& {&'New-Item' -Path .\ -Name output\resources -ItemType directory -ErrorAction SilentlyContinue}";
 cp_lib_cmd = powershell -command  "& {&'Copy-Item' .\vendor\raylib\*.dll output -ErrorAction SilentlyContinue}";
@@ -42,8 +42,9 @@ cp_resources_cmd = cp resources/* output/resources/
 run_cmd := ./${OUTPUT_EXE}
 sign_cmd := && codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
 # CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
-# CXX := clang++ -std=c++2a -Wmost #-fsanitize=undefined
-CXX := g++-14 -fmax-errors=10 -std=c++2a -DBACKWARD
+# CXX := clang++ -std=c++23 -Wmost #-fsanitize=undefined
+CXX := g++-14 -fmax-errors=10 -std=c++23 -DBACKWARD
+FLAGS = -g $(RAYLIB_FLAGS)
 
 
 endif
