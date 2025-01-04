@@ -112,22 +112,22 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           ui::UIComponentDebug::Type::custom, "main_screen");
     }
 
-    auto button_group = imm::div(context, mk(elem.ent()));
+    auto control_group = imm::div(context, mk(elem.ent()));
     {
-      button_group.ent()
+      control_group.ent()
           .get<UIComponent>()
           .set_desired_width(screen_pct(1.f))
           .set_desired_height(screen_pct(1.f))
-          .set_desired_padding(button_group_padding)
+          .set_desired_padding(control_group_padding)
           .make_absolute();
-      button_group.ent().get<ui::UIComponentDebug>().set(
-          ui::UIComponentDebug::Type::custom, "button_group");
+      control_group.ent().get<ui::UIComponentDebug>().set(
+          ui::UIComponentDebug::Type::custom, "control_group");
     }
 
     {
       auto label =
           fmt::format("Master Volume\n {:2.0f}", master_volume * 100.f);
-      if (auto result = slider(context, mk(button_group.ent()), master_volume,
+      if (auto result = slider(context, mk(control_group.ent()), master_volume,
                                ComponentConfig{.label = label});
           result) {
         master_volume = result.as<float>();
@@ -136,14 +136,14 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     {
       auto label = fmt::format("Music Volume\n {:2.0f}", music_volume * 100.f);
-      if (auto result = slider(context, mk(button_group.ent()), music_volume,
+      if (auto result = slider(context, mk(control_group.ent()), music_volume,
                                ComponentConfig{.label = label});
           result) {
         music_volume = result.as<float>();
       }
     }
 
-    if (imm::button(context, mk(button_group.ent()),
+    if (imm::button(context, mk(control_group.ent()),
                     ComponentConfig{
                         .padding = button_padding,
                         .label = "back",
