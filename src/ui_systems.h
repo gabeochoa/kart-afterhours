@@ -29,12 +29,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       .right = pixels(0.f),
   };
 
-
-  // settings stuff for now 
+  // settings stuff for now
   float master_volume = 0.5f;
   float music_volume = 0.5f;
 
-  void main_screen(Entity& entity, UIContext<InputAction>& context){
+  void main_screen(Entity &entity, UIContext<InputAction> &context) {
     auto elem = imm::div(context, mk(entity));
     {
       elem.ent()
@@ -98,10 +97,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     ) {
       running = false;
     }
-
   }
 
-  void settings_screen(Entity& entity, UIContext<InputAction>& context){
+  void settings_screen(Entity &entity, UIContext<InputAction> &context) {
     auto elem = imm::div(context, mk(entity));
     {
       elem.ent()
@@ -137,15 +135,13 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     }
 
     {
-      auto label =
-          fmt::format("Music Volume\n {:2.0f}", music_volume * 100.f);
+      auto label = fmt::format("Music Volume\n {:2.0f}", music_volume * 100.f);
       if (auto result = slider(context, mk(button_group.ent()), music_volume,
                                ComponentConfig{.label = label});
           result) {
         music_volume = result.as<float>();
       }
     }
-
 
     if (imm::button(context, mk(button_group.ent()),
                     ComponentConfig{
@@ -156,22 +152,21 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     ) {
       active_screen = Screen::Main;
     }
-
   }
 
   virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
                              float) override {
-      switch(active_screen){
-          case Screen::None:
-          case Screen::About:
-              break;
-          case Screen::Settings:
-              settings_screen(entity, context);
-              break;
-          case Screen::Main:
-              main_screen(entity, context);
-              break;
-      }
+    switch (active_screen) {
+    case Screen::None:
+    case Screen::About:
+      break;
+    case Screen::Settings:
+      settings_screen(entity, context);
+      break;
+    case Screen::Main:
+      main_screen(entity, context);
+      break;
+    }
   }
 };
 
