@@ -5,6 +5,8 @@
 
 #include "afterhours/src/plugins/window_manager.h"
 
+#include "library.h"
+
 struct S_Data;
 
 struct Settings {

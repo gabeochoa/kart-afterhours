@@ -3,7 +3,7 @@
 
 #include "rl.h"
 
-const char *GetAssetsDirectory() {
+inline const char *GetAssetsDirectory() {
   static char assetDir[1024] = {0};
 
   // 1. Check environment variable
@@ -45,7 +45,7 @@ const char *GetAssetsDirectory() {
 }
 // Use this path to load the asset immediately, once called again original value
 // is replaced!
-const char *GetAssetPath(const char *filename) {
+inline const char *GetAssetPath(const char *filename) {
   static char path[1024] = {0};
   strcpy(path, GetAssetsDirectory());
   strcat(path, filename);

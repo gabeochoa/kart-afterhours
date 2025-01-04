@@ -10,6 +10,7 @@ backward::SignalHandling sh;
 
 #include "argh.h"
 #include "rl.h"
+#include "sound_library.h"
 //
 int sophie_id = -1;
 bool running = true;
@@ -181,43 +182,6 @@ auto get_mapping() {
   return mapping;
 }
 
-enum struct SoundFile {
-  Rumble,
-  Skrt_Start,
-  Skrt_Mid,
-  Skrt_End,
-};
-
-std::map<SoundFile, raylib::Sound> sounds;
-
-static void load_sounds() {
-  magic_enum::enum_for_each<SoundFile>([](auto val) {
-    constexpr SoundFile file = val;
-    std::string filename;
-    switch (file) {
-    case SoundFile::Rumble:
-      filename = "rumble.wav";
-      break;
-    case SoundFile::Skrt_Start:
-      filename = "skrt_start.wav";
-      break;
-    case SoundFile::Skrt_Mid:
-      filename = "skrt_mid.wav";
-      break;
-    case SoundFile::Skrt_End:
-      filename = "skrt_end.wav";
-      break;
-    }
-    raylib::Sound sound = raylib::LoadSound(GetAssetPath(filename.c_str()));
-    sounds[file] = sound;
-  });
-}
-
-static void play_sound(SoundFile sf) {
-  raylib::SetSoundVolume(sounds[sf], 0.25f);
-  raylib::PlaySound(sounds[sf]);
-}
-
 #include "components.h"
 #include "makers.h"
 #include "query.h"
@@ -235,11 +199,15 @@ static void load_gamepad_mappings() {
   input::set_gamepad_mappings(buffer.str().c_str());
 }
 
-// For lack of a better filter
+// TODO this needs to be converted into a component with SoundAlias's
+// in raylib a Sound can only be played once and hitting play again
+// will restart it.
+//
+// we need to make aliases so that each one can play at the same time
 struct CarRumble : System<Transform, CanShoot> {
   virtual void for_each_with(const Entity &, const Transform &,
                              const CanShoot &, float) const override {
-    play_sound(SoundFile::Rumble);
+    SoundLibrary::get().play(SoundFile::Rumble);
   }
 };
 

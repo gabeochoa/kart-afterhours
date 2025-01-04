@@ -6,14 +6,17 @@
 
 #include "rl.h"
 
+#include "music_library.h"
+#include "sound_library.h"
+
 namespace settings {
 
 static void update_master_volume(float vol) { raylib::SetMasterVolume(vol); }
 static void update_music_volume(float vol) {
-  log_warn("music volume change not implemented");
+  MusicLibrary::get().update_volume(vol);
 }
 static void update_sound_volume(float vol) {
-  log_warn("sound volume change not implemented");
+  SoundLibrary::get().update_volume(vol);
 }
 
 } // namespace settings
