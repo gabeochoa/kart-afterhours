@@ -26,7 +26,8 @@ namespace raylib {
 //
 #include "RaylibOpOverloads.h"
 
-void DrawSplineSegmentLinear(Vector2 p1, Vector2 p2, float thick, Color color) {
+inline void DrawSplineSegmentLinear(Vector2 p1, Vector2 p2, float thick,
+                                    Color color) {
   // NOTE: For the linear spline we don't use subdivisions, just a single quad
 
   Vector2 delta = {p2.x - p1.x, p2.y - p1.y};
@@ -45,8 +46,8 @@ void DrawSplineSegmentLinear(Vector2 p1, Vector2 p2, float thick, Color color) {
   }
 }
 
-void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
-                      Color color) {
+inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
+                             Color color) {
   if (pointCount < 2)
     return;
 
@@ -153,13 +154,6 @@ void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
 #undef MAGIC_ENUM_RANGE_MAX
 #define MAGIC_ENUM_RANGE_MAX 400
 #include <magic_enum/magic_enum.hpp>
-
-#ifdef BACKWARD
-#include "backward/backward.hpp"
-namespace backward {
-backward::SignalHandling sh;
-} // namespace backward
-#endif
 
 #define FMT_HEADER_ONLY
 #include <fmt/args.h>

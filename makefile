@@ -53,7 +53,7 @@ endif
 
 
 all:
-	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
+	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp src/settings.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
 
 output:
 	$(mkdir_cmd)

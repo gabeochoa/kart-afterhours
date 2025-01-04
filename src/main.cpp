@@ -1,6 +1,13 @@
 
 #include "std_include.h"
 
+#ifdef BACKWARD
+#include "backward/backward.hpp"
+namespace backward {
+backward::SignalHandling sh;
+} // namespace backward
+#endif
+
 #include "argh.h"
 #include "rl.h"
 //
@@ -23,8 +30,6 @@ std::string get_font_name(FontID id) {
   return afterhours::ui::UIComponent::DEFAULT_FONT;
 }
 #include "intro.h"
-
-#define ENABLE_SOUNDS
 
 static int next_id = 0;
 const vec2 button_size = vec2{100, 50};
@@ -176,7 +181,6 @@ auto get_mapping() {
   return mapping;
 }
 
-#ifdef ENABLE_SOUNDS
 enum struct SoundFile {
   Rumble,
   Skrt_Start,
@@ -213,7 +217,6 @@ static void play_sound(SoundFile sf) {
   raylib::SetSoundVolume(sounds[sf], 0.25f);
   raylib::PlaySound(sounds[sf]);
 }
-#endif
 
 #include "components.h"
 #include "makers.h"
@@ -232,7 +235,6 @@ static void load_gamepad_mappings() {
   input::set_gamepad_mappings(buffer.str().c_str());
 }
 
-#ifdef ENABLE_SOUNDS
 // For lack of a better filter
 struct CarRumble : System<Transform, CanShoot> {
   virtual void for_each_with(const Entity &, const Transform &,
@@ -240,7 +242,6 @@ struct CarRumble : System<Transform, CanShoot> {
     play_sound(SoundFile::Rumble);
   }
 };
-#endif
 
 void game() {
   SystemManager systems;
