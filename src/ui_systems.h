@@ -3,6 +3,7 @@
 
 #include "components.h"
 #include "query.h"
+#include "settings.h"
 
 using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
@@ -32,6 +33,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   // settings stuff for now
   float master_volume = 0.5f;
   float music_volume = 0.5f;
+  float sfx_volume = 0.5f;
 
   void main_screen(Entity &entity, UIContext<InputAction> &context) {
     auto elem = imm::div(context, mk(entity));
@@ -118,7 +120,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           .get<UIComponent>()
           .set_desired_width(screen_pct(1.f))
           .set_desired_height(screen_pct(1.f))
-          .set_desired_padding(control_group_padding)
+          .set_desired_padding(button_group_padding)
           .make_absolute();
       control_group.ent().get<ui::UIComponentDebug>().set(
           ui::UIComponentDebug::Type::custom, "control_group");
@@ -131,6 +133,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                ComponentConfig{.label = label});
           result) {
         master_volume = result.as<float>();
+        Settings::get().update_master_volume(master_volume);
       }
     }
 
@@ -140,6 +143,17 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                ComponentConfig{.label = label});
           result) {
         music_volume = result.as<float>();
+        Settings::get().update_music_volume(music_volume);
+      }
+    }
+
+    {
+      auto label = fmt::format("SFX Volume\n {:2.0f}", sfx_volume * 100.f);
+      if (auto result = slider(context, mk(control_group.ent()), sfx_volume,
+                               ComponentConfig{.label = label});
+          result) {
+        sfx_volume = result.as<float>();
+        Settings::get().update_sfx_volume(sfx_volume);
       }
     }
 

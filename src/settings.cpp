@@ -1,25 +1,13 @@
 
+#include "settings.h"
+
 #include <algorithm>
 #include <memory>
-
-#include "settings.h"
 
 #include "rl.h"
 
 #include "music_library.h"
 #include "sound_library.h"
-
-namespace settings {
-
-static void update_master_volume(float vol) { raylib::SetMasterVolume(vol); }
-static void update_music_volume(float vol) {
-  MusicLibrary::get().update_volume(vol);
-}
-static void update_sound_volume(float vol) {
-  SoundLibrary::get().update_volume(vol);
-}
-
-} // namespace settings
 
 template <typename T> struct ValueHolder {
   using value_type = T;
@@ -49,18 +37,37 @@ struct S_Data {
   Pct sfx_volume = 0.5f;
 };
 
+Settings::Settings() { data = new S_Data(); }
+Settings::~Settings() { delete data; }
+
 void Settings::reset() {
-  data = std::make_unique<S_Data>();
+  delete data;
+  data = new S_Data();
   refresh_settings();
+}
+
+void Settings::update_music_volume(float vol) {
+  MusicLibrary::get().update_volume(vol);
+}
+void Settings::update_sfx_volume(float vol) {
+  SoundLibrary::get().update_volume(vol);
+}
+
+void Settings::update_master_volume(float vol) {
+  // TODO should these be updated after?
+  // because if not, then why are we doing these at all
+  update_music_volume(data->music_volume);
+  update_sfx_volume(data->sfx_volume);
+
+  raylib::SetMasterVolume(vol);
 }
 
 void Settings::refresh_settings() {
 
   // audio settings
   {
-    settings::update_music_volume(data->music_volume);
-    settings::update_sound_volume(data->sfx_volume);
-    //
-    settings::update_master_volume(data->master_volume);
+    update_music_volume(data->music_volume);
+    update_sfx_volume(data->sfx_volume);
+    update_master_volume(data->master_volume);
   }
 }

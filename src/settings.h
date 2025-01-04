@@ -6,12 +6,23 @@
 #include "afterhours/src/plugins/window_manager.h"
 
 #include "library.h"
+#include "singleton.h"
 
 struct S_Data;
 
+SINGLETON_FWD(Settings)
 struct Settings {
-  std::unique_ptr<S_Data> data;
+  SINGLETON(Settings)
+
+  S_Data *data;
+
+  Settings();
+  ~Settings();
 
   void reset();
   void refresh_settings();
+
+  void update_music_volume(float);
+  void update_sfx_volume(float);
+  void update_master_volume(float);
 };
