@@ -66,6 +66,10 @@ run:
 	$(cp_resources_cmd)
 	$(run_cmd)
 
+brawlhalla: 
+	cp $(OUTPUT_EXE) F:\SteamLibrary\steamapps\common\Brawlhalla\Brawlhalla.exe
+
+
 count: 
 	git ls-files | grep "src" | grep -v "resources" | grep -v "vendor" | xargs wc -l | sort -rn | pr -2 -t -w 100
 	make -C vendor/afterhours
