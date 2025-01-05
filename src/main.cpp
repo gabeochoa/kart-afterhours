@@ -310,6 +310,8 @@ int main(int argc, char *argv[]) {
 
   load_sounds();
 
+  Settings::get().refresh_settings();
+
   // sophie
   auto &sophie = EntityHelper::createEntity();
   sophie_id = sophie.id;
