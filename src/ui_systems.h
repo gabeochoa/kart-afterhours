@@ -46,6 +46,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   float master_volume = 0.5f;
   float music_volume = 0.5f;
   float sfx_volume = 0.5f;
+  bool fs_enabled = false;
 
   void update_resolution_cache() {
     resolution_provider = EntityHelper::get_singleton_cmp<
@@ -196,6 +197,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                         resolution_index)) {
         resolution_provider->on_data_changed(resolution_index);
       }
+    }
+
+    if (imm::checkbox(context, mk(control_group.ent()),
+                      Settings::get().get_fullscreen_enabled())) {
+      Settings::get().toggle_fullscreen();
     }
 
     if (imm::button(context, mk(control_group.ent()),

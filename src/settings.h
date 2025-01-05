@@ -28,4 +28,7 @@ struct Settings {
   void update_music_volume(float);
   void update_sfx_volume(float);
   void update_master_volume(float);
+
+  bool &get_fullscreen_enabled();
+  void toggle_fullscreen();
 };
