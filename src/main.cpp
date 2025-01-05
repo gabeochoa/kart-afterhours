@@ -298,6 +298,8 @@ int main(int argc, char *argv[]) {
   cmdl({"-w", "--width"}) >> screenWidth;
   cmdl({"-h", "--height"}) >> screenHeight;
 
+  raylib::TraceLogLevel logLevel = raylib::LOG_WARNING;
+  raylib::SetTraceLogLevel(logLevel);
   raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
   raylib::SetTargetFPS(200);
 
