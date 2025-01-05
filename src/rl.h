@@ -23,8 +23,14 @@
 
 namespace raylib {
 #include "raylib.h"
+#include "raymath.h"
 //
-#include "RaylibOpOverloads.h"
+// #include "RaylibOpOverloads.h"
+
+inline Vector2 &operator-(Vector2 &a) {
+  a = Vector2Negate(a);
+  return a;
+}
 
 inline void DrawSplineSegmentLinear(Vector2 p1, Vector2 p2, float thick,
                                     Color color) {
