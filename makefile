@@ -42,7 +42,7 @@ cp_resources_cmd = cp resources/* output/resources/
 run_cmd := ./${OUTPUT_EXE}
 sign_cmd := && codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
 # CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
-# CXX := clang++ -std=c++23 -Wmost #-fsanitize=undefined
+# CXX := clang++ -std=c++23 -Wmost -fsanitize=address
 CXX := g++-14 -fmax-errors=10 -std=c++23 -DBACKWARD
 FLAGS = -g $(RAYLIB_FLAGS)
 

@@ -48,11 +48,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   float sfx_volume = 0.5f;
 
   void update_resolution_cache() {
-    resolution_provider =
-        &(EQ().whereHasComponent<
-                  window_manager::ProvidesAvailableWindowResolutions>()
-              .gen_first_enforce()
-              .get<window_manager::ProvidesAvailableWindowResolutions>());
+    resolution_provider = EntityHelper::get_singleton_cmp<
+        window_manager::ProvidesAvailableWindowResolutions>();
 
     resolution_strs.clear();
 
