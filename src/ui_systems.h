@@ -64,7 +64,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     resolution_index = resolution_provider->current_index();
   }
 
-  ScheduleMainMenuUI() { update_resolution_cache(); }
+  ScheduleMainMenuUI() {}
 
   ~ScheduleMainMenuUI() {}
 
