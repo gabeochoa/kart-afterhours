@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "make",
+            "label": "run the makefile",
             "type": "shell",
             "command": "C:\\msys64\\usr\\bin\\make.exe",
             "args": [],
