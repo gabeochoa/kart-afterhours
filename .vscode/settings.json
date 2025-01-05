@@ -1,0 +1,9 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "f:\\VSCode\\kart-afterhours\\output",
+            "binaryPath": "f:\\VSCode\\kart-afterhours\\output\\kart.exe",
+            "binaryArgs": []
+        }
+    ]
+}

@@ -4,7 +4,6 @@
 .cache/
 .DS_Store
 **/.vs
-.vscode/
 game.obj
 WinPharmaSea/**/
 pharmasea/WinPharmaSea/**/
