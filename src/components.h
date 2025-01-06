@@ -1,9 +1,15 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
+
+#include "input_mapping.h"
 #include "math_util.h"
 #include "max_health.h"
 #include "rl.h"
+
+using namespace afterhours;
 
 struct AIControlled : BaseComponent {
   vec2 target{0.f, 0.f};
