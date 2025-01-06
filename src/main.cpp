@@ -153,8 +153,9 @@ int main(int argc, char *argv[]) {
   cmdl({"-w", "--width"}) >> screenWidth;
   cmdl({"-h", "--height"}) >> screenHeight;
 
-  Preload::get().init(screenWidth, screenHeight, "Cart Chaos");
-  Preload::get().make_singleton();
+  Preload::get() //
+      .init(screenWidth, screenHeight, "Cart Chaos")
+      .make_singleton();
   Settings::get().refresh_settings();
 
   make_player(0);
