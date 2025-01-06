@@ -8,31 +8,17 @@ backward::SignalHandling sh;
 } // namespace backward
 #endif
 
-#include "argh.h"
-#include "preload.h"
 #include "rl.h"
-//
 bool running = true;
 //
-//
-#include "config.h"
+#include "argh.h"
 #include "intro.h"
-
-//
-using namespace afterhours;
-
-#include "math_util.h"
-#include "resources.h"
-#include "utils.h"
-
-#include "input_mapping.h"
-
-#include "components.h"
-#include "makers.h"
-#include "query.h"
+#include "preload.h"
 #include "sound_systems.h"
 #include "systems.h"
 #include "ui_systems.h"
+
+using namespace afterhours;
 
 void game() {
   SystemManager systems;

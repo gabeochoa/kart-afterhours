@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "components.h"
 #include "sound_library.h"
 
 // TODO this needs to be converted into a component with SoundAlias's

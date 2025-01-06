@@ -2,6 +2,7 @@
 #pragma once
 
 #include "components.h"
+#include "makers.h"
 #include "query.h"
 
 struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {

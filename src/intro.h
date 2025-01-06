@@ -3,6 +3,9 @@
 
 #include "rl.h"
 
+#include "config.h"
+#include "preload.h"
+
 using namespace afterhours;
 
 struct IntroScreens
