@@ -5,6 +5,16 @@
 
 #include "sound_library.h"
 
+std::string get_font_name(FontID id) {
+  switch (id) {
+  case FontID::EQPro:
+    return "eqpro";
+  case FontID::raylibFont:
+    return afterhours::ui::UIComponent::DEFAULT_FONT;
+  }
+  return afterhours::ui::UIComponent::DEFAULT_FONT;
+}
+
 static void load_gamepad_mappings() {
   std::ifstream ifs(GetAssetPath("gamecontrollerdb.txt"));
   if (!ifs.is_open()) {

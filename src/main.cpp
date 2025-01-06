@@ -17,20 +17,6 @@ int sophie_id = -1;
 bool running = true;
 //
 //
-enum FontID {
-  EQPro,
-  raylibFont,
-};
-
-std::string get_font_name(FontID id) {
-  switch (id) {
-  case FontID::EQPro:
-    return "eqpro";
-  case FontID::raylibFont:
-    return afterhours::ui::UIComponent::DEFAULT_FONT;
-  }
-  return afterhours::ui::UIComponent::DEFAULT_FONT;
-}
 #include "intro.h"
 
 static int next_id = 0;
@@ -289,7 +275,6 @@ int main(int argc, char *argv[]) {
   cmdl({"-h", "--height"}) >> screenHeight;
 
   Preload::get().init(screenWidth, screenHeight, "Cart Chaos");
-
   Settings::get().refresh_settings();
 
   // sophie

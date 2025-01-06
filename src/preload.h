@@ -7,6 +7,13 @@
 #include "library.h"
 #include "singleton.h"
 
+enum FontID {
+  EQPro,
+  raylibFont,
+};
+
+std::string get_font_name(FontID id);
+
 SINGLETON_FWD(Preload)
 struct Preload {
   SINGLETON(Preload)
