@@ -32,9 +32,9 @@ struct S_Data {
       .height = 1280,
   };
 
-  Pct master_volume = 0.5f;
-  Pct music_volume = 0.5f;
-  Pct sfx_volume = 0.5f;
+  Pct master_volume = 0.1f;
+  Pct music_volume = 0.1f;
+  Pct sfx_volume = 0.1f;
 
   bool fullscreen_enabled = false;
 };
@@ -48,11 +48,17 @@ void Settings::reset() {
   refresh_settings();
 }
 
+float Settings::get_music_volume() { return data->music_volume; }
+float Settings::get_sfx_volume() { return data->sfx_volume; }
+float Settings::get_master_volume() { return data->master_volume; }
+
 void Settings::update_music_volume(float vol) {
   MusicLibrary::get().update_volume(vol);
+  data->music_volume = vol;
 }
 void Settings::update_sfx_volume(float vol) {
   SoundLibrary::get().update_volume(vol);
+  data->sfx_volume = vol;
 }
 
 void Settings::update_master_volume(float vol) {
@@ -62,6 +68,7 @@ void Settings::update_master_volume(float vol) {
   update_sfx_volume(data->sfx_volume);
 
   raylib::SetMasterVolume(vol);
+  data->master_volume = vol;
 }
 
 void match_fullscreen_to_setting(bool fs_enabled) {

@@ -43,9 +43,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                             // eventually std::observer_ptr?
   std::vector<std::string> resolution_strs;
   int resolution_index = 0;
-  float master_volume = 0.5f;
-  float music_volume = 0.5f;
-  float sfx_volume = 0.5f;
   bool fs_enabled = false;
 
   void update_resolution_cache() {
@@ -162,6 +159,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                  });
 
     {
+      float master_volume = Settings::get().get_master_volume();
       auto label =
           fmt::format("Master Volume\n {:2.0f}", master_volume * 100.f);
       if (auto result = slider(context, mk(control_group.ent()), master_volume,
@@ -173,6 +171,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     }
 
     {
+      float music_volume = Settings::get().get_music_volume();
       auto label = fmt::format("Music Volume\n {:2.0f}", music_volume * 100.f);
       if (auto result = slider(context, mk(control_group.ent()), music_volume,
                                ComponentConfig{.label = label});
@@ -183,6 +182,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     }
 
     {
+      float sfx_volume = Settings::get().get_sfx_volume();
       auto label = fmt::format("SFX Volume\n {:2.0f}", sfx_volume * 100.f);
       if (auto result = slider(context, mk(control_group.ent()), sfx_volume,
                                ComponentConfig{.label = label});
@@ -232,7 +232,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 };
 
 struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
-  bool enabled = true;
+  bool enabled = false;
   float enableCooldown = 0.f;
   float enableCooldownReset = 0.2f;
 

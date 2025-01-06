@@ -25,8 +25,13 @@ struct Settings {
   void reset();
   void refresh_settings();
 
+  float get_music_volume();
   void update_music_volume(float);
+
+  float get_sfx_volume();
   void update_sfx_volume(float);
+
+  float get_master_volume();
   void update_master_volume(float);
 
   bool &get_fullscreen_enabled();
