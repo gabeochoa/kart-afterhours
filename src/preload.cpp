@@ -35,6 +35,7 @@ Preload::Preload() {}
 
 Preload &Preload::init(int width, int height, const char *title) {
   raylib::InitWindow(width, height, title);
+  // TODO this doesnt seem to do anything when in this file
   raylib::TraceLogLevel logLevel = raylib::LOG_WARNING;
   raylib::SetTraceLogLevel(logLevel);
   raylib::SetTargetFPS(200);
