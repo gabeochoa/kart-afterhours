@@ -140,9 +140,6 @@ void game() {
     raylib::EndDrawing();
   }
 
-  raylib::CloseAudioDevice();
-  raylib::CloseWindow();
-
   std::cout << "Num entities: " << EntityHelper::get_entities().size()
             << std::endl;
 }

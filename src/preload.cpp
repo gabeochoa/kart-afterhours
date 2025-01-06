@@ -73,4 +73,7 @@ Preload &Preload::make_singleton() {
   return *this;
 }
 
-Preload::~Preload() {}
+Preload::~Preload() {
+  raylib::CloseAudioDevice();
+  raylib::CloseWindow();
+}
