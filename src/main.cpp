@@ -18,9 +18,6 @@ bool running = true;
 #include "config.h"
 #include "intro.h"
 
-static int next_id = 0;
-const vec2 button_size = vec2{100, 50};
-
 //
 using namespace afterhours;
 

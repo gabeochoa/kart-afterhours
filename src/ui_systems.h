@@ -9,6 +9,8 @@ using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
 struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
+  const vec2 button_size = vec2{100, 50};
+
   enum struct Screen {
     None,
     Main,
