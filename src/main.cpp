@@ -265,18 +265,7 @@ void game() {
             << std::endl;
 }
 
-int main(int argc, char *argv[]) {
-  int screenWidth = 1280;
-  int screenHeight = 720;
-
-  argh::parser cmdl(argc, argv, argh::parser::PREFER_PARAM_FOR_UNREG_OPTION);
-
-  cmdl({"-w", "--width"}) >> screenWidth;
-  cmdl({"-h", "--height"}) >> screenHeight;
-
-  Preload::get().init(screenWidth, screenHeight, "Cart Chaos");
-  Settings::get().refresh_settings();
-
+void make_sophie() {
   // sophie
   auto &sophie = EntityHelper::createEntity();
   sophie_id = sophie.id;
@@ -300,6 +289,21 @@ int main(int argc, char *argv[]) {
         .set_desired_height(afterhours::ui::screen_pct(1.f))
         .enable_font(get_font_name(FontID::EQPro), 75.f);
   }
+}
+
+int main(int argc, char *argv[]) {
+  int screenWidth = 1280;
+  int screenHeight = 720;
+
+  argh::parser cmdl(argc, argv, argh::parser::PREFER_PARAM_FOR_UNREG_OPTION);
+
+  cmdl({"-w", "--width"}) >> screenWidth;
+  cmdl({"-h", "--height"}) >> screenHeight;
+
+  Preload::get().init(screenWidth, screenHeight, "Cart Chaos");
+  Settings::get().refresh_settings();
+
+  make_sophie();
 
   make_player(0);
   make_ai();
