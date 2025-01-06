@@ -41,6 +41,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   window_manager::ProvidesAvailableWindowResolutions
       *resolution_provider; // non owning ptr
                             // eventually std::observer_ptr?
+  window_manager::ProvidesCurrentResolution
+      *current_resolution_provider; // non owning ptr
+                                    // eventually std::observer_ptr?
   std::vector<std::string> resolution_strs;
   int resolution_index = 0;
   bool fs_enabled = false;
@@ -64,6 +67,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   ~ScheduleMainMenuUI() {}
 
   void once(float dt) override {
+
+    current_resolution_provider = EntityHelper::get_singleton_cmp<
+        window_manager::ProvidesCurrentResolution>();
 
     if (active_screen == Screen::Settings) {
       update_resolution_cache();
@@ -222,11 +228,72 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     }
   }
 
+  void about_screen(Entity &entity, UIContext<InputAction> &context) {
+    if (!current_resolution_provider)
+      return;
+
+    auto elem = imm::div(context, mk(entity));
+    {
+      elem.ent()
+          .get<UIComponent>()
+          .enable_font(get_font_name(FontID::EQPro), 75.f)
+          .set_desired_width(screen_pct(1.f))
+          .set_desired_height(screen_pct(1.f))
+          .make_absolute();
+      elem.ent().get<ui::UIComponentDebug>().set(
+          ui::UIComponentDebug::Type::custom, "about_screen");
+    }
+
+    auto about_group = imm::div(context, mk(elem.ent()),
+                                ComponentConfig{
+                                    .size = {screen_pct(1.f), screen_pct(1.f)},
+                                    .padding = control_group_padding,
+                                    .is_absolute = true,
+                                    .debug_name = "control_group",
+                                });
+
+    raylib::Texture2D sheet =
+        EntityHelper::get_singleton_cmp<HasTexture>()->texture;
+    window_manager::Resolution rez =
+        current_resolution_provider->current_resolution;
+    float scale = 5.f;
+    float x_pos = rez.width * 0.2f;
+    int num_icon = 3;
+    float x_spacing = (rez.width - x_pos * 2.f) / num_icon;
+
+    for (size_t i = 0; i < num_icon; i++) {
+
+      Rectangle frame = idx_to_sprite_frame(i, 4);
+      raylib::DrawTexturePro(sheet, frame,
+                             Rectangle{
+                                 x_pos,
+                                 rez.height * 0.2f,
+                                 frame.width * scale,
+                                 frame.height * scale,
+                             },
+                             vec2{frame.width / 2.f, frame.height / 2.f}, 0,
+                             raylib::RAYWHITE);
+      x_pos += x_spacing;
+    }
+
+    if (imm::button(context, mk(about_group.ent()),
+                    ComponentConfig{
+                        .padding = button_padding,
+                        .label = "back",
+                    })
+        //
+    ) {
+      active_screen = Screen::Main;
+    }
+  }
+
   virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
                              float) override {
     switch (active_screen) {
     case Screen::None:
+      break;
     case Screen::About:
+      about_screen(entity, context);
       break;
     case Screen::Settings:
       settings_screen(entity, context);
