@@ -2,8 +2,10 @@
 #pragma once
 
 #include <expected>
+#include <map>
 #include <utility>
 
+#include "afterhours/src/type_name.h"
 #include "log.h"
 
 template <typename T> struct Library {

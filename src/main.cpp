@@ -9,6 +9,7 @@ backward::SignalHandling sh;
 #endif
 
 #include "argh.h"
+#include "preload.h"
 #include "rl.h"
 #include "sound_library.h"
 //
@@ -190,17 +191,6 @@ auto get_mapping() {
 #include "systems.h"
 #include "ui_systems.h"
 
-static void load_gamepad_mappings() {
-  std::ifstream ifs(GetAssetPath("gamecontrollerdb.txt"));
-  if (!ifs.is_open()) {
-    std::cout << "Failed to load game controller db" << std::endl;
-    return;
-  }
-  std::stringstream buffer;
-  buffer << ifs.rdbuf();
-  input::set_gamepad_mappings(buffer.str().c_str());
-}
-
 // TODO this needs to be converted into a component with SoundAlias's
 // in raylib a Sound can only be played once and hitting play again
 // will restart it.
@@ -298,19 +288,7 @@ int main(int argc, char *argv[]) {
   cmdl({"-w", "--width"}) >> screenWidth;
   cmdl({"-h", "--height"}) >> screenHeight;
 
-  raylib::TraceLogLevel logLevel = raylib::LOG_WARNING;
-  raylib::SetTraceLogLevel(logLevel);
-  raylib::InitWindow(screenWidth, screenHeight, "kart-afterhours");
-  raylib::SetTargetFPS(200);
-
-  raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
-
-  raylib::InitAudioDevice();
-  raylib::SetMasterVolume(1.f);
-
-  load_gamepad_mappings();
-
-  load_sounds();
+  Preload::get().init(screenWidth, screenHeight, "Cart Chaos");
 
   Settings::get().refresh_settings();
 
