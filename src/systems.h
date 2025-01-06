@@ -98,11 +98,8 @@ struct RenderSprites : System<Transform, HasSprite> {
 
   raylib::Texture2D sheet;
 
-  virtual void once(float) {
-    sheet = EQ().whereHasComponent<HasTexture>()
-                .gen_first_enforce()
-                .get<HasTexture>()
-                .texture;
+  virtual void once(float) override {
+    sheet = EntityHelper::get_singleton_cmp<HasTexture>()->texture;
   }
 
   virtual void for_each_with(const Entity &, const Transform &transform,

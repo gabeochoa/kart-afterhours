@@ -11,7 +11,6 @@ backward::SignalHandling sh;
 #include "argh.h"
 #include "preload.h"
 #include "rl.h"
-#include "sound_library.h"
 //
 bool running = true;
 //
@@ -68,20 +67,9 @@ using namespace afterhours;
 #include "components.h"
 #include "makers.h"
 #include "query.h"
+#include "sound_systems.h"
 #include "systems.h"
 #include "ui_systems.h"
-
-// TODO this needs to be converted into a component with SoundAlias's
-// in raylib a Sound can only be played once and hitting play again
-// will restart it.
-//
-// we need to make aliases so that each one can play at the same time
-struct CarRumble : System<Transform, CanShoot> {
-  virtual void for_each_with(const Entity &, const Transform &,
-                             const CanShoot &, float) const override {
-    SoundLibrary::get().play(SoundFile::Rumble);
-  }
-};
 
 void game() {
   SystemManager systems;

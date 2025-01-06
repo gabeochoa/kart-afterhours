@@ -21,7 +21,7 @@ struct IntroScreens
 
   IntroScreens() {}
 
-  virtual bool should_run(float dt) {
+  virtual bool should_run(float dt) override {
     timeInState += dt;
     if (state == State::Complete) {
       return timeInState < 0.2f;

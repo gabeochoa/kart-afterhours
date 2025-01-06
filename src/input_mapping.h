@@ -22,7 +22,7 @@ enum class InputAction {
 
 using afterhours::input;
 
-constexpr static auto get_mapping() {
+inline auto get_mapping() {
   std::map<InputAction, input::ValidInputs> mapping;
 
   mapping[InputAction::Accel] = {

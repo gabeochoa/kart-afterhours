@@ -14,7 +14,7 @@ enum struct SoundFile {
   Skrt_End,
 };
 
-static const char *sound_file_to_str(SoundFile sf) {
+constexpr static const char *sound_file_to_str(SoundFile sf) {
   switch (sf) {
   case SoundFile::Rumble:
     return "Rumble";
@@ -79,7 +79,7 @@ private:
   } impl;
 };
 
-static void load_sounds() {
+constexpr static void load_sounds() {
   magic_enum::enum_for_each<SoundFile>([](auto val) {
     constexpr SoundFile file = val;
     std::string filename;
