@@ -4,8 +4,8 @@
 
 #include <memory>
 
+#include "afterhours/src/singleton.h"
 #include "library.h"
-#include "singleton.h"
 
 enum FontID {
   EQPro,
@@ -24,5 +24,6 @@ struct Preload {
   Preload(const Preload &) = delete;
   void operator=(const Preload &) = delete;
 
-  void init(int width, int height, const char *title);
+  Preload &init(int width, int height, const char *title);
+  Preload &make_singleton();
 };
