@@ -163,7 +163,10 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       auto label =
           fmt::format("Master Volume\n {:2.0f}", master_volume * 100.f);
       if (auto result = slider(context, mk(control_group.ent()), master_volume,
-                               ComponentConfig{.label = label});
+                               ComponentConfig{
+                                   .size = {pixels(300.f), pixels(50.f)},
+                                   .label = label,
+                               });
           result) {
         master_volume = result.as<float>();
         Settings::get().update_master_volume(master_volume);
@@ -173,8 +176,10 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     {
       float music_volume = Settings::get().get_music_volume();
       auto label = fmt::format("Music Volume\n {:2.0f}", music_volume * 100.f);
-      if (auto result = slider(context, mk(control_group.ent()), music_volume,
-                               ComponentConfig{.label = label});
+      if (auto result =
+              slider(context, mk(control_group.ent()), music_volume,
+                     ComponentConfig{.size = {pixels(300.f), pixels(50.f)},
+                                     .label = label});
           result) {
         music_volume = result.as<float>();
         Settings::get().update_music_volume(music_volume);
@@ -184,8 +189,10 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     {
       float sfx_volume = Settings::get().get_sfx_volume();
       auto label = fmt::format("SFX Volume\n {:2.0f}", sfx_volume * 100.f);
-      if (auto result = slider(context, mk(control_group.ent()), sfx_volume,
-                               ComponentConfig{.label = label});
+      if (auto result =
+              slider(context, mk(control_group.ent()), sfx_volume,
+                     ComponentConfig{.size = {pixels(300.f), pixels(50.f)},
+                                     .label = label});
           result) {
         sfx_volume = result.as<float>();
         Settings::get().update_sfx_volume(sfx_volume);
@@ -285,8 +292,8 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
 
     // Skid Threshold
     {
-      auto label =
-          fmt::format("Skid Threshold \n {:.2f} %", config.skid_threshold.data);
+      auto label = fmt::format("Skid \nThreshold \n {:.2f} %",
+                               config.skid_threshold.data);
       float pct = config.skid_threshold.get_pct();
       if (auto result = slider(context, mk(elem.ent()), pct,
                                ComponentConfig{
@@ -300,7 +307,7 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
 
     // Steering Sensitivity
     {
-      auto label = fmt::format("Steering Sensitivity \n {:.2f} %",
+      auto label = fmt::format("Steering \nSensitivity \n {:.2f} %",
                                config.steering_sensitivity.data);
       float pct = config.steering_sensitivity.get_pct();
       if (auto result = slider(context, mk(elem.ent()), pct,
