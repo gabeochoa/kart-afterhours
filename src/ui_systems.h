@@ -345,45 +345,45 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
     // Max speed
     {
       auto max_speed_label =
-          fmt::format("Max Speed\n {:.2f} m/s", config.max_speed.data);
-      float pct = config.max_speed.get_pct();
+          fmt::format("Max Speed\n {:.2f} m/s", Config::get().max_speed.data);
+      float pct = Config::get().max_speed.get_pct();
       if (auto result = slider(context, mk(elem.ent()), pct,
                                ComponentConfig{
                                    .label = max_speed_label,
                                    .skip_when_tabbing = true,
                                });
           result) {
-        config.max_speed.set_pct(result.as<float>());
+        Config::get().max_speed.set_pct(result.as<float>());
       }
     }
 
     // Skid Threshold
     {
       auto label = fmt::format("Skid \nThreshold \n {:.2f} %",
-                               config.skid_threshold.data);
-      float pct = config.skid_threshold.get_pct();
+                               Config::get().skid_threshold.data);
+      float pct = Config::get().skid_threshold.get_pct();
       if (auto result = slider(context, mk(elem.ent()), pct,
                                ComponentConfig{
                                    .label = label,
                                    .skip_when_tabbing = true,
                                });
           result) {
-        config.skid_threshold.set_pct(result.as<float>());
+        Config::get().skid_threshold.set_pct(result.as<float>());
       }
     }
 
     // Steering Sensitivity
     {
       auto label = fmt::format("Steering \nSensitivity \n {:.2f} %",
-                               config.steering_sensitivity.data);
-      float pct = config.steering_sensitivity.get_pct();
+                               Config::get().steering_sensitivity.data);
+      float pct = Config::get().steering_sensitivity.get_pct();
       if (auto result = slider(context, mk(elem.ent()), pct,
                                ComponentConfig{
                                    .label = label,
                                    .skip_when_tabbing = true,
                                });
           result) {
-        config.steering_sensitivity.set_pct(result.as<float>());
+        Config::get().steering_sensitivity.set_pct(result.as<float>());
       }
     }
   }
