@@ -27,6 +27,7 @@ OUTPUT_EXE := $(OUTPUT_FOLDER)/kart.exe
 ifeq ($(OS),Windows_NT)
 RAYLIB_FLAGS := -IF:/RayLib/include
 RAYLIB_LIB := F:/RayLib/lib/raylib.dll
+# CXX := g++ -std=c++23
 CXX := F:\llvm-mingw-20241217-msvcrt-x86_64\bin\g++.exe  -std=c++23
 
 mkdir_cmd = powershell -command "& {&'New-Item' -Path .\ -Name output\resources -ItemType directory -ErrorAction SilentlyContinue}";
