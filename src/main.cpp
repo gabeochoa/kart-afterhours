@@ -103,6 +103,7 @@ int main(int argc, char *argv[]) {
   cmdl({"-w", "--width"}) >> screenWidth;
   cmdl({"-h", "--height"}) >> screenHeight;
 
+
   Preload::get() //
       .init(screenWidth, screenHeight, "Cart Chaos")
       .make_singleton();
@@ -113,6 +114,7 @@ int main(int argc, char *argv[]) {
 
   // intro();
   game();
+
 
   return 0;
 }

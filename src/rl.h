@@ -151,6 +151,27 @@ inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
 #endif
 }
 
+inline std::ostream& operator<<(std::ostream& os, Vector2 a) {
+    os << "(" << a.x << "," << a.y << ")";
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, Vector3 a) {
+    os << "(" << a.x << "," << a.y << "," << a.z << ")";
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, Vector4 a) {
+    os << "(" << a.x << "," << a.y << "," << a.z << "," << a.w << ")";
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, Color c) {
+    os << "(" << (unsigned int) c.r << "," << (unsigned int) c.g << ","
+       << (unsigned int) c.b << "," << (unsigned int) c.a << ")";
+    return os;
+}
+
 } // namespace raylib
 
 #include <GLFW/glfw3.h>
