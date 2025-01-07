@@ -460,13 +460,11 @@ struct VelFromInput : System<PlayerID, Transform> {
       case InputAction::Right:
         steer = actions_done.amount_pressed;
         break;
-      case InputAction::Boost:
-        {
-          if (transform.accel_mult <= 1.f) {
-            transform.accel_mult = 3.f;
-          }
+      case InputAction::Boost: {
+        if (transform.accel_mult <= 1.f) {
+          transform.accel_mult = 3.f;
         }
-        break;
+      } break;
       default:
         break;
       }
@@ -484,7 +482,8 @@ struct VelFromInput : System<PlayerID, Transform> {
 
     const auto mvt = std::max(
         -config.max_speed.data,
-        std::min(config.max_speed.data, transform.speed() + (transform.accel * transform.accel_mult)));
+        std::min(config.max_speed.data,
+                 transform.speed() + (transform.accel * transform.accel_mult)));
 
     transform.velocity += vec2{
         std::sin(transform.as_rad()) * mvt * dt,
@@ -533,7 +532,8 @@ struct AIVelocity : System<AIControlled, Transform> {
     transform.angle = ang;
 
     auto max_movement_limit = (transform.accel_mult > 1.f)
-      ? (config.max_speed.data * 2.f) : config.max_speed.data;
+                                  ? (config.max_speed.data * 2.f)
+                                  : config.max_speed.data;
 
     float mvt =
         std::max(-max_movement_limit,
@@ -625,21 +625,18 @@ struct ProcessDeath : System<Transform, HasHealth> {
   }
 };
 
-struct RenderLabels : System<Transform, HasLabels>
-{
-virtual void for_each_with(const Entity &, const Transform &transform,
+struct RenderLabels : System<Transform, HasLabels> {
+  virtual void for_each_with(const Entity &, const Transform &transform,
                              const HasLabels &hasLabels, float) const override {
 
-    for (const auto& label_info : hasLabels.label_info) {
+    for (const auto &label_info : hasLabels.label_info) {
       const auto label_to_display = label_info.label_updater().c_str();
       const auto pos_to_display = label_info.label_positioner();
-      
-      ui::draw_text(
-        *EntityHelper::get_singleton_cmp<ui::FontManager>(),
-        label_to_display,
-        vec2{pos_to_display.first, pos_to_display.second},
-        (int)(transform.rect().height / 2.f),
-        raylib::RAYWHITE);
+
+      draw_text_ex(
+          EntityHelper::get_singleton_cmp<ui::FontManager>()->get_active_font(),
+          label_to_display, vec2{pos_to_display.first, pos_to_display.second},
+          (int)(transform.rect().height / 2.f), 1.f, raylib::RAYWHITE);
     }
   }
 };
