@@ -95,5 +95,14 @@ inline auto get_mapping() {
       raylib::KEY_EQUAL,
   };
 
+  mapping[InputAction::Boost] = {
+      raylib::KEY_SPACE,
+      input::GamepadAxisWithDir{
+          .axis = raylib::GAMEPAD_AXIS_RIGHT_TRIGGER,
+          .dir = 1,
+      },
+  };
+
+
   return mapping;
 }

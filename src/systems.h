@@ -274,6 +274,10 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
     tire.pass_time(dt);
 
     const auto should_skid = [&]() -> bool {
+      if (transform.accel_mult > 2.f) {
+        return true;
+      }
+
       if (transform.speed() == 0.f) {
         return false;
       }
@@ -454,10 +458,19 @@ struct VelFromInput : System<PlayerID, Transform> {
       case InputAction::Right:
         steer = actions_done.amount_pressed;
         break;
+      case InputAction::Boost:
+        {
+          if (transform.accel_mult <= 1.f) {
+            transform.accel_mult = 3.f;
+          }
+        }
+        break;
       default:
         break;
       }
     }
+
+    transform.accel_mult = std::max(1.f, transform.accel_mult *= .9f);
 
     const auto minRadius = 10.f;
     const auto maxRadius = 300.f;
@@ -468,9 +481,9 @@ struct VelFromInput : System<PlayerID, Transform> {
         steer * Config::get().steering_sensitivity.data * dt * rad;
     transform.angle = std::fmod(transform.angle + 360.f, 360.f);
 
-    const auto mvt = std::max(-Config::get().max_speed.data,
-                              std::min(Config::get().max_speed.data,
-                                       transform.speed() + transform.accel));
+    const auto mvt = std::max(
+        -config.max_speed.data,
+        std::min(config.max_speed.data, transform.speed() + (transform.accel * transform.accel_mult)));
 
     transform.velocity += vec2{
         std::sin(transform.as_rad()) * mvt * dt,
@@ -518,9 +531,12 @@ struct AIVelocity : System<AIControlled, Transform> {
 
     transform.angle = ang;
 
-    float mvt = std::max(
-        -Config::get().max_speed.data,
-        std::min(Config::get().max_speed.data, transform.speed() + accel));
+    auto max_movement_limit = (transform.accel_mult > 1.f)
+      ? (config.max_speed.data * 2.f) : config.max_speed.data;
+
+    float mvt =
+        std::max(-max_movement_limit,
+                 std::min(max_movement_limit, transform.speed() + accel));
 
     transform.angle += steer * dt * rad;
 
@@ -605,6 +621,25 @@ struct ProcessDeath : System<Transform, HasHealth> {
     }
 
     entity.cleanup = true;
+  }
+};
+
+struct RenderLabels : System<Transform, HasLabels>
+{
+virtual void for_each_with(const Entity &, const Transform &transform,
+                             const HasLabels &hasLabels, float) const override {
+
+    for (const auto& label_info : hasLabels.label_info) {
+      const auto label_to_display = label_info.label_updater().c_str();
+      const auto pos_to_display = label_info.label_positioner();
+      
+      ui::draw_text(
+        *EntityHelper::get_singleton_cmp<ui::FontManager>(),
+        label_to_display,
+        vec2{pos_to_display.first, pos_to_display.second},
+        (int)(transform.rect().height / 2.f),
+        raylib::RAYWHITE);
+    }
   }
 };
 
