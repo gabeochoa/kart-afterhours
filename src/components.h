@@ -414,26 +414,32 @@ struct CanWrapAround : BaseComponent {
 };
 
 struct LabelInfo {
-  auto operator<=>(const LabelInfo&) const = default;
+  enum class LabelType
+  {
+    StaticText,
+    VelocityText,
+    AccelerationText
+  };
 
   LabelInfo() = default;
   
-  LabelInfo(const std::function<std::string()>& updater, const std::function<std::pair<float, float>()>& positioner) : label_updater(updater), label_positioner(positioner){}
+  LabelInfo(const std::string& label_text_in, const vec2& label_pos_offset_in, LabelType label_type_in) 
+    : label_text{label_text_in},
+      label_pos_offset{label_pos_offset_in},
+      label_type{label_type_in}
+    { }
 
-  std::function<std::string()> label_updater;
-  std::function<std::pair<float, float>()> label_positioner;
+  std::string label_text;
+  vec2 label_pos_offset;
+  LabelType label_type;
 };
 
 struct HasLabels : public BaseComponent {
-  std::vector<LabelInfo> label_info;
-
-  auto operator<=>(const HasLabels&) const = default;
+  std::vector<LabelInfo> label_info{};
 
   HasLabels() = default;
 
   HasLabels(std::vector<LabelInfo> labels)
-        : label_info(std::move(labels)) {}
-
-  HasLabels(std::initializer_list<LabelInfo> labels)
-        : label_info(labels) {}
+    : label_info{std::move(labels)}
+    { }
 };
