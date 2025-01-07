@@ -128,39 +128,27 @@ Entity &make_car(int id) {
 void make_player(input::GamepadID id) {
   auto &entity = make_car(next_id++);
   entity.addComponent<PlayerID>(id);
-
-  auto& transform = entity.get<Transform>();
-
-  // auto player_text = [&transform, id]() -> std::string { return "[Player " + std::to_string(id) + "]"; };
-  // auto player_text_pos = [&transform]() -> vec2 { return transform.pos() + vec2{transform.rect().width / 4.f, -transform.rect().height / 2.f}; };
   
-  // auto speed_text = [&transform, id]() -> std::string { return utils::to_string(transform.speed(), 3) + " m/s"; };
-  // auto speed_text_pos = [&transform]() -> vec2 { return transform.pos() + vec2{(transform.rect().width + transform.rect().width) / 2.f, 0.f}; };
+  const auto player_id_text = "[Player " + std::to_string(id) + "]";
+  const auto player_label_pos_offset = vec2{-.1f, 0.f};
+  LabelInfo player_text_label_info(player_id_text, player_label_pos_offset, LabelInfo::LabelType::StaticText);
 
-  // auto accel_text = [&transform, id]() -> std::string { return utils::to_string(transform.accel, 3) + " m/s^2"; };
-  // auto accel_text_pos = [&transform]() -> vec2 { return transform.pos() + vec2{(transform.rect().width + transform.rect().width) / 2.f, transform.rect().height / 2.f}; };
-  
-  // const std::vector<LabelInfo> player_labels{
-  //     {std::move(player_text), std::move(player_text_pos)}, 
-  //     {std::move(speed_text), std::move(speed_text_pos)},
-  //     {std::move(accel_text), std::move(accel_text_pos)}
-  // };
+  const auto velocity_unit_text = " m/s";
+  const auto velocity_label_pos_offset = vec2{2.25f, 1.0f};
+  LabelInfo velocity_text_label_info(velocity_unit_text, velocity_label_pos_offset, LabelInfo::LabelType::VelocityText);
 
-  // auto player_text = [id]() -> std::string { return "[Player " + std::to_string(id) + "]"; };
-  // auto player_text_pos = [&transform]() -> std::pair<float, float> 
-  // { 
-  //   auto pos = transform.pos() + vec2{transform.rect().width / 4.f, -transform.rect().height / 2.f};
-  //   return {pos.x, pos.y};
-  // };
-  //LabelInfo test(player_text, player_text_pos);
-  LabelInfo test(
-  [id] { return "[Player " + std::to_string(id) + "]"; },
-  [&transform]
-  { 
-    const auto pos = transform.pos() + vec2{transform.rect().width / 4.f, -transform.rect().height / 2.f};
-    return std::make_pair(pos.x, pos.y);
-  });
-  entity.addComponent<HasLabels>();
+  const auto acceleration_unit_text = " m/s^2";
+  const auto acceleration_label_pos_offset = vec2{2.25f, 2.0f};
+  LabelInfo acceleration_text_label_info(acceleration_unit_text, acceleration_label_pos_offset, LabelInfo::LabelType::AccelerationText);
+
+  std::vector<LabelInfo> player_labels
+  {
+    std::move(player_text_label_info),
+    std::move(velocity_text_label_info),
+    std::move(acceleration_text_label_info)
+  };
+
+  entity.addComponent<HasLabels>(std::move(player_labels));
 }
 
 void make_ai() {

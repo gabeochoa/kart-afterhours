@@ -470,7 +470,8 @@ struct VelFromInput : System<PlayerID, Transform> {
       }
     }
 
-    transform.accel_mult = std::max(1.f, transform.accel_mult *= .9f);
+    const auto decayed_accel_mult = transform.accel_mult - (transform.accel_mult * .9f * dt);
+    transform.accel_mult = std::max(1.f, decayed_accel_mult);
 
     const auto minRadius = 10.f;
     const auto maxRadius = 300.f;
@@ -625,18 +626,46 @@ struct ProcessDeath : System<Transform, HasHealth> {
   }
 };
 
-struct RenderLabels : System<Transform, HasLabels> {
-  virtual void for_each_with(const Entity &, const Transform &transform,
-                             const HasLabels &hasLabels, float) const override {
+struct RenderLabels : System<Transform, HasLabels>
+{
+virtual void for_each_with(const Entity &, const Transform &transform,
+                           const HasLabels &hasLabels, float) const override {
 
-    for (const auto &label_info : hasLabels.label_info) {
-      const auto label_to_display = label_info.label_updater().c_str();
-      const auto pos_to_display = label_info.label_positioner();
+    const auto get_label_display_for_type = [&transform](const Transform &transform_in, const LabelInfo &label_info_in)
+    {
+      switch (label_info_in.label_type)
+      {
+        case LabelInfo::LabelType::StaticText:
+          return label_info_in.label_text;
+        case LabelInfo::LabelType::VelocityText:
+          return std::to_string(transform_in.speed()) + label_info_in.label_text;
+        case LabelInfo::LabelType::AccelerationText:
+          return std::to_string(transform_in.accel * transform_in.accel_mult) + label_info_in.label_text;
+      }
 
-      draw_text_ex(
-          EntityHelper::get_singleton_cmp<ui::FontManager>()->get_active_font(),
-          label_to_display, vec2{pos_to_display.first, pos_to_display.second},
-          (int)(transform.rect().height / 2.f), 1.f, raylib::RAYWHITE);
+      return label_info_in.label_text;
+    };
+
+    const auto width = transform.rect().width;
+    const auto height = transform.rect().height;
+
+    // Makes the label percentages scale from top-left of the object rect as (0, 0)
+    const auto base_x_offset = transform.pos().x - width;
+    const auto base_y_offset = transform.pos().y - height;
+
+    for (const auto& label_info : hasLabels.label_info) {
+      const auto label_to_display = get_label_display_for_type(transform, label_info);
+      const auto label_pos_offset = label_info.label_pos_offset;
+            
+      const auto x_offset = base_x_offset + (width * label_pos_offset.x);      
+      const auto y_offset = base_y_offset + (height * label_pos_offset.y);
+
+      ui::draw_text(
+        *EntityHelper::get_singleton_cmp<ui::FontManager>(),
+        label_to_display,
+        vec2{x_offset, y_offset},
+        (int)(transform.rect().height / 2.f),
+        raylib::RAYWHITE);
     }
   }
 };
