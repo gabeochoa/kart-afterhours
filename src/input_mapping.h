@@ -9,6 +9,7 @@ enum class InputAction {
   Left,
   Right,
   Brake,
+  Boost,
   ShootLeft,
   ShootRight,
   //

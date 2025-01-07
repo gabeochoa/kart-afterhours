@@ -481,8 +481,8 @@ struct VelFromInput : System<PlayerID, Transform> {
     transform.angle = std::fmod(transform.angle + 360.f, 360.f);
 
     const auto mvt = std::max(
-        -config.max_speed.data,
-        std::min(config.max_speed.data,
+        -Config::get().max_speed.data,
+        std::min(Config::get().max_speed.data,
                  transform.speed() + (transform.accel * transform.accel_mult)));
 
     transform.velocity += vec2{
@@ -532,8 +532,8 @@ struct AIVelocity : System<AIControlled, Transform> {
     transform.angle = ang;
 
     auto max_movement_limit = (transform.accel_mult > 1.f)
-                                  ? (config.max_speed.data * 2.f)
-                                  : config.max_speed.data;
+                                  ? (Config::get().max_speed.data * 2.f)
+                                  : Config::get().max_speed.data;
 
     float mvt =
         std::max(-max_movement_limit,
@@ -659,11 +659,12 @@ virtual void for_each_with(const Entity &, const Transform &transform,
       const auto x_offset = base_x_offset + (width * label_pos_offset.x);      
       const auto y_offset = base_y_offset + (height * label_pos_offset.y);
 
-      ui::draw_text(
-        *EntityHelper::get_singleton_cmp<ui::FontManager>(),
-        label_to_display,
+      draw_text_ex(
+        EntityHelper::get_singleton_cmp<ui::FontManager>()->get_active_font(),
+        label_to_display.c_str(),
         vec2{x_offset, y_offset},
-        (int)(transform.rect().height / 2.f),
+        (int)(transform.rect().height / 2.f), 
+        1.f,
         raylib::RAYWHITE);
     }
   }
