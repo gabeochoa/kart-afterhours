@@ -97,6 +97,7 @@ enum class InputAction {
   Brake,
   ShootLeft,
   ShootRight,
+  Boost,
   //
   WidgetNext,
   WidgetPress,
@@ -179,6 +180,14 @@ auto get_mapping() {
 
   mapping[InputAction::ToggleUILayoutDebug] = {
       raylib::KEY_EQUAL,
+  };
+
+  mapping[InputAction::Boost] = {
+      raylib::KEY_SPACE,
+      input::GamepadAxisWithDir{
+          .axis = raylib::GAMEPAD_AXIS_RIGHT_TRIGGER,
+          .dir = 1,
+      },
   };
 
   return mapping;
@@ -271,6 +280,7 @@ void game() {
     systems.register_render_system(std::make_unique<RenderAnimation>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
     systems.register_render_system(std::make_unique<RenderOOB>());
+    systems.register_render_system(std::make_unique<RenderLabels>());
     systems.register_render_system(std::make_unique<CarRumble>());
     //
     systems.register_render_system(std::make_unique<RenderFPS>());

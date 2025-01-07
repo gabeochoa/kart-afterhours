@@ -128,6 +128,39 @@ Entity &make_car(int id) {
 void make_player(input::GamepadID id) {
   auto &entity = make_car(next_id++);
   entity.addComponent<PlayerID>(id);
+
+  auto& transform = entity.get<Transform>();
+
+  // auto player_text = [&transform, id]() -> std::string { return "[Player " + std::to_string(id) + "]"; };
+  // auto player_text_pos = [&transform]() -> vec2 { return transform.pos() + vec2{transform.rect().width / 4.f, -transform.rect().height / 2.f}; };
+  
+  // auto speed_text = [&transform, id]() -> std::string { return utils::to_string(transform.speed(), 3) + " m/s"; };
+  // auto speed_text_pos = [&transform]() -> vec2 { return transform.pos() + vec2{(transform.rect().width + transform.rect().width) / 2.f, 0.f}; };
+
+  // auto accel_text = [&transform, id]() -> std::string { return utils::to_string(transform.accel, 3) + " m/s^2"; };
+  // auto accel_text_pos = [&transform]() -> vec2 { return transform.pos() + vec2{(transform.rect().width + transform.rect().width) / 2.f, transform.rect().height / 2.f}; };
+  
+  // const std::vector<LabelInfo> player_labels{
+  //     {std::move(player_text), std::move(player_text_pos)}, 
+  //     {std::move(speed_text), std::move(speed_text_pos)},
+  //     {std::move(accel_text), std::move(accel_text_pos)}
+  // };
+
+  // auto player_text = [id]() -> std::string { return "[Player " + std::to_string(id) + "]"; };
+  // auto player_text_pos = [&transform]() -> std::pair<float, float> 
+  // { 
+  //   auto pos = transform.pos() + vec2{transform.rect().width / 4.f, -transform.rect().height / 2.f};
+  //   return {pos.x, pos.y};
+  // };
+  //LabelInfo test(player_text, player_text_pos);
+  LabelInfo test(
+  [id] { return "[Player " + std::to_string(id) + "]"; },
+  [&transform]
+  { 
+    const auto pos = transform.pos() + vec2{transform.rect().width / 4.f, -transform.rect().height / 2.f};
+    return std::make_pair(pos.x, pos.y);
+  });
+  entity.addComponent<HasLabels>();
 }
 
 void make_ai() {
