@@ -1,7 +1,15 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
+
+#include "input_mapping.h"
+#include "math_util.h"
+#include "max_health.h"
 #include "rl.h"
+
+using namespace afterhours;
 
 struct AIControlled : BaseComponent {
   vec2 target{0.f, 0.f};
@@ -58,14 +66,14 @@ struct HasAnimation : BaseComponent {
         cur_frame(cur_frame_), rotation(rot) {}
 };
 
-Rectangle idx_to_sprite_frame(int i, int j) {
+constexpr static Rectangle idx_to_sprite_frame(int i, int j) {
   return Rectangle{.x = (float)i * 32.f,
                    .y = (float)j * 32.f,
                    .width = 32.f,
                    .height = 32.f};
 }
 
-std::pair<int, int> idx_to_next_sprite_location(int i, int j) {
+constexpr static std::pair<int, int> idx_to_next_sprite_location(int i, int j) {
   i++;
   if (i == 32) {
     i = 0;
@@ -351,7 +359,7 @@ struct PlayerID : BaseComponent {
   PlayerID(input::GamepadID i) : id(i) {}
 };
 
-raylib::Color get_color_for_player(size_t id) {
+constexpr static raylib::Color get_color_for_player(size_t id) {
   constexpr std::array<raylib::Color, input::MAX_GAMEPAD_ID> colors = {{
       raylib::BLUE,
       raylib::ORANGE,
@@ -366,7 +374,7 @@ raylib::Color get_color_for_player(size_t id) {
   return colors[index];
 }
 
-vec2 get_spawn_position(size_t id, int width, int height) {
+constexpr static vec2 get_spawn_position(size_t id, int width, int height) {
   constexpr std::array<vec2, input::MAX_GAMEPAD_ID> pct_location = {{
       vec2{0.1f, 0.5f},
       vec2{0.9f, 0.5f},

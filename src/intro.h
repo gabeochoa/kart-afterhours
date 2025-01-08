@@ -3,6 +3,9 @@
 
 #include "rl.h"
 
+#include "config.h"
+#include "preload.h"
+
 using namespace afterhours;
 
 struct IntroScreens
@@ -21,7 +24,7 @@ struct IntroScreens
 
   IntroScreens() {}
 
-  virtual bool should_run(float dt) {
+  virtual bool should_run(float dt) override {
     timeInState += dt;
     if (state == State::Complete) {
       return timeInState < 0.2f;

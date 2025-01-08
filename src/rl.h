@@ -160,14 +160,7 @@ inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
 #define MAGIC_ENUM_RANGE_MAX 400
 #include <magic_enum/magic_enum.hpp>
 
-#define FMT_HEADER_ONLY
-#include <fmt/args.h>
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-#define AFTER_HOURS_REPLACE_LOGGING
-#define AFTER_HOURS_LOG_WITH_COLOR
-// #define AFTER_HOURS_ENTITY_ALLOC_DEBUG
-#include "log/log.h"
+#include "log.h"
 
 #define AFTER_HOURS_INPUT_VALIDATION_ASSERT
 #define AFTER_HOURS_INCLUDE_DERIVED_CHILDREN
@@ -176,6 +169,9 @@ inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
 #define AFTER_HOURS_SYSTEM
 #define AFTER_HOURS_IMM_UI
 #define AFTER_HOURS_USE_RAYLIB
+
+#define RectangleType raylib::Rectangle
+#define Vector2Type vec2
 #include "afterhours/ah.h"
 #include "afterhours/src/developer.h"
 #include "afterhours/src/plugins/input_system.h"
@@ -187,8 +183,6 @@ typedef raylib::Vector3 vec3;
 typedef raylib::Vector4 vec4;
 using raylib::Rectangle;
 
-#define RectangleType raylib::Rectangle
-#define Vector2Type vec2
 #include "afterhours/src/plugins/autolayout.h"
 #include "afterhours/src/plugins/ui.h"
 

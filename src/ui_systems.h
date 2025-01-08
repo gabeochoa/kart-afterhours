@@ -9,6 +9,8 @@ using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
 struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
+  const vec2 button_size = vec2{100, 50};
+
   enum struct Screen {
     None,
     Main,
@@ -41,11 +43,12 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   window_manager::ProvidesAvailableWindowResolutions
       *resolution_provider; // non owning ptr
                             // eventually std::observer_ptr?
+  window_manager::ProvidesCurrentResolution
+      *current_resolution_provider; // non owning ptr
+                                    // eventually std::observer_ptr?
   std::vector<std::string> resolution_strs;
   int resolution_index = 0;
-  float master_volume = 0.5f;
-  float music_volume = 0.5f;
-  float sfx_volume = 0.5f;
+  bool fs_enabled = false;
 
   void update_resolution_cache() {
     resolution_provider = EntityHelper::get_singleton_cmp<
@@ -66,6 +69,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   ~ScheduleMainMenuUI() {}
 
   void once(float dt) override {
+
+    current_resolution_provider = EntityHelper::get_singleton_cmp<
+        window_manager::ProvidesCurrentResolution>();
 
     if (active_screen == Screen::Settings) {
       update_resolution_cache();
@@ -161,10 +167,14 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                  });
 
     {
+      float master_volume = Settings::get().get_master_volume();
       auto label =
           fmt::format("Master Volume\n {:2.0f}", master_volume * 100.f);
       if (auto result = slider(context, mk(control_group.ent()), master_volume,
-                               ComponentConfig{.label = label});
+                               ComponentConfig{
+                                   .size = {pixels(300.f), pixels(50.f)},
+                                   .label = label,
+                               });
           result) {
         master_volume = result.as<float>();
         Settings::get().update_master_volume(master_volume);
@@ -172,9 +182,12 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     }
 
     {
+      float music_volume = Settings::get().get_music_volume();
       auto label = fmt::format("Music Volume\n {:2.0f}", music_volume * 100.f);
-      if (auto result = slider(context, mk(control_group.ent()), music_volume,
-                               ComponentConfig{.label = label});
+      if (auto result =
+              slider(context, mk(control_group.ent()), music_volume,
+                     ComponentConfig{.size = {pixels(300.f), pixels(50.f)},
+                                     .label = label});
           result) {
         music_volume = result.as<float>();
         Settings::get().update_music_volume(music_volume);
@@ -182,9 +195,12 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     }
 
     {
+      float sfx_volume = Settings::get().get_sfx_volume();
       auto label = fmt::format("SFX Volume\n {:2.0f}", sfx_volume * 100.f);
-      if (auto result = slider(context, mk(control_group.ent()), sfx_volume,
-                               ComponentConfig{.label = label});
+      if (auto result =
+              slider(context, mk(control_group.ent()), sfx_volume,
+                     ComponentConfig{.size = {pixels(300.f), pixels(50.f)},
+                                     .label = label});
           result) {
         sfx_volume = result.as<float>();
         Settings::get().update_sfx_volume(sfx_volume);
@@ -198,7 +214,71 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       }
     }
 
+    if (imm::checkbox(context, mk(control_group.ent()),
+                      Settings::get().get_fullscreen_enabled())) {
+      Settings::get().toggle_fullscreen();
+    }
+
     if (imm::button(context, mk(control_group.ent()),
+                    ComponentConfig{
+                        .padding = button_padding,
+                        .label = "back",
+                    })
+        //
+    ) {
+      active_screen = Screen::Main;
+    }
+  }
+
+  void about_screen(Entity &entity, UIContext<InputAction> &context) {
+    if (!current_resolution_provider)
+      return;
+
+    auto elem = imm::div(context, mk(entity));
+    {
+      elem.ent()
+          .get<UIComponent>()
+          .enable_font(get_font_name(FontID::EQPro), 75.f)
+          .set_desired_width(screen_pct(1.f))
+          .set_desired_height(screen_pct(1.f))
+          .make_absolute();
+      elem.ent().get<ui::UIComponentDebug>().set(
+          ui::UIComponentDebug::Type::custom, "about_screen");
+    }
+
+    auto about_group = imm::div(context, mk(elem.ent()),
+                                ComponentConfig{
+                                    .size = {screen_pct(1.f), screen_pct(1.f)},
+                                    .padding = control_group_padding,
+                                    .is_absolute = true,
+                                    .debug_name = "control_group",
+                                });
+
+    raylib::Texture2D sheet =
+        EntityHelper::get_singleton_cmp<HasTexture>()->texture;
+    window_manager::Resolution rez =
+        current_resolution_provider->current_resolution;
+    float scale = 5.f;
+    float x_pos = rez.width * 0.2f;
+    int num_icon = 3;
+    float x_spacing = (rez.width - x_pos * 2.f) / num_icon;
+
+    for (size_t i = 0; i < num_icon; i++) {
+
+      Rectangle frame = idx_to_sprite_frame(i, 4);
+      raylib::DrawTexturePro(sheet, frame,
+                             Rectangle{
+                                 x_pos,
+                                 rez.height * 0.2f,
+                                 frame.width * scale,
+                                 frame.height * scale,
+                             },
+                             vec2{frame.width / 2.f, frame.height / 2.f}, 0,
+                             raylib::RAYWHITE);
+      x_pos += x_spacing;
+    }
+
+    if (imm::button(context, mk(about_group.ent()),
                     ComponentConfig{
                         .padding = button_padding,
                         .label = "back",
@@ -213,7 +293,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                              float) override {
     switch (active_screen) {
     case Screen::None:
+      break;
     case Screen::About:
+      about_screen(entity, context);
       break;
     case Screen::Settings:
       settings_screen(entity, context);
@@ -226,7 +308,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 };
 
 struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
-  bool enabled = true;
+  bool enabled = false;
   float enableCooldown = 0.f;
   float enableCooldownReset = 0.2f;
 
@@ -265,45 +347,45 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
     // Max speed
     {
       auto max_speed_label =
-          fmt::format("Max Speed\n {:.2f} m/s", config.max_speed.data);
-      float pct = config.max_speed.get_pct();
+          fmt::format("Max Speed\n {:.2f} m/s", Config::get().max_speed.data);
+      float pct = Config::get().max_speed.get_pct();
       if (auto result = slider(context, mk(elem.ent()), pct,
                                ComponentConfig{
                                    .label = max_speed_label,
                                    .skip_when_tabbing = true,
                                });
           result) {
-        config.max_speed.set_pct(result.as<float>());
+        Config::get().max_speed.set_pct(result.as<float>());
       }
     }
 
     // Skid Threshold
     {
-      auto label =
-          fmt::format("Skid Threshold \n {:.2f} %", config.skid_threshold.data);
-      float pct = config.skid_threshold.get_pct();
+      auto label = fmt::format("Skid \nThreshold \n {:.2f} %",
+                               Config::get().skid_threshold.data);
+      float pct = Config::get().skid_threshold.get_pct();
       if (auto result = slider(context, mk(elem.ent()), pct,
                                ComponentConfig{
                                    .label = label,
                                    .skip_when_tabbing = true,
                                });
           result) {
-        config.skid_threshold.set_pct(result.as<float>());
+        Config::get().skid_threshold.set_pct(result.as<float>());
       }
     }
 
     // Steering Sensitivity
     {
-      auto label = fmt::format("Steering Sensitivity \n {:.2f} %",
-                               config.steering_sensitivity.data);
-      float pct = config.steering_sensitivity.get_pct();
+      auto label = fmt::format("Steering \nSensitivity \n {:.2f} %",
+                               Config::get().steering_sensitivity.data);
+      float pct = Config::get().steering_sensitivity.get_pct();
       if (auto result = slider(context, mk(elem.ent()), pct,
                                ComponentConfig{
                                    .label = label,
                                    .skip_when_tabbing = true,
                                });
           result) {
-        config.steering_sensitivity.set_pct(result.as<float>());
+        Config::get().steering_sensitivity.set_pct(result.as<float>());
       }
     }
   }

@@ -12,11 +12,17 @@ constexpr float distance_sq(const vec2 a, const vec2 b) {
   return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
 }
 
-float vec_dot(const vec2 &a, const vec2 &b) { return a.x * b.x + a.y * b.y; }
-float vec_cross(const vec2 &a, const vec2 &b) { return a.x * b.y - a.y * b.x; }
+constexpr static float vec_dot(const vec2 &a, const vec2 &b) {
+  return a.x * b.x + a.y * b.y;
+}
+constexpr static float vec_cross(const vec2 &a, const vec2 &b) {
+  return a.x * b.y - a.y * b.x;
+}
 
-float vec_mag(vec2 v) { return (float)sqrt(v.x * v.x + v.y * v.y); }
-vec2 vec_norm(vec2 v) {
+constexpr static float vec_mag(vec2 v) {
+  return (float)sqrt(v.x * v.x + v.y * v.y);
+}
+constexpr static vec2 vec_norm(vec2 v) {
   float mag = vec_mag(v);
   if (mag == 0)
     return v;
@@ -34,18 +40,19 @@ constexpr static float to_degrees(float radians) {
   return radians * 180.f / (float)M_PI;
 }
 
-static bool is_point_inside(const vec2 point, const RectangleType &rect) {
+constexpr static bool is_point_inside(const vec2 point,
+                                      const RectangleType &rect) {
   return point.x >= rect.x && point.x <= rect.x + rect.width &&
          point.y >= rect.y && point.y <= rect.y + rect.height;
 }
-vec2 rect_center(const Rectangle &rect) {
+constexpr static vec2 rect_center(const Rectangle &rect) {
   return vec2{
       rect.x + (rect.width / 2.f),
       rect.y + (rect.height / 2.f),
   };
 }
 
-vec2 calc(const Rectangle &rect, const vec2 &point) {
+constexpr static vec2 calc(const Rectangle &rect, const vec2 &point) {
   vec2 center = rect_center(rect);
   float s = (point.y - center.y) / (point.x - center.x);
   float h = rect.height;

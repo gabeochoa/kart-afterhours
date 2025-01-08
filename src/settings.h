@@ -5,8 +5,8 @@
 
 #include "afterhours/src/plugins/window_manager.h"
 
+#include "afterhours/src/singleton.h"
 #include "library.h"
-#include "singleton.h"
 
 struct S_Data;
 
@@ -25,7 +25,15 @@ struct Settings {
   void reset();
   void refresh_settings();
 
+  float get_music_volume();
   void update_music_volume(float);
+
+  float get_sfx_volume();
   void update_sfx_volume(float);
+
+  float get_master_volume();
   void update_master_volume(float);
+
+  bool &get_fullscreen_enabled();
+  void toggle_fullscreen();
 };
