@@ -86,8 +86,9 @@ struct Transform : BaseComponent {
   vec2 position{0.f, 0.f};
   vec2 velocity{0.f, 0.f};
   vec2 size{0.f, 0.f};
-  float mass = 1.f;
-  float accel = 0.f;
+  float mass{1.f};
+  float accel{0.f};
+  float accel_mult{1.f};
 
   float angle{0.f};
   float angle_prev{0.f};
@@ -410,4 +411,35 @@ struct HasMultipleLives : BaseComponent {
 struct CanWrapAround : BaseComponent {
   float padding;
   CanWrapAround(float padd = 50.f) : padding(padd) {}
+};
+
+struct LabelInfo {
+  enum class LabelType
+  {
+    StaticText,
+    VelocityText,
+    AccelerationText
+  };
+
+  LabelInfo() = default;
+  
+  LabelInfo(const std::string& label_text_in, const vec2& label_pos_offset_in, LabelType label_type_in) 
+    : label_text{label_text_in},
+      label_pos_offset{label_pos_offset_in},
+      label_type{label_type_in}
+    { }
+
+  std::string label_text;
+  vec2 label_pos_offset;
+  LabelType label_type;
+};
+
+struct HasLabels : public BaseComponent {
+  std::vector<LabelInfo> label_info{};
+
+  HasLabels() = default;
+
+  HasLabels(std::vector<LabelInfo> labels)
+    : label_info{std::move(labels)}
+    { }
 };

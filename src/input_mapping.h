@@ -9,6 +9,7 @@ enum class InputAction {
   Left,
   Right,
   Brake,
+  Boost,
   ShootLeft,
   ShootRight,
   //
@@ -94,6 +95,15 @@ inline auto get_mapping() {
   mapping[InputAction::ToggleUILayoutDebug] = {
       raylib::KEY_EQUAL,
   };
+
+  mapping[InputAction::Boost] = {
+      raylib::KEY_SPACE,
+      input::GamepadAxisWithDir{
+          .axis = raylib::GAMEPAD_AXIS_RIGHT_TRIGGER,
+          .dir = 1,
+      },
+  };
+
 
   return mapping;
 }

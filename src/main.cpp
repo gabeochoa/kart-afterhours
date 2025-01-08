@@ -78,6 +78,7 @@ void game() {
     systems.register_render_system(std::make_unique<RenderAnimation>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
     systems.register_render_system(std::make_unique<RenderOOB>());
+    systems.register_render_system(std::make_unique<RenderLabels>());
     systems.register_render_system(std::make_unique<CarRumble>());
     //
     systems.register_render_system(std::make_unique<RenderFPS>());

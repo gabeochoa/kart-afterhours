@@ -130,6 +130,27 @@ Entity &make_car(int id) {
 void make_player(input::GamepadID id) {
   auto &entity = make_car(next_id++);
   entity.addComponent<PlayerID>(id);
+  
+  const auto player_id_text = "[Player " + std::to_string(id) + "]";
+  const auto player_label_pos_offset = vec2{-.1f, 0.f};
+  LabelInfo player_text_label_info(player_id_text, player_label_pos_offset, LabelInfo::LabelType::StaticText);
+
+  const auto velocity_unit_text = " m/s";
+  const auto velocity_label_pos_offset = vec2{2.25f, 1.0f};
+  LabelInfo velocity_text_label_info(velocity_unit_text, velocity_label_pos_offset, LabelInfo::LabelType::VelocityText);
+
+  const auto acceleration_unit_text = " m/s^2";
+  const auto acceleration_label_pos_offset = vec2{2.25f, 2.0f};
+  LabelInfo acceleration_text_label_info(acceleration_unit_text, acceleration_label_pos_offset, LabelInfo::LabelType::AccelerationText);
+
+  std::vector<LabelInfo> player_labels
+  {
+    std::move(player_text_label_info),
+    std::move(velocity_text_label_info),
+    std::move(acceleration_text_label_info)
+  };
+
+  entity.addComponent<HasLabels>(std::move(player_labels));
 }
 
 void make_ai() {

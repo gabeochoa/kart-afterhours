@@ -274,6 +274,10 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
     tire.pass_time(dt);
 
     const auto should_skid = [&]() -> bool {
+      if (transform.accel_mult > 2.f) {
+        return true;
+      }
+
       if (transform.speed() == 0.f) {
         return false;
       }
@@ -454,10 +458,18 @@ struct VelFromInput : System<PlayerID, Transform> {
       case InputAction::Right:
         steer = actions_done.amount_pressed;
         break;
+      case InputAction::Boost: {
+        if (transform.accel_mult <= 1.f) {
+          transform.accel_mult = 3.f;
+        }
+      } break;
       default:
         break;
       }
     }
+
+    const auto decayed_accel_mult = transform.accel_mult - (transform.accel_mult * .9f * dt);
+    transform.accel_mult = std::max(1.f, decayed_accel_mult);
 
     const auto minRadius = 10.f;
     const auto maxRadius = 300.f;
@@ -468,9 +480,10 @@ struct VelFromInput : System<PlayerID, Transform> {
         steer * Config::get().steering_sensitivity.data * dt * rad;
     transform.angle = std::fmod(transform.angle + 360.f, 360.f);
 
-    const auto mvt = std::max(-Config::get().max_speed.data,
-                              std::min(Config::get().max_speed.data,
-                                       transform.speed() + transform.accel));
+    const auto mvt = std::max(
+        -Config::get().max_speed.data,
+        std::min(Config::get().max_speed.data,
+                 transform.speed() + (transform.accel * transform.accel_mult)));
 
     transform.velocity += vec2{
         std::sin(transform.as_rad()) * mvt * dt,
@@ -518,9 +531,13 @@ struct AIVelocity : System<AIControlled, Transform> {
 
     transform.angle = ang;
 
-    float mvt = std::max(
-        -Config::get().max_speed.data,
-        std::min(Config::get().max_speed.data, transform.speed() + accel));
+    auto max_movement_limit = (transform.accel_mult > 1.f)
+                                  ? (Config::get().max_speed.data * 2.f)
+                                  : Config::get().max_speed.data;
+
+    float mvt =
+        std::max(-max_movement_limit,
+                 std::min(max_movement_limit, transform.speed() + accel));
 
     transform.angle += steer * dt * rad;
 
@@ -605,6 +622,51 @@ struct ProcessDeath : System<Transform, HasHealth> {
     }
 
     entity.cleanup = true;
+  }
+};
+
+struct RenderLabels : System<Transform, HasLabels>
+{
+virtual void for_each_with(const Entity &, const Transform &transform,
+                           const HasLabels &hasLabels, float) const override {
+
+    const auto get_label_display_for_type = [&transform](const Transform &transform_in, const LabelInfo &label_info_in)
+    {
+      switch (label_info_in.label_type)
+      {
+        case LabelInfo::LabelType::StaticText:
+          return label_info_in.label_text;
+        case LabelInfo::LabelType::VelocityText:
+          return std::to_string(transform_in.speed()) + label_info_in.label_text;
+        case LabelInfo::LabelType::AccelerationText:
+          return std::to_string(transform_in.accel * transform_in.accel_mult) + label_info_in.label_text;
+      }
+
+      return label_info_in.label_text;
+    };
+
+    const auto width = transform.rect().width;
+    const auto height = transform.rect().height;
+
+    // Makes the label percentages scale from top-left of the object rect as (0, 0)
+    const auto base_x_offset = transform.pos().x - width;
+    const auto base_y_offset = transform.pos().y - height;
+
+    for (const auto& label_info : hasLabels.label_info) {
+      const auto label_to_display = get_label_display_for_type(transform, label_info);
+      const auto label_pos_offset = label_info.label_pos_offset;
+            
+      const auto x_offset = base_x_offset + (width * label_pos_offset.x);      
+      const auto y_offset = base_y_offset + (height * label_pos_offset.y);
+
+      draw_text_ex(
+        EntityHelper::get_singleton_cmp<ui::FontManager>()->get_active_font(),
+        label_to_display.c_str(),
+        vec2{x_offset, y_offset},
+        (int)(transform.rect().height / 2.f), 
+        1.f,
+        raylib::RAYWHITE);
+    }
   }
 };
 
