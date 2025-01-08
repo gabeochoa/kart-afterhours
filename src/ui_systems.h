@@ -209,7 +209,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     {
       if (imm::dropdown(context, mk(control_group.ent()), resolution_strs,
-                        resolution_index)) {
+                        resolution_index,
+                        ComponentConfig{.label = "Resolution"})) {
         resolution_provider->on_data_changed(resolution_index);
       }
     }
