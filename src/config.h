@@ -34,6 +34,11 @@ struct Config {
   };
 
   ValueInRange<float> max_speed{10.f, 1.f, 20.f};
+  ValueInRange<float> breaking_acceleration{1.f, 1.75f, 10.f};
+  ValueInRange<float> forward_acceleration{4.f, 1.f, 10.f};
+  ValueInRange<float> reverse_acceleration{1.75f, 1.f, 10.f};
+  ValueInRange<float> boost_acceleration{5.f, 2.f, 10.f};
+  ValueInRange<float> boost_decay_percent{1.f, 0.01f, 10.f};
   ValueInRange<float> skid_threshold{98.5f, 0.f, 100.f};
   ValueInRange<float> steering_sensitivity{2.f, 1.f, 10.f};
 };

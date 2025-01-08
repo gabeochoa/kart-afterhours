@@ -108,6 +108,8 @@ struct Transform : BaseComponent {
 
   float speed() const { return vec_mag(velocity); }
 
+  bool is_reversing() const { return speed_dot_angle < 0.f && speed() > 0.f; };
+
   vec2 center() const {
     return {
         position.x + (size.x / 2.f),
@@ -414,20 +416,14 @@ struct CanWrapAround : BaseComponent {
 };
 
 struct LabelInfo {
-  enum class LabelType
-  {
-    StaticText,
-    VelocityText,
-    AccelerationText
-  };
+  enum class LabelType { StaticText, VelocityText, AccelerationText };
 
   LabelInfo() = default;
-  
-  LabelInfo(const std::string& label_text_in, const vec2& label_pos_offset_in, LabelType label_type_in) 
-    : label_text{label_text_in},
-      label_pos_offset{label_pos_offset_in},
-      label_type{label_type_in}
-    { }
+
+  LabelInfo(const std::string &label_text_in, const vec2 &label_pos_offset_in,
+            LabelType label_type_in)
+      : label_text{label_text_in}, label_pos_offset{label_pos_offset_in},
+        label_type{label_type_in} {}
 
   std::string label_text;
   vec2 label_pos_offset;
@@ -439,7 +435,5 @@ struct HasLabels : public BaseComponent {
 
   HasLabels() = default;
 
-  HasLabels(std::vector<LabelInfo> labels)
-    : label_info{std::move(labels)}
-    { }
+  HasLabels(std::vector<LabelInfo> labels) : label_info{std::move(labels)} {}
 };

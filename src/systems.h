@@ -438,8 +438,6 @@ struct VelFromInput : System<PlayerID, Transform> {
     transform.accel = 0.f;
     auto steer = 0.f;
 
-    const auto is_reversing = transform.speed_dot_angle < 0.f;
-
     for (const auto &actions_done : inpc.inputs()) {
       if (actions_done.id != playerID.id) {
         continue;
@@ -447,10 +445,14 @@ struct VelFromInput : System<PlayerID, Transform> {
 
       switch (actions_done.action) {
       case InputAction::Accel:
-        transform.accel = is_reversing ? -1.f : 2.f;
+        transform.accel = transform.is_reversing()
+                              ? -Config::get().breaking_acceleration.data
+                              : Config::get().forward_acceleration.data;
         break;
       case InputAction::Brake:
-        transform.accel = is_reversing ? -5.f : -1.75f;
+        transform.accel = transform.is_reversing()
+                              ? Config::get().reverse_acceleration.data
+                              : -Config::get().breaking_acceleration.data;
         break;
       case InputAction::Left:
         steer = -actions_done.amount_pressed;
@@ -460,7 +462,7 @@ struct VelFromInput : System<PlayerID, Transform> {
         break;
       case InputAction::Boost: {
         if (transform.accel_mult <= 1.f) {
-          transform.accel_mult = 3.f;
+          transform.accel_mult = Config::get().boost_acceleration.data;
         }
       } break;
       default:
@@ -468,7 +470,9 @@ struct VelFromInput : System<PlayerID, Transform> {
       }
     }
 
-    const auto decayed_accel_mult = transform.accel_mult - (transform.accel_mult * .9f * dt);
+    const auto decayed_accel_mult =
+        transform.accel_mult -
+        (transform.accel_mult * Config::get().boost_decay_percent.data * dt);
     transform.accel_mult = std::max(1.f, decayed_accel_mult);
 
     const auto minRadius = 10.f;
@@ -480,23 +484,25 @@ struct VelFromInput : System<PlayerID, Transform> {
         steer * Config::get().steering_sensitivity.data * dt * rad;
     transform.angle = std::fmod(transform.angle + 360.f, 360.f);
 
-    const auto mvt = std::max(
-        -Config::get().max_speed.data,
-        std::min(Config::get().max_speed.data,
-                 transform.speed() + (transform.accel * transform.accel_mult)));
+    const auto mvt =
+        std::clamp(transform.speed() + (transform.accel * transform.accel_mult),
+                   -Config::get().max_speed.data, Config::get().max_speed.data);
 
-    transform.velocity += vec2{
-        std::sin(transform.as_rad()) * mvt * dt,
-        -std::cos(transform.as_rad()) * mvt * dt,
-    };
+    if (!transform.is_reversing()) {
+      transform.velocity += vec2{
+          std::sin(transform.as_rad()) * mvt * dt,
+          -std::cos(transform.as_rad()) * mvt * dt,
+      };
+    } else {
+      transform.velocity += vec2{
+          -std::sin(transform.as_rad()) * mvt * dt,
+          std::cos(transform.as_rad()) * mvt * dt,
+      };
+    }
 
     transform.speed_dot_angle =
         transform.velocity.x * std::sin(transform.as_rad()) +
         transform.velocity.y * -std::cos(transform.as_rad());
-
-    if (is_reversing) {
-      transform.speed_dot_angle = -transform.speed_dot_angle;
-    }
   }
 };
 
@@ -625,47 +631,49 @@ struct ProcessDeath : System<Transform, HasHealth> {
   }
 };
 
-struct RenderLabels : System<Transform, HasLabels>
-{
-virtual void for_each_with(const Entity &, const Transform &transform,
-                           const HasLabels &hasLabels, float) const override {
+struct RenderLabels : System<Transform, HasLabels> {
+  virtual void for_each_with(const Entity &, const Transform &transform,
+                             const HasLabels &hasLabels, float) const override {
 
-    const auto get_label_display_for_type = [&transform](const Transform &transform_in, const LabelInfo &label_info_in)
-    {
-      switch (label_info_in.label_type)
-      {
-        case LabelInfo::LabelType::StaticText:
+    const auto get_label_display_for_type =
+        [&transform](const Transform &transform_in,
+                     const LabelInfo &label_info_in) {
+          switch (label_info_in.label_type) {
+          case LabelInfo::LabelType::StaticText:
+            return label_info_in.label_text;
+          case LabelInfo::LabelType::VelocityText:
+            return (transform_in.is_reversing() ? "-" : "") +
+                   std::to_string(transform_in.speed()) +
+                   label_info_in.label_text;
+          case LabelInfo::LabelType::AccelerationText:
+            return std::to_string(transform_in.accel *
+                                  transform_in.accel_mult) +
+                   label_info_in.label_text;
+          }
+
           return label_info_in.label_text;
-        case LabelInfo::LabelType::VelocityText:
-          return std::to_string(transform_in.speed()) + label_info_in.label_text;
-        case LabelInfo::LabelType::AccelerationText:
-          return std::to_string(transform_in.accel * transform_in.accel_mult) + label_info_in.label_text;
-      }
-
-      return label_info_in.label_text;
-    };
+        };
 
     const auto width = transform.rect().width;
     const auto height = transform.rect().height;
 
-    // Makes the label percentages scale from top-left of the object rect as (0, 0)
+    // Makes the label percentages scale from top-left of the object rect as (0,
+    // 0)
     const auto base_x_offset = transform.pos().x - width;
     const auto base_y_offset = transform.pos().y - height;
 
-    for (const auto& label_info : hasLabels.label_info) {
-      const auto label_to_display = get_label_display_for_type(transform, label_info);
+    for (const auto &label_info : hasLabels.label_info) {
+      const auto label_to_display =
+          get_label_display_for_type(transform, label_info);
       const auto label_pos_offset = label_info.label_pos_offset;
-            
-      const auto x_offset = base_x_offset + (width * label_pos_offset.x);      
+
+      const auto x_offset = base_x_offset + (width * label_pos_offset.x);
       const auto y_offset = base_y_offset + (height * label_pos_offset.y);
 
       draw_text_ex(
-        EntityHelper::get_singleton_cmp<ui::FontManager>()->get_active_font(),
-        label_to_display.c_str(),
-        vec2{x_offset, y_offset},
-        (int)(transform.rect().height / 2.f), 
-        1.f,
-        raylib::RAYWHITE);
+          EntityHelper::get_singleton_cmp<ui::FontManager>()->get_active_font(),
+          label_to_display.c_str(), vec2{x_offset, y_offset},
+          (int)(transform.rect().height / 2.f), 1.f, raylib::RAYWHITE);
     }
   }
 };

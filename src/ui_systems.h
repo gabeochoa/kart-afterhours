@@ -360,6 +360,81 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
       }
     }
 
+    // Breaking Acceleration
+    {
+      auto label = fmt::format("Breaking \nPower \n -{:.2f} m/s^2",
+                               Config::get().breaking_acceleration.data);
+      float pct = Config::get().breaking_acceleration.get_pct();
+      if (auto result = slider(context, mk(elem.ent()), pct,
+                               ComponentConfig{
+                                   .label = label,
+                                   .skip_when_tabbing = true,
+                               });
+          result) {
+        Config::get().breaking_acceleration.set_pct(result.as<float>());
+      }
+    }
+
+    // Forward Acceleration
+    {
+      auto label = fmt::format("Forward \nAcceleration \n {:.2f} m/s^2",
+                               Config::get().forward_acceleration.data);
+      float pct = Config::get().forward_acceleration.get_pct();
+      if (auto result = slider(context, mk(elem.ent()), pct,
+                               ComponentConfig{
+                                   .label = label,
+                                   .skip_when_tabbing = true,
+                               });
+          result) {
+        Config::get().forward_acceleration.set_pct(result.as<float>());
+      }
+    }
+
+    // Reverse Acceleration
+    {
+      auto label = fmt::format("Reverse \nAcceleration \n {:.2f} m/s^2",
+                               Config::get().reverse_acceleration.data);
+      float pct = Config::get().reverse_acceleration.get_pct();
+      if (auto result = slider(context, mk(elem.ent()), pct,
+                               ComponentConfig{
+                                   .label = label,
+                                   .skip_when_tabbing = true,
+                               });
+          result) {
+        Config::get().reverse_acceleration.set_pct(result.as<float>());
+      }
+    }
+
+    // Boost Acceleration
+    {
+      auto label = fmt::format("Boost \nAcceleration \n {:.2f} m/s^2",
+                               Config::get().boost_acceleration.data);
+      float pct = Config::get().boost_acceleration.get_pct();
+      if (auto result = slider(context, mk(elem.ent()), pct,
+                               ComponentConfig{
+                                   .label = label,
+                                   .skip_when_tabbing = true,
+                               });
+          result) {
+        Config::get().boost_acceleration.set_pct(result.as<float>());
+      }
+    }
+
+    // Boost Decay percentage
+    {
+      auto label = fmt::format("Boost \nDecay \n {:.2f} decay%/frame",
+                               Config::get().boost_decay_percent.data);
+      float pct = Config::get().boost_decay_percent.get_pct();
+      if (auto result = slider(context, mk(elem.ent()), pct,
+                               ComponentConfig{
+                                   .label = label,
+                                   .skip_when_tabbing = true,
+                               });
+          result) {
+        Config::get().boost_decay_percent.set_pct(result.as<float>());
+      }
+    }
+
     // Skid Threshold
     {
       auto label = fmt::format("Skid \nThreshold \n {:.2f} %",
