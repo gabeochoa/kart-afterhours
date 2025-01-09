@@ -613,10 +613,10 @@ struct ProcessDeath : System<Transform, HasHealth> {
 
     // TODO find a better place to do this
     if (entity.has<PlayerID>()) {
-      transform.position = get_spawn_position((int)entity.get<PlayerID>().id,
-                                              // TODO use current resolution
-                                              raylib::GetRenderWidth(),
-                                              raylib::GetRenderHeight());
+      transform.position = get_spawn_position(
+          static_cast<size_t>(entity.get<PlayerID>().id),
+          // TODO use current resolution
+          raylib::GetRenderWidth(), raylib::GetRenderHeight());
     }
 
     if (entity.has<HasMultipleLives>()) {
@@ -635,24 +635,21 @@ struct RenderLabels : System<Transform, HasLabels> {
   virtual void for_each_with(const Entity &, const Transform &transform,
                              const HasLabels &hasLabels, float) const override {
 
-    const auto get_label_display_for_type =
-        [&transform](const Transform &transform_in,
-                     const LabelInfo &label_info_in) {
-          switch (label_info_in.label_type) {
-          case LabelInfo::LabelType::StaticText:
-            return label_info_in.label_text;
-          case LabelInfo::LabelType::VelocityText:
-            return (transform_in.is_reversing() ? "-" : "") +
-                   std::to_string(transform_in.speed()) +
-                   label_info_in.label_text;
-          case LabelInfo::LabelType::AccelerationText:
-            return std::to_string(transform_in.accel *
-                                  transform_in.accel_mult) +
-                   label_info_in.label_text;
-          }
+    const auto get_label_display_for_type = [](const Transform &transform_in,
+                                               const LabelInfo &label_info_in) {
+      switch (label_info_in.label_type) {
+      case LabelInfo::LabelType::StaticText:
+        return label_info_in.label_text;
+      case LabelInfo::LabelType::VelocityText:
+        return (transform_in.is_reversing() ? "-" : "") +
+               std::to_string(transform_in.speed()) + label_info_in.label_text;
+      case LabelInfo::LabelType::AccelerationText:
+        return std::to_string(transform_in.accel * transform_in.accel_mult) +
+               label_info_in.label_text;
+      }
 
-          return label_info_in.label_text;
-        };
+      return label_info_in.label_text;
+    };
 
     const auto width = transform.rect().width;
     const auto height = transform.rect().height;
@@ -673,7 +670,7 @@ struct RenderLabels : System<Transform, HasLabels> {
       draw_text_ex(
           EntityHelper::get_singleton_cmp<ui::FontManager>()->get_active_font(),
           label_to_display.c_str(), vec2{x_offset, y_offset},
-          (int)(transform.rect().height / 2.f), 1.f, raylib::RAYWHITE);
+          transform.rect().height / 2.f, 1.f, raylib::RAYWHITE);
     }
   }
 };

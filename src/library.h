@@ -81,7 +81,8 @@ template <typename T> struct Library {
   [[nodiscard]] std::expected<T, Error>
   get_random_match(const std::string &key) const {
     auto matches = lookup(key);
-    size_t num_matches = std::distance(matches.first, matches.second);
+    size_t num_matches =
+        static_cast<size_t>(std::distance(matches.first, matches.second));
     if (num_matches == 0) {
       log_warn("got no matches for your prefix search: {}", key);
       return std::unexpected(Error::NO_MATCH);
