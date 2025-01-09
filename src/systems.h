@@ -437,7 +437,7 @@ struct VelFromInput : System<PlayerID, Transform> {
 
     transform.accel = 0.f;
     auto steer = 0.f;
-
+    
     for (const auto &actions_done : inpc.inputs()) {
       if (actions_done.id != playerID.id) {
         continue;
@@ -460,8 +460,29 @@ struct VelFromInput : System<PlayerID, Transform> {
       case InputAction::Right:
         steer = actions_done.amount_pressed;
         break;
+      case InputAction::Boost:
+        break;
+      default:
+        break;
+      }
+    }
+
+    for (auto &actions_done : inpc.inputs_pressed()) {
+      if (actions_done.id != playerID.id) {
+        continue;
+      }
+
+      switch (actions_done.action) {
+      case InputAction::Accel:
+        break;
+      case InputAction::Brake:
+        break;
+      case InputAction::Left:
+        break;
+      case InputAction::Right:
+        break;
       case InputAction::Boost: {
-        if (transform.accel_mult <= 1.f) {
+        if (!transform.is_reversing() && transform.accel_mult <= 1.f) {
           transform.accel_mult = Config::get().boost_acceleration.data;
         }
       } break;
@@ -469,7 +490,7 @@ struct VelFromInput : System<PlayerID, Transform> {
         break;
       }
     }
-
+    
     const auto decayed_accel_mult =
         transform.accel_mult -
         (transform.accel_mult * Config::get().boost_decay_percent.data * dt);
