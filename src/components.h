@@ -72,11 +72,6 @@ struct AIControlled : BaseComponent {
   vec2 target{0.f, 0.f};
 };
 
-struct HasColor : BaseComponent {
-  raylib::Color color = raylib::WHITE;
-  HasColor(raylib::Color col) : color(col) {}
-};
-
 struct HasEntityIDBasedColor : HasColor {
   EntityID id{-1};
   raylib::Color default_{raylib::RAYWHITE};
