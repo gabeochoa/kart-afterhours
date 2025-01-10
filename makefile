@@ -34,6 +34,7 @@ ifeq ($(OS),Windows_NT)
 	cp_resources_cmd = powershell -command  "& {&'Copy-Item' .\resources\* output\resources -ErrorAction SilentlyContinue}";
 	run_cmd := powershell -command "& {&'$(OUTPUT_FOLDER)/kart.exe'}";
 	sign_cmd:=
+	COMPILE = $(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp src/settings.cpp src/preload.cpp src/makers.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
 else
 	mkdir_cmd = mkdir -p output/resources/
 	cp_lib_cmd = cp vendor/raylib/*.dll output/
@@ -44,13 +45,14 @@ else
 	# CXX := clang++ -std=c++23 -Wmost -fsanitize=address
 	CXX := g++-14 -fmax-errors=10 -std=c++23 -DBACKWARD
 	FLAGS = -g $(RAYLIB_FLAGS) 
+	COMPILE = xmake && xmake r
 endif
 
 
 .PHONY: all clean output count countall new
 
 all:
-	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp src/settings.cpp src/preload.cpp src/makers.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
+	$(COMPILE)
 
 
 new: 
@@ -80,6 +82,9 @@ countall:
 cppcheck:
 	cppcheck src/ -Ivendor/afterhours --enable=all --std=c++23 --language=c++ --suppress=noConstructor --suppress=noExplicitConstructor --suppress=useStlAlgorithm --suppress=unusedStructMember --suppress=useInitializationList --suppress=duplicateCondition --suppress=nullPointerRedundantCheck --suppress=cstyleCast
 
+
+getxm: 
+	powershell -command  "Invoke-Expression (Invoke-Webrequest 'https://xmake.io/psget.text' -UseBasicParsing).Content"
 xm:
 	xmake create -l c++ -t module.binary kart.exe
 
