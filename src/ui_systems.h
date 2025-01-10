@@ -83,6 +83,10 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     input::PossibleInputCollector<InputAction> inpc =
         input::get_input_collector<InputAction>();
 
+    if (active_screen == Screen::None) {
+      ui_visible = false;
+    }
+
     const bool start_pressed = std::ranges::any_of(
         inpc.inputs_pressed(), [](const auto &actions_done) {
           return actions_done.action == InputAction::WidgetMod;
