@@ -140,7 +140,8 @@ Entity &make_car(int id) {
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(MAX_HEALTH);
   entity.addComponent<TireMarkComponent>();
-  auto tint = get_color_for_player((size_t)id);
+  auto tint = EntityHelper::get_singleton_cmp<ManagesAvailableColors>()
+                  ->get_next_available();
   entity.addComponent<HasColor>(tint);
 
   const Transform &transform = entity.get<Transform>();

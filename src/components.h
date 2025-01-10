@@ -12,7 +12,55 @@
 // Note: This must be included after std includes
 #include "config.h"
 
+constexpr static vec2 get_spawn_position(size_t id, int width, int height) {
+  constexpr std::array<vec2, input::MAX_GAMEPAD_ID> pct_location = {{
+      vec2{0.1f, 0.5f},
+      vec2{0.9f, 0.5f},
+      //
+      vec2{0.1f, 0.1f},
+      vec2{0.9f, 0.1f},
+      //
+      vec2{0.1f, 0.9f},
+      vec2{0.9f, 0.9f},
+      //
+      vec2{0.5f, 0.1f},
+      vec2{0.5f, 0.9f},
+  }};
+  size_t index = (id) % pct_location.size();
+  vec2 pct = pct_location[index];
+  return vec2{
+      pct.x * (float)width,
+      pct.y * (float)height,
+  };
+}
+
 using namespace afterhours;
+
+#include "bitset_utils.h"
+struct ManagesAvailableColors : BaseComponent {
+  constexpr static std::array<raylib::Color, input::MAX_GAMEPAD_ID> colors = {{
+      raylib::BLUE,
+      raylib::ORANGE,
+      raylib::PURPLE,
+      raylib::SKYBLUE,
+      raylib::DARKGREEN,
+      raylib::BEIGE,
+      raylib::MAROON,
+      raylib::GOLD,
+  }};
+
+  std::bitset<input::MAX_GAMEPAD_ID> used;
+
+  raylib::Color get_next_available() {
+    int index = bitset_utils::get_first_disabled_bit(used);
+    if (index == -1) {
+      log_warn("no available colors");
+      index = 0;
+    }
+    used[index] = true;
+    return colors[index];
+  }
+};
 
 struct AIControlled : BaseComponent {
   vec2 target{0.f, 0.f};
@@ -348,43 +396,6 @@ struct PlayerID : BaseComponent {
   input::GamepadID id;
   PlayerID(input::GamepadID i) : id(i) {}
 };
-
-constexpr static raylib::Color get_color_for_player(size_t id) {
-  constexpr std::array<raylib::Color, input::MAX_GAMEPAD_ID> colors = {{
-      raylib::BLUE,
-      raylib::ORANGE,
-      raylib::PURPLE,
-      raylib::SKYBLUE,
-      raylib::DARKGREEN,
-      raylib::BEIGE,
-      raylib::MAROON,
-      raylib::GOLD,
-  }};
-  size_t index = id % colors.size();
-  return colors[index];
-}
-
-constexpr static vec2 get_spawn_position(size_t id, int width, int height) {
-  constexpr std::array<vec2, input::MAX_GAMEPAD_ID> pct_location = {{
-      vec2{0.1f, 0.5f},
-      vec2{0.9f, 0.5f},
-      //
-      vec2{0.1f, 0.1f},
-      vec2{0.9f, 0.1f},
-      //
-      vec2{0.1f, 0.9f},
-      vec2{0.9f, 0.9f},
-      //
-      vec2{0.5f, 0.1f},
-      vec2{0.5f, 0.9f},
-  }};
-  size_t index = (id) % pct_location.size();
-  vec2 pct = pct_location[index];
-  return vec2{
-      pct.x * (float)width,
-      pct.y * (float)height,
-  };
-}
 
 struct HasMultipleLives : BaseComponent {
   int num_lives_remaining;

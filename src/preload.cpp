@@ -69,6 +69,9 @@ Preload &Preload::make_singleton() {
         .set_desired_width(afterhours::ui::screen_pct(1.f))
         .set_desired_height(afterhours::ui::screen_pct(1.f))
         .enable_font(get_font_name(FontID::EQPro), 75.f);
+
+    sophie.addComponent<ManagesAvailableColors>();
+    EntityHelper::registerSingleton<ManagesAvailableColors>(sophie);
   }
   return *this;
 }
