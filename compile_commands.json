@@ -1,1 +1,179 @@
-[]
+[
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fPIC",
+      "-Qunused-arguments",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-S",
+      "-o",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_1469CB4602FC45208F74560593657940",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp"
+    ],
+    "directory": "/Users/gabeochoa/p/kart-afterhours",
+    "file": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp",
+    "output": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_1469CB4602FC45208F74560593657940"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-std=c++23",
+      "-Qunused-arguments",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-S",
+      "-o",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_422784FC0C91490084C73801FDAE2F10",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp"
+    ],
+    "directory": "/Users/gabeochoa/p/kart-afterhours",
+    "file": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp",
+    "output": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_422784FC0C91490084C73801FDAE2F10"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-Wno-deprecated-volatile",
+      "-Wno-missing-field-initializers",
+      "-Wno-c99-extensions",
+      "-Wno-unused-function",
+      "-Wno-sign-conversion",
+      "-Wno-implicit-int-float-conversion",
+      "-Qunused-arguments",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-S",
+      "-o",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_A10DAD9AA8D44F008EA7DEF584C6F130",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp"
+    ],
+    "directory": "/Users/gabeochoa/p/kart-afterhours",
+    "file": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp",
+    "output": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_A10DAD9AA8D44F008EA7DEF584C6F130"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-fdiagnostics-color=always",
+      "-Qunused-arguments",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-S",
+      "-o",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_909A36176B1C46308EE76F8215385670",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp"
+    ],
+    "directory": "/Users/gabeochoa/p/kart-afterhours",
+    "file": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp",
+    "output": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_909A36176B1C46308EE76F8215385670"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-Wno-gnu-line-marker",
+      "-Werror",
+      "-Qunused-arguments",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-S",
+      "-o",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_D78714D2D1A34F308CBCAECDC8965970",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp"
+    ],
+    "directory": "/Users/gabeochoa/p/kart-afterhours",
+    "file": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp",
+    "output": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_D78714D2D1A34F308CBCAECDC8965970"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-c",
+      "-fPIC",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-o",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_2C3D6B9BE2B1411080ED12C841AC2620",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp"
+    ],
+    "directory": "/Users/gabeochoa/p/kart-afterhours",
+    "file": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp",
+    "output": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_2C3D6B9BE2B1411080ED12C841AC2620"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-c",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-o",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_EDF2A755FA964730863878AC9B4B9150",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp"
+    ],
+    "directory": "/Users/gabeochoa/p/kart-afterhours",
+    "file": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp",
+    "output": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_EDF2A755FA964730863878AC9B4B9150"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-c",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-o",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_979D0B108E5047208B33D505E98B3130",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp"
+    ],
+    "directory": "/Users/gabeochoa/p/kart-afterhours",
+    "file": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp",
+    "output": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_979D0B108E5047208B33D505E98B3130"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang++",
+      "-c",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-target",
+      "arm64-apple-macos15.1",
+      "-isysroot",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.2.sdk",
+      "-o",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_09AC2143D5884720882A61033B794A30",
+      "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp"
+    ],
+    "directory": "/Users/gabeochoa/p/kart-afterhours",
+    "file": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_F3443E45635A466AA3BEAE9DE99B4339.cpp",
+    "output": "/var/folders/85/snmfrnvn58x9yfnwn1x3y7m80000gn/T/.xmake501/250110/_09AC2143D5884720882A61033B794A30"
+  }
+]

@@ -5,7 +5,7 @@ if is_host("windows") then
     set_toolset("cxx", "g++")
     set_toolset("ld", "g++")
 else
-    set_toolset("cxx", "clang")
+    set_toolset("cxx", "clang++")
     set_toolset("ld", "clang++")
 end
 set_languages("c++23")
