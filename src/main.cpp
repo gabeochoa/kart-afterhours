@@ -100,14 +100,13 @@ void game() {
 }
 
 int main(int argc, char *argv[]) {
-  int screenWidth = 1280;
-  int screenHeight = 720;
 
   // if nothing else ends up using this, we should move into preload.cpp
   argh::parser cmdl(argc, argv, argh::parser::PREFER_PARAM_FOR_UNREG_OPTION);
 
-  cmdl({"-w", "--width"}) >> screenWidth;
-  cmdl({"-h", "--height"}) >> screenHeight;
+  int screenWidth, screenHeight;
+  cmdl({"-w", "--width"}, 1280) >> screenWidth;
+  cmdl({"-h", "--height"}, 720) >> screenHeight;
 
   Preload::get() //
       .init(screenWidth, screenHeight, "Cart Chaos")
