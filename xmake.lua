@@ -29,7 +29,7 @@ target("kart")
     set_kind("binary")
     set_targetdir("output")
     if is_host("macosx") then
-        set_extension("exe")
+        set_extension(".exe")
     end
     --
     add_files("src/*.cpp")
