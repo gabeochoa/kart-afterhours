@@ -40,15 +40,16 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   };
 
   // settings cache stuff for now
-  window_manager::ProvidesAvailableWindowResolutions
-      *resolution_provider; // non owning ptr
-                            // eventually std::observer_ptr?
-  window_manager::ProvidesCurrentResolution
-      *current_resolution_provider; // non owning ptr
-                                    // eventually std::observer_ptr?
+  window_manager::ProvidesAvailableWindowResolutions *resolution_provider{
+      nullptr}; // non owning ptr
+                // eventually std::observer_ptr?
+  window_manager::ProvidesCurrentResolution *current_resolution_provider{
+      nullptr}; // non owning ptr
+                // eventually std::observer_ptr?
   std::vector<std::string> resolution_strs;
-  int resolution_index = 0;
-  bool fs_enabled = false;
+  int resolution_index{0};
+  bool fs_enabled{false};
+  bool ui_visible{true};
 
   void update_resolution_cache() {
     resolution_provider = EntityHelper::get_singleton_cmp<
@@ -76,6 +77,25 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     if (active_screen == Screen::Settings) {
       update_resolution_cache();
     }
+  }
+
+  bool should_run(float) override {
+    input::PossibleInputCollector<InputAction> inpc =
+        input::get_input_collector<InputAction>();
+
+    const bool start_pressed = std::ranges::any_of(
+        inpc.inputs_pressed(), [](const auto &actions_done) {
+          return actions_done.action == InputAction::WidgetMod;
+        });
+
+    if (!ui_visible && start_pressed) {
+      active_screen = Screen::Main;
+      ui_visible = true;
+    } else if (ui_visible && start_pressed) {
+      ui_visible = false;
+    }
+
+    return ui_visible;
   }
 
   void main_screen(Entity &entity, UIContext<InputAction> &context) {
