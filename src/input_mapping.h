@@ -84,9 +84,8 @@ inline auto get_mapping() {
       raylib::GAMEPAD_BUTTON_RIGHT_FACE_DOWN,
   };
 
-  mapping[InputAction::WidgetMod] = {
-      raylib::KEY_LEFT_SHIFT,
-  };
+  mapping[InputAction::WidgetMod] = {raylib::KEY_LEFT_SHIFT,
+                                     raylib::GAMEPAD_BUTTON_MIDDLE_RIGHT};
 
   mapping[InputAction::ToggleUIDebug] = {
       raylib::KEY_GRAVE,
@@ -103,7 +102,6 @@ inline auto get_mapping() {
           .dir = 1,
       },
   };
-
 
   return mapping;
 }

@@ -437,7 +437,7 @@ struct VelFromInput : System<PlayerID, Transform> {
 
     transform.accel = 0.f;
     auto steer = 0.f;
-    
+
     for (const auto &actions_done : inpc.inputs()) {
       if (actions_done.id != playerID.id) {
         continue;
@@ -490,20 +490,27 @@ struct VelFromInput : System<PlayerID, Transform> {
         break;
       }
     }
-    
-    const auto decayed_accel_mult =
-        transform.accel_mult -
-        (transform.accel_mult * Config::get().boost_decay_percent.data * dt);
-    transform.accel_mult = std::max(1.f, decayed_accel_mult);
 
-    const auto minRadius = 10.f;
-    const auto maxRadius = 300.f;
-    const auto rad = std::lerp(
-        minRadius, maxRadius, transform.speed() / Config::get().max_speed.data);
+    if (transform.speed() > 0.01) {
+      const auto minRadius = Config::get().minimum_steering_radius.data;
+      const auto maxRadius = Config::get().maximum_steering_radius.data;
+      const auto speed_percentage =
+          transform.speed() / Config::get().max_speed.data;
 
-    transform.angle +=
-        steer * Config::get().steering_sensitivity.data * dt * rad;
-    transform.angle = std::fmod(transform.angle + 360.f, 360.f);
+      const auto rad = std::lerp(minRadius, maxRadius, speed_percentage);
+
+      transform.angle +=
+          steer * Config::get().steering_sensitivity.data * dt * rad;
+      transform.angle = std::fmod(transform.angle + 360.f, 360.f);
+
+      const auto decayed_accel_mult =
+          transform.accel_mult -
+          (transform.accel_mult * Config::get().boost_decay_percent.data * dt);
+      transform.accel_mult = std::max(1.f, decayed_accel_mult);
+    } else {
+      transform.velocity =
+          vec2{0.f, 0.f}; // So speed goes to 0 more quickly and naturally
+    }
 
     const auto mvt =
         std::clamp(transform.speed() + (transform.accel * transform.accel_mult),

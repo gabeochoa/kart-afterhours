@@ -358,156 +358,209 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
       return;
     }
 
-    auto elem = imm::div(context, mk(entity));
-    elem.ent()
-        .get<UIComponent>()
-        // TODO use config once it exists
-        .set_flex_direction(FlexDirection::Row);
-
-    // Max speed
+    // Row 1
     {
-      auto max_speed_label =
-          fmt::format("Max Speed\n {:.2f} m/s", Config::get().max_speed.data);
-      auto pct = Config::get().max_speed.get_pct();
+      auto elem = imm::div(context, mk(entity));
+      elem.ent()
+          .get<UIComponent>()
+          // TODO use config once it exists
+          .set_flex_direction(FlexDirection::Row);
 
-      ComponentConfig max_speed_slider_config;
-      max_speed_slider_config.label = std::move(max_speed_label);
-      max_speed_slider_config.skip_when_tabbing = true;
+      // Max speed
+      {
+        auto max_speed_label =
+            fmt::format("Max Speed\n {:.2f} m/s", Config::get().max_speed.data);
+        auto pct = Config::get().max_speed.get_pct();
 
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(max_speed_slider_config));
-          result) {
-        Config::get().max_speed.set_pct(result.as<float>());
+        ComponentConfig max_speed_slider_config;
+        max_speed_slider_config.label = std::move(max_speed_label);
+        max_speed_slider_config.skip_when_tabbing = true;
+
+        if (auto result = slider(context, mk(elem.ent()), pct,
+                                 std::move(max_speed_slider_config));
+            result) {
+          Config::get().max_speed.set_pct(result.as<float>());
+        }
+      }
+
+      // Breaking Acceleration
+      {
+        auto max_breaking_acceleration_label =
+            fmt::format("Breaking \nPower \n -{:.2f} m/s^2",
+                        Config::get().breaking_acceleration.data);
+        auto pct = Config::get().breaking_acceleration.get_pct();
+
+        ComponentConfig breaking_acceleration_slider_config;
+        breaking_acceleration_slider_config.label =
+            std::move(max_breaking_acceleration_label);
+        breaking_acceleration_slider_config.skip_when_tabbing = true;
+
+        if (auto result =
+                slider(context, mk(elem.ent()), pct,
+                       std::move(breaking_acceleration_slider_config));
+            result) {
+          Config::get().breaking_acceleration.set_pct(result.as<float>());
+        }
+      }
+
+      // Forward Acceleration
+      {
+        auto forward_acceleration_label =
+            fmt::format("Forward \nAcceleration \n {:.2f} m/s^2",
+                        Config::get().forward_acceleration.data);
+        auto pct = Config::get().forward_acceleration.get_pct();
+
+        ComponentConfig forward_acceleration_slider_config;
+        forward_acceleration_slider_config.label =
+            std::move(forward_acceleration_label);
+        forward_acceleration_slider_config.skip_when_tabbing = true;
+
+        if (auto result = slider(context, mk(elem.ent()), pct,
+                                 std::move(forward_acceleration_slider_config));
+            result) {
+          Config::get().forward_acceleration.set_pct(result.as<float>());
+        }
+      }
+
+      // Reverse Acceleration
+      {
+        auto reverse_acceleration_label =
+            fmt::format("Reverse \nAcceleration \n {:.2f} m/s^2",
+                        Config::get().reverse_acceleration.data);
+        auto pct = Config::get().reverse_acceleration.get_pct();
+
+        ComponentConfig reverse_acceleration_slider_config;
+        reverse_acceleration_slider_config.label =
+            std::move(reverse_acceleration_label);
+        reverse_acceleration_slider_config.skip_when_tabbing = true;
+
+        if (auto result = slider(context, mk(elem.ent()), pct,
+                                 std::move(reverse_acceleration_slider_config));
+            result) {
+          Config::get().reverse_acceleration.set_pct(result.as<float>());
+        }
+      }
+
+      // Boost Acceleration
+      {
+        auto boost_acceleration_label =
+            fmt::format("Boost \nAcceleration \n {:.2f} m/s^2",
+                        Config::get().boost_acceleration.data);
+        auto pct = Config::get().boost_acceleration.get_pct();
+
+        ComponentConfig boost_acceleration_slider_config;
+        boost_acceleration_slider_config.label =
+            std::move(boost_acceleration_label);
+        boost_acceleration_slider_config.skip_when_tabbing = true;
+
+        if (auto result = slider(context, mk(elem.ent()), pct,
+                                 std::move(boost_acceleration_slider_config));
+            result) {
+          Config::get().boost_acceleration.set_pct(result.as<float>());
+        }
+      }
+
+      // Boost Decay percentage
+      {
+        auto boost_decay_label =
+            fmt::format("Boost \nDecay \n {:.2f} decay%/frame",
+                        Config::get().boost_decay_percent.data);
+        auto pct = Config::get().boost_decay_percent.get_pct();
+
+        ComponentConfig boost_decay_slider_config;
+        boost_decay_slider_config.label = std::move(boost_decay_label);
+        boost_decay_slider_config.skip_when_tabbing = true;
+
+        if (auto result = slider(context, mk(elem.ent()), pct,
+                                 std::move(boost_decay_slider_config));
+            result) {
+          Config::get().boost_decay_percent.set_pct(result.as<float>());
+        }
       }
     }
 
-    // Breaking Acceleration
+    // Row 2
     {
-      auto max_breaking_acceleration_label =
-          fmt::format("Breaking \nPower \n -{:.2f} m/s^2",
-                      Config::get().breaking_acceleration.data);
-      auto pct = Config::get().breaking_acceleration.get_pct();
+      auto elem = imm::div(context, mk(entity));
+      elem.ent()
+          .get<UIComponent>()
+          // TODO use config once it exists
+          .set_flex_direction(FlexDirection::Row);
 
-      ComponentConfig breaking_acceleration_slider_config;
-      breaking_acceleration_slider_config.label =
-          std::move(max_breaking_acceleration_label);
-      breaking_acceleration_slider_config.skip_when_tabbing = true;
+      // Skid Threshold
+      {
+        auto skid_threshold_label = fmt::format(
+            "Skid \nThreshold \n {:.2f} %", Config::get().skid_threshold.data);
+        auto pct = Config::get().skid_threshold.get_pct();
 
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(breaking_acceleration_slider_config));
-          result) {
-        Config::get().breaking_acceleration.set_pct(result.as<float>());
+        ComponentConfig skid_threshold_slider_config;
+        skid_threshold_slider_config.label = std::move(skid_threshold_label);
+        skid_threshold_slider_config.skip_when_tabbing = true;
+
+        if (auto result = slider(context, mk(elem.ent()), pct,
+                                 std::move(skid_threshold_slider_config));
+            result) {
+          Config::get().skid_threshold.set_pct(result.as<float>());
+        }
       }
-    }
 
-    // Forward Acceleration
-    {
-      auto forward_acceleration_label =
-          fmt::format("Forward \nAcceleration \n {:.2f} m/s^2",
-                      Config::get().forward_acceleration.data);
-      auto pct = Config::get().forward_acceleration.get_pct();
+      // Steering Sensitivity
+      {
+        auto steering_sensitivity_label =
+            fmt::format("Steering \nSensitivity \n {:.2f} %",
+                        Config::get().steering_sensitivity.data);
+        auto pct = Config::get().steering_sensitivity.get_pct();
 
-      ComponentConfig forward_acceleration_slider_config;
-      forward_acceleration_slider_config.label =
-          std::move(forward_acceleration_label);
-      forward_acceleration_slider_config.skip_when_tabbing = true;
+        ComponentConfig steering_sensitivity_slider_config;
+        steering_sensitivity_slider_config.label =
+            std::move(steering_sensitivity_label);
+        steering_sensitivity_slider_config.skip_when_tabbing = true;
 
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(forward_acceleration_slider_config));
-          result) {
-        Config::get().forward_acceleration.set_pct(result.as<float>());
+        if (auto result = slider(context, mk(elem.ent()), pct,
+                                 std::move(steering_sensitivity_slider_config));
+            result) {
+          Config::get().steering_sensitivity.set_pct(result.as<float>());
+        }
       }
-    }
 
-    // Reverse Acceleration
-    {
-      auto reverse_acceleration_label =
-          fmt::format("Reverse \nAcceleration \n {:.2f} m/s^2",
-                      Config::get().reverse_acceleration.data);
-      auto pct = Config::get().reverse_acceleration.get_pct();
+      // Minimum Steering Radius
+      {
+        auto minimum_steering_radius_label =
+            fmt::format("Min Steering \nSensitivity \n {:.2f} m",
+                        Config::get().minimum_steering_radius.data);
+        auto pct = Config::get().minimum_steering_radius.get_pct();
 
-      ComponentConfig reverse_acceleration_slider_config;
-      reverse_acceleration_slider_config.label =
-          std::move(reverse_acceleration_label);
-      reverse_acceleration_slider_config.skip_when_tabbing = true;
+        ComponentConfig minimum_steering_radius_slider_config;
+        minimum_steering_radius_slider_config.label =
+            std::move(minimum_steering_radius_label);
+        minimum_steering_radius_slider_config.skip_when_tabbing = true;
 
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(reverse_acceleration_slider_config));
-          result) {
-        Config::get().reverse_acceleration.set_pct(result.as<float>());
+        if (auto result =
+                slider(context, mk(elem.ent()), pct,
+                       std::move(minimum_steering_radius_slider_config));
+            result) {
+          Config::get().minimum_steering_radius.set_pct(result.as<float>());
+        }
       }
-    }
 
-    // Boost Acceleration
-    {
-      auto boost_acceleration_label =
-          fmt::format("Boost \nAcceleration \n {:.2f} m/s^2",
-                      Config::get().boost_acceleration.data);
-      auto pct = Config::get().boost_acceleration.get_pct();
+      // Maximum Steering Radius
+      {
+        auto maximum_steering_radius_label =
+            fmt::format("Max Steering \nSensitivity \n {:.2f} m",
+                        Config::get().maximum_steering_radius.data);
+        auto pct = Config::get().maximum_steering_radius.get_pct();
 
-      ComponentConfig boost_acceleration_slider_config;
-      boost_acceleration_slider_config.label =
-          std::move(boost_acceleration_label);
-      boost_acceleration_slider_config.skip_when_tabbing = true;
+        ComponentConfig maximum_steering_radius_slider_config;
+        maximum_steering_radius_slider_config.label =
+            std::move(maximum_steering_radius_label);
+        maximum_steering_radius_slider_config.skip_when_tabbing = true;
 
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(boost_acceleration_slider_config));
-          result) {
-        Config::get().boost_acceleration.set_pct(result.as<float>());
-      }
-    }
-
-    // Boost Decay percentage
-    {
-      auto boost_decay_label =
-          fmt::format("Boost \nDecay \n {:.2f} decay%/frame",
-                      Config::get().boost_decay_percent.data);
-      auto pct = Config::get().boost_decay_percent.get_pct();
-
-      ComponentConfig boost_decay_slider_config;
-      boost_decay_slider_config.label = std::move(boost_decay_label);
-      boost_decay_slider_config.skip_when_tabbing = true;
-
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(boost_decay_slider_config));
-          result) {
-        Config::get().boost_decay_percent.set_pct(result.as<float>());
-      }
-    }
-
-    // Skid Threshold
-    {
-      auto skid_threshold_label = fmt::format(
-          "Skid \nThreshold \n {:.2f} %", Config::get().skid_threshold.data);
-      auto pct = Config::get().skid_threshold.get_pct();
-
-      ComponentConfig skid_threshold_slider_config;
-      skid_threshold_slider_config.label = std::move(skid_threshold_label);
-      skid_threshold_slider_config.skip_when_tabbing = true;
-
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(skid_threshold_slider_config));
-          result) {
-        Config::get().skid_threshold.set_pct(result.as<float>());
-      }
-    }
-
-    // Steering Sensitivity
-    {
-      auto steering_sensitivity_label =
-          fmt::format("Steering \nSensitivity \n {:.2f} %",
-                      Config::get().steering_sensitivity.data);
-      auto pct = Config::get().steering_sensitivity.get_pct();
-
-      ComponentConfig steering_sensitivity_slider_config;
-      steering_sensitivity_slider_config.label =
-          std::move(steering_sensitivity_label);
-      steering_sensitivity_slider_config.skip_when_tabbing = true;
-
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(steering_sensitivity_slider_config));
-          result) {
-        Config::get().steering_sensitivity.set_pct(result.as<float>());
+        if (auto result =
+                slider(context, mk(elem.ent()), pct,
+                       std::move(maximum_steering_radius_slider_config));
+            result) {
+          Config::get().maximum_steering_radius.set_pct(result.as<float>());
+        }
       }
     }
   }
