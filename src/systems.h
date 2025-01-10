@@ -5,6 +5,17 @@
 #include "makers.h"
 #include "query.h"
 
+struct UpdateSpriteTransform
+    : System<Transform, afterhours::texture_manager::HasSprite> {
+
+  virtual void for_each_with(Entity &, Transform &transform,
+                             afterhours::texture_manager::HasSprite &hasSprite,
+                             float) override {
+    hasSprite.update_transform(transform.position, transform.size,
+                               transform.angle);
+  }
+};
+
 struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderFPS() {}
   virtual void for_each_with(
@@ -19,7 +30,7 @@ struct RenderEntities : System<Transform> {
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,
                              float) const override {
-    if (entity.has<HasTexture>())
+    if (entity.has<afterhours::texture_manager::HasSpritesheet>())
       return;
     if (entity.has<HasAnimation>())
       return;
@@ -95,30 +106,6 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
   }
 };
 
-struct RenderSprites : System<Transform, HasSprite> {
-
-  raylib::Texture2D sheet;
-
-  virtual void once(float) override {
-    sheet = EntityHelper::get_singleton_cmp<HasTexture>()->texture;
-  }
-
-  virtual void for_each_with(const Entity &, const Transform &transform,
-                             const HasSprite &hasSprite, float) const override {
-
-    raylib::DrawTexturePro(sheet, hasSprite.frame,
-                           Rectangle{
-                               transform.center().x,
-                               transform.center().y,
-                               hasSprite.frame.width * hasSprite.scale,
-                               hasSprite.frame.height * hasSprite.scale,
-                           },
-                           vec2{transform.size.x / 2.f,
-                                transform.size.y / 2.f}, // transform.center(),
-                           transform.angle, hasSprite.colorTint);
-  }
-};
-
 struct AnimationUpdateCurrentFrame : System<HasAnimation> {
 
   virtual void for_each_with(Entity &entity, HasAnimation &hasAnimation,
@@ -151,7 +138,9 @@ struct RenderAnimation : System<Transform, HasAnimation> {
   raylib::Texture2D sheet;
 
   virtual void once(float) override {
-    sheet = EntityHelper::get_singleton_cmp<HasTexture>()->texture;
+    sheet = EntityHelper::get_singleton_cmp<
+                afterhours::texture_manager::HasSpritesheet>()
+                ->texture;
   }
 
   virtual void for_each_with(const Entity &, const Transform &transform,

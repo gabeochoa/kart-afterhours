@@ -56,9 +56,8 @@ Preload &Preload::make_singleton() {
     window_manager::add_singleton_components(sophie, 200);
     ui::add_singleton_components<InputAction>(sophie);
 
-    sophie.addComponent<HasTexture>(
-        raylib::LoadTexture(GetAssetPath("spritesheet.png")));
-    EntityHelper::registerSingleton<HasTexture>(sophie);
+    texture_manager::add_singleton_components(
+        sophie, raylib::LoadTexture(GetAssetPath("spritesheet.png")));
 
     sophie.get<ui::FontManager>().load_font(
         get_font_name(FontID::EQPro), GetAssetPath("eqprorounded-regular.ttf"));

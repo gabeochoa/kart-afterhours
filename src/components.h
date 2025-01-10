@@ -36,19 +36,6 @@ struct TracksEntity : BaseComponent {
   TracksEntity(EntityID id_, vec2 off) : id(id_), offset(off) {}
 };
 
-struct HasTexture : BaseComponent {
-  raylib::Texture2D texture;
-  HasTexture(const raylib::Texture2D tex) : texture(tex) {}
-};
-
-struct HasSprite : BaseComponent {
-  Rectangle frame;
-  float scale;
-  raylib::Color colorTint;
-  HasSprite(Rectangle frm, float scl, raylib::Color colorTintIn)
-      : frame{frm}, scale{scl}, colorTint{colorTintIn} {}
-};
-
 struct HasAnimation : BaseComponent {
   vec2 start_position;
   vec2 cur_frame_position;

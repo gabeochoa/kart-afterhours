@@ -192,10 +192,12 @@ inline std::ostream& operator<<(std::ostream& os, Color c) {
 #define AFTER_HOURS_USE_RAYLIB
 
 #define RectangleType raylib::Rectangle
-#define Vector2Type vec2
+#define Vector2Type raylib::Vector2
+#define TextureType raylib::Texture2D
 #include "afterhours/ah.h"
 #include "afterhours/src/developer.h"
 #include "afterhours/src/plugins/input_system.h"
+#include "afterhours/src/plugins/texture_manager.h"
 #include "afterhours/src/plugins/window_manager.h"
 #include <cassert>
 

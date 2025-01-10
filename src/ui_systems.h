@@ -7,6 +7,7 @@
 
 using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
+
 struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
   const vec2 button_size = vec2{100, 50};
@@ -296,8 +297,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     auto about_group =
         imm::div(context, mk(elem.ent()), std::move(about_screen_config));
 
-    raylib::Texture2D sheet =
-        EntityHelper::get_singleton_cmp<HasTexture>()->texture;
+    raylib::Texture2D sheet = EntityHelper::get_singleton_cmp<
+                                  afterhours::texture_manager::HasSpritesheet>()
+                                  ->texture;
     window_manager::Resolution rez =
         current_resolution_provider->current_resolution;
     const auto width = static_cast<float>(rez.width);

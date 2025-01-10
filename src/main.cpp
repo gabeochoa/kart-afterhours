@@ -28,6 +28,7 @@ void game() {
     window_manager::enforce_singletons(systems);
     ui::enforce_singletons<InputAction>(systems);
     input::enforce_singletons<InputAction>(systems);
+    texture_manager::enforce_singletons(systems);
   }
 
   // external plugins
@@ -58,6 +59,7 @@ void game() {
     systems.register_update_system(std::make_unique<AIVelocity>());
     systems.register_update_system(std::make_unique<DrainLife>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
+    systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
 
     systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
     systems.register_update_system(std::make_unique<ScheduleDebugUI>());
@@ -71,10 +73,10 @@ void game() {
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     ui::register_render_systems<InputAction>(systems,
                                              InputAction::ToggleUILayoutDebug);
+    texture_manager::register_render_systems(systems);
     systems.register_render_system(std::make_unique<RenderSkid>());
     systems.register_render_system(std::make_unique<RenderEntities>());
     systems.register_render_system(std::make_unique<RenderHealthAndLives>());
-    systems.register_render_system(std::make_unique<RenderSprites>());
     systems.register_render_system(std::make_unique<RenderAnimation>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
     systems.register_render_system(std::make_unique<RenderOOB>());
@@ -104,7 +106,6 @@ int main(int argc, char *argv[]) {
   cmdl({"-w", "--width"}) >> screenWidth;
   cmdl({"-h", "--height"}) >> screenHeight;
 
-
   Preload::get() //
       .init(screenWidth, screenHeight, "Cart Chaos")
       .make_singleton();
@@ -115,7 +116,6 @@ int main(int argc, char *argv[]) {
 
   // intro();
   game();
-
 
   return 0;
 }
