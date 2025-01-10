@@ -5,22 +5,27 @@
 #include "components.h"
 int next_id = 0;
 
+using afterhours::texture_manager::HasAnimation;
+using afterhours::texture_manager::idx_to_sprite_frame;
+
 void make_explosion_anim(Entity &parent) {
-  const Transform &transform = parent.get<Transform>();
+  const Transform &parent_transform = parent.get<Transform>();
 
   auto &poof = EntityHelper::createEntity();
-  poof.addComponent<Transform>(transform.pos(), vec2{10.f, 10.f});
+  poof.addComponent<Transform>(parent_transform.pos(), vec2{10.f, 10.f});
 
-  poof.addComponent<HasAnimation>(vec2{0, 3},
+  const Transform &transform = poof.get<Transform>();
+  poof.addComponent<HasAnimation>(transform.position, transform.size,
+                                  transform.angle, vec2{0, 3},
                                   9,          // total_frames
                                   1.f / 20.f, // frame_dur
                                   true,       // once
                                   2.f,        // scale
-                                  0, 0);
+                                  0, 0, raylib::RAYWHITE);
 }
 
 void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
-  const Transform &transform = parent.get<Transform>();
+  const Transform &parent_transform = parent.get<Transform>();
 
   vec2 off;
   float angle = 0;
@@ -53,13 +58,15 @@ void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
 
   auto &poof = EntityHelper::createEntity();
   poof.addComponent<TracksEntity>(parent.id, off);
-  poof.addComponent<Transform>(transform.pos() + off, vec2{10.f, 10.f})
-      .set_angle(transform.angle + angle_offset);
-  poof.addComponent<HasAnimation>(vec2{0, 0},
+  poof.addComponent<Transform>(parent_transform.pos() + off, vec2{10.f, 10.f})
+      .set_angle(parent_transform.angle + angle_offset);
+  const Transform &transform = poof.get<Transform>();
+  poof.addComponent<HasAnimation>(transform.position, transform.size,
+                                  transform.angle, vec2{0, 0},
                                   14,         // total_frames
                                   1.f / 20.f, // frame_dur
                                   true,       // once
-                                  1.f, 0, angle);
+                                  1.f, 0, angle, raylib::RAYWHITE);
 }
 
 void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {

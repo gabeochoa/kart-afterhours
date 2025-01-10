@@ -310,7 +310,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     const auto x_spacing = (width - x_pos * 2.f) / static_cast<float>(num_icon);
 
     for (int i = 0; i < num_icon; i++) {
-      Rectangle frame = idx_to_sprite_frame(i, 4);
+      Rectangle frame = afterhours::texture_manager::idx_to_sprite_frame(i, 4);
       raylib::DrawTexturePro(sheet, frame,
                              Rectangle{
                                  x_pos,

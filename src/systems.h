@@ -16,6 +16,18 @@ struct UpdateSpriteTransform
   }
 };
 
+struct UpdateAnimationTransform
+    : System<Transform, afterhours::texture_manager::HasAnimation> {
+
+  virtual void
+  for_each_with(Entity &, Transform &transform,
+                afterhours::texture_manager::HasAnimation &hasAnimation,
+                float) override {
+    hasAnimation.update_transform(transform.position, transform.size,
+                                  transform.angle);
+  }
+};
+
 struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderFPS() {}
   virtual void for_each_with(
@@ -32,7 +44,7 @@ struct RenderEntities : System<Transform> {
                              float) const override {
     if (entity.has<afterhours::texture_manager::HasSpritesheet>())
       return;
-    if (entity.has<HasAnimation>())
+    if (entity.has<afterhours::texture_manager::HasAnimation>())
       return;
 
     auto entitiy_color = entity.has_child_of<HasColor>()
@@ -103,63 +115,6 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
         make_player(i);
       }
     }
-  }
-};
-
-struct AnimationUpdateCurrentFrame : System<HasAnimation> {
-
-  virtual void for_each_with(Entity &entity, HasAnimation &hasAnimation,
-                             float dt) override {
-    hasAnimation.frame_time -= dt;
-    if (hasAnimation.frame_time > 0) {
-      return;
-    }
-    hasAnimation.frame_time = hasAnimation.frame_dur;
-
-    if (hasAnimation.cur_frame >= hasAnimation.total_frames) {
-      if (hasAnimation.once) {
-        entity.cleanup = true;
-        return;
-      }
-      hasAnimation.cur_frame = 0;
-    }
-
-    auto [i, j] =
-        idx_to_next_sprite_location((int)hasAnimation.cur_frame_position.x,
-                                    (int)hasAnimation.cur_frame_position.y);
-
-    hasAnimation.cur_frame_position = vec2{(float)i, (float)j};
-    hasAnimation.cur_frame++;
-  }
-};
-
-struct RenderAnimation : System<Transform, HasAnimation> {
-
-  raylib::Texture2D sheet;
-
-  virtual void once(float) override {
-    sheet = EntityHelper::get_singleton_cmp<
-                afterhours::texture_manager::HasSpritesheet>()
-                ->texture;
-  }
-
-  virtual void for_each_with(const Entity &, const Transform &transform,
-                             const HasAnimation &hasAnimation,
-                             float) const override {
-
-    auto [i, j] = hasAnimation.cur_frame_position;
-    Rectangle frame = idx_to_sprite_frame((int)i, (int)j);
-
-    raylib::DrawTexturePro(
-        sheet, frame,
-        Rectangle{
-            transform.center().x,
-            transform.center().y,
-            frame.width * hasAnimation.scale,
-            frame.height * hasAnimation.scale,
-        },
-        vec2{frame.width / 2.f, frame.height / 2.f}, // transform.center(),
-        transform.angle + hasAnimation.rotation, raylib::RAYWHITE);
   }
 };
 

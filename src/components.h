@@ -36,42 +36,6 @@ struct TracksEntity : BaseComponent {
   TracksEntity(EntityID id_, vec2 off) : id(id_), offset(off) {}
 };
 
-struct HasAnimation : BaseComponent {
-  vec2 start_position;
-  vec2 cur_frame_position;
-  int total_frames = 10;
-  float frame_dur = 1.f / 20.f;
-  float frame_time = 1.f / 20.f;
-  bool once = false;
-  float scale = 1.f;
-
-  int cur_frame = 0;
-  float rotation = 0;
-
-  HasAnimation(vec2 start_position_, int total_frames_, float frame_dur_,
-               bool once_, float scale_, int cur_frame_, float rot)
-      : start_position(start_position_), cur_frame_position(start_position_),
-        total_frames(total_frames_), frame_dur(frame_dur_),
-        frame_time(frame_dur_), once(once_), scale(scale_),
-        cur_frame(cur_frame_), rotation(rot) {}
-};
-
-constexpr static Rectangle idx_to_sprite_frame(int i, int j) {
-  return Rectangle{.x = (float)i * 32.f,
-                   .y = (float)j * 32.f,
-                   .width = 32.f,
-                   .height = 32.f};
-}
-
-constexpr static std::pair<int, int> idx_to_next_sprite_location(int i, int j) {
-  i++;
-  if (i == 32) {
-    i = 0;
-    j++;
-  }
-  return {i, j};
-}
-
 struct Transform : BaseComponent {
   vec2 position{0.f, 0.f};
   vec2 velocity{0.f, 0.f};

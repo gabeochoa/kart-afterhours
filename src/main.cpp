@@ -53,13 +53,15 @@ void game() {
     systems.register_update_system(std::make_unique<UpdateCollidingEntities>());
     systems.register_update_system(std::make_unique<WrapAroundTransform>());
     systems.register_update_system(
-        std::make_unique<AnimationUpdateCurrentFrame>());
-    systems.register_update_system(
         std::make_unique<UpdateColorBasedOnEntityID>());
     systems.register_update_system(std::make_unique<AIVelocity>());
     systems.register_update_system(std::make_unique<DrainLife>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
+
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
+    systems.register_update_system(
+        std::make_unique<UpdateAnimationTransform>());
+    texture_manager::register_update_systems(systems);
 
     systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
     systems.register_update_system(std::make_unique<ScheduleDebugUI>());
@@ -73,11 +75,12 @@ void game() {
         [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
     ui::register_render_systems<InputAction>(systems,
                                              InputAction::ToggleUILayoutDebug);
-    texture_manager::register_render_systems(systems);
+    //
     systems.register_render_system(std::make_unique<RenderSkid>());
     systems.register_render_system(std::make_unique<RenderEntities>());
+    texture_manager::register_render_systems(systems);
+    //
     systems.register_render_system(std::make_unique<RenderHealthAndLives>());
-    systems.register_render_system(std::make_unique<RenderAnimation>());
     systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
     systems.register_render_system(std::make_unique<RenderOOB>());
     systems.register_render_system(std::make_unique<RenderLabels>());
