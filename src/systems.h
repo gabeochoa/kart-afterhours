@@ -525,15 +525,12 @@ struct VelFromInput : System<PlayerID, Transform> {
       transform.angle +=
           steer * Config::get().steering_sensitivity.data * dt * rad;
       transform.angle = std::fmod(transform.angle + 360.f, 360.f);
-
-      const auto decayed_accel_mult =
-          transform.accel_mult -
-          (transform.accel_mult * Config::get().boost_decay_percent.data * dt);
-      transform.accel_mult = std::max(1.f, decayed_accel_mult);
-    } else {
-      transform.velocity =
-          vec2{0.f, 0.f}; // So speed goes to 0 more quickly and naturally
     }
+
+    const auto decayed_accel_mult =
+        transform.accel_mult -
+        (transform.accel_mult * Config::get().boost_decay_percent.data * dt);
+    transform.accel_mult = std::max(1.f, decayed_accel_mult);
 
     float mvt{0.f};
     if (transform.accel != 0.f) {
