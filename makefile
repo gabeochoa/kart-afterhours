@@ -47,10 +47,13 @@ else
 endif
 
 
-.PHONY: all clean output count countall old
+.PHONY: all clean output count countall new
+
+all:
+	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp src/settings.cpp src/preload.cpp src/makers.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
 
 
-all: $(OUTPUT_EXE)
+new: $(OUTPUT_EXE)
 	$(run_cmd)
 
 $(OUTPUT_EXE): $(OBJ_FILES)
@@ -65,9 +68,6 @@ $(OBJ_DIR)/%.o: %.cpp
 
 include $(SRC_FILES:.cpp=.d)
 -include $(OBJ_DIR)/*.d
-
-old:
-	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp src/settings.cpp src/preload.cpp src/makers.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
 
 output:
 	$(mkdir_cmd)
