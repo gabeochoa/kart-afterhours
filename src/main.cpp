@@ -117,7 +117,10 @@ int main(int argc, char *argv[]) {
   make_player(0);
   make_ai();
 
-  // intro();
+  if (cmdl[{"-i", "--show-intro"}]) {
+    intro();
+  }
+
   game();
 
   return 0;
