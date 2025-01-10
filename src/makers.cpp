@@ -3,7 +3,6 @@
 #include "makers.h"
 
 #include "components.h"
-int next_id = 0;
 
 using afterhours::texture_manager::HasAnimation;
 using afterhours::texture_manager::idx_to_sprite_frame;
@@ -127,7 +126,7 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
   bullet_transform.cleanup_out_of_bounds = !wp.config.can_wrap_around;
 }
 
-Entity &make_car(int id) {
+Entity &make_car(size_t id) {
   auto &entity = EntityHelper::createEntity();
 
   entity.addComponent<HasMultipleLives>(3);
@@ -141,7 +140,7 @@ Entity &make_car(int id) {
   entity.addComponent<HasHealth>(MAX_HEALTH);
   entity.addComponent<TireMarkComponent>();
   auto tint = EntityHelper::get_singleton_cmp<ManagesAvailableColors>()
-                  ->get_next_available();
+                  ->get_next_available(id);
   entity.addComponent<HasColor>(tint);
 
   const Transform &transform = entity.get<Transform>();
@@ -164,7 +163,7 @@ Entity &make_car(int id) {
 }
 
 void make_player(input::GamepadID id) {
-  auto &entity = make_car(next_id++);
+  auto &entity = make_car(id);
   entity.addComponent<PlayerID>(id);
 
   const auto player_id_text = "[Player " + std::to_string(id) + "]";
@@ -192,6 +191,15 @@ void make_player(input::GamepadID id) {
 }
 
 void make_ai() {
-  auto &entity = make_car(next_id++);
+  size_t max_id =
+      EntityHelper::get_singleton_cmp<afterhours::input::ProvidesMaxGamepadID>()
+          ->count() +
+      1;
+  // force merge because we are creating entities not inside a system
+  // and theres an ent query inside
+  size_t num_ais = EntityQuery(true /* force merge*/)
+                       .whereHasComponent<AIControlled>()
+                       .gen_count();
+  auto &entity = make_car(max_id + num_ais);
   entity.addComponent<AIControlled>();
 }

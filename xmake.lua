@@ -24,13 +24,15 @@ add_cxxflags([[
 ]]
 )
 
+if is_host("macosx") then
+    set_extension(".exe")
+    add_cxxflags("-DBACKWARD")
+end
+
 target("kart")
     --
     set_kind("binary")
     set_targetdir("output")
-    if is_host("macosx") then
-        set_extension(".exe")
-    end
     --
     add_files("src/*.cpp")
     --

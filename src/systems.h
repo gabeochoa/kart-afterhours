@@ -148,7 +148,11 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
 };
 
 struct Shoot : System<PlayerID, Transform, CanShoot> {
+  input::PossibleInputCollector<InputAction> inpc;
 
+  virtual void once(float) override {
+    inpc = input::get_input_collector<InputAction>();
+  }
   virtual void for_each_with(Entity &entity, PlayerID &playerID, Transform &,
                              CanShoot &canShoot, float dt) override {
 
@@ -157,8 +161,6 @@ struct Shoot : System<PlayerID, Transform, CanShoot> {
       canShoot.pass_time(action, dt);
     });
 
-    input::PossibleInputCollector<InputAction> inpc =
-        input::get_input_collector<InputAction>();
     if (!inpc.has_value()) {
       return;
     }
