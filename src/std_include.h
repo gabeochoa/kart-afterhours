@@ -22,6 +22,7 @@
 #include <numeric>
 #include <optional>
 #include <ostream>
+#include <random>
 #include <set>
 #include <source_location>
 #include <sstream>

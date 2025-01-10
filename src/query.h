@@ -34,9 +34,7 @@ struct EQ : public EntityQuery<EQ> {
 
     explicit WhereOverlaps(Rectangle rect_) : rect(rect_) {}
 
-    bool operator()(const Entity &entity) const override {
-      const auto r1 = rect;
-      const auto r2 = entity.get<Transform>().rect();
+    static bool overlaps(Rectangle r1, Rectangle r2) {
       // Check if the rectangles overlap on the x-axis
       const bool xOverlap = r1.x < r2.x + r2.width && r2.x < r1.x + r1.width;
 
@@ -45,6 +43,10 @@ struct EQ : public EntityQuery<EQ> {
 
       // Return true if both x and y overlap
       return xOverlap && yOverlap;
+    }
+
+    bool operator()(const Entity &entity) const override {
+      return overlaps(rect, entity.get<Transform>().rect());
     }
   };
 

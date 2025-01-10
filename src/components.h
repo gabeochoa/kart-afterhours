@@ -9,6 +9,9 @@
 #include "max_health.h"
 #include "rl.h"
 
+// Note: This must be included after std includes
+#include "config.h"
+
 using namespace afterhours;
 
 struct AIControlled : BaseComponent {
@@ -93,6 +96,8 @@ struct Transform : BaseComponent {
   float angle{0.f};
   float angle_prev{0.f};
   float speed_dot_angle{0.f};
+  bool render_out_of_bounds{true};
+  bool cleanup_out_of_bounds{false};
 
   vec2 pos() const { return position; }
   void update(const vec2 &v) { position = v; }
@@ -161,6 +166,7 @@ struct Weapon {
     Cannon,
     Sniper,
     Shotgun,
+    MachineGun,
   } type;
 
   struct Config {
@@ -169,6 +175,14 @@ struct Weapon {
 
     float knockback_amt = 0.25f;
     int base_damage = 1;
+
+    vec2 size{10.f, 10.f};
+    float speed{5.f};
+    float acceleration{0.f};
+    float life_time_seconds{10.f};
+    float spread{0.f};
+    bool can_wrap_around{true};
+    bool render_out_of_bounds{false};
   } config;
 
   enum struct FiringDirection {
@@ -200,6 +214,13 @@ struct Weapon {
     cooldown -= dt;
     return false;
   }
+
+  void apply_recoil(Transform &transform, const float knockback_amt) const {
+    vec2 recoil = {std::cos(transform.as_rad()), std::sin(transform.as_rad())};
+
+    recoil = vec_norm(vec2{-recoil.y, recoil.x});
+    transform.velocity += (recoil * knockback_amt);
+  }
 };
 
 void make_poof_anim(Entity &, const Weapon &, float angle_offset = 0);
@@ -215,12 +236,8 @@ struct Cannon : Weapon {
                        [](Entity &parent, Weapon &wp) {
                          make_poof_anim(parent, wp);
                          make_bullet(parent, wp);
-
-                         vec2 dir = parent.get<Transform>().velocity;
-                         // opposite of shot direction
-                         dir = vec_norm(vec2{-dir.y, dir.x});
-                         parent.get<Transform>().velocity +=
-                             dir * wp.config.knockback_amt;
+                         wp.apply_recoil(parent.get<Transform>(),
+                                         wp.config.knockback_amt);
                        },
                    .knockback_amt = 0.25f,
                    .base_damage = kill_shots_to_base_dmg(3),
@@ -238,12 +255,8 @@ struct Sniper : Weapon {
                        [](Entity &parent, Weapon &wp) {
                          make_poof_anim(parent, wp);
                          make_bullet(parent, wp);
-
-                         vec2 dir = parent.get<Transform>().velocity;
-                         // opposite of shot direction
-                         dir = vec_norm(vec2{-dir.y, dir.x});
-                         parent.get<Transform>().velocity +=
-                             dir * wp.config.knockback_amt;
+                         wp.apply_recoil(parent.get<Transform>(),
+                                         wp.config.knockback_amt);
                        },
                    .knockback_amt = 0.50f,
                    .base_damage = kill_shots_to_base_dmg(1),
@@ -265,18 +278,39 @@ struct Shotgun : Weapon {
                          make_bullet(parent, wp, -5);
                          make_bullet(parent, wp, 5);
                          make_bullet(parent, wp, 15);
-
-                         vec2 dir = parent.get<Transform>().velocity;
-                         // opposite of shot direction
-                         dir = vec_norm(vec2{-dir.y, dir.x});
-                         parent.get<Transform>().velocity +=
-                             dir * wp.config.knockback_amt;
+                         wp.apply_recoil(parent.get<Transform>(),
+                                         wp.config.knockback_amt);
                        },
                    .knockback_amt = 0.50f,
                    // This is per bullet
                    .base_damage = kill_shots_to_base_dmg(4),
                },
                fd) {}
+};
+
+struct MachineGun : Weapon {
+
+  MachineGun(const Weapon::FiringDirection &fd)
+      : Weapon(
+            Weapon::Type::MachineGun, //
+            Weapon::Config{.cooldownReset = 0.125f,
+                           .on_shoot =
+                               [](Entity &parent, Weapon &wp) {
+                                 make_poof_anim(parent, wp);
+                                 make_bullet(parent, wp);
+                                 wp.apply_recoil(parent.get<Transform>(),
+                                                 wp.config.knockback_amt);
+                               },
+                           .knockback_amt = 0.1f,
+                           .base_damage = kill_shots_to_base_dmg(12),
+                           .size = vec2{10., 10.f},
+                           .speed = ::Config::get().machine_gun_fire_rate.data,
+                           .acceleration = 2.f,
+                           .life_time_seconds = 1.f,
+                           .spread = 1.f,
+                           .can_wrap_around = false,
+                           .render_out_of_bounds = false},
+            fd) {}
 };
 
 struct CanShoot : BaseComponent {
@@ -296,6 +330,9 @@ struct CanShoot : BaseComponent {
     } break;
     case Weapon::Type::Shotgun: {
       weapons[action] = std::make_unique<Shotgun>(direction);
+    } break;
+    case Weapon::Type::MachineGun: {
+      weapons[action] = std::make_unique<MachineGun>(direction);
     } break;
     default:
       log_warn(

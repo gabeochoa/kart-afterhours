@@ -65,7 +65,7 @@ void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
 void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
   const Transform &transform = parent.get<Transform>();
 
-  float angle = 0;
+  auto angle = 0.f;
   switch (wp.firing_direction) {
   case Weapon::FiringDirection::Forward:
     break;
@@ -79,24 +79,42 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
     angle = 180.f;
     break;
   }
-
+  
+  if (wp.config.spread > 0.f) {
+    std::mt19937_64 rng;    
+    const auto timeSeed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed>>32)};
+    rng.seed(ss);
+    std::uniform_real_distribution<float> unif(-wp.config.spread, wp.config.spread);
+    angle_offset += wp.config.size.x * unif(rng);
+  }
+  
+  vec2 spawn_bias{0, wp.config.size.y};
+  auto bullet_spawn_pos = transform.pos() + spawn_bias;
+  
   auto &bullet = EntityHelper::createEntity();
   bullet
-      .addComponent<Transform>(transform.pos() + vec2{0, 10.f},
-                               vec2{10.f, 10.f})
+      .addComponent<Transform>(bullet_spawn_pos,
+                               wp.config.size)
       .set_angle(angle_offset);
 
   bullet.addComponent<CanDamage>(parent.id, wp.config.base_damage);
-  bullet.addComponent<HasLifetime>(10.f);
+  bullet.addComponent<HasLifetime>(wp.config.life_time_seconds);
 
-  bullet.addComponent<CanWrapAround>(0.f);
+  // If the config doesn't want wrapping, this will make the bullet go into the "void"
+  auto wrap_padding = wp.config.can_wrap_around ? 0.f : std::numeric_limits<float>::max();
+  bullet.addComponent<CanWrapAround>(wrap_padding);
 
   bullet.addComponent<HasEntityIDBasedColor>(
       parent.id, parent.get<HasColor>().color, raylib::RED);
-
-  float rad = transform.as_rad() + to_radians(angle + angle_offset);
-  bullet.get<Transform>().velocity =
-      vec2{std::sin(rad) * 5.f, -std::cos(rad) * 5.f};
+      
+  const auto rad = transform.as_rad() + to_radians(angle + angle_offset);
+  auto& bullet_transform = bullet.get<Transform>();
+  bullet_transform.velocity =
+      vec2{std::sin(rad) * wp.config.speed, -std::cos(rad) * wp.config.speed};
+  bullet_transform.accel = wp.config.acceleration;
+  bullet_transform.render_out_of_bounds = wp.config.can_wrap_around && wp.config.render_out_of_bounds; 
+  bullet_transform.cleanup_out_of_bounds = !wp.config.can_wrap_around;
 }
 
 Entity &make_car(int id) {
@@ -119,10 +137,12 @@ Entity &make_car(int id) {
   entity.addComponent<CanShoot>()
       .register_weapon(InputAction::ShootLeft, Weapon::FiringDirection::Forward,
                        Weapon::Type::Shotgun)
+      .register_weapon(InputAction::ShootRight, Weapon::FiringDirection::Forward,
+                       Weapon::Type::MachineGun);
       // .register_weapon(InputAction::ShootLeft, Weapon::FiringDirection::Left,
       // Weapon::Type::Cannon)
-      .register_weapon(InputAction::ShootRight, Weapon::FiringDirection::Right,
-                       Weapon::Type::Cannon);
+      //.register_weapon(InputAction::ShootRight, Weapon::FiringDirection::Right,
+      //                 Weapon::Type::Cannon);
 
   return entity;
 }

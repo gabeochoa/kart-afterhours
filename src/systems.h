@@ -241,13 +241,30 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
             .current_resolution;
   }
 
-  virtual void for_each_with(Entity &, Transform &transform,
+  virtual void for_each_with(Entity &entity, Transform &transform,
                              CanWrapAround &canWrap, float) override {
 
     float width = (float)resolution.width;
     float height = (float)resolution.height;
 
     float padding = canWrap.padding;
+
+    raylib::Rectangle screenRect{0, 0, width, height};
+    const auto overlaps =
+        EQ::WhereOverlaps::overlaps(screenRect, transform.rect());
+    if (overlaps) {
+      // Early return, no wrapping checks need to be done further.
+      return;
+    }
+
+    // Non-overlapping logic
+
+    // If it's not overlapping the screen rect and it doesn't want to be
+    // rendered out of bounds
+    if (!transform.render_out_of_bounds || transform.cleanup_out_of_bounds) {
+      entity.cleanup = transform.cleanup_out_of_bounds;
+      return;
+    }
 
     if (transform.rect().x > width + padding) {
       transform.position.x = -padding;
@@ -356,10 +373,12 @@ struct RenderOOB : System<Transform> {
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,
                              float) const override {
-    if (is_point_inside(transform.pos(), screen))
+    if (is_point_inside(transform.pos(), screen) ||
+        !transform.render_out_of_bounds) {
       return;
+    }
 
-    float size =
+    const auto size =
         std::max(5.f, //
                  std::lerp(20.f, 5.f,
                            (distance_sq(transform.pos(), rect_center(screen)) /
@@ -484,6 +503,10 @@ struct VelFromInput : System<PlayerID, Transform> {
       case InputAction::Boost: {
         if (!transform.is_reversing() && transform.accel_mult <= 1.f) {
           transform.accel_mult = Config::get().boost_acceleration.data;
+          const auto upfront_boost_speed = Config::get().max_speed.data * .2f;
+          transform.velocity +=
+              vec2{std::sin(transform.as_rad()) * upfront_boost_speed,
+                   -std::cos(transform.as_rad()) * upfront_boost_speed};
         }
       } break;
       default:
@@ -512,9 +535,15 @@ struct VelFromInput : System<PlayerID, Transform> {
           vec2{0.f, 0.f}; // So speed goes to 0 more quickly and naturally
     }
 
-    const auto mvt =
-        std::clamp(transform.speed() + (transform.accel * transform.accel_mult),
-                   -Config::get().max_speed.data, Config::get().max_speed.data);
+    float mvt{0.f};
+    if (transform.accel != 0.f) {
+      mvt = std::clamp(
+          transform.speed() + (transform.accel * transform.accel_mult),
+          -Config::get().max_speed.data, Config::get().max_speed.data);
+    } else {
+      mvt = std::clamp(transform.speed(), -Config::get().max_speed.data,
+                       Config::get().max_speed.data);
+    }
 
     if (!transform.is_reversing()) {
       transform.velocity += vec2{
