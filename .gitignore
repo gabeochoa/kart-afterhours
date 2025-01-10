@@ -24,3 +24,5 @@ output/
 # until they are used in the project, hiding the kennynl folder
 art_storage/*
 *.exe
+build/*
+.xmake/*

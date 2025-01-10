@@ -53,21 +53,8 @@ all:
 	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp src/settings.cpp src/preload.cpp src/makers.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
 
 
-new: $(OUTPUT_EXE)
-	$(run_cmd)
-
-$(OUTPUT_EXE): $(OBJ_FILES)
-	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) $^ -o $@
-
-$(OBJ_DIR)/%.o: %.cpp
-	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -MMD -c $< -o $@
-
-%.d: %.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -MM -MT $@ $< > $@
-
-include $(SRC_FILES:.cpp=.d)
--include $(OBJ_DIR)/*.d
+new: 
+	xmake && xmake r
 
 output:
 	$(mkdir_cmd)
@@ -92,4 +79,7 @@ countall:
 
 cppcheck:
 	cppcheck src/ -Ivendor/afterhours --enable=all --std=c++23 --language=c++ --suppress=noConstructor --suppress=noExplicitConstructor --suppress=useStlAlgorithm --suppress=unusedStructMember --suppress=useInitializationList --suppress=duplicateCondition --suppress=nullPointerRedundantCheck --suppress=cstyleCast
+
+xm:
+	xmake create -l c++ -t module.binary kart.exe
 
