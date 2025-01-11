@@ -193,15 +193,14 @@ void make_player(input::GamepadID id) {
 }
 
 void make_ai() {
-  size_t max_id =
-      EntityHelper::get_singleton_cmp<afterhours::input::ProvidesMaxGamepadID>()
-          ->count() +
-      1;
   // force merge because we are creating entities not inside a system
   // and theres an ent query inside
+  size_t num_players = EntityQuery(true /* force merge*/)
+                           .whereHasComponent<PlayerID>()
+                           .gen_count();
   size_t num_ais = EntityQuery(true /* force merge*/)
                        .whereHasComponent<AIControlled>()
                        .gen_count();
-  auto &entity = make_car(max_id + num_ais);
+  auto &entity = make_car(num_players + num_ais);
   entity.addComponent<AIControlled>();
 }

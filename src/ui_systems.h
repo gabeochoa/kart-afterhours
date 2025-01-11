@@ -150,18 +150,21 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       Entity &car = index < players.size() //
                         ? players[index]
                         : ais[index - players.size()];
+      raylib::Color color = car.get<HasColor>().color();
       // Note: we arent using mk() here...
-      imm::div(context, mk(column.ent()),
-               ComponentConfig{
-                   .size =
-                       ComponentSize{
-                           percent(0.2f),
-                           percent(0.2f, 0.4f),
-                       },
-                   .label = std::format("{} {}", index, car.id),
-                   .color = car.get<HasColor>().color(),
-                   .debug_name = "player_car",
-               });
+      imm::div(
+          context, mk(column.ent()),
+          ComponentConfig{
+              .size =
+                  ComponentSize{
+                      percent(0.2f),
+                      percent(0.2f, 0.4f),
+                  },
+              .label = std::format("{} {}", index, car.id),
+              .color = color,
+              .debug_name = std::format("player_car {} {} {} {}", index, car.id,
+                                        players.size(), ais.size()),
+          });
     }
 
     bool player_right = false;
@@ -180,13 +183,14 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     bool show_next_color_button =
         (is_last_slot && !is_last_slot_ai) || !is_last_slot;
     if (show_next_color_button) {
-      if (auto elem = imm::button(context, mk(column.ent()),
-                                  ComponentConfig{
-                                      .label = "Next Color",
-                                      .color = raylib::BLUE,
-                                      .skip_when_tabbing = true,
-                                      .debug_name = "next_color button",
-                                  });
+      if (auto elem = imm::button(
+              context, mk(column.ent()),
+              ComponentConfig{
+                  .label = "Next Color",
+                  .color = raylib::BLUE,
+                  .skip_when_tabbing = true,
+                  .debug_name = std::format("next_color button {} ", index),
+              });
           elem || player_right) {
         colorManager.release_and_get_next(index);
       }
