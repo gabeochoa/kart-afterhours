@@ -147,10 +147,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                  });
 
     if (index != num_slots - 1) {
-      Entity &car = index < players.size() ? players[index]
-                                           : ais[index - players.size() - 1];
+      Entity &car = index < players.size() //
+                        ? players[index]
+                        : ais[index - players.size()];
       // Note: we arent using mk() here...
-      imm::div(context, imm::EntityParent{car, column.ent()},
+      imm::div(context, mk(column.ent()),
                ComponentConfig{
                    .size =
                        ComponentSize{
@@ -158,6 +159,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                            percent(0.2f, 0.4f),
                        },
                    .label = std::format("{} {}", index, car.id),
+                   .color = car.get<HasColor>().color(),
+                   .debug_name = "player_car",
                });
     }
 
@@ -182,6 +185,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                       .label = "Next Color",
                                       .color = raylib::BLUE,
                                       .skip_when_tabbing = true,
+                                      .debug_name = "next_color button",
                                   });
           elem || player_right) {
         colorManager.release_and_get_next(index);
@@ -199,6 +203,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                               },
                           .label = "Add AI",
                           .color = raylib::BLUE,
+                          .debug_name = "add_ai_button",
                       })) {
         make_ai();
       }
