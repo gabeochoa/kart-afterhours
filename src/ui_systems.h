@@ -56,6 +56,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   // character creators
   std::vector<RefEntity> players;
   std::vector<RefEntity> ais;
+  input::PossibleInputCollector<InputAction> inpc;
 
   void update_resolution_cache() {
     resolution_provider = EntityHelper::get_singleton_cmp<
@@ -84,8 +85,12 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       update_resolution_cache();
     }
 
-    players = EQ().whereHasComponent<PlayerID>().gen();
-    ais = EQ().whereHasComponent<AIControlled>().gen();
+    // character creator
+    {
+      players = EQ().whereHasComponent<PlayerID>().gen();
+      ais = EQ().whereHasComponent<AIControlled>().gen();
+      inpc = input::get_input_collector<InputAction>();
+    }
   }
 
   bool should_run(float) override {
@@ -125,7 +130,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     // }
 
     auto column =
-        imm::div(context, mk(parent, index),
+        imm::div(context, mk(parent, (int)index),
                  ComponentConfig{
                      .size =
                          ComponentSize{
@@ -142,11 +147,26 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                      .color = bg_color,
                  });
 
-    if (imm::button(context, mk(column.ent()),
-                    ComponentConfig{
-                        .label = "Next Color",
-                        .color = raylib::BLUE,
-                    })) {
+    bool player_right = false;
+    if (index < players.size()) {
+      for (const auto &actions_done : inpc.inputs_pressed()) {
+        if (actions_done.id != index)
+          continue;
+        if (actions_done.medium == input::DeviceMedium::GamepadAxis)
+          continue;
+        player_right |= actions_done.action == InputAction::WidgetRight;
+        if (player_right)
+          break;
+      }
+    }
+
+    if (auto elem = imm::button(context, mk(column.ent()),
+                                ComponentConfig{
+                                    .label = "Next Color",
+                                    .color = raylib::BLUE,
+                                    .skip_when_tabbing = true,
+                                });
+        elem || player_right) {
       colorManager.release_and_get_next(index);
     }
 
