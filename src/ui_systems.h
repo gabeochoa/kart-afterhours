@@ -120,6 +120,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                  UIContext<InputAction> &context, size_t index,
                                  size_t num_slots) {
 
+    bool is_last_slot = index == num_slots - 1;
+    bool is_last_slot_ai = index >= players.size();
+
     ManagesAvailableColors &colorManager =
         *EntityHelper::get_singleton_cmp<ManagesAvailableColors>();
 
@@ -171,20 +174,29 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       }
     }
 
-    if (auto elem = imm::button(context, mk(column.ent()),
-                                ComponentConfig{
-                                    .label = "Next Color",
-                                    .color = raylib::BLUE,
-                                    .skip_when_tabbing = true,
-                                });
-        elem || player_right) {
-      colorManager.release_and_get_next(index);
+    bool show_next_color_button =
+        (is_last_slot && !is_last_slot_ai) || !is_last_slot;
+    if (show_next_color_button) {
+      if (auto elem = imm::button(context, mk(column.ent()),
+                                  ComponentConfig{
+                                      .label = "Next Color",
+                                      .color = raylib::BLUE,
+                                      .skip_when_tabbing = true,
+                                  });
+          elem || player_right) {
+        colorManager.release_and_get_next(index);
+      }
     }
 
     // we are the last boi
-    if (num_slots < input::MAX_GAMEPAD_ID && index == num_slots - 1) {
+    if (num_slots < input::MAX_GAMEPAD_ID && is_last_slot) {
       if (imm::button(context, mk(column.ent()),
                       ComponentConfig{
+                          .padding =
+                              Padding{
+                                  .top = screen_pct(0.25f),
+                                  .bottom = screen_pct(0.25f),
+                              },
                           .label = "Add AI",
                           .color = raylib::BLUE,
                       })) {
