@@ -59,6 +59,9 @@ output:
 	$(cp_lib_cmd)
 	$(cp_resources_cmd)
 
+sign:
+	codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
+
 run: 
 	$(mkdir_cmd)
 	$(cp_resources_cmd)
