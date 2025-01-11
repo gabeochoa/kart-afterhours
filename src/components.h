@@ -55,7 +55,7 @@ struct ManagesAvailableColors : BaseComponent {
   raylib::Color release_and_get_next(size_t id) {
     int bit_index = -1;
     if (users.contains(id)) {
-      bit_index = users[id];
+      bit_index = static_cast<int>(users[id]);
       users.erase(id);
       // we dont turn off until after because otherwise
       // we could just get the same color back
@@ -64,8 +64,9 @@ struct ManagesAvailableColors : BaseComponent {
     auto next_color = get_next_available(id, std::max(0, bit_index));
 
     // turn off the one we were previously using
-    if (bit_index != -1)
+    if (bit_index != -1) {
       used[bit_index] = false;
+    }
 
     return next_color;
   }

@@ -94,9 +94,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   }
 
   bool should_run(float) override {
-    input::PossibleInputCollector<InputAction> inpc =
-        input::get_input_collector<InputAction>();
-
+    inpc = input::get_input_collector<InputAction>();
     if (active_screen == Screen::None) {
       ui_visible = false;
     }
@@ -128,23 +126,24 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     auto bg_color = colorManager.get_next_available(index);
 
-    auto column =
-        imm::div(context, mk(parent, (int)index),
-                 ComponentConfig{
-                     .size =
-                         ComponentSize{
-                             percent(1.f / std::min(4, (int)num_slots)),
-                             percent(1.f, 0.4f),
-                         },
-                     .padding =
-                         Padding{
-                             .top = screen_pct(0.05f),
-                             .left = screen_pct(0.05f),
-                             .bottom = screen_pct(0.05f),
-                             .right = screen_pct(0.05f),
-                         },
-                     .color = bg_color,
-                 });
+    auto column = imm::div(
+        context, mk(parent, (int)index),
+        ComponentConfig{
+            .size =
+                ComponentSize{
+                    percent(1.f / static_cast<float>(std::min(
+                                      4, static_cast<int>(num_slots)))),
+                    percent(1.f, 0.4f),
+                },
+            .padding =
+                Padding{
+                    .top = screen_pct(0.05f),
+                    .left = screen_pct(0.05f),
+                    .bottom = screen_pct(0.05f),
+                    .right = screen_pct(0.05f),
+                },
+            .color = bg_color,
+        });
 
     if (index != num_slots - 1) {
       Entity &car = index < players.size() //
@@ -161,22 +160,28 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                       percent(0.2f, 0.4f),
                   },
               .label = std::format("{} {}", index, car.id),
-              .color = color,
               .debug_name = std::format("player_car {} {} {} {}", index, car.id,
                                         players.size(), ais.size()),
+              .color = color,
           });
     }
 
     bool player_right = false;
     if (index < players.size()) {
       for (const auto &actions_done : inpc.inputs_pressed()) {
-        if (actions_done.id != index)
+        if (static_cast<size_t>(actions_done.id) != index) {
           continue;
-        if (actions_done.medium == input::DeviceMedium::GamepadAxis)
+        }
+
+        if (actions_done.medium == input::DeviceMedium::GamepadAxis) {
           continue;
+        }
+
         player_right |= actions_done.action == InputAction::WidgetRight;
-        if (player_right)
+
+        if (player_right) {
           break;
+        }
       }
     }
 
@@ -187,9 +192,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
               context, mk(column.ent()),
               ComponentConfig{
                   .label = "Next Color",
-                  .color = raylib::BLUE,
                   .skip_when_tabbing = true,
                   .debug_name = std::format("next_color button {} ", index),
+                  .color = raylib::BLUE,
               });
           elem || player_right) {
         colorManager.release_and_get_next(index);
@@ -206,8 +211,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                   .bottom = screen_pct(0.25f),
                               },
                           .label = "Add AI",
-                          .color = raylib::BLUE,
                           .debug_name = "add_ai_button",
+                          .color = raylib::BLUE,
                       })) {
         make_ai();
       }
@@ -229,7 +234,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     size_t num_slots = players.size() + ais.size() + 1;
     // 0-4 => 1, 5->8 -> 2
-    int fours = std::ceil(num_slots / 4.f);
+    int fours =
+        static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
 
     auto button_group =
         imm::div(context, mk(elem.ent()),
