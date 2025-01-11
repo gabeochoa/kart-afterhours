@@ -114,7 +114,7 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
   bullet.addComponent<CanWrapAround>(wrap_padding);
 
   bullet.addComponent<HasEntityIDBasedColor>(
-      parent.id, parent.get<HasColor>().color, raylib::RED);
+      parent.id, parent.get<HasColor>().color(), raylib::RED);
 
   const auto rad = transform.as_rad() + to_radians(angle + angle_offset);
   auto &bullet_transform = bullet.get<Transform>();
@@ -142,12 +142,13 @@ Entity &make_car(size_t id) {
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(MAX_HEALTH);
   entity.addComponent<TireMarkComponent>();
-  auto tint = EntityHelper::get_singleton_cmp<ManagesAvailableColors>()
-                  ->get_next_available(id);
-  entity.addComponent<HasColor>(tint);
+  entity.addComponent<HasColor>([id]() -> raylib::Color {
+    return EntityHelper::get_singleton_cmp<ManagesAvailableColors>()
+        ->get_next_available(id);
+  });
   entity.addComponent<afterhours::texture_manager::HasSprite>(
       transform.position, transform.size, transform.angle,
-      idx_to_sprite_frame(0, 1), 1.f, tint);
+      idx_to_sprite_frame(0, 1), 1.f, entity.get<HasColor>().color());
 
   entity.addComponent<CanShoot>()
       .register_weapon(InputAction::ShootLeft, Weapon::FiringDirection::Forward,

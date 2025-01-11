@@ -48,7 +48,7 @@ struct RenderEntities : System<Transform> {
       return;
 
     auto entitiy_color = entity.has_child_of<HasColor>()
-                             ? entity.get_with_child<HasColor>().color
+                             ? entity.get_with_child<HasColor>().color()
                              : raylib::RAYWHITE;
 
     raylib::DrawRectanglePro(
@@ -75,7 +75,7 @@ struct UpdateColorBasedOnEntityID : System<HasEntityIDBasedColor> {
                                      .has_values();
     if (parent_is_alive)
       return;
-    hasEntityIDBasedColor.color = hasEntityIDBasedColor.default_;
+    hasEntityIDBasedColor.set(hasEntityIDBasedColor.default_);
   }
 };
 
@@ -331,7 +331,7 @@ struct RenderOOB : System<Transform> {
                             (screen.width * screen.height))));
 
     raylib::DrawCircleV(calc(screen, transform.pos()), size,
-                        entity.has<HasColor>() ? entity.get<HasColor>().color
+                        entity.has<HasColor>() ? entity.get<HasColor>().color()
                                                : raylib::PINK);
   }
 };
@@ -771,7 +771,7 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
     const float scale_y = 1.25f;
 
     raylib::Color color = entity.has_child_of<HasColor>()
-                              ? entity.get_with_child<HasColor>().color
+                              ? entity.get_with_child<HasColor>().color()
                               : raylib::GREEN;
 
     float health_as_percent = static_cast<float>(hasHealth.amount) /
