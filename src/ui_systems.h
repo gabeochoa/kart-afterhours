@@ -195,16 +195,16 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           ui::UIComponentDebug::Type::custom, "character_creation");
     }
 
-    auto button_group = imm::div(context, mk(elem.ent()));
-    {
-      button_group.ent()
-          .get<UIComponent>()
-          .set_desired_width(screen_pct(1.f))
-          .set_desired_height(screen_pct(1.f))
-          .make_absolute();
-      button_group.ent().get<ui::UIComponentDebug>().set(
-          ui::UIComponentDebug::Type::custom, "button_group");
-    }
+    auto button_group = imm::div(context, mk(elem.ent()),
+                                 ComponentConfig{
+                                     .size =
+                                         ComponentSize{
+                                             screen_pct(1.f),
+                                             screen_pct(1.f),
+                                         },
+                                     .is_absolute = true,
+                                     .debug_name = "button_group",
+                                 });
 
     size_t num_slots = players.size() + ais.size() + 1;
 
