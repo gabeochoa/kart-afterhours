@@ -3,6 +3,7 @@
 
 #include "components.h"
 #include "sound_library.h"
+#include "weapons.h"
 
 // TODO this needs to be converted into a component with SoundAlias's
 // in raylib a Sound can only be played once and hitting play again

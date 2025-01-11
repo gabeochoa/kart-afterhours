@@ -2,6 +2,7 @@
 #pragma once
 
 #include "components.h"
+#include "weapons.h"
 
 void make_explosion_anim(Entity &parent);
 void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset);
