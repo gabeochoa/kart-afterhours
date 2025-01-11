@@ -262,11 +262,21 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       ComponentConfig back_button_config;
       back_button_config.padding = button_padding;
       back_button_config.label = "back";
-      back_button_config.is_absolute = true;
       if (imm::button(context, mk(elem.ent()), std::move(back_button_config))
           //
       ) {
         active_screen = Screen::Main;
+      }
+    }
+
+    {
+      ComponentConfig _button_config;
+      _button_config.padding = button_padding;
+      _button_config.label = "go";
+      if (imm::button(context, mk(elem.ent()), std::move(_button_config))
+          //
+      ) {
+        active_screen = Screen::None;
       }
     }
   }
