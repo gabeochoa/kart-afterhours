@@ -115,8 +115,10 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                  UIContext<InputAction> &context, size_t index,
                                  size_t num_slots) {
 
-    auto bg_color = EntityHelper::get_singleton_cmp<ManagesAvailableColors>()
-                        ->get_next_available(index);
+    ManagesAvailableColors &colorManager =
+        *EntityHelper::get_singleton_cmp<ManagesAvailableColors>();
+
+    auto bg_color = colorManager.get_next_available(index);
     // if (index != num_slots - 1) {
     // car = index < players.size() ? players[index]
     // : ais[index - players.size() - 1];
@@ -139,6 +141,14 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                          },
                      .color = bg_color,
                  });
+
+    if (imm::button(context, mk(column.ent()),
+                    ComponentConfig{
+                        .label = "Next Color",
+                        .color = raylib::BLUE,
+                    })) {
+      colorManager.release_and_get_next(index);
+    }
 
     // we are the last boi
     if (num_slots < input::MAX_GAMEPAD_ID && index == num_slots - 1) {
