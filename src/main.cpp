@@ -63,10 +63,12 @@ void game() {
         std::make_unique<UpdateAnimationTransform>());
     texture_manager::register_update_systems(systems);
 
-    systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
-    systems.register_update_system(std::make_unique<ScheduleDebugUI>());
-
-    ui::register_update_systems<InputAction>(systems);
+    ui::register_before_ui_updates<InputAction>(systems);
+    {
+      systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
+      systems.register_update_system(std::make_unique<ScheduleDebugUI>());
+    }
+    ui::register_after_ui_updates<InputAction>(systems);
   }
 
   // renders
