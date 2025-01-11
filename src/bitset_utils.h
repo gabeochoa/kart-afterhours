@@ -62,21 +62,28 @@ int get_random_disabled_bit(const std::bitset<N> &bitset,
 }
 
 template <size_t N>
-int get_first_boolean_bit(const std::bitset<N> &bitset, bool value = true) {
-  for (size_t i = 0; i < bitset.size(); ++i) {
-    if (bitset.test(i) == value) {
-      return (int)i;
+int get_next_boolean_bit(const std::bitset<N> &bitset, size_t start = 0,
+                         bool value = true) {
+  for (size_t i = start; i < start + bitset.size(); ++i) {
+    size_t index = i % bitset.size();
+    if (bitset.test(index) == value) {
+      return (int)index;
     }
   }
   return -1;
 }
 
 template <size_t N> int get_first_enabled_bit(const std::bitset<N> &bitset) {
-  return get_first_boolean_bit(bitset, true);
+  return get_next_boolean_bit(bitset, 0, true);
 }
 
 template <size_t N> int get_first_disabled_bit(const std::bitset<N> &bitset) {
-  return get_first_boolean_bit(bitset, false);
+  return get_next_boolean_bit(bitset, 0, false);
+}
+
+template <size_t N>
+int get_next_disabled_bit(const std::bitset<N> &bitset, size_t start) {
+  return get_next_boolean_bit(bitset, start, false);
 }
 
 }; // namespace bitset_utils
