@@ -13,6 +13,8 @@ enum class InputAction {
   ShootLeft,
   ShootRight,
   //
+  WidgetRight,
+  WidgetLeft,
   WidgetNext,
   WidgetPress,
   WidgetMod,
@@ -66,6 +68,16 @@ inline auto get_mapping() {
   mapping[InputAction::ShootRight] = {
       raylib::KEY_E,
       raylib::GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
+  };
+
+  mapping[InputAction::WidgetLeft] = {
+      raylib::KEY_LEFT,
+      raylib::GAMEPAD_BUTTON_LEFT_FACE_LEFT,
+  };
+
+  mapping[InputAction::WidgetRight] = {
+      raylib::KEY_RIGHT,
+      raylib::GAMEPAD_BUTTON_LEFT_FACE_RIGHT,
   };
 
   mapping[InputAction::WidgetBack] = {
