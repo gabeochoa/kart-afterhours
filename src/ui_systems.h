@@ -87,7 +87,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     // character creator
     {
-      players = EQ().whereHasComponent<PlayerID>().gen();
+      players = EQ().whereHasComponent<PlayerID>().orderByPlayerID().gen();
       ais = EQ().whereHasComponent<AIControlled>().gen();
       inpc = input::get_input_collector<InputAction>();
     }
@@ -124,10 +124,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
         *EntityHelper::get_singleton_cmp<ManagesAvailableColors>();
 
     auto bg_color = colorManager.get_next_available(index);
-    // if (index != num_slots - 1) {
-    // car = index < players.size() ? players[index]
-    // : ais[index - players.size() - 1];
-    // }
 
     auto column =
         imm::div(context, mk(parent, (int)index),
@@ -146,6 +142,21 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                          },
                      .color = bg_color,
                  });
+
+    if (index != num_slots - 1) {
+      Entity &car = index < players.size() ? players[index]
+                                           : ais[index - players.size() - 1];
+      // Note: we arent using mk() here...
+      imm::div(context, imm::EntityParent{car, column.ent()},
+               ComponentConfig{
+                   .size =
+                       ComponentSize{
+                           percent(0.2f),
+                           percent(0.2f, 0.4f),
+                       },
+                   .label = std::format("{} {}", index, car.id),
+               });
+    }
 
     bool player_right = false;
     if (index < players.size()) {
