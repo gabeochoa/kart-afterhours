@@ -44,4 +44,5 @@ struct Config {
   ValueInRange<float> minimum_steering_radius{10.f, 1.f, 50.f};
   ValueInRange<float> maximum_steering_radius{300.f, 50.f, 300.f};
   ValueInRange<float> machine_gun_fire_rate{25.f, 5.f, 100.f};
+  ValueInRange<float> collision_scalar{250.f, 1.f, 1000.f};
 };

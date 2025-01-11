@@ -354,25 +354,109 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
 
   virtual void once(float) override { ids.clear(); }
 
-  void resolve_collision(Transform &a, Transform &b) {
+  void positional_correction(Transform &a, Transform &b,
+                             const vec2 &collisionNormal,
+                             float penetrationDepth) {
+    float correctionMagnitude =
+        std::max(penetrationDepth, 0.0f) / (1.0f / a.mass + 1.0f / b.mass);
+    vec2 correction = collisionNormal * correctionMagnitude;
+
+    a.position -= correction / a.mass;
+    b.position += correction / b.mass;
+  }
+
+  void resolve_collision(Transform &a, Transform &b, const float dt) {
     vec2 collisionNormal = vec_norm(b.position - a.position);
+
+    // Calculate normal impulse
     float impulse = calculate_impulse(a, b, collisionNormal);
-    a.velocity += collisionNormal * impulse / a.mass;
-    b.velocity -= collisionNormal * impulse / b.mass;
+    vec2 impulseVector =
+        collisionNormal * impulse * Config::get().collision_scalar.data * dt;
+
+    // Apply normal impulse
+    if (a.mass > 0.0f)
+      a.velocity -= impulseVector / a.mass;
+    if (b.mass > 0.0f)
+      b.velocity += impulseVector / b.mass;
+
+    // Calculate and apply friction impulse
+    vec2 relativeVelocity = b.velocity - a.velocity;
+    vec2 tangent =
+        vec_norm(relativeVelocity -
+                 collisionNormal * vec_dot(relativeVelocity, collisionNormal));
+
+    float frictionImpulseMagnitude =
+        vec_dot(relativeVelocity, tangent) / (1.0f / a.mass + 1.0f / b.mass);
+    float frictionCoefficient = std::sqrt(a.friction * b.friction);
+    frictionImpulseMagnitude =
+        std::clamp(frictionImpulseMagnitude, -impulse * frictionCoefficient,
+                   impulse * frictionCoefficient);
+
+    vec2 frictionImpulse = tangent * frictionImpulseMagnitude *
+                           Config::get().collision_scalar.data * dt;
+
+    if (a.mass > 0.0f)
+      a.velocity -= frictionImpulse / a.mass;
+    if (b.mass > 0.0f)
+      b.velocity += frictionImpulse / b.mass;
+
+    // Positional correction
+    float penetrationDepth = calculate_penetration_depth(a.rect(), b.rect());
+    positional_correction(a, b, collisionNormal, penetrationDepth);
+  }
+
+  float calculate_penetration_depth(const Rectangle &a, const Rectangle &b) {
+    // Calculate the overlap along the X axis
+    float overlapX =
+        std::min(a.x + a.width, b.x + b.width) - std::max(a.x, b.x);
+
+    // Calculate the overlap along the Y axis
+    float overlapY =
+        std::min(a.y + a.height, b.y + b.height) - std::max(a.y, b.y);
+
+    // If there’s no overlap, return 0
+    if (overlapX <= 0.0f || overlapY <= 0.0f)
+      return 0.0f;
+
+    // Return the smaller overlap for the penetration depth
+    return std::min(overlapX, overlapY);
+  }
+
+  float calculate_dynamic_restitution(const Transform &a, const Transform &b) {
+    float baseRestitution = std::min(a.restitution, b.restitution);
+
+    // Reduce restitution for high-speed collisions
+    vec2 relativeVelocity = b.velocity - a.velocity;
+    float speed = Vector2Length(relativeVelocity);
+
+    if (speed >
+        (Config::get().max_speed.data * .75f)) { // Adjust threshold as needed
+      baseRestitution *= 0.5f; // Reduce bounce for high-speed collisions
+    }
+
+    return baseRestitution;
   }
 
   float calculate_impulse(const Transform &a, const Transform &b,
                           const vec2 &collisionNormal) {
     vec2 relativeVelocity = b.velocity - a.velocity;
-    float impulse =
-        vec_dot(-relativeVelocity, collisionNormal) / (1 / a.mass + 1 / b.mass);
+    float velocityAlongNormal = vec_dot(relativeVelocity, collisionNormal);
 
-    // scale it down
-    return impulse * 0.1f;
+    // Prevent objects from "sticking" or resolving collisions when moving apart
+    if (velocityAlongNormal > 0.0f)
+      return 0.0f;
+
+    float restitution = calculate_dynamic_restitution(a, b);
+
+    // Impulse calculation with restitution
+    float impulse = -(1.0f + restitution) * velocityAlongNormal;
+    impulse /= (1.0f / a.mass + 1.0f / b.mass);
+
+    return impulse;
   }
 
   virtual void for_each_with(Entity &entity, Transform &transform, CanShoot &,
-                             float) override {
+                             float dt) override {
 
     // skip any already resolved
     if (ids.contains(entity.id))
@@ -385,7 +469,7 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
 
     for (Entity &other : can_shoot) {
       Transform &b = other.get<Transform>();
-      resolve_collision(transform, b);
+      resolve_collision(transform, b, dt);
       ids.insert(other.id);
     }
   }

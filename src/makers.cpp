@@ -130,11 +130,14 @@ Entity &make_car(size_t id) {
   auto &entity = EntityHelper::createEntity();
 
   entity.addComponent<HasMultipleLives>(3);
-  entity.addComponent<Transform>(
+  auto &transform = entity.addComponent<Transform>(
       get_spawn_position((size_t)id,
                          // TODO use current resolution
                          raylib::GetRenderWidth(), raylib::GetRenderHeight()),
       vec2{15.f, 25.f});
+  transform.mass = 1000.f;
+  transform.restitution = .1f;
+  transform.friction = 0.75f;
 
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(MAX_HEALTH);
@@ -142,8 +145,6 @@ Entity &make_car(size_t id) {
   auto tint = EntityHelper::get_singleton_cmp<ManagesAvailableColors>()
                   ->get_next_available(id);
   entity.addComponent<HasColor>(tint);
-
-  const Transform &transform = entity.get<Transform>();
   entity.addComponent<afterhours::texture_manager::HasSprite>(
       transform.position, transform.size, transform.angle,
       idx_to_sprite_frame(0, 1), 1.f, tint);

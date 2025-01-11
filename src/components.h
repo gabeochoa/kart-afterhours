@@ -90,6 +90,8 @@ struct Transform : BaseComponent {
   vec2 velocity{0.f, 0.f};
   vec2 size{0.f, 0.f};
   float mass{1.f};
+  float friction{0.f};
+  float restitution{.5f};
   float accel{0.f};
   float accel_mult{1.f};
 

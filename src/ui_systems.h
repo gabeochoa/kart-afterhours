@@ -588,6 +588,25 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
           Config::get().maximum_steering_radius.set_pct(result.as<float>());
         }
       }
+
+      // Collision Scalar
+      {
+        auto collision_scalar_label =
+            fmt::format("Collision \nScalar \n {:.4f}",
+                        Config::get().collision_scalar.data);
+        auto pct = Config::get().collision_scalar.get_pct();
+
+        ComponentConfig collision_scalar_slider_config;
+        collision_scalar_slider_config.label =
+            std::move(collision_scalar_label);
+        collision_scalar_slider_config.skip_when_tabbing = true;
+
+        if (auto result = slider(context, mk(elem.ent()), pct,
+                                 std::move(collision_scalar_slider_config));
+            result) {
+          Config::get().collision_scalar.set_pct(result.as<float>());
+        }
+      }
     }
   }
 };
