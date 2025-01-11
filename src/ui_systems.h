@@ -15,6 +15,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   enum struct Screen {
     None,
     Main,
+    CharacterCreation,
     About,
     Settings,
   } active_screen = Screen::Main;
@@ -52,6 +53,10 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   bool fs_enabled{false};
   bool ui_visible{true};
 
+  // character creators
+  std::vector<RefEntity> players;
+  std::vector<RefEntity> ais;
+
   void update_resolution_cache() {
     resolution_provider = EntityHelper::get_singleton_cmp<
         window_manager::ProvidesAvailableWindowResolutions>();
@@ -78,6 +83,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     if (active_screen == Screen::Settings) {
       update_resolution_cache();
     }
+
+    players = EQ().whereHasComponent<PlayerID>().gen();
+    ais = EQ().whereHasComponent<AIControlled>().gen();
   }
 
   bool should_run(float) override {
@@ -101,6 +109,106 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     }
 
     return ui_visible;
+  }
+
+  void character_selector_column(Entity &parent,
+                                 UIContext<InputAction> &context, size_t index,
+                                 size_t num_slots) {
+
+    auto bg_color = EntityHelper::get_singleton_cmp<ManagesAvailableColors>()
+                        ->get_next_available(index);
+    // if (index != num_slots - 1) {
+    // car = index < players.size() ? players[index]
+    // : ais[index - players.size() - 1];
+    // }
+
+    auto column =
+        imm::div(context, mk(parent, index),
+                 ComponentConfig{
+                     .size =
+                         ComponentSize{
+                             percent(1.f / std::min(4, (int)num_slots)),
+                             percent(1.f, 0.4f),
+                         },
+                     .padding =
+                         Padding{
+                             .top = screen_pct(0.05f),
+                             .left = screen_pct(0.05f),
+                             .bottom = screen_pct(0.05f),
+                             .right = screen_pct(0.05f),
+                         },
+                     .color = bg_color,
+                 });
+
+    // we are the last boi
+    if (num_slots < input::MAX_GAMEPAD_ID && index == num_slots - 1) {
+      if (imm::button(context, mk(column.ent()),
+                      ComponentConfig{
+                          .label = "Add AI",
+                          .color = raylib::BLUE,
+                      })) {
+        make_ai();
+      }
+    }
+  }
+
+  void character_creation(Entity &entity, UIContext<InputAction> &context) {
+    auto elem = imm::div(context, mk(entity));
+    {
+      elem.ent()
+          .get<UIComponent>()
+          .enable_font(get_font_name(FontID::EQPro), 75.f)
+          .set_desired_width(screen_pct(1.f))
+          .set_desired_height(screen_pct(1.f))
+          .make_absolute();
+      elem.ent().get<ui::UIComponentDebug>().set(
+          ui::UIComponentDebug::Type::custom, "character_creation");
+    }
+
+    auto button_group = imm::div(context, mk(elem.ent()));
+    {
+      button_group.ent()
+          .get<UIComponent>()
+          .set_desired_width(screen_pct(1.f))
+          .set_desired_height(screen_pct(1.f))
+          .make_absolute();
+      button_group.ent().get<ui::UIComponentDebug>().set(
+          ui::UIComponentDebug::Type::custom, "button_group");
+    }
+
+    size_t num_slots = players.size() + ais.size() + 1;
+
+    // 0-4 => 1, 5->8 -> 2
+    int fours = std::ceil(num_slots / 4.f);
+    auto row_height = percent(1.f / fours, 0.4f);
+
+    for (int row_id = 0; row_id < fours; row_id++) {
+      auto row = imm::div(context, mk(button_group.ent(), row_id),
+                          ComponentConfig{
+                              .size =
+                                  ComponentSize{
+                                      percent(1.f),
+                                      row_height,
+                                  },
+                              .flex_direction = FlexDirection::Row,
+                          });
+      size_t start = row_id * 4;
+      for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
+        character_selector_column(row.ent(), context, i, num_slots);
+      }
+    }
+
+    {
+      ComponentConfig back_button_config;
+      back_button_config.padding = button_padding;
+      back_button_config.label = "back";
+      back_button_config.is_absolute = true;
+      if (imm::button(context, mk(elem.ent()), std::move(back_button_config))
+          //
+      ) {
+        active_screen = Screen::Main;
+      }
+    }
   }
 
   void main_screen(Entity &entity, UIContext<InputAction> &context) {
@@ -136,7 +244,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                     std::move(play_button_config))
         //
     ) {
-      active_screen = Screen::None;
+      active_screen = Screen::CharacterCreation;
     }
 
     ComponentConfig about_button_config;
@@ -339,6 +447,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                              float) override {
     switch (active_screen) {
     case Screen::None:
+      break;
+    case Screen::CharacterCreation:
+      character_creation(entity, context);
       break;
     case Screen::About:
       about_screen(entity, context);

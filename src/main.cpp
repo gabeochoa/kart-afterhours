@@ -114,7 +114,6 @@ int main(int argc, char *argv[]) {
   Settings::get().refresh_settings();
 
   make_player(0);
-  make_ai();
 
   if (cmdl[{"-i", "--show-intro"}]) {
     intro();
