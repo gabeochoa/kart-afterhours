@@ -195,22 +195,29 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           ui::UIComponentDebug::Type::custom, "character_creation");
     }
 
-    auto button_group = imm::div(context, mk(elem.ent()),
-                                 ComponentConfig{
-                                     .size =
-                                         ComponentSize{
-                                             screen_pct(1.f),
-                                             screen_pct(1.f),
-                                         },
-                                     .is_absolute = true,
-                                     .debug_name = "button_group",
-                                 });
-
     size_t num_slots = players.size() + ais.size() + 1;
-
     // 0-4 => 1, 5->8 -> 2
     int fours = std::ceil(num_slots / 4.f);
-    auto row_height = percent(1.f / fours, 0.4f);
+
+    auto button_group =
+        imm::div(context, mk(elem.ent()),
+                 ComponentConfig{
+                     .size =
+                         ComponentSize{
+                             screen_pct(0.8f),
+                             screen_pct(0.9f),
+                         },
+                     .padding =
+                         Padding{
+                             .top = screen_pct(fours == 1 ? 0.2f : 0.05f),
+                             .left = screen_pct(0.05f),
+                             .right = screen_pct(0.05f),
+                         },
+                     .is_absolute = true,
+                     .debug_name = "button_group",
+                 });
+
+    auto row_height = percent(0.5f, 0.4f);
 
     for (int row_id = 0; row_id < fours; row_id++) {
       auto row = imm::div(context, mk(button_group.ent(), row_id),
