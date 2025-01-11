@@ -51,4 +51,10 @@ struct EQ : public EntityQuery<EQ> {
   };
 
   EQ &whereOverlaps(const Rectangle r) { return add_mod(new WhereOverlaps(r)); }
+
+  EQ &orderByPlayerID() {
+    return orderByLambda([](const Entity &a, const Entity &b) {
+      return a.get<PlayerID>().id < b.get<PlayerID>().id;
+    });
+  }
 };
