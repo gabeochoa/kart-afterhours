@@ -49,10 +49,13 @@ else
 endif
 
 
-.PHONY: all clean output count countall new
+.PHONY: all clean output count countall old
 
 all:
 	$(COMPILE)
+
+old: 
+	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp src/settings.cpp src/preload.cpp src/makers.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
 
 output:
 	$(mkdir_cmd)
