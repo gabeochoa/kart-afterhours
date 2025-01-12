@@ -14,6 +14,7 @@ bool running = true;
 #include "argh.h"
 #include "intro.h"
 #include "preload.h"
+#include "shader_library.h"
 #include "sound_systems.h"
 #include "systems.h"
 #include "ui_systems.h"
@@ -61,6 +62,7 @@ void game() {
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
 
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
+    systems.register_update_system(std::make_unique<UpdateShaderValues>());
     systems.register_update_system(
         std::make_unique<UpdateAnimationTransform>());
     texture_manager::register_update_systems(systems);
@@ -75,18 +77,6 @@ void game() {
 
   raylib::RenderTexture2D mainRT;
   mainRT = raylib::LoadRenderTexture(1280, 720);
-
-  raylib::Shader shader =
-      raylib::LoadShader(0, GetAssetPath("shaders/post_processing.fs"));
-
-  int time_loc = raylib::GetShaderLocation(shader, "time");
-  int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
-  vec2 resolution{
-      (float)raylib::GetRenderWidth(),
-      (float)raylib::GetRenderHeight(),
-  };
-  raylib::SetShaderValue(shader, resolution_loc, &resolution,
-                         raylib::SHADER_UNIFORM_VEC2);
 
   // renders
   {
@@ -112,15 +102,13 @@ void game() {
 
     systems.register_render_system([&](float) { raylib::BeginDrawing(); });
     {
+      systems.register_render_system(
+          std::make_unique<BeginShader>("post_processing"));
       systems.register_render_system([&](float) {
-        auto time = raylib::GetTime();
-        raylib::SetShaderValue(shader, time_loc, &time,
-                               raylib::SHADER_UNIFORM_FLOAT);
-        raylib::BeginShaderMode(shader);
         raylib::DrawTextureRec(mainRT.texture, {0, 0, 1280, -720}, {0, 0},
                                raylib::WHITE);
-        raylib::EndShaderMode();
       });
+      systems.register_render_system([&](float) { raylib::EndShaderMode(); });
       systems.register_render_system(std::make_unique<RenderFPS>());
     }
     systems.register_render_system([&](float) { raylib::EndDrawing(); });

@@ -4,6 +4,7 @@
 #include "rl.h"
 
 #include "input_mapping.h"
+#include "shader_library.h"
 #include "sound_library.h"
 
 using namespace afterhours;
@@ -52,6 +53,10 @@ Preload &Preload::init(int width, int height, const char *title) {
 
   load_gamepad_mappings();
   load_sounds();
+
+  ShaderLibrary::get().load(GetAssetPath("shaders/post_processing.fs"),
+                            "post_processing");
+
   return *this;
 }
 
@@ -80,6 +85,7 @@ Preload &Preload::make_singleton() {
     sophie.addComponent<ManagesAvailableColors>();
     EntityHelper::registerSingleton<ManagesAvailableColors>(sophie);
   }
+
   return *this;
 }
 
