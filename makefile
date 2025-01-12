@@ -42,20 +42,37 @@ else
 	run_cmd := ./${OUTPUT_EXE}
 	sign_cmd := && codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
 	# CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
-	# CXX := clang++ -std=c++23 -Wmost -fsanitize=address
-	CXX := g++-14 -fmax-errors=10 -std=c++23 -DBACKWARD
-	FLAGS = -g $(RAYLIB_FLAGS) 
+	CXX := clang++ -std=c++23 -Wmost -fsanitize=address
+	# CXX := g++-14 -fmax-errors=10 -std=c++23 -DBACKWARD
+	FLAGS = -g $(RAYLIB_FLAGS) -ftime-trace 
 	COMPILE = xmake
 endif
 
 
-.PHONY: all clean output count countall old
+.PHONY: all clean output count countall old clean
 
-all:
-	$(COMPILE)
 
-old: 
-	$(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp src/settings.cpp src/preload.cpp src/makers.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
+$(info SRC_FILES: $(SRC_FILES))
+$(info OBJ_FILES: $(OBJ_FILES))
+
+
+all: 
+	$(COMPILE) 
+
+old: $(OUTPUT_EXE)
+
+$(OUTPUT_EXE): $(H_FILES) $(OBJ_FILES)
+	$(CXX) $(FLAGS) $(LEAKFLAGS) $(NOFLAGS) $(INCLUDES) $(LIBS) $(OBJ_FILES) -o $(OUTPUT_EXE)
+
+$(OBJ_DIR)/%.o: %.cpp makefile
+	$(CXX) $(FLAGS) $(NOFLAGS) $(INCLUDES) -c $< -o $@ -MMD -MF $(@:.o=.d)
+
+%.d: %.cpp
+  $(MAKEDEPEND)
+
+clean:
+	rm -rf output/src/
+	mkdir output/src
 
 output:
 	$(mkdir_cmd)
