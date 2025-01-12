@@ -51,6 +51,16 @@ struct ManagesAvailableColors : BaseComponent {
 
   std::bitset<input::MAX_GAMEPAD_ID> used;
   std::map<size_t, size_t> users; // userid to color index
+                                  //
+  void release_only(size_t id) {
+    if (users.contains(id)) {
+      int bit_index = static_cast<int>(users[id]);
+      users.erase(id);
+      // turn off the one we were previously using
+      used[bit_index] = false;
+      log_info("released color id{} bi{} {}", id, bit_index, used);
+    }
+  }
 
   raylib::Color release_and_get_next(size_t id) {
     int bit_index = -1;
@@ -69,6 +79,18 @@ struct ManagesAvailableColors : BaseComponent {
     }
 
     return next_color;
+  }
+
+  bool any_available_colors() const {
+    return bitset_utils::get_next_disabled_bit(used, 0) != -1;
+  }
+
+  raylib::Color get_next_NO_STORE(size_t start = 0) {
+    int index = bitset_utils::get_next_disabled_bit(used, start);
+    if (index == -1) {
+      index = 0;
+    }
+    return colors[index];
   }
 
   raylib::Color get_next_available(size_t id, size_t start = 0) {
