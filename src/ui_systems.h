@@ -126,24 +126,23 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     auto bg_color = colorManager.get_next_available(index);
 
-    auto column = imm::div(
-        context, mk(parent, (int)index),
-        ComponentConfig{
-            .size =
-                ComponentSize{
-                    percent(1.f / static_cast<float>(std::min(
-                                      4, static_cast<int>(num_slots)))),
-                    percent(1.f, 0.4f),
-                },
-            .padding =
-                Padding{
-                    .top = screen_pct(0.05f),
-                    .left = screen_pct(0.05f),
-                    .bottom = screen_pct(0.05f),
-                    .right = screen_pct(0.05f),
-                },
-            .color = bg_color,
-        });
+    auto num_cols = std::min(4, static_cast<int>(num_slots));
+    auto column = imm::div(context, mk(parent, (int)index),
+                           ComponentConfig{
+                               .size =
+                                   ComponentSize{
+                                       percent(1.f / num_cols, 0.1f),
+                                       percent(1.f, 0.4f),
+                                   },
+                               .margin =
+                                   Margin{
+                                       .top = percent(0.05f),
+                                       .left = percent(0.05f),
+                                       .bottom = percent(0.05f),
+                                       .right = percent(0.05f),
+                                   },
+                               .color = bg_color,
+                           });
 
     if (index != num_slots - 1) {
       Entity &car = index < players.size() //
@@ -205,10 +204,14 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     if (num_slots < input::MAX_GAMEPAD_ID && is_last_slot) {
       if (imm::button(context, mk(column.ent()),
                       ComponentConfig{
+                          .size =
+                              ComponentSize{
+                                  percent(1.f),
+                                  pixels(50.f),
+                              },
                           .padding =
                               Padding{
-                                  .top = screen_pct(0.25f),
-                                  .bottom = screen_pct(0.25f),
+                                  .top = percent(0.25f),
                               },
                           .label = "Add AI",
                           .debug_name = "add_ai_button",
@@ -242,11 +245,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                  ComponentConfig{
                      .size =
                          ComponentSize{
-                             screen_pct(0.8f),
-                             screen_pct(0.9f),
+                             screen_pct(1.f),
+                             screen_pct(1.f),
                          },
-                     .padding =
-                         Padding{
+                     .margin =
+                         Margin{
                              .top = screen_pct(fours == 1 ? 0.2f : 0.05f),
                              .left = screen_pct(0.05f),
                              .right = screen_pct(0.05f),
@@ -255,17 +258,16 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                      .debug_name = "button_group",
                  });
 
-    auto row_height = percent(0.5f, 0.4f);
-
     for (int row_id = 0; row_id < fours; row_id++) {
       auto row = imm::div(context, mk(button_group.ent(), row_id),
                           ComponentConfig{
                               .size =
                                   ComponentSize{
                                       percent(1.f),
-                                      row_height,
+                                      percent(0.5f, 0.4f),
                                   },
                               .flex_direction = FlexDirection::Row,
+                              .debug_name = "row",
                           });
       size_t start = row_id * 4;
       for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
