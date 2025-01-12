@@ -155,7 +155,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           ComponentConfig{
               .size =
                   ComponentSize{
-                      percent(0.2f),
+                      percent(1.f),
                       percent(0.2f, 0.4f),
                   },
               .label = std::format("{} {}", index, car.id),
@@ -190,6 +190,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       if (auto elem = imm::button(
               context, mk(column.ent()),
               ComponentConfig{
+                  .size =
+                      ComponentSize{
+                          percent(1.f),
+                          percent(0.2f, 0.4f),
+                      },
                   .label = "Next Color",
                   .skip_when_tabbing = true,
                   .debug_name = std::format("next_color button {} ", index),
