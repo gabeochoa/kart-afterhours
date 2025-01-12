@@ -126,7 +126,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     auto bg_color = colorManager.get_next_available(index);
 
-    auto num_cols = std::min(4, static_cast<int>(num_slots));
+    const auto num_cols = std::min(4.f, static_cast<float>(num_slots));
     auto column = imm::div(context, mk(parent, (int)index),
                            ComponentConfig{
                                .size =
@@ -137,8 +137,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                .margin =
                                    Margin{
                                        .top = percent(0.05f),
-                                       .left = percent(0.05f),
                                        .bottom = percent(0.05f),
+                                       .left = percent(0.05f),
                                        .right = percent(0.05f),
                                    },
                                .color = bg_color,
