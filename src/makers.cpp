@@ -142,9 +142,9 @@ Entity &make_car(size_t id) {
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(MAX_HEALTH);
   entity.addComponent<TireMarkComponent>();
-  entity.addComponent<HasColor>([id]() -> raylib::Color {
+  entity.addComponent<HasColor>([&entity]() -> raylib::Color {
     return EntityHelper::get_singleton_cmp<ManagesAvailableColors>()
-        ->get_next_available(id);
+        ->get_next_available(entity.id);
   });
   entity.addComponent<afterhours::texture_manager::HasSprite>(
       transform.position, transform.size, transform.angle,

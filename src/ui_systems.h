@@ -123,11 +123,17 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     bool is_slot_ai = index >= players.size();
 
     OptEntity car;
+    if (!is_last_slot || index < (ais.size() + players.size())) {
+      car = index < players.size() //
+                ? players[index]
+                : ais[index - players.size()];
+    }
 
     ManagesAvailableColors &colorManager =
         *EntityHelper::get_singleton_cmp<ManagesAvailableColors>();
 
-    auto bg_color = colorManager.get_next_available(index);
+    auto bg_color = car.has_value() ? car->get<HasColor>().color()
+                                    : colorManager.get_next_NO_STORE(index);
 
     const auto num_cols = std::min(4.f, static_cast<float>(num_slots));
     auto column = imm::div(context, mk(parent, (int)index),
@@ -147,11 +153,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                .color = bg_color,
                            });
 
-    if (!is_last_slot) {
-      car = index < players.size() //
-                ? players[index]
-                : ais[index - players.size()];
-      raylib::Color color = car->get<HasColor>().color();
+    if (car.has_value()) {
       // Note: we arent using mk() here...
       imm::div(
           context, mk(column.ent()),
@@ -164,7 +166,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
               .label = std::format("{} {}", index, car->id),
               .debug_name = std::format("player_car {} {} {} {}", index,
                                         car->id, players.size(), ais.size()),
-              .color = color,
+              .color = bg_color,
           });
     }
 
@@ -188,7 +190,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     }
 
     bool show_next_color_button =
-        (is_last_slot && !is_last_slot_ai) || !is_last_slot;
+        (is_last_slot && !is_last_slot_ai) ||
+        (!is_last_slot && colorManager.any_available_colors());
 
     if (show_next_color_button) {
       if (auto elem = imm::button(
@@ -205,12 +208,12 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                   .color = raylib::BLUE,
               });
           elem || player_right) {
-        colorManager.release_and_get_next(index);
+        colorManager.release_and_get_next(car->id);
       }
     }
 
     // we are the last boi
-    if (num_slots < input::MAX_GAMEPAD_ID && is_last_slot) {
+    if (num_slots <= input::MAX_GAMEPAD_ID && is_last_slot) {
       if (imm::button(context, mk(column.ent()),
                       ComponentConfig{
                           .size =
@@ -247,6 +250,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                           .color = raylib::BLUE,
                       })) {
 
+        colorManager.release_only(car->id);
         car->cleanup = true;
       }
     }
