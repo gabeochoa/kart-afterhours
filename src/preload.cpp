@@ -34,7 +34,14 @@ static void load_gamepad_mappings() {
 Preload::Preload() {}
 
 Preload &Preload::init(int width, int height, const char *title) {
+  raylib::SetConfigFlags(raylib::FLAG_WINDOW_HIGHDPI);
   raylib::InitWindow(width, height, title);
+  auto scale = raylib::GetWindowScaleDPI();
+  if (scale.x != 1.f) {
+    width *= scale.x;
+    height *= scale.y;
+  }
+  raylib::SetWindowSize(width, height);
   // TODO this doesnt seem to do anything when in this file
   raylib::TraceLogLevel logLevel = raylib::LOG_WARNING;
   raylib::SetTraceLogLevel(logLevel);
