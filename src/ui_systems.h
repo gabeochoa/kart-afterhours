@@ -120,6 +120,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     bool is_last_slot = index == num_slots - 1;
     bool is_last_slot_ai = index >= players.size();
+    bool is_slot_ai = index >= players.size();
+
+    OptEntity car;
 
     ManagesAvailableColors &colorManager =
         *EntityHelper::get_singleton_cmp<ManagesAvailableColors>();
@@ -144,11 +147,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                .color = bg_color,
                            });
 
-    if (index != num_slots - 1) {
-      Entity &car = index < players.size() //
-                        ? players[index]
-                        : ais[index - players.size()];
-      raylib::Color color = car.get<HasColor>().color();
+    if (!is_last_slot) {
+      car = index < players.size() //
+                ? players[index]
+                : ais[index - players.size()];
+      raylib::Color color = car->get<HasColor>().color();
       // Note: we arent using mk() here...
       imm::div(
           context, mk(column.ent()),
@@ -158,9 +161,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                       percent(1.f),
                       percent(0.2f, 0.4f),
                   },
-              .label = std::format("{} {}", index, car.id),
-              .debug_name = std::format("player_car {} {} {} {}", index, car.id,
-                                        players.size(), ais.size()),
+              .label = std::format("{} {}", index, car->id),
+              .debug_name = std::format("player_car {} {} {} {}", index,
+                                        car->id, players.size(), ais.size()),
               .color = color,
           });
     }
@@ -186,6 +189,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     bool show_next_color_button =
         (is_last_slot && !is_last_slot_ai) || !is_last_slot;
+
     if (show_next_color_button) {
       if (auto elem = imm::button(
               context, mk(column.ent()),
@@ -223,6 +227,27 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                           .color = raylib::BLUE,
                       })) {
         make_ai();
+      }
+    }
+
+    if (is_slot_ai && car.has_value()) {
+      if (imm::button(context, mk(column.ent()),
+                      ComponentConfig{
+                          .size =
+                              ComponentSize{
+                                  percent(1.f),
+                                  pixels(50.f),
+                              },
+                          .padding =
+                              Padding{
+                                  .top = percent(0.25f),
+                              },
+                          .label = "Remove AI",
+                          .debug_name = "remove_ai_button",
+                          .color = raylib::BLUE,
+                      })) {
+
+        car->cleanup = true;
       }
     }
   }
