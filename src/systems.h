@@ -352,7 +352,7 @@ struct UpdateTrackingEntities : System<Transform, TracksEntity> {
   }
 };
 
-struct UpdateCollidingEntities : System<Transform, CanShoot> {
+struct UpdateCollidingEntities : System<Transform> {
 
   std::set<int> ids;
 
@@ -362,11 +362,12 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
                              const vec2 &collisionNormal,
                              float penetrationDepth) {
     float correctionMagnitude =
-        std::max(penetrationDepth, 0.0f) / (1.0f / a.mass + 1.0f / b.mass);
+        std::max(penetrationDepth, 0.0f) /
+        (1.0f / a.collision_config.mass + 1.0f / b.collision_config.mass);
     vec2 correction = collisionNormal * correctionMagnitude;
 
-    a.position -= correction / a.mass;
-    b.position += correction / b.mass;
+    a.position -= correction / a.collision_config.mass;
+    b.position += correction / b.collision_config.mass;
   }
 
   void resolve_collision(Transform &a, Transform &b, const float dt) {
@@ -378,10 +379,15 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
         collisionNormal * impulse * Config::get().collision_scalar.data * dt;
 
     // Apply normal impulse
-    if (a.mass > 0.0f)
-      a.velocity -= impulseVector / a.mass;
-    if (b.mass > 0.0f)
-      b.velocity += impulseVector / b.mass;
+    if (a.collision_config.mass > 0.0f &&
+        a.collision_config.mass != std::numeric_limits<float>::max()) {
+      a.velocity -= impulseVector / a.collision_config.mass;
+    }
+
+    if (b.collision_config.mass > 0.0f &&
+        b.collision_config.mass != std::numeric_limits<float>::max()) {
+      b.velocity += impulseVector / b.collision_config.mass;
+    }
 
     // Calculate and apply friction impulse
     vec2 relativeVelocity = b.velocity - a.velocity;
@@ -390,8 +396,10 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
                  collisionNormal * vec_dot(relativeVelocity, collisionNormal));
 
     float frictionImpulseMagnitude =
-        vec_dot(relativeVelocity, tangent) / (1.0f / a.mass + 1.0f / b.mass);
-    float frictionCoefficient = std::sqrt(a.friction * b.friction);
+        vec_dot(relativeVelocity, tangent) /
+        (1.0f / a.collision_config.mass + 1.0f / b.collision_config.mass);
+    float frictionCoefficient =
+        std::sqrt(a.collision_config.friction * b.collision_config.friction);
     frictionImpulseMagnitude =
         std::clamp(frictionImpulseMagnitude, -impulse * frictionCoefficient,
                    impulse * frictionCoefficient);
@@ -399,10 +407,15 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
     vec2 frictionImpulse = tangent * frictionImpulseMagnitude *
                            Config::get().collision_scalar.data * dt;
 
-    if (a.mass > 0.0f)
-      a.velocity -= frictionImpulse / a.mass;
-    if (b.mass > 0.0f)
-      b.velocity += frictionImpulse / b.mass;
+    if (a.collision_config.mass > 0.0f &&
+        a.collision_config.mass != std::numeric_limits<float>::max()) {
+      a.velocity -= frictionImpulse / a.collision_config.mass;
+    }
+
+    if (b.collision_config.mass > 0.0f &&
+        b.collision_config.mass != std::numeric_limits<float>::max()) {
+      b.velocity += frictionImpulse / b.collision_config.mass;
+    }
 
     // Positional correction
     float penetrationDepth = calculate_penetration_depth(a.rect(), b.rect());
@@ -427,7 +440,8 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
   }
 
   float calculate_dynamic_restitution(const Transform &a, const Transform &b) {
-    float baseRestitution = std::min(a.restitution, b.restitution);
+    float baseRestitution = std::min(a.collision_config.restitution,
+                                     b.collision_config.restitution);
 
     // Reduce restitution for high-speed collisions
     vec2 relativeVelocity = b.velocity - a.velocity;
@@ -454,25 +468,48 @@ struct UpdateCollidingEntities : System<Transform, CanShoot> {
 
     // Impulse calculation with restitution
     float impulse = -(1.0f + restitution) * velocityAlongNormal;
-    impulse /= (1.0f / a.mass + 1.0f / b.mass);
+    impulse /=
+        (1.0f / a.collision_config.mass + 1.0f / b.collision_config.mass);
 
     return impulse;
   }
 
-  virtual void for_each_with(Entity &entity, Transform &transform, CanShoot &,
+  virtual void for_each_with(Entity &entity, Transform &transform,
                              float dt) override {
 
     // skip any already resolved
-    if (ids.contains(entity.id))
+    if (ids.contains(entity.id)) {
       return;
+    }
 
-    auto can_shoot = EQ().whereHasComponent<CanShoot>()
-                         .whereNotID(entity.id)
-                         .whereOverlaps(transform.rect())
-                         .gen();
+    const auto gets_absorbed = [](Entity &ent) {
+      return ent.has<CollisionAbsorber>() &&
+             ent.get<CollisionAbsorber>().absorber_type ==
+                 CollisionAbsorber::AbsorberType::Absorbed;
+    };
 
-    for (Entity &other : can_shoot) {
+    if (gets_absorbed(entity)) {
+      return;
+    }
+
+    auto can_collide = EQ().whereHasComponent<Transform>()
+                           .whereNotID(entity.id)
+                           .whereOverlaps(transform.rect())
+                           .gen();
+
+    for (Entity &other : can_collide) {
       Transform &b = other.get<Transform>();
+
+      // If the other transform gets absorbed, but this is its parent, ignore
+      // collision.
+      if (gets_absorbed(other)) {
+        if (other.get<CollisionAbsorber>().parent_id.value_or(-1) ==
+            entity.id) {
+          ids.insert(other.id);
+          continue;
+        }
+      }
+
       resolve_collision(transform, b, dt);
       ids.insert(other.id);
     }
@@ -685,6 +722,47 @@ struct ProcessDamage : System<Transform, HasHealth> {
       hasHealth.amount -= cd.amount;
       hasHealth.iframes = hasHealth.iframesReset;
       damager.cleanup = true;
+    }
+  }
+};
+
+struct ProcessCollisionAbsorption : System<Transform, CollisionAbsorber> {
+
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             CollisionAbsorber &collision_absorber,
+                             float dt) override {
+
+    // We let the absorbed things (e.g. bullets) manage cleaning themselves up,
+    // rather than the other way around.
+    if (collision_absorber.absorber_type ==
+        CollisionAbsorber::AbsorberType::Absorber) {
+      return;
+    }
+
+    const auto unrelated_absorber =
+        [&collision_absorber](const Entity &collider) {
+          const auto &other_absorber = collider.get<CollisionAbsorber>();
+          const auto are_related = collision_absorber.parent_id.value_or(-1) ==
+                                   other_absorber.parent_id.value_or(-2);
+
+          if (are_related) {
+            return false;
+          }
+
+          return other_absorber.absorber_type ==
+                 CollisionAbsorber::AbsorberType::Absorber;
+        };
+
+    auto collided_with_absorber =
+        EQ().whereHasComponent<CollisionAbsorber>()
+            .whereNotID(entity.id)
+            .whereNotID(collision_absorber.parent_id.value_or(-1))
+            .whereOverlaps(transform.rect())
+            .whereLambda(unrelated_absorber)
+            .gen();
+
+    if (!collided_with_absorber.empty()) {
+      entity.cleanup = true;
     }
   }
 };

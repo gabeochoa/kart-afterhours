@@ -105,10 +105,12 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
       .set_angle(angle_offset);
 
   bullet.addComponent<CanDamage>(parent.id, wp.config.base_damage);
+  bullet.addComponent<CollisionAbsorber>(
+      CollisionAbsorber::AbsorberType::Absorbed, parent.id);
   bullet.addComponent<HasLifetime>(wp.config.life_time_seconds);
 
-  // If the config doesn't want wrapping, this will make the bullet go into the
-  // "void"
+  // If the config doesn't want wrapping,
+  // this will make the bullet go into the "void"
   auto wrap_padding =
       wp.config.can_wrap_around ? 0.f : std::numeric_limits<float>::max();
   bullet.addComponent<CanWrapAround>(wrap_padding);
@@ -118,11 +120,18 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
 
   const auto rad = transform.as_rad() + to_radians(angle + angle_offset);
   auto &bullet_transform = bullet.get<Transform>();
+
+  bullet_transform.collision_config =
+      CollisionConfig{.mass = 1.f, .friction = 0.f, .restitution = 0.f};
+
   bullet_transform.velocity =
       vec2{std::sin(rad) * wp.config.speed, -std::cos(rad) * wp.config.speed};
+
   bullet_transform.accel = wp.config.acceleration;
+
   bullet_transform.render_out_of_bounds =
       wp.config.can_wrap_around && wp.config.render_out_of_bounds;
+
   bullet_transform.cleanup_out_of_bounds = !wp.config.can_wrap_around;
 }
 
@@ -135,10 +144,12 @@ Entity &make_car(size_t id) {
                          // TODO use current resolution
                          raylib::GetRenderWidth(), raylib::GetRenderHeight()),
       vec2{15.f, 25.f});
-  transform.mass = 1000.f;
-  transform.restitution = .1f;
-  transform.friction = 0.75f;
 
+  transform.collision_config =
+      CollisionConfig{.mass = 1000.f, .friction = .75f, .restitution = .1f};
+
+  entity.addComponent<CollisionAbsorber>(
+      CollisionAbsorber::AbsorberType::Absorber);
   entity.addComponent<CanWrapAround>();
   entity.addComponent<HasHealth>(MAX_HEALTH);
   entity.addComponent<TireMarkComponent>();
@@ -160,6 +171,25 @@ Entity &make_car(size_t id) {
   // Weapon::Type::Cannon)
   //.register_weapon(InputAction::ShootRight, Weapon::FiringDirection::Right,
   //                 Weapon::Type::Cannon);
+
+  return entity;
+}
+
+Entity &make_obstacle(raylib::Rectangle rect, const raylib::Color color,
+                      const CollisionConfig &collision_config) {
+  auto &entity = EntityHelper::createEntity();
+
+  auto &transform = entity.addComponent<Transform>(std::move(rect));
+  transform.collision_config = collision_config;
+
+  entity.addComponent<CanWrapAround>();
+  entity.addComponent<HasColor>(color);
+  entity.addComponent<CollisionAbsorber>(
+      CollisionAbsorber::AbsorberType::Absorber);
+  // TODO create a rock or other random obstacle sprite
+  // entity.addComponent<afterhours::texture_manager::HasSprite>(
+  //     transform.position, transform.size, transform.angle,
+  //     idx_to_sprite_frame(0, 1), 1.f, entity.get<HasColor>().color());
 
   return entity;
 }

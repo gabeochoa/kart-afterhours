@@ -48,6 +48,8 @@ void game() {
     systems.register_update_system(std::make_unique<Shoot>());
     systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
     systems.register_update_system(std::make_unique<ProcessDamage>());
+    systems.register_update_system(
+        std::make_unique<ProcessCollisionAbsorption>());
     systems.register_update_system(std::make_unique<ProcessDeath>());
     systems.register_update_system(std::make_unique<SkidMarks>());
     systems.register_update_system(std::make_unique<UpdateCollidingEntities>());
@@ -93,7 +95,9 @@ void game() {
 
   while (running && !raylib::WindowShouldClose()) {
     raylib::BeginDrawing();
-    { systems.run(raylib::GetFrameTime()); }
+    {
+      systems.run(raylib::GetFrameTime());
+    }
     raylib::EndDrawing();
   }
 
@@ -116,6 +120,27 @@ int main(int argc, char *argv[]) {
   Settings::get().refresh_settings();
 
   make_player(0);
+
+  const CollisionConfig rock_collision_config{
+      .mass = std::numeric_limits<float>::max(),
+      .friction = 1.f,
+      .restitution = 0.f};
+
+  make_obstacle({screenWidth * .2f, screenHeight * .2f, 50.f, 50.f},
+                raylib::BLACK, rock_collision_config);
+  make_obstacle({screenWidth * .2f, screenHeight * .8f, 50.f, 50.f},
+                raylib::BLACK, rock_collision_config);
+  make_obstacle({screenWidth * .8f, screenHeight * .2f, 50.f, 50.f},
+                raylib::BLACK, rock_collision_config);
+  make_obstacle({screenWidth * .8f, screenHeight * .8f, 50.f, 50.f},
+                raylib::BLACK, rock_collision_config);
+
+  const CollisionConfig ball_collision_config{
+      .mass = 100.f, .friction = 0.f, .restitution = .75f};
+
+  make_obstacle(
+      {(screenWidth * .5f) - 25.f, (screenHeight * .5f) - 25.f, 50.f, 50.f},
+      raylib::WHITE, ball_collision_config);
 
   if (cmdl[{"-i", "--show-intro"}]) {
     intro();

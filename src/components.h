@@ -104,13 +104,18 @@ struct TracksEntity : BaseComponent {
   TracksEntity(EntityID id_, vec2 off) : id(id_), offset(off) {}
 };
 
+struct CollisionConfig {
+  float mass{1.f}; // Affects impulse strength & knock back effect
+  float friction{
+      0.f}; // Affects post collision slide velocity and subsequently distance
+  float restitution{.5f}; // Affects "bouncy-ness" [0, 1] where 1 is bouncy
+};
+
 struct Transform : BaseComponent {
   vec2 position{0.f, 0.f};
   vec2 velocity{0.f, 0.f};
   vec2 size{0.f, 0.f};
-  float mass{1.f};
-  float friction{0.f};
-  float restitution{.5f};
+  CollisionConfig collision_config{};
   float accel{0.f};
   float accel_mult{1.f};
 
@@ -123,6 +128,8 @@ struct Transform : BaseComponent {
   vec2 pos() const { return position; }
   void update(const vec2 &v) { position = v; }
   Transform(vec2 pos, vec2 sz) : position(pos), size(sz) {}
+  Transform(Rectangle rect)
+      : position({rect.x, rect.y}), size({rect.width, rect.height}) {}
   raylib::Rectangle rect() const {
     return raylib::Rectangle{position.x, position.y, size.x, size.y};
   }
@@ -254,4 +261,24 @@ struct HasLabels : public BaseComponent {
   HasLabels() = default;
 
   HasLabels(std::vector<LabelInfo> labels) : label_info{std::move(labels)} {}
+};
+
+struct CollisionAbsorber : public BaseComponent {
+  CollisionAbsorber() = default;
+
+  enum class AbsorberType {
+    Absorber,
+    Absorbed, // Cleans up upon collision with a differently parented Absorber
+  };
+
+  CollisionAbsorber(AbsorberType absorber_type_in,
+                    std::optional<size_t> parent_id_in = std::nullopt)
+      : BaseComponent{}, absorber_type{absorber_type_in},
+        parent_id{parent_id_in} {}
+
+  // Affects cleanup if objects touching are of opposite types
+  AbsorberType absorber_type{AbsorberType::Absorber};
+
+  // Optionally ignore collision if containing the same parent
+  std::optional<EntityID> parent_id{std::nullopt};
 };
