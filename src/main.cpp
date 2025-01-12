@@ -73,32 +73,62 @@ void game() {
     ui::register_after_ui_updates<InputAction>(systems);
   }
 
+  raylib::RenderTexture2D mainRT;
+  mainRT = raylib::LoadRenderTexture(1280, 720);
+
+  raylib::Shader shader =
+      raylib::LoadShader(0, GetAssetPath("shaders/post_processing.fs"));
+
+  int time_loc = raylib::GetShaderLocation(shader, "time");
+  int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
+  vec2 resolution{
+      (float)raylib::GetRenderWidth(),
+      (float)raylib::GetRenderHeight(),
+  };
+  raylib::SetShaderValue(shader, resolution_loc, &resolution,
+                         raylib::SHADER_UNIFORM_VEC2);
+
   // renders
   {
-    systems.register_render_system(
-        [&](float) { raylib::ClearBackground(raylib::DARKGRAY); });
-    ui::register_render_systems<InputAction>(systems,
-                                             InputAction::ToggleUILayoutDebug);
+    systems.register_render_system([&](float) {
+      raylib::BeginTextureMode(mainRT);
+      raylib::ClearBackground(raylib::DARKGRAY);
+    });
+    {
+      ui::register_render_systems<InputAction>(
+          systems, InputAction::ToggleUILayoutDebug);
+      //
+      systems.register_render_system(std::make_unique<RenderSkid>());
+      systems.register_render_system(std::make_unique<RenderEntities>());
+      texture_manager::register_render_systems(systems);
+      //
+      systems.register_render_system(std::make_unique<RenderHealthAndLives>());
+      systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
+      systems.register_render_system(std::make_unique<RenderOOB>());
+      systems.register_render_system(std::make_unique<RenderLabels>());
+      systems.register_render_system(std::make_unique<CarRumble>());
+    }
+    systems.register_render_system([&](float) { raylib::EndTextureMode(); });
+
+    systems.register_render_system([&](float) { raylib::BeginDrawing(); });
+    {
+      systems.register_render_system([&](float) {
+        auto time = raylib::GetTime();
+        raylib::SetShaderValue(shader, time_loc, &time,
+                               raylib::SHADER_UNIFORM_FLOAT);
+        raylib::BeginShaderMode(shader);
+        raylib::DrawTextureRec(mainRT.texture, {0, 0, 1280, -720}, {0, 0},
+                               raylib::WHITE);
+        raylib::EndShaderMode();
+      });
+      systems.register_render_system(std::make_unique<RenderFPS>());
+    }
+    systems.register_render_system([&](float) { raylib::EndDrawing(); });
     //
-    systems.register_render_system(std::make_unique<RenderSkid>());
-    systems.register_render_system(std::make_unique<RenderEntities>());
-    texture_manager::register_render_systems(systems);
-    //
-    systems.register_render_system(std::make_unique<RenderHealthAndLives>());
-    systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
-    systems.register_render_system(std::make_unique<RenderOOB>());
-    systems.register_render_system(std::make_unique<RenderLabels>());
-    systems.register_render_system(std::make_unique<CarRumble>());
-    //
-    systems.register_render_system(std::make_unique<RenderFPS>());
   }
 
   while (running && !raylib::WindowShouldClose()) {
-    raylib::BeginDrawing();
-    {
-      systems.run(raylib::GetFrameTime());
-    }
-    raylib::EndDrawing();
+    systems.run(raylib::GetFrameTime());
   }
 
   std::cout << "Num entities: " << EntityHelper::get_entities().size()
