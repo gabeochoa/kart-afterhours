@@ -25,12 +25,13 @@ struct ShaderLibrary {
   void update_values(vec2 *rez, float *time) {
     for (auto &kv : impl.storage) {
       auto &shader = kv.second;
-      int time_loc = raylib::GetShaderLocation(shader, "time");
-      int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
-      raylib::SetShaderValue(shader, resolution_loc, rez,
-                             raylib::SHADER_UNIFORM_VEC2);
-      raylib::SetShaderValue(shader, time_loc, time,
-                             raylib::SHADER_UNIFORM_FLOAT);
+      // TODO this doesnt seem to work on my personal laptop?
+      // int time_loc = raylib::GetShaderLocation(shader, "time");
+      // int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
+      // raylib::SetShaderValue(shader, resolution_loc, rez,
+      // raylib::SHADER_UNIFORM_VEC2);
+      // raylib::SetShaderValue(shader, time_loc, time,
+      // raylib::SHADER_UNIFORM_FLOAT);
     }
   }
 
