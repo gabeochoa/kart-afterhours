@@ -58,6 +58,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   std::vector<RefEntity> ais;
   input::PossibleInputCollector<InputAction> inpc;
 
+  // round settings
+  constexpr static auto weapon_list = magic_enum::enum_values<Weapon::Type>();
+  std::bitset<magic_enum::enum_count<Weapon::Type>()> enabled_weapons;
+  // TODO load last used settings
+
   void update_resolution_cache() {
     resolution_provider = EntityHelper::get_singleton_cmp<
         window_manager::ProvidesAvailableWindowResolutions>();
