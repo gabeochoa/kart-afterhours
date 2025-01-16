@@ -60,6 +60,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
   // round settings
   constexpr static auto weapon_list = magic_enum::enum_values<Weapon::Type>();
+  constexpr static auto weapon_string_list =
+      magic_enum::enum_names<Weapon::Type>();
   std::bitset<magic_enum::enum_count<Weapon::Type>()> enabled_weapons;
   // TODO load last used settings
 
@@ -270,8 +272,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           .set_desired_width(screen_pct(1.f))
           .set_desired_height(screen_pct(1.f))
           .make_absolute();
-      elem.ent().get<ui::UIComponentDebug>().set(
-          ui::UIComponentDebug::Type::custom, "character_creation");
+      elem.ent().get<ui::UIComponentDebug>().set("character_creation");
     }
 
     size_t num_slots = players.size() + ais.size() + 1;
@@ -346,9 +347,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           .set_desired_width(screen_pct(1.f))
           .set_desired_height(screen_pct(1.f))
           .make_absolute();
-      elem.ent().get<ui::UIComponentDebug>().set(
-          ui::UIComponentDebug::Type::custom, "main_screen");
+      elem.ent().get<ui::UIComponentDebug>().set("main_screen");
     }
+
+    // imm::checkbox_group(context, mk(elem.ent()), enabled_weapons, -1,
+                        // weapon_string_list);
 
     auto button_group = imm::div(context, mk(elem.ent()));
     {
@@ -358,8 +361,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           .set_desired_height(screen_pct(1.f))
           .set_desired_padding(button_group_padding)
           .make_absolute();
-      button_group.ent().get<ui::UIComponentDebug>().set(
-          ui::UIComponentDebug::Type::custom, "button_group");
+      button_group.ent().get<ui::UIComponentDebug>().set("button_group");
     }
 
     ComponentConfig play_button_config;
@@ -416,8 +418,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           .set_desired_width(screen_pct(1.f))
           .set_desired_height(screen_pct(1.f))
           .make_absolute();
-      elem.ent().get<ui::UIComponentDebug>().set(
-          ui::UIComponentDebug::Type::custom, "main_screen");
+      elem.ent().get<ui::UIComponentDebug>().set("main_screen");
     }
 
     ComponentConfig control_group_config;
@@ -518,8 +519,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           .set_desired_width(screen_pct(1.f))
           .set_desired_height(screen_pct(1.f))
           .make_absolute();
-      elem.ent().get<ui::UIComponentDebug>().set(
-          ui::UIComponentDebug::Type::custom, "about_screen");
+      elem.ent().get<ui::UIComponentDebug>().set("about_screen");
     }
 
     ComponentConfig about_screen_config;
