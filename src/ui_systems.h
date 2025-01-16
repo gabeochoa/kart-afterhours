@@ -351,7 +351,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     }
 
     // imm::checkbox_group(context, mk(elem.ent()), enabled_weapons, -1,
-                        // weapon_string_list);
+    // weapon_string_list);
 
     auto button_group = imm::div(context, mk(elem.ent()));
     {
