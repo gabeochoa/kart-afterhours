@@ -362,6 +362,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           .make_absolute();
       elem.ent().get<ui::UIComponentDebug>().set("round_settings");
     }
+
     auto settings_group = imm::div(context, mk(elem.ent()));
     {
       settings_group.ent()
@@ -373,18 +374,20 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       settings_group.ent().get<ui::UIComponentDebug>().set("settings_group");
     }
 
-    imm::checkbox_group(context, mk(settings_group.ent()), enabled_weapons, -1,
-                        weapon_string_list);
+    imm::checkbox_group(context, mk(settings_group.ent()), enabled_weapons,
+                        weapon_string_list, {1, 3});
 
-    ComponentConfig back_button_config;
-    back_button_config.padding = button_padding;
-    back_button_config.label = "back";
+    {
+      ComponentConfig back_button_config;
+      back_button_config.padding = button_padding;
+      back_button_config.label = "back";
 
-    if (imm::button(context, mk(settings_group.ent()),
-                    std::move(back_button_config))
-        //
-    ) {
-      active_screen = Screen::CharacterCreation;
+      if (imm::button(context, mk(settings_group.ent()),
+                      std::move(back_button_config))
+          //
+      ) {
+        active_screen = Screen::CharacterCreation;
+      }
     }
   }
 
