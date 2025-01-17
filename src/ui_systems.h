@@ -17,6 +17,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     Main,
     CharacterCreation,
     About,
+    RoundSettings,
     Settings,
   } active_screen = Screen::Main;
 
@@ -336,6 +337,55 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
         active_screen = Screen::None;
       }
     }
+
+    {
+      ComponentConfig button_config;
+      button_config.padding = button_padding;
+      button_config.label = "round settings";
+
+      if (imm::button(context, mk(elem.ent()), std::move(button_config))
+          //
+      ) {
+        active_screen = Screen::RoundSettings;
+      }
+    }
+  }
+
+  void round_settings(Entity &entity, UIContext<InputAction> &context) {
+    auto elem = imm::div(context, mk(entity));
+    {
+      elem.ent()
+          .get<UIComponent>()
+          .enable_font(get_font_name(FontID::EQPro), 75.f)
+          .set_desired_width(screen_pct(1.f))
+          .set_desired_height(screen_pct(1.f))
+          .make_absolute();
+      elem.ent().get<ui::UIComponentDebug>().set("round_settings");
+    }
+    auto settings_group = imm::div(context, mk(elem.ent()));
+    {
+      settings_group.ent()
+          .get<UIComponent>()
+          .set_desired_width(screen_pct(1.f))
+          .set_desired_height(screen_pct(1.f))
+          .set_desired_padding(button_group_padding)
+          .make_absolute();
+      settings_group.ent().get<ui::UIComponentDebug>().set("settings_group");
+    }
+
+    imm::checkbox_group(context, mk(settings_group.ent()), enabled_weapons, -1,
+                        weapon_string_list);
+
+    ComponentConfig back_button_config;
+    back_button_config.padding = button_padding;
+    back_button_config.label = "back";
+
+    if (imm::button(context, mk(settings_group.ent()),
+                    std::move(back_button_config))
+        //
+    ) {
+      active_screen = Screen::CharacterCreation;
+    }
   }
 
   void main_screen(Entity &entity, UIContext<InputAction> &context) {
@@ -585,6 +635,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       break;
     case Screen::Main:
       main_screen(entity, context);
+      break;
+    case Screen::RoundSettings:
+      round_settings(entity, context);
       break;
     }
   }
