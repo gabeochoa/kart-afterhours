@@ -50,7 +50,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       nullptr}; // non owning ptr
                 // eventually std::observer_ptr?
   std::vector<std::string> resolution_strs;
-  int resolution_index{0};
+  size_t resolution_index{0};
   bool fs_enabled{false};
   bool ui_visible{true};
 
@@ -64,6 +64,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   constexpr static auto weapon_string_list =
       magic_enum::enum_names<Weapon::Type>();
   std::bitset<magic_enum::enum_count<Weapon::Type>()> enabled_weapons;
+  size_t win_condition_index = 0;
   // TODO load last used settings
 
   void update_resolution_cache() {
@@ -77,7 +78,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                            std::back_inserter(temp),
                            [](const auto &rez) { return std::string(rez); });
     resolution_strs = std::move(temp);
-    resolution_index = static_cast<int>(resolution_provider->current_index());
+    resolution_index = resolution_provider->current_index();
   }
 
   ScheduleMainMenuUI() {}
@@ -374,6 +375,9 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       settings_group.ent().get<ui::UIComponentDebug>().set("settings_group");
     }
 
+    // number of lives
+    // time
+
     imm::checkbox_group(context, mk(settings_group.ent()), enabled_weapons,
                         weapon_string_list, {1, 3});
 
@@ -402,9 +406,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           .make_absolute();
       elem.ent().get<ui::UIComponentDebug>().set("main_screen");
     }
-
-    // imm::checkbox_group(context, mk(elem.ent()), enabled_weapons, -1,
-    // weapon_string_list);
 
     auto button_group = imm::div(context, mk(elem.ent()));
     {
@@ -538,8 +539,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
       if (imm::dropdown(context, mk(control_group.ent()), resolution_strs,
                         resolution_index, std::move(resolution_config))) {
-        resolution_provider->on_data_changed(
-            static_cast<size_t>(resolution_index));
+        resolution_provider->on_data_changed(resolution_index);
       }
     }
 
