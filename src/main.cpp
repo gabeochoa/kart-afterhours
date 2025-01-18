@@ -21,7 +21,45 @@ bool running = true;
 
 using namespace afterhours;
 
+void make_default_map() {
+  make_player(0);
+
+  auto *pcr = EntityHelper::get_singleton_cmp<
+      window_manager::ProvidesCurrentResolution>();
+
+  window_manager::Resolution resolution = pcr->current_resolution;
+
+  const auto screen_pct = [resolution](float x, float y) {
+    return Rectangle{
+        resolution.width * x,
+        resolution.height * y,
+        50.f,
+        50.f,
+    };
+  };
+
+  const CollisionConfig rock_collision_config{
+      .mass = std::numeric_limits<float>::max(),
+      .friction = 1.f,
+      .restitution = 0.f,
+  };
+
+  make_obstacle(screen_pct(0.2f, 0.2f), raylib::BLACK, rock_collision_config);
+  make_obstacle(screen_pct(0.2f, 0.8f), raylib::BLACK, rock_collision_config);
+  make_obstacle(screen_pct(0.8f, 0.8f), raylib::BLACK, rock_collision_config);
+  make_obstacle(screen_pct(0.8f, 0.2f), raylib::BLACK, rock_collision_config);
+
+  const CollisionConfig ball_collision_config{
+      .mass = 100.f,
+      .friction = 0.f,
+      .restitution = .75f,
+  };
+
+  make_obstacle(screen_pct(0.5f, 0.2f), raylib::WHITE, ball_collision_config);
+}
+
 void game() {
+
   SystemManager systems;
 
   // debug systems
@@ -46,6 +84,13 @@ void game() {
 
   // normal update
   {
+    bool create_map = true;
+    systems.register_render_system([&](float) {
+      if (create_map) {
+        make_default_map();
+        create_map = false;
+      }
+    });
     systems.register_update_system(std::make_unique<Shoot>());
     systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
     systems.register_update_system(std::make_unique<ProcessDamage>());
@@ -135,29 +180,6 @@ int main(int argc, char *argv[]) {
       .init(screenWidth, screenHeight, "Cart Chaos")
       .make_singleton();
   Settings::get().refresh_settings();
-
-  make_player(0);
-
-  const CollisionConfig rock_collision_config{
-      .mass = std::numeric_limits<float>::max(),
-      .friction = 1.f,
-      .restitution = 0.f};
-
-  make_obstacle({screenWidth * .2f, screenHeight * .2f, 50.f, 50.f},
-                raylib::BLACK, rock_collision_config);
-  make_obstacle({screenWidth * .2f, screenHeight * .8f, 50.f, 50.f},
-                raylib::BLACK, rock_collision_config);
-  make_obstacle({screenWidth * .8f, screenHeight * .2f, 50.f, 50.f},
-                raylib::BLACK, rock_collision_config);
-  make_obstacle({screenWidth * .8f, screenHeight * .8f, 50.f, 50.f},
-                raylib::BLACK, rock_collision_config);
-
-  const CollisionConfig ball_collision_config{
-      .mass = 100.f, .friction = 0.f, .restitution = .75f};
-
-  make_obstacle(
-      {(screenWidth * .5f) - 25.f, (screenHeight * .2f) - 25.f, 50.f, 50.f},
-      raylib::WHITE, ball_collision_config);
 
   if (cmdl[{"-i", "--show-intro"}]) {
     intro();
