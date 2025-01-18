@@ -6,6 +6,7 @@
 #include "input_mapping.h"
 #include "shader_library.h"
 #include "sound_library.h"
+#include "texture_library.h"
 
 using namespace afterhours;
 // for HasTexture
@@ -56,6 +57,11 @@ Preload &Preload::init(int width, int height, const char *title) {
 
   ShaderLibrary::get().load(GetAssetPath("shaders/post_processing.fs"),
                             "post_processing");
+
+  // TODO load all controls
+  TextureLibrary::get().load(
+      GetAssetPath("controls/xbox_default/xbox_button_color_a.png"),
+      "xbox_button_color_a");
 
   return *this;
 }
