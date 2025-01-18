@@ -10,6 +10,8 @@ backward::SignalHandling sh;
 
 #include "rl.h"
 bool running = true;
+// TODO move into library or somethign
+raylib::RenderTexture2D mainRT;
 //
 #include "argh.h"
 #include "intro.h"
@@ -59,6 +61,7 @@ void make_default_map() {
 }
 
 void game(float screenWidth, float screenHeight) {
+  mainRT = raylib::LoadRenderTexture(screenWidth, screenHeight);
 
   SystemManager systems;
 
@@ -118,10 +121,8 @@ void game(float screenWidth, float screenHeight) {
       systems.register_update_system(std::make_unique<ScheduleDebugUI>());
     }
     ui::register_after_ui_updates<InputAction>(systems);
+    systems.register_update_system(std::make_unique<UpdateRenderTexture>());
   }
-
-  raylib::RenderTexture2D mainRT;
-  mainRT = raylib::LoadRenderTexture(screenWidth, screenHeight);
 
   // renders
   {
@@ -148,10 +149,7 @@ void game(float screenWidth, float screenHeight) {
     {
       systems.register_render_system(
           std::make_unique<BeginShader>("post_processing"));
-      systems.register_render_system([&](float) {
-        raylib::DrawTextureRec(mainRT.texture, {0, 0, 1280, -720}, {0, 0},
-                               raylib::WHITE);
-      });
+      systems.register_render_system(std::make_unique<RenderRenderTexture>());
       systems.register_render_system([&](float) { raylib::EndShaderMode(); });
       systems.register_render_system(std::make_unique<RenderFPS>());
     }

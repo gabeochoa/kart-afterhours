@@ -42,6 +42,37 @@ struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
+struct UpdateRenderTexture : System<> {
+  virtual ~UpdateRenderTexture() {}
+
+  void once(float) {
+    const window_manager::ProvidesCurrentResolution *pcr =
+        EntityHelper::get_singleton_cmp<
+            window_manager::ProvidesCurrentResolution>();
+
+    auto resolution = pcr->current_resolution;
+    mainRT = raylib::LoadRenderTexture(resolution.width, resolution.height);
+  }
+};
+
+struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
+  virtual ~RenderRenderTexture() {}
+  virtual void for_each_with(
+      const Entity &,
+      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
+      float) const override {
+    auto resolution = pCurrentResolution.current_resolution;
+    raylib::DrawTextureRec(mainRT.texture,
+                           {
+                               0,
+                               0,
+                               static_cast<float>(resolution.width),
+                               -1.f * static_cast<float>(resolution.height),
+                           },
+                           {0, 0}, raylib::WHITE);
+  }
+};
+
 struct RenderEntities : System<Transform> {
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,
