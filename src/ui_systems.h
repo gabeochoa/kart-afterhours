@@ -439,26 +439,30 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       active_screen = Screen::About;
     }
 
-    ComponentConfig settings_button_config;
-    settings_button_config.padding = button_padding;
-    settings_button_config.label = "settings";
+    {
+      ComponentConfig settings_button_config;
+      settings_button_config.padding = button_padding;
+      settings_button_config.label = "settings";
 
-    if (imm::button(context, mk(button_group.ent()),
-                    std::move(settings_button_config))
-        //
-    ) {
-      active_screen = Screen::Settings;
+      if (imm::button(context, mk(button_group.ent()),
+                      std::move(settings_button_config))
+          //
+      ) {
+        active_screen = Screen::Settings;
+      }
     }
 
-    ComponentConfig exit_button_config;
-    exit_button_config.padding = button_padding;
-    exit_button_config.label = "exit";
+    {
+      ComponentConfig exit_button_config;
+      exit_button_config.padding = button_padding;
+      exit_button_config.label = "exit";
 
-    if (imm::button(context, mk(button_group.ent()),
-                    std::move(exit_button_config))
-        //
-    ) {
-      running = false;
+      if (imm::button(context, mk(button_group.ent()),
+                      std::move(exit_button_config))
+          //
+      ) {
+        running = false;
+      }
     }
   }
 
