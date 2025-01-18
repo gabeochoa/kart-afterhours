@@ -159,7 +159,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                        .left = percent(0.05f),
                                        .right = percent(0.05f),
                                    },
-                               .color = bg_color,
+                               .color_usage = Theme::Usage::Custom,
+                               .custom_color = bg_color,
                            });
 
     if (car.has_value()) {
@@ -175,7 +176,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
               .label = std::format("{} {}", index, car->id),
               .debug_name = std::format("player_car {} {} {} {}", index,
                                         car->id, players.size(), ais.size()),
-              .color = bg_color,
+              .color_usage = Theme::Usage::Custom,
+              .custom_color = bg_color,
           });
     }
 
@@ -214,7 +216,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                   .label = "Next Color",
                   .skip_when_tabbing = true,
                   .debug_name = std::format("next_color button {} ", index),
-                  .color = raylib::BLUE,
               });
           elem || player_right) {
         colorManager.release_and_get_next(car->id);
@@ -236,7 +237,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                               },
                           .label = "Add AI",
                           .debug_name = "add_ai_button",
-                          .color = raylib::BLUE,
                       })) {
         make_ai();
       }
@@ -256,7 +256,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                               },
                           .label = "Remove AI",
                           .debug_name = "remove_ai_button",
-                          .color = raylib::BLUE,
                       })) {
 
         colorManager.release_only(car->id);
