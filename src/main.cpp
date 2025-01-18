@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
       .mass = 100.f, .friction = 0.f, .restitution = .75f};
 
   make_obstacle(
-      {(screenWidth * .5f) - 25.f, (screenHeight * .5f) - 25.f, 50.f, 50.f},
+      {(screenWidth * .5f) - 25.f, (screenHeight * .2f) - 25.f, 50.f, 50.f},
       raylib::WHITE, ball_collision_config);
 
   if (cmdl[{"-i", "--show-intro"}]) {
