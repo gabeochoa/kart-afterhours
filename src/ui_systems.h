@@ -63,7 +63,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   constexpr static auto weapon_list = magic_enum::enum_values<Weapon::Type>();
   constexpr static auto weapon_string_list =
       magic_enum::enum_names<Weapon::Type>();
-  std::bitset<magic_enum::enum_count<Weapon::Type>()> enabled_weapons;
+  std::bitset<magic_enum::enum_count<Weapon::Type>()> enabled_weapons =
+      std::bitset<magic_enum::enum_count<Weapon::Type>()>().set(0);
   size_t win_condition_index = 0;
   // TODO load last used settings
 
@@ -382,6 +383,16 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
           .set_desired_padding(button_group_padding)
           .make_absolute();
       settings_group.ent().get<ui::UIComponentDebug>().set("settings_group");
+    }
+
+    {
+      ComponentConfig cmp_config;
+      cmp_config.label = "Win Condition";
+
+      if (imm::pagination(context, mk(settings_group.ent()),
+                          {{"Kills", "Lives", "Score"}}, win_condition_index,
+                          std::move(cmp_config))) {
+      }
     }
 
     // number of lives
