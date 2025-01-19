@@ -159,6 +159,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                        .left = percent(0.05f),
                                        .right = percent(0.05f),
                                    },
+                               // disable round
+                               .rounded_corners = std::bitset<4>().reset(),
                                .color_usage = Theme::Usage::Custom,
                                .custom_color = bg_color,
                            });
@@ -173,6 +175,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                       percent(1.f),
                       percent(0.2f, 0.4f),
                   },
+              // disable round
+              .rounded_corners = std::bitset<4>().reset(),
               .label = std::format("{} {}", index, car->id),
               .debug_name = std::format("player_car {} {} {} {}", index,
                                         car->id, players.size(), ais.size()),
@@ -213,6 +217,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                           percent(1.f),
                           percent(0.2f, 0.4f),
                       },
+                  // disable round
+                  .rounded_corners = std::bitset<4>().reset(),
                   .label = "Next Color",
                   .skip_when_tabbing = true,
                   .debug_name = std::format("next_color button {} ", index),
@@ -231,6 +237,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                   percent(1.f),
                                   pixels(50.f),
                               },
+                          // disable round
+                          .rounded_corners = std::bitset<4>().reset(),
                           .padding =
                               Padding{
                                   .top = percent(0.25f),
@@ -250,6 +258,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                   percent(1.f),
                                   pixels(50.f),
                               },
+                          // disable round
+                          .rounded_corners = std::bitset<4>().reset(),
                           .padding =
                               Padding{
                                   .top = percent(0.25f),

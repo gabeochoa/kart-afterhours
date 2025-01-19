@@ -24,6 +24,7 @@
 namespace raylib {
 #include "raylib/raylib.h"
 #include "raylib/raymath.h"
+#include "raylib/rlgl.h"
 //
 // #include "RaylibOpOverloads.h"
 
