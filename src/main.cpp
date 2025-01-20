@@ -1,6 +1,4 @@
 
-#include "std_include.h"
-
 #ifdef BACKWARD
 #include "backward/backward.hpp"
 namespace backward {
@@ -8,10 +6,7 @@ backward::SignalHandling sh;
 } // namespace backward
 #endif
 
-#include "rl.h"
-bool running = true;
-// TODO move into library or somethign
-raylib::RenderTexture2D mainRT;
+#include "game.h"
 //
 #include "argh.h"
 #include "intro.h"
@@ -20,6 +15,10 @@ raylib::RenderTexture2D mainRT;
 #include "sound_systems.h"
 #include "systems.h"
 #include "ui_systems.h"
+
+bool running = true;
+// TODO move into library or somethign
+raylib::RenderTexture2D mainRT;
 
 using namespace afterhours;
 

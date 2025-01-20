@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "game.h"
+
 #include "components.h"
 #include "query.h"
 #include "settings.h"
@@ -81,12 +83,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   void settings_screen(Entity &entity, UIContext<InputAction> &context);
   void about_screen(Entity &entity, UIContext<InputAction> &context);
 
-  void exit_game() {
-
-    // TODO move this into a globals or something?
-    // running = false;
-    exit(0);
-  }
+  void exit_game() { running = false; }
 
   virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
                              float) override {
