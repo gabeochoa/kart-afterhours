@@ -48,6 +48,10 @@ struct RoundManager {
         std::make_unique<RoundKillsSettings>();
     settings[enum_to_index(RoundType::Score)] =
         std::make_unique<RoundScoreSettings>();
+
+    settings[0]->enabled_weapons.reset().set(0);
+    settings[1]->enabled_weapons.reset().set(1);
+    settings[2]->enabled_weapons.reset().set(2);
   }
 
   RoundType active_round_type = RoundType::Lives;
