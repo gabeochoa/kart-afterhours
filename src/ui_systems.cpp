@@ -228,7 +228,7 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
   // 0-4 => 1, 5->8 -> 2
   int fours = static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
 
-  auto button_group =
+  auto btn_group =
       imm::div(context, mk(elem.ent()),
                ComponentConfig{
                    .size =
@@ -243,11 +243,11 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
                            .right = screen_pct(0.05f),
                        },
                    .is_absolute = true,
-                   .debug_name = "button_group",
+                   .debug_name = "btn_group",
                });
 
   for (int row_id = 0; row_id < fours; row_id++) {
-    auto row = imm::div(context, mk(button_group.ent(), row_id),
+    auto row = imm::div(context, mk(btn_group.ent(), row_id),
                         ComponentConfig{
                             .size =
                                 ComponentSize{
@@ -438,37 +438,40 @@ ScheduleMainMenuUI::main_screen(Entity &entity,
     elem.ent().get<ui::UIComponentDebug>().set("main_screen");
   }
 
-  auto button_group = imm::div(context, mk(elem.ent()));
+  auto btn_group = imm::div(context, mk(elem.ent()));
   {
-    button_group.ent()
+    btn_group.ent()
         .get<UIComponent>()
         .set_desired_width(screen_pct(1.f))
         .set_desired_height(screen_pct(1.f))
         .set_desired_padding(button_group_padding)
         .make_absolute();
-    button_group.ent().get<ui::UIComponentDebug>().set("button_group");
+    btn_group.ent().get<ui::UIComponentDebug>().set("btn_group");
   }
 
-  ComponentConfig play_button_config;
-  play_button_config.padding = button_padding;
-  play_button_config.label = "play";
+  {
+    ComponentConfig play_button_config;
+    play_button_config.padding = button_padding;
+    play_button_config.label = "play";
 
-  if (imm::button(context, mk(button_group.ent()),
-                  std::move(play_button_config))
-      //
-  ) {
-    next_active_screen = Screen::CharacterCreation;
+    if (imm::button(context, mk(btn_group.ent()), std::move(play_button_config))
+        //
+    ) {
+      next_active_screen = Screen::CharacterCreation;
+    }
   }
 
-  ComponentConfig about_button_config;
-  about_button_config.padding = button_padding;
-  about_button_config.label = "about";
+  {
+    ComponentConfig about_button_config;
+    about_button_config.padding = button_padding;
+    about_button_config.label = "about";
 
-  if (imm::button(context, mk(button_group.ent()),
-                  std::move(about_button_config))
-      //
-  ) {
-    next_active_screen = Screen::About;
+    if (imm::button(context, mk(btn_group.ent()),
+                    std::move(about_button_config))
+        //
+    ) {
+      next_active_screen = Screen::About;
+    }
   }
 
   {
@@ -476,7 +479,7 @@ ScheduleMainMenuUI::main_screen(Entity &entity,
     settings_button_config.padding = button_padding;
     settings_button_config.label = "settings";
 
-    if (imm::button(context, mk(button_group.ent()),
+    if (imm::button(context, mk(btn_group.ent()),
                     std::move(settings_button_config))
         //
     ) {
@@ -489,13 +492,13 @@ ScheduleMainMenuUI::main_screen(Entity &entity,
     exit_button_config.padding = button_padding;
     exit_button_config.label = "exit";
 
-    if (imm::button(context, mk(button_group.ent()),
-                    std::move(exit_button_config))
+    if (imm::button(context, mk(btn_group.ent()), std::move(exit_button_config))
         //
     ) {
       exit_game();
     }
   }
+
   return next_active_screen;
 }
 
