@@ -5,6 +5,8 @@
 #include "query.h"
 #include "settings.h"
 
+#include "round_settings.h"
+
 using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
 
@@ -19,7 +21,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     About,
     RoundSettings,
     Settings,
-  } active_screen = Screen::Main;
+  } active_screen = Screen::RoundSettings;
 
   Padding button_group_padding = Padding{
       .top = screen_pct(0.4f),
@@ -59,13 +61,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   std::vector<RefEntity> ais;
   input::PossibleInputCollector<InputAction> inpc;
 
-  // round settings
-  constexpr static auto weapon_list = magic_enum::enum_values<Weapon::Type>();
-  constexpr static auto weapon_string_list =
-      magic_enum::enum_names<Weapon::Type>();
-  std::bitset<magic_enum::enum_count<Weapon::Type>()> enabled_weapons =
-      std::bitset<magic_enum::enum_count<Weapon::Type>()>().set(0);
-  size_t win_condition_index = 0;
   // TODO load last used settings
 
   void update_resolution_cache() {
@@ -389,17 +384,24 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
       ComponentConfig cmp_config;
       cmp_config.label = "Win Condition";
 
-      if (imm::pagination(context, mk(settings_group.ent()),
-                          {{"Kills", "Lives", "Score"}}, win_condition_index,
-                          std::move(cmp_config))) {
+      size_t win_condition_index =
+          enum_to_index(RoundManager::get().active_round_type);
+
+      if (auto result = imm::pagination(context, mk(settings_group.ent()),
+                                        RoundType_NAMES, win_condition_index,
+                                        std::move(cmp_config));
+          result) {
+        RoundManager::get().set_active_round_type(result.as<int>());
       }
     }
 
     // number of lives
     // time
 
+    auto enabled_weapons = RoundManager::get().enabled_weapons;
+
     imm::checkbox_group(context, mk(settings_group.ent()), enabled_weapons,
-                        weapon_string_list, {1, 3});
+                        WEAPON_STRING_LIST, {1, 3});
 
     {
       ComponentConfig back_button_config;

@@ -206,3 +206,10 @@ struct CanShoot : BaseComponent {
     return false;
   }
 };
+
+// TODO add a macro that can do these for enums we love
+constexpr static auto WEAPON_LIST = magic_enum::enum_values<Weapon::Type>();
+constexpr static auto WEAPON_STRING_LIST =
+    magic_enum::enum_names<Weapon::Type>();
+constexpr static size_t WEAPON_COUNT = magic_enum::enum_count<Weapon::Type>();
+using WeaponSet = std::bitset<WEAPON_COUNT>;
