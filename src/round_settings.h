@@ -56,7 +56,7 @@ struct RoundManager {
 
   RoundType active_round_type = RoundType::Lives;
 
-  RoundSettings &get_active_settings() const {
+  RoundSettings &get_active_settings() {
     return *(settings[enum_to_index(active_round_type)]);
   };
 
@@ -64,11 +64,11 @@ struct RoundManager {
     auto &rt_settings = get_active_settings();
     switch (active_round_type) {
     case RoundType::Lives:
-      return static_cast<RoundLivesSettings &>(rt_settings);
+      return static_cast<T &>(rt_settings);
     case RoundType::Kills:
-      return static_cast<RoundKillsSettings &>(rt_settings);
+      return static_cast<T &>(rt_settings);
     case RoundType::Score:
-      return static_cast<RoundScoreSettings &>(rt_settings);
+      return static_cast<T &>(rt_settings);
     }
   }
 

@@ -4,7 +4,8 @@
 #include "input_mapping.h"
 #include "makers.h"  // make_ai()
 #include "preload.h" // FontID
-                     //
+#include "round_settings.h"
+//
 
 void ScheduleMainMenuUI::update_resolution_cache() {
   resolution_provider = EntityHelper::get_singleton_cmp<
@@ -299,6 +300,16 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
   return next_active_screen;
 }
 
+void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
+  auto &rl_settings = RoundManager::get().get_active_rt<RoundLivesSettings>();
+
+  imm::div(
+      context, mk(entity),
+      ComponentConfig{
+          .label = std::format("Num Lives: {}", rl_settings.num_starting_lives),
+      });
+}
+
 ScheduleMainMenuUI::Screen
 ScheduleMainMenuUI::round_settings(Entity &entity,
                                    UIContext<InputAction> &context) {
@@ -340,9 +351,7 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
     }
   }
 
-  // number of lives
-  // time
-
+  // shared across all round types
   auto enabled_weapons = RoundManager::get().get_enabled_weapons();
 
   if (auto result =
@@ -350,6 +359,16 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
                               enabled_weapons, WEAPON_STRING_LIST, {1, 3});
       result) {
     RoundManager::get().set_enabled_weapons(result.as<unsigned long>());
+  }
+
+  switch (RoundManager::get().active_round_type) {
+  case RoundType::Lives:
+    round_lives_settings(settings_group.ent(), context);
+    break;
+  case RoundType::Kills:
+    break;
+  case RoundType::Score:
+    break;
   }
 
   {
