@@ -44,4 +44,8 @@ struct RoundManager {
     active_round_type =
         magic_enum::enum_cast<RoundType>(index).value_or(RoundType::Lives);
   }
+
+  void set_enabled_weapons(unsigned long enabled_bits) {
+    enabled_weapons = WeaponSet(enabled_bits);
+  }
 };

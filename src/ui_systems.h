@@ -400,8 +400,12 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
     auto enabled_weapons = RoundManager::get().enabled_weapons;
 
-    imm::checkbox_group(context, mk(settings_group.ent()), enabled_weapons,
-                        WEAPON_STRING_LIST, {1, 3});
+    if (auto result =
+            imm::checkbox_group(context, mk(settings_group.ent()),
+                                enabled_weapons, WEAPON_STRING_LIST, {1, 3});
+        result) {
+      RoundManager::get().set_enabled_weapons(result.as<unsigned long>());
+    }
 
     {
       ComponentConfig back_button_config;
