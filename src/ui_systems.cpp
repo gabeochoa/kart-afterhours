@@ -208,8 +208,10 @@ void ScheduleMainMenuUI::character_selector_column(
   }
 }
 
-void ScheduleMainMenuUI::character_creation(Entity &entity,
-                                            UIContext<InputAction> &context) {
+ScheduleMainMenuUI::Screen
+ScheduleMainMenuUI::character_creation(Entity &entity,
+                                       UIContext<InputAction> &context) {
+  Screen next_active_screen = active_screen;
   auto elem = imm::div(context, mk(entity));
   {
     elem.ent()
@@ -267,7 +269,7 @@ void ScheduleMainMenuUI::character_creation(Entity &entity,
     if (imm::button(context, mk(elem.ent()), std::move(back_button_config))
         //
     ) {
-      active_screen = Screen::Main;
+      next_active_screen = Screen::Main;
     }
   }
 
@@ -278,7 +280,7 @@ void ScheduleMainMenuUI::character_creation(Entity &entity,
     if (imm::button(context, mk(elem.ent()), std::move(_button_config))
         //
     ) {
-      active_screen = Screen::None;
+      next_active_screen = Screen::None;
     }
   }
 
@@ -290,13 +292,17 @@ void ScheduleMainMenuUI::character_creation(Entity &entity,
     if (imm::button(context, mk(elem.ent()), std::move(button_config))
         //
     ) {
-      active_screen = Screen::RoundSettings;
+      next_active_screen = Screen::RoundSettings;
     }
   }
+
+  return next_active_screen;
 }
 
-void ScheduleMainMenuUI::round_settings(Entity &entity,
-                                        UIContext<InputAction> &context) {
+ScheduleMainMenuUI::Screen
+ScheduleMainMenuUI::round_settings(Entity &entity,
+                                   UIContext<InputAction> &context) {
+  Screen next_active_screen = active_screen;
   auto elem = imm::div(context, mk(entity));
   {
     elem.ent()
@@ -355,13 +361,16 @@ void ScheduleMainMenuUI::round_settings(Entity &entity,
                     std::move(back_button_config))
         //
     ) {
-      active_screen = Screen::CharacterCreation;
+      next_active_screen = Screen::CharacterCreation;
     }
   }
+  return next_active_screen;
 }
 
-void ScheduleMainMenuUI::main_screen(Entity &entity,
-                                     UIContext<InputAction> &context) {
+ScheduleMainMenuUI::Screen
+ScheduleMainMenuUI::main_screen(Entity &entity,
+                                UIContext<InputAction> &context) {
+  Screen next_active_screen = active_screen;
   auto elem = imm::div(context, mk(entity));
   {
     elem.ent()
@@ -392,7 +401,7 @@ void ScheduleMainMenuUI::main_screen(Entity &entity,
                   std::move(play_button_config))
       //
   ) {
-    active_screen = Screen::CharacterCreation;
+    next_active_screen = Screen::CharacterCreation;
   }
 
   ComponentConfig about_button_config;
@@ -403,7 +412,7 @@ void ScheduleMainMenuUI::main_screen(Entity &entity,
                   std::move(about_button_config))
       //
   ) {
-    active_screen = Screen::About;
+    next_active_screen = Screen::About;
   }
 
   {
@@ -415,7 +424,7 @@ void ScheduleMainMenuUI::main_screen(Entity &entity,
                     std::move(settings_button_config))
         //
     ) {
-      active_screen = Screen::Settings;
+      next_active_screen = Screen::Settings;
     }
   }
 
@@ -431,10 +440,13 @@ void ScheduleMainMenuUI::main_screen(Entity &entity,
       exit_game();
     }
   }
+  return next_active_screen;
 }
 
-void ScheduleMainMenuUI::settings_screen(Entity &entity,
-                                         UIContext<InputAction> &context) {
+ScheduleMainMenuUI::Screen
+ScheduleMainMenuUI::settings_screen(Entity &entity,
+                                    UIContext<InputAction> &context) {
+  Screen next_active_screen = active_screen;
   auto elem = imm::div(context, mk(entity));
   {
     elem.ent()
@@ -526,14 +538,17 @@ void ScheduleMainMenuUI::settings_screen(Entity &entity,
                   std::move(back_button_config))
       //
   ) {
-    active_screen = Screen::Main;
+    next_active_screen = Screen::Main;
   }
+  return next_active_screen;
 }
 
-void ScheduleMainMenuUI::about_screen(Entity &entity,
-                                      UIContext<InputAction> &context) {
+ScheduleMainMenuUI::Screen
+ScheduleMainMenuUI::about_screen(Entity &entity,
+                                 UIContext<InputAction> &context) {
+  Screen next_active_screen = active_screen;
   if (!current_resolution_provider)
-    return;
+    return next_active_screen;
 
   auto elem = imm::div(context, mk(entity));
   {
@@ -588,8 +603,9 @@ void ScheduleMainMenuUI::about_screen(Entity &entity,
   if (imm::button(context, mk(about_group.ent()), std::move(back_button_config))
       //
   ) {
-    active_screen = Screen::Main;
+    next_active_screen = Screen::Main;
   }
+  return next_active_screen;
 }
 
 bool ScheduleDebugUI::should_run(float dt) {

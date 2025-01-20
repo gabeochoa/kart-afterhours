@@ -77,11 +77,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                  UIContext<InputAction> &context, size_t index,
                                  size_t num_slots);
 
-  void character_creation(Entity &entity, UIContext<InputAction> &context);
-  void round_settings(Entity &entity, UIContext<InputAction> &context);
-  void main_screen(Entity &entity, UIContext<InputAction> &context);
-  void settings_screen(Entity &entity, UIContext<InputAction> &context);
-  void about_screen(Entity &entity, UIContext<InputAction> &context);
+  Screen character_creation(Entity &entity, UIContext<InputAction> &context);
+  Screen round_settings(Entity &entity, UIContext<InputAction> &context);
+  Screen main_screen(Entity &entity, UIContext<InputAction> &context);
+  Screen settings_screen(Entity &entity, UIContext<InputAction> &context);
+  Screen about_screen(Entity &entity, UIContext<InputAction> &context);
 
   void exit_game() { running = false; }
 
@@ -91,19 +91,19 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     case Screen::None:
       break;
     case Screen::CharacterCreation:
-      character_creation(entity, context);
+      active_screen = character_creation(entity, context);
       break;
     case Screen::About:
-      about_screen(entity, context);
+      active_screen = about_screen(entity, context);
       break;
     case Screen::Settings:
-      settings_screen(entity, context);
+      active_screen = settings_screen(entity, context);
       break;
     case Screen::Main:
-      main_screen(entity, context);
+      active_screen = main_screen(entity, context);
       break;
     case Screen::RoundSettings:
-      round_settings(entity, context);
+      active_screen = round_settings(entity, context);
       break;
     }
   }
