@@ -2,6 +2,7 @@
   {
     "arguments": [
       "/usr/bin/clang++",
+      "-std=c++23",
       "-fPIC",
       "-Qunused-arguments",
       "-target",
@@ -38,6 +39,7 @@
   {
     "arguments": [
       "/usr/bin/clang++",
+      "-std=c++23",
       "-Wno-deprecated-volatile",
       "-Wno-missing-field-initializers",
       "-Wno-c99-extensions",
@@ -63,6 +65,7 @@
       "/usr/bin/clang++",
       "-fdiagnostics-color=always",
       "-Qunused-arguments",
+      "-std=c++23",
       "-target",
       "arm64-apple-macos15.1",
       "-isysroot",
@@ -79,6 +82,7 @@
   {
     "arguments": [
       "/usr/bin/clang++",
+      "-std=c++23",
       "-Wno-gnu-line-marker",
       "-Werror",
       "-Qunused-arguments",
@@ -98,6 +102,7 @@
   {
     "arguments": [
       "/usr/bin/clang++",
+      "-std=c++23",
       "-c",
       "-fPIC",
       "-target",
@@ -119,6 +124,7 @@
   {
     "arguments": [
       "/usr/bin/clang++",
+      "-std=c++23",
       "-c",
       "-target",
       "arm64-apple-macos15.1",
@@ -159,6 +165,7 @@
   {
     "arguments": [
       "/usr/bin/clang++",
+      "-std=c++23",
       "-c",
       "-target",
       "arm64-apple-macos15.1",
