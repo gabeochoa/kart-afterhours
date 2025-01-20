@@ -26,7 +26,34 @@ struct RoundLivesSettings : RoundSettings {
 };
 
 struct RoundKillsSettings : RoundSettings {
-  float round_time = 30.f;
+  enum struct TimeOptions : size_t {
+    Unlimited,
+    Seconds_30,
+    Minutes_1,
+  } time_option = TimeOptions::Unlimited;
+
+  void set_time_option(int index) {
+    time_option = magic_enum::enum_value<TimeOptions>(index);
+    reset_round_time();
+  }
+
+  void reset_round_time() {
+    float new_time = -1;
+    switch (time_option) {
+    case TimeOptions::Unlimited:
+      new_time = -1;
+      break;
+    case TimeOptions::Seconds_30:
+      new_time = 30.f;
+      break;
+    case TimeOptions::Minutes_1:
+      new_time = 60.f;
+      break;
+    }
+    current_round_time = new_time;
+  }
+
+  float current_round_time = -1;
 };
 
 struct RoundScoreSettings : RoundSettings {

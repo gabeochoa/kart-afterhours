@@ -315,8 +315,24 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
 
   imm::div(context, mk(entity),
            ComponentConfig{
-               .label = std::format("Round Length: {}", rl_settings.round_time),
+               .label = std::format("Round Length: {}",
+                                    rl_settings.current_round_time),
            });
+
+  {
+    ComponentConfig resolution_config;
+    resolution_config.label = "Round Length";
+
+    // TODO replace with actual strings
+    auto options = magic_enum::enum_names<RoundKillsSettings::TimeOptions>();
+    auto option_index = magic_enum::enum_index(rl_settings.time_option).value();
+
+    if (auto result = imm::dropdown(context, mk(entity), options, option_index,
+                                    std::move(resolution_config));
+        result) {
+      rl_settings.set_time_option(result.as<int>());
+    }
+  }
 }
 
 void round_score_settings(Entity &entity, UIContext<InputAction> &context) {
