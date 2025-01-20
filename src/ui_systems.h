@@ -23,7 +23,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     About,
     RoundSettings,
     Settings,
-  } active_screen = Screen::RoundSettings;
+  } active_screen = Screen::Main;
 
   Padding button_group_padding = Padding{
       .top = screen_pct(0.4f),
