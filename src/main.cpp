@@ -61,7 +61,8 @@ void make_default_map() {
 }
 
 void game(float screenWidth, float screenHeight) {
-  mainRT = raylib::LoadRenderTexture(screenWidth, screenHeight);
+  mainRT = raylib::LoadRenderTexture(static_cast<int>(screenWidth),
+                                     static_cast<int>(screenHeight));
 
   SystemManager systems;
 
