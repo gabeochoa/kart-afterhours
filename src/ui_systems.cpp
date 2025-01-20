@@ -310,6 +310,25 @@ void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
       });
 }
 
+void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
+  auto &rl_settings = RoundManager::get().get_active_rt<RoundKillsSettings>();
+
+  imm::div(context, mk(entity),
+           ComponentConfig{
+               .label = std::format("Round Length: {}", rl_settings.round_time),
+           });
+}
+
+void round_score_settings(Entity &entity, UIContext<InputAction> &context) {
+  auto &rl_settings = RoundManager::get().get_active_rt<RoundScoreSettings>();
+
+  imm::div(context, mk(entity),
+           ComponentConfig{
+               .label = std::format("Score Needed: {}",
+                                    rl_settings.score_needed_to_win),
+           });
+}
+
 ScheduleMainMenuUI::Screen
 ScheduleMainMenuUI::round_settings(Entity &entity,
                                    UIContext<InputAction> &context) {
@@ -366,8 +385,10 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
     round_lives_settings(settings_group.ent(), context);
     break;
   case RoundType::Kills:
+    round_kills_settings(settings_group.ent(), context);
     break;
   case RoundType::Score:
+    round_score_settings(settings_group.ent(), context);
     break;
   }
 
