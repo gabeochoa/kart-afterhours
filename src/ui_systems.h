@@ -398,7 +398,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     // number of lives
     // time
 
-    auto enabled_weapons = RoundManager::get().enabled_weapons;
+    auto enabled_weapons = RoundManager::get().get_enabled_weapons();
 
     if (auto result =
             imm::checkbox_group(context, mk(settings_group.ent()),
