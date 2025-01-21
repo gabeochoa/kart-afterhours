@@ -39,6 +39,7 @@ struct S_Data {
   bool fullscreen_enabled = false;
 };
 
+// TODO load last used settings
 Settings::Settings() { data = new S_Data(); }
 Settings::~Settings() { delete data; }
 

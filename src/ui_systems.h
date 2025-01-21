@@ -32,7 +32,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                 // eventually std::observer_ptr?
   std::vector<std::string> resolution_strs;
   size_t resolution_index{0};
-  bool fs_enabled{false};
   bool ui_visible{true};
 
   // character creators
@@ -40,16 +39,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   std::vector<RefEntity> ais;
   input::PossibleInputCollector<InputAction> inpc;
 
-  // TODO load last used settings
-
-  ScheduleMainMenuUI() {}
-
-  ~ScheduleMainMenuUI() {}
-
   void update_resolution_cache();
-  virtual void once(float) override;
-  virtual bool should_run(float) override;
-
   void character_selector_column(Entity &parent,
                                  UIContext<InputAction> &context, size_t index,
                                  size_t num_slots);
@@ -62,6 +52,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
   void exit_game() { running = false; }
 
+  virtual void once(float) override;
+  virtual bool should_run(float) override;
   virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
                              float) override {
     switch (active_screen) {
