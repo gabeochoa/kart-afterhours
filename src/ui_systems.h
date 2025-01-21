@@ -14,8 +14,6 @@ using namespace afterhours::ui::imm;
 
 struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
-  const vec2 button_size = vec2{100, 50};
-
   enum struct Screen {
     None,
     Main,
@@ -24,27 +22,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
     RoundSettings,
     Settings,
   } active_screen = Screen::Main;
-
-  Padding button_group_padding = Padding{
-      .top = screen_pct(0.4f),
-      .left = screen_pct(0.4f),
-      .bottom = pixels(0.f),
-      .right = pixels(0.f),
-  };
-
-  Padding control_group_padding = Padding{
-      .top = screen_pct(0.4f),
-      .left = screen_pct(0.4f),
-      .bottom = pixels(0.f),
-      .right = pixels(0.f),
-  };
-
-  Padding button_padding = Padding{
-      .top = pixels(button_size.y / 10.f),
-      .left = pixels(0.f),
-      .bottom = pixels(button_size.y / 10.f),
-      .right = pixels(0.f),
-  };
 
   // settings cache stuff for now
   window_manager::ProvidesAvailableWindowResolutions *resolution_provider{
