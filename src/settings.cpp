@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <nlohmann/json.hpp>
 
 #include "rl.h"
 
@@ -37,6 +38,8 @@ struct S_Data {
   Pct sfx_volume = 0.1f;
 
   bool fullscreen_enabled = false;
+
+  fs::path loaded_from;
 };
 
 // TODO load last used settings
@@ -49,9 +52,11 @@ void Settings::reset() {
   refresh_settings();
 }
 
-float Settings::get_music_volume() { return data->music_volume; }
-float Settings::get_sfx_volume() { return data->sfx_volume; }
-float Settings::get_master_volume() { return data->master_volume; }
+int Settings::get_screen_width() const { return data->resolution.width; }
+int Settings::get_screen_height() const { return data->resolution.height; }
+float Settings::get_music_volume() const { return data->music_volume; }
+float Settings::get_sfx_volume() const { return data->sfx_volume; }
+float Settings::get_master_volume() const { return data->master_volume; }
 
 void Settings::update_music_volume(float vol) {
   MusicLibrary::get().update_volume(vol);
@@ -99,7 +104,7 @@ void Settings::toggle_fullscreen() {
 
 bool &Settings::get_fullscreen_enabled() { return data->fullscreen_enabled; }
 
-bool Settings::load_save_file() {
+bool Settings::load_save_file(float width, float height) {
 
   auto settings_places = Files::get().relative_settings();
 
@@ -123,10 +128,29 @@ bool Settings::load_save_file() {
     file_loc++;
   }
 
-  std::stringstream buffer;
-  buffer << ifs.rdbuf();
+  data->loaded_from = settings_places[file_loc];
 
-  log_info("this is where we'd load the file {}", buffer.str());
+  try {
+    const auto settingsJSON = nlohmann::json::parse(
+        ifs, nullptr /*parser_callback_t*/, true /*allow_exceptions=*/,
+        true /* ignore comments */);
 
+    this->data->resolution.width = settingsJSON["resolution"]["width"];
+    this->data->resolution.height = settingsJSON["resolution"]["height"];
+
+    this->data->master_volume.set(settingsJSON["master_volume"]);
+    this->data->music_volume.set(settingsJSON["music_volume"]);
+    this->data->sfx_volume.set(settingsJSON["sfx_volume"]);
+
+    this->data->fullscreen_enabled = settingsJSON["fullscreen_enabled"];
+
+    refresh_settings();
+    return true;
+
+  } catch (const std::exception &e) {
+    log_error("Settings::load_save_file: {} formatted improperly. {}",
+              data->loaded_from, e.what());
+    return false;
+  }
   return false;
 }

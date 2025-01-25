@@ -24,6 +24,6 @@ struct Preload {
   Preload(const Preload &) = delete;
   void operator=(const Preload &) = delete;
 
-  Preload &init(int width, int height, const char *title);
+  Preload &init(const char *title);
   Preload &make_singleton();
 };

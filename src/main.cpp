@@ -175,10 +175,10 @@ int main(int argc, char *argv[]) {
   cmdl({"-h", "--height"}, 720) >> screenHeight;
 
   // Load savefile first
-  Settings::get().load_save_file();
+  Settings::get().load_save_file(screenWidth, screenHeight);
 
   Preload::get() //
-      .init(screenWidth, screenHeight, "Cart Chaos")
+      .init("Cart Chaos")
       .make_singleton();
   Settings::get().refresh_settings();
 

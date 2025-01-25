@@ -19,7 +19,7 @@ struct Files {
   SINGLETON(Files)
 
   std::string root = "cart_chaos";
-  std::string settings_file = "settings.bin";
+  std::string settings_file = "settings.json";
 
   [[nodiscard]] fs::path game_folder() const;
   bool ensure_game_folder_exists();

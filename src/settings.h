@@ -22,18 +22,21 @@ struct Settings {
   Settings(const Settings &) = delete;
   void operator=(const Settings &) = delete;
 
-  bool load_save_file();
+  bool load_save_file(float, float);
 
   void reset();
   void refresh_settings();
 
-  float get_music_volume();
+  int get_screen_width() const;
+  int get_screen_height() const;
+
+  float get_music_volume() const;
   void update_music_volume(float);
 
-  float get_sfx_volume();
+  float get_sfx_volume() const;
   void update_sfx_volume(float);
 
-  float get_master_volume();
+  float get_master_volume() const;
   void update_master_volume(float);
 
   bool &get_fullscreen_enabled();

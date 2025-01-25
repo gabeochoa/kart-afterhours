@@ -4,6 +4,7 @@
 #include "rl.h"
 
 #include "input_mapping.h"
+#include "settings.h"
 #include "shader_library.h"
 #include "sound_library.h"
 #include "texture_library.h"
@@ -36,7 +37,11 @@ static void load_gamepad_mappings() {
 
 Preload::Preload() {}
 
-Preload &Preload::init(int width, int height, const char *title) {
+Preload &Preload::init(const char *title) {
+
+  int width = Settings::get().get_screen_width();
+  int height = Settings::get().get_screen_height();
+
   raylib::SetConfigFlags(raylib::FLAG_WINDOW_HIGHDPI);
   raylib::InitWindow(width, height, title);
   auto scale = raylib::GetWindowScaleDPI();
