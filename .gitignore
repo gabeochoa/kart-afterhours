@@ -26,3 +26,4 @@ art_storage/*
 *.exe
 build/*
 .xmake/*
+settings.json
