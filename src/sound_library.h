@@ -97,7 +97,8 @@ constexpr static void load_sounds() {
       filename = "skrt_end.wav";
       break;
     }
-    SoundLibrary::get().load(GetAssetPath(filename.c_str()),
-                             sound_file_to_str(file));
+    SoundLibrary::get().load(
+        Files::get().fetch_resource_path("sounds", filename).c_str(),
+        sound_file_to_str(file));
   });
 }

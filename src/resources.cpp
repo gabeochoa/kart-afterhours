@@ -1,5 +1,6 @@
 
 #include "resources.h"
+#include "log.h"
 
 #include <sago/platform_folders.h>
 
