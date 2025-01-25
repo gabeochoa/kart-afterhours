@@ -1,16 +1,12 @@
 {
-    "resolution": {
-        "width": 1280,
-        "height":720 
+    "audio": {
+        "master_volume": 0.10000000149011612,
+        "music_volume": 0.10000000149011612,
+        "sfx_volume": 0.10000000149011612
     },
-    //
-    "master_volume": 0.1,
-    "music_volume": 0.1,
-    "sfx_volume": 0.1,
-    //
     "fullscreen_enabled": false,
-
-
-    // This key exists so that we can always have a trailing comma above :) 
-    "last_key": true
+    "resolution": {
+        "height": 720,
+        "width": 1280
+    }
 }

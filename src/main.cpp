@@ -188,5 +188,7 @@ int main(int argc, char *argv[]) {
 
   game();
 
+  Settings::get().write_save_file();
+
   return 0;
 }

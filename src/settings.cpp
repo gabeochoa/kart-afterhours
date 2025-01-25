@@ -25,6 +25,7 @@ template <typename T> struct ValueHolder {
 struct Pct : ValueHolder<float> {
   Pct(const float &initial) : ValueHolder(0.f) { set(initial); }
   void set(const float &data_) { data = std::min(1.f, std::max(0.f, data_)); }
+  float str() const { return data; }
 };
 
 struct S_Data {
@@ -41,6 +42,45 @@ struct S_Data {
 
   fs::path loaded_from;
 };
+
+void to_json(nlohmann::json &j,
+             const afterhours::window_manager::Resolution &resolution) {
+  j = nlohmann::json{
+      {"width", resolution.width},
+      {"height", resolution.height},
+  };
+}
+
+void from_json(const nlohmann::json &j,
+               afterhours::window_manager::Resolution &resolution) {
+  j.at("width").get_to(resolution.width);
+  j.at("height").get_to(resolution.height);
+}
+
+void to_json(nlohmann::json &j, const S_Data &data) {
+  nlohmann::json rez_j;
+  to_json(rez_j, data.resolution);
+  j["resolution"] = rez_j;
+  //
+  nlohmann::json audio_j;
+  audio_j["master_volume"] = data.master_volume.str();
+  audio_j["music_volume"] = data.music_volume.str();
+  audio_j["sfx_volume"] = data.sfx_volume.str();
+  j["audio"] = audio_j;
+  //
+  j["fullscreen_enabled"] = data.fullscreen_enabled;
+}
+
+void from_json(const nlohmann::json &j, S_Data &data) {
+  from_json(j.at("resolution"), data.resolution);
+
+  nlohmann::json audio_j = j.at("audio");
+  data.master_volume.set(audio_j.at("master_volume"));
+  data.music_volume.set(audio_j.at("music_volume"));
+  data.sfx_volume.set(audio_j.at("sfx_volume"));
+
+  data.fullscreen_enabled = j.at("fullscreen_enabled");
+}
 
 // TODO load last used settings
 Settings::Settings() { data = new S_Data(); }
@@ -104,7 +144,10 @@ void Settings::toggle_fullscreen() {
 
 bool &Settings::get_fullscreen_enabled() { return data->fullscreen_enabled; }
 
-bool Settings::load_save_file(float width, float height) {
+bool Settings::load_save_file(int width, int height) {
+
+  this->data->resolution.width = width;
+  this->data->resolution.height = height;
 
   auto settings_places = Files::get().relative_settings();
 
@@ -127,7 +170,6 @@ bool Settings::load_save_file(float width, float height) {
     }
     file_loc++;
   }
-
   data->loaded_from = settings_places[file_loc];
 
   try {
@@ -135,15 +177,8 @@ bool Settings::load_save_file(float width, float height) {
         ifs, nullptr /*parser_callback_t*/, true /*allow_exceptions=*/,
         true /* ignore comments */);
 
-    this->data->resolution.width = settingsJSON["resolution"]["width"];
-    this->data->resolution.height = settingsJSON["resolution"]["height"];
-
-    this->data->master_volume.set(settingsJSON["master_volume"]);
-    this->data->music_volume.set(settingsJSON["music_volume"]);
-    this->data->sfx_volume.set(settingsJSON["sfx_volume"]);
-
-    this->data->fullscreen_enabled = settingsJSON["fullscreen_enabled"];
-
+    (*this->data) = settingsJSON;
+    this->data->loaded_from = settings_places[file_loc];
     refresh_settings();
     return true;
 
@@ -153,4 +188,21 @@ bool Settings::load_save_file(float width, float height) {
     return false;
   }
   return false;
+}
+
+void Settings::write_save_file() {
+  std::ofstream ofs(data->loaded_from);
+  if (!ofs.good()) {
+    std::cerr << "write_json_config_file error: Couldn't open file "
+                 "for writing: "
+              << data->loaded_from << std::endl;
+    return;
+  }
+
+  log_info("Saving to {}", data->loaded_from);
+
+  nlohmann::json settingsJSON = *data;
+
+  ofs << settingsJSON.dump(4);
+  ofs.close();
 }
