@@ -30,6 +30,7 @@ struct Settings {
 
   int get_screen_width() const;
   int get_screen_height() const;
+  void update_resolution(afterhours::window_manager::Resolution);
 
   float get_music_volume() const;
   void update_music_volume(float);

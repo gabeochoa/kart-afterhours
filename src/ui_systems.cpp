@@ -624,6 +624,10 @@ ScheduleMainMenuUI::settings_screen(Entity &entity,
                   std::move(back_button_config))
       //
   ) {
+    Settings::get().update_resolution(
+        current_resolution_provider->current_resolution);
+    // TODO do we want to write the settings, or should we have a save button?
+
     next_active_screen = Screen::Main;
   }
   return next_active_screen;

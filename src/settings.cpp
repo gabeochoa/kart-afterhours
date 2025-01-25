@@ -40,6 +40,7 @@ struct S_Data {
 
   bool fullscreen_enabled = false;
 
+  // not serialized
   fs::path loaded_from;
 };
 
@@ -97,6 +98,10 @@ int Settings::get_screen_height() const { return data->resolution.height; }
 float Settings::get_music_volume() const { return data->music_volume; }
 float Settings::get_sfx_volume() const { return data->sfx_volume; }
 float Settings::get_master_volume() const { return data->master_volume; }
+
+void Settings::update_resolution(afterhours::window_manager::Resolution rez) {
+  data->resolution = rez;
+}
 
 void Settings::update_music_volume(float vol) {
   MusicLibrary::get().update_volume(vol);
