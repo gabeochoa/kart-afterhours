@@ -104,7 +104,7 @@ struct RoundManager {
         magic_enum::enum_cast<RoundType>(index).value_or(RoundType::Lives);
   }
 
-  WeaponSet get_enabled_weapons() {
+  WeaponSet &get_enabled_weapons() {
     return get_active_settings().enabled_weapons;
   }
 
