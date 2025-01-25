@@ -247,6 +247,40 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
     elem.ent().get<ui::UIComponentDebug>().set("character_creation");
   }
 
+  {
+    ComponentConfig _button_config;
+    _button_config.padding = button_padding;
+    _button_config.label = "go";
+    if (imm::button(context, mk(elem.ent()), std::move(_button_config))
+        //
+    ) {
+      next_active_screen = Screen::None;
+    }
+  }
+
+  {
+    ComponentConfig back_button_config;
+    back_button_config.padding = button_padding;
+    back_button_config.label = "back";
+    if (imm::button(context, mk(elem.ent()), std::move(back_button_config))
+        //
+    ) {
+      next_active_screen = Screen::Main;
+    }
+  }
+
+  {
+    ComponentConfig button_config;
+    button_config.padding = button_padding;
+    button_config.label = "round settings";
+
+    if (imm::button(context, mk(elem.ent()), std::move(button_config))
+        //
+    ) {
+      next_active_screen = Screen::RoundSettings;
+    }
+  }
+
   size_t num_slots = players.size() + ais.size() + 1;
   // 0-4 => 1, 5->8 -> 2
   int fours = static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
@@ -283,40 +317,6 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
     size_t start = row_id * 4;
     for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
       character_selector_column(row.ent(), context, i, num_slots);
-    }
-  }
-
-  {
-    ComponentConfig back_button_config;
-    back_button_config.padding = button_padding;
-    back_button_config.label = "back";
-    if (imm::button(context, mk(elem.ent()), std::move(back_button_config))
-        //
-    ) {
-      next_active_screen = Screen::Main;
-    }
-  }
-
-  {
-    ComponentConfig _button_config;
-    _button_config.padding = button_padding;
-    _button_config.label = "go";
-    if (imm::button(context, mk(elem.ent()), std::move(_button_config))
-        //
-    ) {
-      next_active_screen = Screen::None;
-    }
-  }
-
-  {
-    ComponentConfig button_config;
-    button_config.padding = button_padding;
-    button_config.label = "round settings";
-
-    if (imm::button(context, mk(elem.ent()), std::move(button_config))
-        //
-    ) {
-      next_active_screen = Screen::RoundSettings;
     }
   }
 
