@@ -59,9 +59,9 @@ void make_default_map() {
   make_obstacle(screen_pct(0.5f, 0.2f), raylib::WHITE, ball_collision_config);
 }
 
-void game(float screenWidth, float screenHeight) {
-  mainRT = raylib::LoadRenderTexture(static_cast<int>(screenWidth),
-                                     static_cast<int>(screenHeight));
+void game() {
+  mainRT = raylib::LoadRenderTexture(Settings::get().get_screen_width(),
+                                     Settings::get().get_screen_height());
 
   SystemManager systems;
 
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     intro();
   }
 
-  game(screenWidth, screenHeight);
+  game();
 
   return 0;
 }
