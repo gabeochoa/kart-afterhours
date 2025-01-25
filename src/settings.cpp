@@ -98,3 +98,35 @@ void Settings::toggle_fullscreen() {
 }
 
 bool &Settings::get_fullscreen_enabled() { return data->fullscreen_enabled; }
+
+bool Settings::load_save_file() {
+
+  auto settings_places = Files::get().relative_settings();
+
+  size_t file_loc = 0;
+  std::ifstream ifs;
+  while (true) {
+    if (file_loc >= settings_places.size()) {
+      std::stringstream buffer;
+      buffer << "Failed to find settings file (Read): \n";
+      for (auto place : settings_places)
+        buffer << place << ", \n";
+      log_warn("{}", buffer.str());
+      return false;
+    }
+
+    ifs = std::ifstream(settings_places[file_loc]);
+    if (ifs.is_open()) {
+      log_info("opened file {}", settings_places[file_loc]);
+      break;
+    }
+    file_loc++;
+  }
+
+  std::stringstream buffer;
+  buffer << ifs.rdbuf();
+
+  log_info("this is where we'd load the file {}", buffer.str());
+
+  return false;
+}

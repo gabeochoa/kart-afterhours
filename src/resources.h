@@ -23,6 +23,7 @@ struct Files {
 
   [[nodiscard]] fs::path game_folder() const;
   bool ensure_game_folder_exists();
+  std::vector<fs::path> relative_settings() const;
   [[nodiscard]] fs::path settings_filepath() const;
   [[nodiscard]] fs::path resource_folder() const;
   [[nodiscard]] fs::path game_controller_db() const;

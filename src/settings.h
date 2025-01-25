@@ -22,6 +22,8 @@ struct Settings {
   Settings(const Settings &) = delete;
   void operator=(const Settings &) = delete;
 
+  bool load_save_file();
+
   void reset();
   void refresh_settings();
 

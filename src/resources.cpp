@@ -30,6 +30,15 @@ fs::path Files::settings_filepath() const {
   return full_path;
 }
 
+std::vector<fs::path> Files::relative_settings() const {
+  // In the order that we should search
+  return {
+      resource_folder() / fs::path(settings_file),
+      fs::current_path() / fs::path(settings_file),
+      settings_filepath(),
+  };
+}
+
 fs::path Files::resource_folder() const {
   return fs::current_path() / fs::path("resources");
 }
