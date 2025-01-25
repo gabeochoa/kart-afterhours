@@ -58,10 +58,19 @@ Preload &Preload::init(int width, int height, const char *title) {
   ShaderLibrary::get().load(GetAssetPath("shaders/post_processing.fs"),
                             "post_processing");
 
-  // TODO load all controls
-  TextureLibrary::get().load(
-      GetAssetPath("controls/xbox_default/xbox_button_color_a.png"),
-      "xbox_button_color_a");
+  // TODO how safe is the path combination here esp for mac vs windows
+  Files::get().for_resources_in_folder(
+      "images", "controls/keyboard_default",
+      [](const std::string &name, const std::string &filename) {
+        TextureLibrary::get().load(filename.c_str(), name.c_str());
+      });
+
+  // TODO how safe is the path combination here esp for mac vs windows
+  Files::get().for_resources_in_folder(
+      "images", "controls/xbox_default",
+      [](const std::string &name, const std::string &filename) {
+        TextureLibrary::get().load(filename.c_str(), name.c_str());
+      });
 
   return *this;
 }
