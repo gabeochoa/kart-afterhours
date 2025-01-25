@@ -43,15 +43,21 @@ struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {
 };
 
 struct UpdateRenderTexture : System<> {
+
+  window_manager::Resolution resolution;
+
   virtual ~UpdateRenderTexture() {}
 
   void once(float) {
     const window_manager::ProvidesCurrentResolution *pcr =
         EntityHelper::get_singleton_cmp<
             window_manager::ProvidesCurrentResolution>();
-
-    auto resolution = pcr->current_resolution;
-    mainRT = raylib::LoadRenderTexture(resolution.width, resolution.height);
+    if (pcr->current_resolution != resolution) {
+      log_info("Regenerating render texture");
+      resolution = pcr->current_resolution;
+      raylib::UnloadRenderTexture(mainRT);
+      mainRT = raylib::LoadRenderTexture(resolution.width, resolution.height);
+    }
   }
 };
 
