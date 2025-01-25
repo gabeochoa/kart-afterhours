@@ -23,7 +23,8 @@ std::string get_font_name(FontID id) {
 }
 
 static void load_gamepad_mappings() {
-  std::ifstream ifs(GetAssetPath("gamecontrollerdb.txt"));
+  std::ifstream ifs(
+      Files::get().fetch_resource_path("", "gamecontrollerdb.txt").c_str());
   if (!ifs.is_open()) {
     std::cout << "Failed to load game controller db" << std::endl;
     return;
@@ -55,8 +56,9 @@ Preload &Preload::init(int width, int height, const char *title) {
   load_gamepad_mappings();
   load_sounds();
 
-  ShaderLibrary::get().load(GetAssetPath("shaders/post_processing.fs"),
-                            "post_processing");
+  ShaderLibrary::get().load(
+      Files::get().fetch_resource_path("shaders", "post_processing.fs").c_str(),
+      "post_processing");
 
   // TODO how safe is the path combination here esp for mac vs windows
   Files::get().for_resources_in_folder(
@@ -84,10 +86,16 @@ Preload &Preload::make_singleton() {
     ui::add_singleton_components<InputAction>(sophie);
 
     texture_manager::add_singleton_components(
-        sophie, raylib::LoadTexture(GetAssetPath("spritesheet.png")));
+        sophie, raylib::LoadTexture(
+                    Files::get()
+                        .fetch_resource_path("images", "spritesheet.png")
+                        .c_str()));
 
     sophie.get<ui::FontManager>().load_font(
-        get_font_name(FontID::EQPro), GetAssetPath("eqprorounded-regular.ttf"));
+        get_font_name(FontID::EQPro),
+        Files::get()
+            .fetch_resource_path("", "eqprorounded-regular.ttf")
+            .c_str());
 
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();
