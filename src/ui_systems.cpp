@@ -281,6 +281,86 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
     }
   }
 
+  // Settings Preview
+  {
+    auto round_lives_preview = [](Entity &entity,
+                                  UIContext<InputAction> &context) {
+      auto &rl_settings =
+          RoundManager::get().get_active_rt<RoundLivesSettings>();
+
+      imm::div(context, mk(entity),
+               ComponentConfig{
+                   .label = std::format("Num Lives: {}",
+                                        rl_settings.num_starting_lives),
+               });
+    };
+
+    auto round_kills_preview = [](Entity &entity,
+                                  UIContext<InputAction> &context) {
+      auto &rl_settings =
+          RoundManager::get().get_active_rt<RoundKillsSettings>();
+
+      imm::div(context, mk(entity),
+               ComponentConfig{
+                   .label = std::format("Round Length: {}",
+                                        rl_settings.current_round_time),
+               });
+    };
+
+    auto round_score_preview = [](Entity &entity,
+                                  UIContext<InputAction> &context) {
+      auto &rl_settings =
+          RoundManager::get().get_active_rt<RoundScoreSettings>();
+
+      imm::div(context, mk(entity),
+               ComponentConfig{
+                   .label = std::format("Score Needed: {}",
+                                        rl_settings.score_needed_to_win),
+               });
+    };
+
+    {
+      ComponentConfig cmp_config;
+      cmp_config.label = std::format(
+          "Win Condition: {}",
+          magic_enum::enum_name(RoundManager::get().active_round_type));
+
+      imm::div(context, mk(elem.ent()), std::move(cmp_config));
+    }
+
+    /*
+     * TODO how to visualize this smaller? icons?
+    // shared across all round types
+    auto enabled_weapons = RoundManager::get().get_enabled_weapons();
+
+    if (auto result =
+            imm::checkbox_group(context, mk(settings_group.ent()),
+                                enabled_weapons, WEAPON_STRING_LIST, {1, 3});
+        result) {
+      RoundManager::get().set_enabled_weapons(result.as<unsigned long>());
+    }
+    */
+
+    switch (RoundManager::get().active_round_type) {
+    case RoundType::Lives:
+      round_lives_preview(elem.ent(), context);
+      break;
+    case RoundType::Kills:
+      round_kills_preview(elem.ent(), context);
+      break;
+    case RoundType::Score:
+      round_score_preview(elem.ent(), context);
+      break;
+    case RoundType::Tag:
+      // TODO currently no settings
+      break;
+    default:
+      log_error("You need to add a handler for UI settings for round type {}",
+                (int)RoundManager::get().active_round_type);
+      break;
+    }
+  }
+
   size_t num_slots = players.size() + ais.size() + 1;
   // 0-4 => 1, 5->8 -> 2
   int fours = static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
@@ -296,8 +376,8 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
                    .margin =
                        Margin{
                            .top = screen_pct(fours == 1 ? 0.2f : 0.05f),
-                           .left = screen_pct(0.05f),
-                           .right = screen_pct(0.05f),
+                           .left = screen_pct(0.2f),
+                           .right = screen_pct(0.1f),
                        },
                    .is_absolute = true,
                    .debug_name = "btn_group",
