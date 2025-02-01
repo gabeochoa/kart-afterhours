@@ -5,5 +5,8 @@
             "binaryPath": "f:\\VSCode\\kart-afterhours\\output\\kart.exe",
             "binaryArgs": []
         }
-    ]
+    ],
+    "files.associations": {
+        "filesystem": "cpp"
+    }
 }

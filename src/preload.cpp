@@ -42,7 +42,7 @@ Preload &Preload::init(const char *title) {
   int width = Settings::get().get_screen_width();
   int height = Settings::get().get_screen_height();
 
-  raylib::SetConfigFlags(raylib::FLAG_WINDOW_HIGHDPI);
+  // raylib::SetConfigFlags(raylib::FLAG_WINDOW_HIGHDPI);
   raylib::InitWindow(width, height, title);
   auto scale = raylib::GetWindowScaleDPI();
   if (scale.x != 1.f) {

@@ -2,7 +2,13 @@
 #include "resources.h"
 #include "log.h"
 
+#ifdef __APPLE__
 #include <sago/platform_folders.h>
+#else
+namespace sago {
+std::string getSaveGamesFolder1() { return ""; }
+} // namespace sago
+#endif
 
 Files::Files() { ensure_game_folder_exists(); }
 
@@ -88,6 +94,7 @@ void Files::for_resources_in_folder(
 }
 
 void Files::folder_locations() const {
+#ifdef __APPLE__
   using namespace std;
   using namespace sago;
   log_info("Config: ", getConfigHome());
@@ -108,4 +115,6 @@ void Files::folder_locations() const {
   for (size_t i = 0; i < extraData.size(); ++i) {
     log_info("Additional data {}: {}", i, extraData.at(i));
   }
+#else
+#endif
 }
