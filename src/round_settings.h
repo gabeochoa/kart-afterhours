@@ -10,6 +10,7 @@ enum struct RoundType : size_t {
   Lives,
   Kills,
   Score,
+  Tag,
 };
 constexpr static size_t num_round_types = magic_enum::enum_count<RoundType>();
 constexpr size_t enum_to_index(RoundType type) {
@@ -60,6 +61,8 @@ struct RoundScoreSettings : RoundSettings {
   int score_needed_to_win = 3;
 };
 
+struct RoundTagSettings : RoundSettings {};
+
 SINGLETON_FWD(RoundManager)
 struct RoundManager {
   SINGLETON(RoundManager)
@@ -75,6 +78,8 @@ struct RoundManager {
         std::make_unique<RoundKillsSettings>();
     settings[enum_to_index(RoundType::Score)] =
         std::make_unique<RoundScoreSettings>();
+    settings[enum_to_index(RoundType::Tag)] =
+        std::make_unique<RoundTagSettings>();
 
     settings[0]->enabled_weapons.reset().set(0);
     settings[1]->enabled_weapons.reset().set(1);
@@ -95,6 +100,8 @@ struct RoundManager {
     case RoundType::Kills:
       return static_cast<T &>(rt_settings);
     case RoundType::Score:
+      return static_cast<T &>(rt_settings);
+    case RoundType::Tag:
       return static_cast<T &>(rt_settings);
     }
   }

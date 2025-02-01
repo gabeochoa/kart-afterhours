@@ -429,6 +429,9 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
   case RoundType::Score:
     round_score_settings(settings_group.ent(), context);
     break;
+  case RoundType::Tag:
+    // TODO currently no settings
+    break;
   default:
     log_error("You need to add a handler for UI settings for round type {}",
               (int)RoundManager::get().active_round_type);
