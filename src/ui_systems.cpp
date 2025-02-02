@@ -188,6 +188,9 @@ void ScheduleMainMenuUI::character_selector_column(
 
   // we are the last boi
   if (num_slots <= input::MAX_GAMEPAD_ID && is_last_slot) {
+    // TODO make it more obvious this button is to add
+    // - maybe maybe the color more see through?
+    // - add just a dotted line or just outline?
     if (imm::button(context, mk(column.ent()),
                     ComponentConfig{
                         .size =
