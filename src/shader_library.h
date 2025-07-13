@@ -23,8 +23,10 @@ struct ShaderLibrary {
   void unload_all() { impl.unload_all(); }
 
   void update_values(vec2 *rez, float *time) {
-    for (auto &kv : impl.storage) {
-      auto &shader = kv.second;
+    (void)rez;
+    (void)time;
+    // for (auto &kv : impl.storage) {
+      // auto &shader = kv.second;
       // TODO this doesnt seem to work on my personal laptop?
       // int time_loc = raylib::GetShaderLocation(shader, "time");
       // int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
@@ -32,7 +34,7 @@ struct ShaderLibrary {
       // raylib::SHADER_UNIFORM_VEC2);
       // raylib::SetShaderValue(shader, time_loc, time,
       // raylib::SHADER_UNIFORM_FLOAT);
-    }
+    // }
   }
 
 private:
@@ -42,7 +44,7 @@ private:
       return raylib::LoadShader(0, filename);
     }
 
-    virtual void unload(raylib::Shader shader) override {}
+    virtual void unload(raylib::Shader) override {}
   } impl;
 };
 
@@ -57,7 +59,7 @@ struct UpdateShaderValues : System<> {
         static_cast<float>(resolution.width),
         static_cast<float>(resolution.height),
     };
-    float time = raylib::GetTime();
+    float time = static_cast<float>(raylib::GetTime());
     ShaderLibrary::get().update_values(&rez, &time);
   }
 };
@@ -67,5 +69,8 @@ struct BeginShader : System<> {
   BeginShader(const std::string &shader_name)
       : shader(ShaderLibrary::get().get(shader_name)) {}
 
-  virtual void once(float dt) { raylib::BeginShaderMode(shader); }
+  virtual void once(float dt) { 
+    (void)dt; // Suppress unused parameter warning
+    raylib::BeginShaderMode(shader); 
+  }
 };

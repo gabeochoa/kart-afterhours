@@ -767,8 +767,7 @@ struct ProcessCollisionAbsorption : System<Transform, CollisionAbsorber> {
 
   virtual void for_each_with(Entity &entity, Transform &transform,
                              CollisionAbsorber &collision_absorber,
-                             float dt) override {
-
+                             float) override {
     // We let the absorbed things (e.g. bullets) manage cleaning themselves up,
     // rather than the other way around.
     if (collision_absorber.absorber_type ==

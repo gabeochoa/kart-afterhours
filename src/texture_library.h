@@ -29,6 +29,8 @@ private:
       return raylib::LoadTexture(filename);
     }
 
-    virtual void unload(raylib::Texture shader) override {}
+    virtual void unload(raylib::Texture shader) override {
+      (void)shader; // Suppress unused parameter warning
+    }
   } impl;
 };

@@ -46,8 +46,8 @@ Preload &Preload::init(const char *title) {
   raylib::InitWindow(width, height, title);
   auto scale = raylib::GetWindowScaleDPI();
   if (scale.x != 1.f) {
-    width *= scale.x;
-    height *= scale.y;
+    width = static_cast<int>(width * scale.x);
+    height = static_cast<int>(height * scale.y);
   }
   raylib::SetWindowSize(width, height);
   // TODO this doesnt seem to do anything when in this file
