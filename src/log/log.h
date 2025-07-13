@@ -3,10 +3,13 @@
 #pragma once
 
 #include <cassert>
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -73,6 +76,34 @@ inline void log_me(LogLevel level, const char *file, int line,
                    const char *format, const char *&&args) {
   vlog(level, file, line, format,
        fmt::make_args_checked<const char *>(format, args));
+}
+
+// Thread-safe storage for log_once_per timing
+namespace {
+static std::unordered_map<std::string, std::chrono::steady_clock::time_point>
+    log_once_per_timestamps;
+static std::mutex log_once_per_mutex;
+} // namespace
+
+template <typename Level, typename... Args>
+inline void log_once_per(std::chrono::milliseconds interval, Level level,
+                         const char *file, int line, const char *format,
+                         Args &&...args) {
+  if (static_cast<int>(level) < static_cast<int>(AFTER_HOURS_LOG_LEVEL))
+    return;
+  // Create a unique key for this log message
+  std::string key = fmt::format("{}:{}:{}", file, line, format);
+  {
+    std::lock_guard<std::mutex> lock(log_once_per_mutex);
+    auto now = std::chrono::steady_clock::now();
+    auto it = log_once_per_timestamps.find(key);
+    if (it == log_once_per_timestamps.end() || (now - it->second) >= interval) {
+      // Log the message and update timestamp
+      log_me(static_cast<LogLevel>(level), file, line, format,
+             std::forward<Args>(args)...);
+      log_once_per_timestamps[key] = now;
+    }
+  }
 }
 
 #include "log_macros.h"

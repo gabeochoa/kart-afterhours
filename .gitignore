@@ -27,3 +27,4 @@ art_storage/*
 build/*
 .xmake/*
 settings.json
+.watchman*
