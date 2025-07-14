@@ -26,14 +26,14 @@ struct ShaderLibrary {
     (void)rez;
     (void)time;
     // for (auto &kv : impl.storage) {
-      // auto &shader = kv.second;
-      // TODO this doesnt seem to work on my personal laptop?
-      // int time_loc = raylib::GetShaderLocation(shader, "time");
-      // int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
-      // raylib::SetShaderValue(shader, resolution_loc, rez,
-      // raylib::SHADER_UNIFORM_VEC2);
-      // raylib::SetShaderValue(shader, time_loc, time,
-      // raylib::SHADER_UNIFORM_FLOAT);
+    // auto &shader = kv.second;
+    // TODO this doesnt seem to work on my personal laptop?
+    // int time_loc = raylib::GetShaderLocation(shader, "time");
+    // int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
+    // raylib::SetShaderValue(shader, resolution_loc, rez,
+    // raylib::SHADER_UNIFORM_VEC2);
+    // raylib::SetShaderValue(shader, time_loc, time,
+    // raylib::SHADER_UNIFORM_FLOAT);
     // }
   }
 
@@ -69,8 +69,8 @@ struct BeginShader : System<> {
   BeginShader(const std::string &shader_name)
       : shader(ShaderLibrary::get().get(shader_name)) {}
 
-  virtual void once(float dt) { 
+  virtual void once(float dt) {
     (void)dt; // Suppress unused parameter warning
-    raylib::BeginShaderMode(shader); 
+    raylib::BeginShaderMode(shader);
   }
 };

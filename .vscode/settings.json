@@ -8,5 +8,43 @@
     ],
     "files.associations": {
         "filesystem": "cpp"
+    },
+    // C++ formatting settings
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": false,
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.formatOnSave": true,
+        "editor.formatOnPaste": true
+    },
+    "[c]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.formatOnSave": true,
+        "editor.formatOnPaste": true
+    },
+    "[h]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.formatOnSave": true,
+        "editor.formatOnPaste": true
+    },
+    "[hpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.formatOnSave": true,
+        "editor.formatOnPaste": true
+    },
+    "clangd.arguments": [
+        "--clang-tidy",
+        "--header-insertion=never",
+        "--completion-style=detailed"
+    ],
+    // Only format files in specific directories
+    "files.exclude": {
+        "**/vendor/*": true,
+        "!**/vendor/afterhours/**": false
+    },
+    "files.watcherExclude": {
+        "**/vendor/*": true,
+        "!**/vendor/afterhours/**": false
     }
 }

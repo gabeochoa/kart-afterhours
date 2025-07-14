@@ -1,18 +1,58 @@
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "run the makefile",
+            "label": "Format Current File",
             "type": "shell",
-            "command": "C:\\msys64\\usr\\bin\\make.exe",
-            "args": [],
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+            "command": "clang-format",
+            "args": [
+                "-i",
+                "${file}"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Format All C++ Files",
+            "type": "shell",
+            "command": "find",
+            "args": [
+                "src",
+                "vendor/afterhours",
+                "-name",
+                "*.cpp",
+                "-o",
+                "-name",
+                "*.h",
+                "-o",
+                "-name",
+                "*.hpp",
+                "-o",
+                "-name",
+                "*.c",
+                "|",
+                "xargs",
+                "clang-format",
+                "-i"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": []
         }
     ]
 }
