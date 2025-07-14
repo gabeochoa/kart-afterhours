@@ -1,0 +1,12 @@
+# Ignore all vendor directories except vendor/afterhours
+vendor/*
+!vendor/afterhours/
+
+# Ignore build and output directories
+build/
+output/
+.cache/
+.xmake/
+
+# Ignore any other generated files
+*.generated.* 
