@@ -8,7 +8,7 @@ struct EQ : public EntityQuery<EQ> {
     vec2 position;
     float range;
 
-    // TODO mess around with the right epsilon here
+    // This might not always be the correct epsilon
     explicit WhereInRange(vec2 pos, float r = 0.01f)
         : position(pos), range(r) {}
     bool operator()(const Entity &entity) const override {
