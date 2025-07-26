@@ -815,11 +815,8 @@ struct ProcessDeath : System<Transform, HasHealth> {
 
     // TODO find a better place to do this
     if (entity.has<PlayerID>()) {
-      auto *resolution_provider = EntityHelper::get_singleton_cmp<
-          window_manager::ProvidesCurrentResolution>();
-      transform.position = get_spawn_position(
-          static_cast<size_t>(entity.get<PlayerID>().id),
-          resolution_provider->width(), resolution_provider->height());
+      transform.position =
+          get_spawn_position(static_cast<size_t>(entity.get<PlayerID>().id));
     }
 
     if (entity.has<HasMultipleLives>()) {

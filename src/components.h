@@ -36,6 +36,13 @@ constexpr static vec2 get_spawn_position(size_t id, int width, int height) {
 
 using namespace afterhours;
 
+static vec2 get_spawn_position(size_t id) {
+  auto *resolution_provider = EntityHelper::get_singleton_cmp<
+      window_manager::ProvidesCurrentResolution>();
+  return get_spawn_position(id, resolution_provider->width(),
+                            resolution_provider->height());
+}
+
 #include "bitset_utils.h"
 struct ManagesAvailableColors : BaseComponent {
   constexpr static std::array<raylib::Color, input::MAX_GAMEPAD_ID> colors = {{
