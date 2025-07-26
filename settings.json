@@ -1,12 +1,12 @@
 {
     "audio": {
-        "master_volume": 0.31122395396232605,
-        "music_volume": 0.10000000149011612,
+        "master_volume": 0.6830729246139526,
+        "music_volume": 0.3094010353088379,
         "sfx_volume": 0.10000000149011612
     },
     "fullscreen_enabled": false,
     "resolution": {
-        "height": 768,
-        "width": 1360
+        "height": 720,
+        "width": 1280
     }
 }

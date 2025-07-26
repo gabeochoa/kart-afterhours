@@ -139,10 +139,11 @@ Entity &make_car(size_t id) {
   auto &entity = EntityHelper::createEntity();
 
   entity.addComponent<HasMultipleLives>(3);
+  auto *resolution_provider = EntityHelper::get_singleton_cmp<
+      window_manager::ProvidesCurrentResolution>();
   auto &transform = entity.addComponent<Transform>(
-      get_spawn_position((size_t)id,
-                         // TODO use current resolution
-                         raylib::GetRenderWidth(), raylib::GetRenderHeight()),
+      get_spawn_position((size_t)id, resolution_provider->width(),
+                         resolution_provider->height()),
       vec2{15.f, 25.f});
 
   transform.collision_config =
