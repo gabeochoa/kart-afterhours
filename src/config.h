@@ -15,9 +15,9 @@ struct Config {
     ValueInRange(T default_, T min_, T max_)
         : data(default_), min(min_), max(max_) {}
 
-    void operator=(ValueInRange<T> &new_value) { set(new_value.data); }
+    void operator=(const ValueInRange<T> &new_value) { set(new_value.data); }
 
-    void set(T &nv) { data = std::min(max, std::max(min, nv)); }
+    void set(const T &nv) { data = std::min(max, std::max(min, nv)); }
 
     void set_pct(const float &pct) {
       // lerp
