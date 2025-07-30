@@ -33,7 +33,7 @@ struct RoundKillsSettings : RoundSettings {
     Minutes_1,
   } time_option = TimeOptions::Unlimited;
 
-  void set_time_option(int index) {
+  void set_time_option(const int index) {
     time_option = magic_enum::enum_value<TimeOptions>(index);
     reset_round_time();
   }
@@ -106,7 +106,7 @@ struct RoundManager {
     }
   }
 
-  void set_active_round_type(int index) {
+  void set_active_round_type(const int index) {
     active_round_type =
         magic_enum::enum_cast<RoundType>(index).value_or(RoundType::Lives);
   }
@@ -115,7 +115,7 @@ struct RoundManager {
     return get_active_settings().enabled_weapons;
   }
 
-  void set_enabled_weapons(unsigned long enabled_bits) {
+  void set_enabled_weapons(const unsigned long enabled_bits) {
     get_active_settings().enabled_weapons = WeaponSet(enabled_bits);
   }
 };
