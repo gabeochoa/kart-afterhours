@@ -41,8 +41,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
   void update_resolution_cache();
   void character_selector_column(Entity &parent,
-                                 UIContext<InputAction> &context, size_t index,
-                                 size_t num_slots);
+                                 UIContext<InputAction> &context,
+                                 const size_t index, const size_t num_slots);
 
   Screen character_creation(Entity &entity, UIContext<InputAction> &context);
   Screen round_settings(Entity &entity, UIContext<InputAction> &context);

@@ -83,8 +83,8 @@ bool ScheduleMainMenuUI::should_run(float) {
 }
 
 void ScheduleMainMenuUI::character_selector_column(
-    Entity &parent, UIContext<InputAction> &context, size_t index,
-    size_t num_slots) {
+    Entity &parent, UIContext<InputAction> &context, const size_t index,
+    const size_t num_slots) {
 
   bool is_last_slot = index == num_slots - 1;
   bool is_last_slot_ai = index >= players.size();
