@@ -16,13 +16,13 @@ struct ShaderLibrary {
   [[nodiscard]] raylib::Shader &get(const std::string &name) {
     return impl.get(name);
   }
-  void load(const char *filename, const char *name) {
+  void load(const char *const filename, const char *const name) {
     impl.load(filename, name);
   }
 
   void unload_all() { impl.unload_all(); }
 
-  void update_values(vec2 *rez, float *time) {
+  void update_values(const vec2 *rez, const float *time) {
     (void)rez;
     (void)time;
     // for (auto &kv : impl.storage) {

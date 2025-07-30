@@ -44,13 +44,13 @@ struct SoundLibrary {
   }
 
   void play(SoundFile file) { play(sound_file_to_str(file)); }
-  void play(const char *name) { PlaySound(get(name)); }
+  void play(const char *const name) { PlaySound(get(name)); }
 
   void play_random_match(const std::string &prefix) {
     impl.get_random_match(prefix).transform(raylib::PlaySound);
   }
 
-  void update_volume(float new_v) {
+  void update_volume(const float new_v) {
     impl.update_volume(new_v);
     current_volume = new_v;
   }
@@ -70,7 +70,7 @@ private:
       raylib::UnloadSound(sound);
     }
 
-    void update_volume(float new_v) {
+    void update_volume(const float new_v) {
       for (const auto &kv : storage) {
         log_trace("updating sound volume for {} to {}", kv.first, new_v);
         raylib::SetSoundVolume(kv.second, new_v);

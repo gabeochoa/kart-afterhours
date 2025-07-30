@@ -16,7 +16,7 @@ struct MusicLibrary {
   [[nodiscard]] raylib::Music &get(const std::string &name) {
     return impl.get(name);
   }
-  void load(const char *filename, const char *name) {
+  void load(const char *const filename, const char *const name) {
     impl.load(filename, name);
 
     // TODO SPEED: right now we loop over every sound again
@@ -24,7 +24,7 @@ struct MusicLibrary {
     update_volume(current_volume);
   }
 
-  void update_volume(float new_v) {
+  void update_volume(const float new_v) {
     impl.update_volume(new_v);
     current_volume = new_v;
   }
@@ -46,7 +46,7 @@ private:
       return raylib::LoadMusicStream(filename);
     }
 
-    void update_volume(float new_v) {
+    void update_volume(const float new_v) {
       for (const auto &kv : storage) {
         log_trace("updating music volume for {} to {}", kv.first, new_v);
         raylib::SetMusicVolume(kv.second, new_v);

@@ -16,7 +16,7 @@ struct TextureLibrary {
   [[nodiscard]] raylib::Texture &get(const std::string &name) {
     return impl.get(name);
   }
-  void load(const char *filename, const char *name) {
+  void load(const char *const filename, const char *const name) {
     impl.load(filename, name);
   }
 
