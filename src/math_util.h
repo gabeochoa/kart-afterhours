@@ -6,7 +6,9 @@
 
 #include "rl.h"
 
-template <typename T> int sgn(T val) { return (T(0) < val) - (val < T(0)); }
+template <typename T> int sgn(const T &val) {
+  return (T(0) < val) - (val < T(0));
+}
 
 constexpr float distance_sq(const vec2 a, const vec2 b) {
   return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);

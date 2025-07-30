@@ -19,7 +19,7 @@ template <typename T, typename E> bool test(const T &bitset, E enum_value) {
   return bitset.test(static_cast<int>(enum_value));
 }
 
-template <typename T> int index_of_nth_set_bit(const T &bitset, int n) {
+template <typename T> int index_of_nth_set_bit(const T &bitset, const int n) {
   int count = 0;
   for (size_t i = 0; i < bitset.size(); ++i) {
     if (bitset.test(i)) {
