@@ -257,6 +257,12 @@ struct HasMultipleLives : BaseComponent {
   HasMultipleLives(int num_lives) : num_lives_remaining(num_lives) {}
 };
 
+struct HasKillCountTracker : BaseComponent {
+  int kills = 0;
+  HasKillCountTracker() = default;
+  HasKillCountTracker(int initial_kills) : kills(initial_kills) {}
+};
+
 /// @brief Used to make a component whose transform
 /// can move during the game loop to wrap around the screen.
 /// e.g. if you go passed the width of the screen (right-side),
