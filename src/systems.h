@@ -4,6 +4,7 @@
 #include "components.h"
 #include "makers.h"
 #include "query.h"
+#include "round_settings.h"
 
 struct UpdateSpriteTransform
     : System<Transform, afterhours::texture_manager::HasSprite> {
@@ -929,5 +930,39 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
               (off * (float)i),
           rad, color);
     }
+  }
+};
+
+struct CheckLivesWinCondition : System<> {
+  virtual void once(float) override {
+    // Only check win conditions for Lives round type
+    if (RoundManager::get().active_round_type != RoundType::Lives) {
+      return;
+    }
+
+    // Count players with remaining lives
+    auto players_with_lives =
+        EntityQuery()
+            .whereHasComponent<PlayerID>()
+            .whereHasComponent<HasMultipleLives>()
+            .whereLambda([](const Entity &e) {
+              return e.get<HasMultipleLives>().num_lives_remaining > 0;
+            })
+            .gen();
+
+    if (players_with_lives.size() >= 1) {
+      // not over yet
+      return;
+    }
+
+    if (players_with_lives.size() == 1) {
+      Entity &winner = players_with_lives[0];
+      log_info("Player {} wins the Lives round!", winner.get<PlayerID>().id);
+    } else if (players_with_lives.empty()) {
+      log_info("All players eliminated - round is a tie!");
+    }
+
+    // TODO: Implement round end logic here
+    // For now, just crash the game
   }
 };

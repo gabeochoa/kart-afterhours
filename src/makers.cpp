@@ -3,6 +3,7 @@
 #include "makers.h"
 
 #include "components.h"
+#include "round_settings.h"
 
 using afterhours::texture_manager::HasAnimation;
 using afterhours::texture_manager::idx_to_sprite_frame;
@@ -138,7 +139,9 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
 Entity &make_car(size_t id) {
   auto &entity = EntityHelper::createEntity();
 
-  entity.addComponent<HasMultipleLives>(3);
+  int starting_lives = RoundManager::get().fetch_num_starting_lives();
+  entity.addComponent<HasMultipleLives>(starting_lives);
+
   auto &transform = entity.addComponent<Transform>(
       get_spawn_position((size_t)id), vec2{15.f, 25.f});
 

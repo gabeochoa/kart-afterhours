@@ -118,4 +118,12 @@ struct RoundManager {
   void set_enabled_weapons(const unsigned long enabled_bits) {
     get_active_settings().enabled_weapons = WeaponSet(enabled_bits);
   }
+
+  int fetch_num_starting_lives() {
+    if (active_round_type == RoundType::Lives) {
+      auto &lives_settings = get_active_rt<RoundLivesSettings>();
+      return lives_settings.num_starting_lives;
+    }
+    return 1; // default fallback for non-Lives round types
+  }
 };
