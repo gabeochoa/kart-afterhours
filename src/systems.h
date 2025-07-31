@@ -898,14 +898,11 @@ struct RenderLabels : System<Transform, HasLabels> {
   }
 };
 
-struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
+struct RenderPlayerHUD : System<Transform, HasHealth> {
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,
-                             const HasHealth &hasHealth,
-                             const HasMultipleLives &hasMultipleLives,
-                             float) const override {
-    // Calculate the percentage of the height by the percentage of the health
-    // max against its current value Scaling factors for bar length and height
+                             const HasHealth &hasHealth, float) const override {
+    // Always render health bar
     const float scale_x = 2.f;
     const float scale_y = 1.25f;
 
@@ -943,35 +940,43 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
         },
         rotation_origin, 0.0f, color);
 
-    // Don't render lives for Kills round since they're unlimited
-    if (RoundManager::get().active_round_type != RoundType::Kills) {
-      float rad = 5.f;
-      vec2 off{rad * 2 + 2, 0.f};
-      for (int i = 0; i < hasMultipleLives.num_lives_remaining; i++) {
-        raylib::DrawCircleV(
-            transform.pos() -
-                vec2{transform.size.x / 2.f, transform.size.y + 15.f + rad} +
-                (off * (float)i),
-            rad, color);
-      }
+    // Render round-specific information above health bar
+    switch (RoundManager::get().active_round_type) {
+    case RoundType::Lives:
+      render_lives(entity, transform, color);
+      break;
+    case RoundType::Kills:
+      render_kills(entity, transform, color);
+      break;
+    default:
+      break;
     }
   }
-};
 
-struct RenderKills : System<Transform, HasKillCountTracker> {
-  virtual void for_each_with(const Entity &entity, const Transform &transform,
-                             const HasKillCountTracker &hasKillCountTracker,
-                             float) const override {
-    // Only render kills for Kills round type
-    if (RoundManager::get().active_round_type != RoundType::Kills) {
+private:
+  void render_lives(const Entity &entity, const Transform &transform,
+                    raylib::Color color) const {
+    if (!entity.has<HasMultipleLives>())
       return;
+
+    const auto &hasMultipleLives = entity.get<HasMultipleLives>();
+    float rad = 5.f;
+    vec2 off{rad * 2 + 2, 0.f};
+    for (int i = 0; i < hasMultipleLives.num_lives_remaining; i++) {
+      raylib::DrawCircleV(
+          transform.pos() -
+              vec2{transform.size.x / 2.f, transform.size.y + 15.f + rad} +
+              (off * (float)i),
+          rad, color);
     }
+  }
 
-    raylib::Color color = entity.has_child_of<HasColor>()
-                              ? entity.get_with_child<HasColor>().color()
-                              : raylib::WHITE;
+  void render_kills(const Entity &entity, const Transform &transform,
+                    raylib::Color color) const {
+    if (!entity.has<HasKillCountTracker>())
+      return;
 
-    // Render kills count above the entity
+    const auto &hasKillCountTracker = entity.get<HasKillCountTracker>();
     std::string kills_text =
         std::to_string(hasKillCountTracker.kills) + " kills";
     float text_size = 12.f;
