@@ -40,8 +40,20 @@
     ],
     // Only format files in specific directories
     "files.exclude": {
-        "**/vendor/*": true,
-        "!**/vendor/afterhours/**": false
+        "**/vendor/backward": true,
+        "**/vendor/catch2": true,
+        "**/vendor/fmt": true,
+        "**/vendor/glm": true,
+        "**/vendor/imgui": true,
+        "**/vendor/json": true,
+        "**/vendor/nlohmann": true,
+        "**/vendor/spdlog": true,
+        "**/vendor/stb": true,
+        "**/vendor/glfw": true,
+        "**/vendor/magic_enum": true,
+        "**/vendor/raylib": true,
+        "**/vendor/sago": true,
+        "**/vendor/afterhours/vendor/**": true,
     },
     "files.watcherExclude": {
         "**/vendor/*": true,

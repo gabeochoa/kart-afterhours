@@ -478,15 +478,23 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
   }
 
   {
-    ComponentConfig cmp_config;
-    cmp_config.label = "Win Condition";
+    auto win_condition_div = imm::div(context, mk(settings_group.ent()));
+    {
+      win_condition_div.ent().get<UIComponent>().set_desired_padding({
+          .right = screen_pct(0.2f),
+      });
+      win_condition_div.ent().get<ui::UIComponentDebug>().set(
+          "win_condition_div");
+    }
 
-    size_t win_condition_index =
-        enum_to_index(RoundManager::get().active_round_type);
-
-    if (auto result =
-            imm::pagination(context, mk(settings_group.ent()), RoundType_NAMES,
-                            win_condition_index, std::move(cmp_config));
+    if (auto result = imm::button_group(
+            context, mk(win_condition_div.ent()), RoundType_NAMES,
+            ComponentConfig{
+                .label = "Win Condition",
+                .flex_direction = FlexDirection::Row,
+                .size = ComponentSize{pixels(100.f * RoundType_NAMES.size()),
+                                      children(50.f)},
+            });
         result) {
       RoundManager::get().set_active_round_type(result.as<int>());
     }
