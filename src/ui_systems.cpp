@@ -208,7 +208,7 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
                ComponentConfig{}
                    .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute(true)
+                   .with_absolute_position()
                    .with_debug_name("character_creation"));
 
   {
@@ -321,7 +321,7 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
           .with_margin(Margin{.top = screen_pct(fours == 1 ? 0.2f : 0.05f),
                               .left = screen_pct(0.2f),
                               .right = screen_pct(0.1f)})
-          .with_absolute(true)
+          .with_absolute_position()
           .with_debug_name("btn_group"));
 
   for (int row_id = 0; row_id < fours; row_id++) {
@@ -387,7 +387,7 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
                    .with_debug_name("round_settings")
                    .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute(true));
+                   .with_absolute_position());
 
   auto settings_group =
       imm::div(context, mk(elem.ent()),
@@ -395,7 +395,7 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
                    .with_debug_name("settings_group")
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_padding(button_group_padding)
-                   .with_absolute(true));
+                   .with_absolute_position());
 
   {
     auto win_condition_div =
@@ -466,7 +466,7 @@ ScheduleMainMenuUI::main_screen(Entity &entity,
                ComponentConfig{}
                    .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute(true)
+                   .with_absolute_position()
                    .with_debug_name("main_screen"));
 
   auto btn_group =
@@ -474,7 +474,7 @@ ScheduleMainMenuUI::main_screen(Entity &entity,
                ComponentConfig{}
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_padding(button_group_padding)
-                   .with_absolute(true)
+                   .with_absolute_position()
                    .with_debug_name("btn_group"));
 
   {
@@ -525,7 +525,7 @@ ScheduleMainMenuUI::settings_screen(Entity &entity,
                ComponentConfig{}
                    .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute(true)
+                   .with_absolute_position()
                    .with_debug_name("main_screen"));
 
   auto control_group =
@@ -533,7 +533,7 @@ ScheduleMainMenuUI::settings_screen(Entity &entity,
                ComponentConfig{}
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_padding(control_group_padding)
-                   .with_absolute(true)
+                   .with_absolute_position()
                    .with_debug_name("control_group"));
 
   {
@@ -618,7 +618,7 @@ ScheduleMainMenuUI::about_screen(Entity &entity,
                ComponentConfig{}
                    .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute(true)
+                   .with_absolute_position()
                    .with_debug_name("about_screen"));
 
   auto about_group =
@@ -626,7 +626,7 @@ ScheduleMainMenuUI::about_screen(Entity &entity,
                ComponentConfig{}
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_padding(control_group_padding)
-                   .with_absolute(true)
+                   .with_absolute_position()
                    .with_debug_name("control_group"));
 
   raylib::Texture2D sheet = EntityHelper::get_singleton_cmp<
