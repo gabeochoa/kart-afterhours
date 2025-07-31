@@ -235,6 +235,8 @@ struct HasHealth : BaseComponent {
   float iframes = 0.5f;
   float iframesReset = 0.5f;
 
+  std::optional<EntityID> last_damaged_by{};
+
   void pass_time(float dt) {
     if (iframes > 0)
       iframes -= dt;

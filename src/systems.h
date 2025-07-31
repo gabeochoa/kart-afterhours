@@ -760,6 +760,9 @@ struct ProcessDamage : System<Transform, HasHealth> {
         continue;
       hasHealth.amount -= cd.amount;
       hasHealth.iframes = hasHealth.iframesReset;
+
+      // Track the entity that caused this damage for kill attribution
+      hasHealth.last_damaged_by = cd.id;
       damager.cleanup = true;
     }
   }
@@ -813,14 +816,21 @@ struct ProcessDeath : System<Transform, HasHealth> {
       return;
     }
 
+    log_info("Entity {} died with health {}", entity.id, hasHealth.amount);
     make_explosion_anim(entity);
 
-    // TODO find a better place to do this
+    // Handle player respawning
     if (entity.has<PlayerID>()) {
       transform.position =
           get_spawn_position(static_cast<size_t>(entity.get<PlayerID>().id));
     }
 
+    // Handle kill attribution in kill-based rounds
+    if (RoundManager::get().active_round_type == RoundType::Kills) {
+      handle_kill_attribution(entity, hasHealth);
+    }
+
+    // Handle lives system
     if (entity.has<HasMultipleLives>()) {
       if (RoundManager::get().active_round_type == RoundType::Kills) {
         hasHealth.amount = hasHealth.max_amount;
@@ -834,23 +844,48 @@ struct ProcessDeath : System<Transform, HasHealth> {
       }
     }
 
-    // TODO implement tracking for what item killed the player
-    if (RoundManager::get().active_round_type == RoundType::Kills) {
-      // For now, we'll give a kill to a random player for testing
-      // TODO: Implement proper kill attribution
-      auto players = EntityQuery(true /* force merge */)
-                         .whereHasComponent<PlayerID>()
-                         .whereHasComponent<HasKillCountTracker>()
-                         .gen();
+    entity.cleanup = true;
+  }
 
-      if (!players.empty()) {
-        // Give a kill to the first player for now
-        // In a real implementation, you'd track who actually caused the death
-        players[0].get().template get<HasKillCountTracker>().kills++;
-      }
+private:
+  void handle_kill_attribution(const Entity &, const HasHealth &hasHealth) {
+    if (!hasHealth.last_damaged_by.has_value()) {
+      log_warn("Player died but we don't know why");
+      return;
     }
 
-    entity.cleanup = true;
+    // Look up the entity that caused the damage
+    auto damager_entities = EntityQuery(true /* force merge */)
+                                .whereID(*hasHealth.last_damaged_by)
+                                .gen();
+
+    if (damager_entities.empty()) {
+      log_warn("Player died but damager entity not found");
+      return;
+    }
+
+    Entity &damager = damager_entities[0].get();
+
+    if (!damager.has<PlayerID>()) {
+      log_warn("Player died from environment damage - no kill awarded");
+      return;
+    }
+
+    input::GamepadID killer_player_id = damager.get<PlayerID>().id;
+
+    // Find the player with this ID and give them a kill
+    auto killer_players = EntityQuery(true /* force merge */)
+                              .whereHasComponent<PlayerID>()
+                              .whereHasComponent<HasKillCountTracker>()
+                              .whereLambda([killer_player_id](const Entity &e) {
+                                return e.get<PlayerID>().id == killer_player_id;
+                              })
+                              .gen();
+
+    if (!killer_players.empty()) {
+      killer_players[0].get().template get<HasKillCountTracker>().kills++;
+      log_info("Player {} got a kill!", killer_player_id);
+    }
   }
 };
 
