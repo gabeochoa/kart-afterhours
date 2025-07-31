@@ -407,7 +407,8 @@ ScheduleMainMenuUI::Screen
 ScheduleMainMenuUI::round_settings(Entity &entity,
                                    UIContext<InputAction> &context) {
   Screen next_active_screen = active_screen;
-  auto elem = imm::div(context, mk(entity));
+  auto elem = imm::div(context, mk(entity),
+                       ComponentConfig{}.with_debug_name("round_settings"));
   {
     elem.ent()
         .get<UIComponent>()
@@ -415,10 +416,11 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
         .set_desired_width(screen_pct(1.f))
         .set_desired_height(screen_pct(1.f))
         .make_absolute();
-    elem.ent().get<ui::UIComponentDebug>().set("round_settings");
   }
 
-  auto settings_group = imm::div(context, mk(elem.ent()));
+  auto settings_group =
+      imm::div(context, mk(elem.ent()),
+               ComponentConfig{}.with_debug_name("settings_group"));
   {
     settings_group.ent()
         .get<UIComponent>()
@@ -426,17 +428,16 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
         .set_desired_height(screen_pct(1.f))
         .set_desired_padding(button_group_padding)
         .make_absolute();
-    settings_group.ent().get<ui::UIComponentDebug>().set("settings_group");
   }
 
   {
-    auto win_condition_div = imm::div(context, mk(settings_group.ent()));
+    auto win_condition_div =
+        imm::div(context, mk(settings_group.ent()),
+                 ComponentConfig{}.with_debug_name("win_condition_div"));
     {
       win_condition_div.ent().get<UIComponent>().set_desired_padding({
           .right = screen_pct(0.2f),
       });
-      win_condition_div.ent().get<ui::UIComponentDebug>().set(
-          "win_condition_div");
     }
 
     if (auto result = imm::button_group(
