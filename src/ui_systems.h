@@ -4,6 +4,7 @@
 #include "game.h"
 
 #include "components.h"
+#include "game_state_manager.h"
 #include "query.h"
 #include "settings.h"
 
@@ -11,17 +12,15 @@
 
 using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
+using Screen = GameStateManager::Screen;
 
 struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
-  enum struct Screen {
-    None,
-    Main,
-    CharacterCreation,
-    About,
-    RoundSettings,
-    Settings,
-  } active_screen = Screen::Main;
+  Screen get_active_screen() { return GameStateManager::get().active_screen; }
+
+  void set_active_screen(Screen screen) {
+    GameStateManager::get().set_screen(screen);
+  }
 
   // settings cache stuff for now
   window_manager::ProvidesAvailableWindowResolutions *resolution_provider{
@@ -55,27 +54,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   virtual void once(float) override;
   virtual bool should_run(float) override;
   virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
-                             float) override {
-    switch (active_screen) {
-    case Screen::None:
-      break;
-    case Screen::CharacterCreation:
-      active_screen = character_creation(entity, context);
-      break;
-    case Screen::About:
-      active_screen = about_screen(entity, context);
-      break;
-    case Screen::Settings:
-      active_screen = settings_screen(entity, context);
-      break;
-    case Screen::Main:
-      active_screen = main_screen(entity, context);
-      break;
-    case Screen::RoundSettings:
-      active_screen = round_settings(entity, context);
-      break;
-    }
-  }
+                             float) override;
 };
 
 struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {

@@ -1,10 +1,13 @@
 
 #include "ui_systems.h"
 
+#include "game_state_manager.h"
 #include "input_mapping.h"
 #include "makers.h"  // make_ai()
 #include "preload.h" // FontID
 #include "round_settings.h"
+
+using Screen = GameStateManager::Screen;
 //
 
 constexpr static vec2 button_size = vec2{100, 50};
@@ -49,7 +52,8 @@ void ScheduleMainMenuUI::once(float) {
   current_resolution_provider = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesCurrentResolution>();
 
-  if (active_screen == Screen::Settings) {
+  if (GameStateManager::get().active_screen ==
+      GameStateManager::Screen::Settings) {
     update_resolution_cache();
   }
 
@@ -63,7 +67,7 @@ void ScheduleMainMenuUI::once(float) {
 
 bool ScheduleMainMenuUI::should_run(float) {
   inpc = input::get_input_collector<InputAction>();
-  if (active_screen == Screen::None) {
+  if (GameStateManager::get().is_game_active()) {
     ui_visible = false;
   }
 
@@ -73,7 +77,7 @@ bool ScheduleMainMenuUI::should_run(float) {
       });
 
   if (!ui_visible && start_pressed) {
-    active_screen = Screen::Main;
+    GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
     ui_visible = true;
   } else if (ui_visible && start_pressed) {
     ui_visible = false;
@@ -199,10 +203,8 @@ void ScheduleMainMenuUI::character_selector_column(
   }
 }
 
-ScheduleMainMenuUI::Screen
-ScheduleMainMenuUI::character_creation(Entity &entity,
-                                       UIContext<InputAction> &context) {
-  Screen next_active_screen = active_screen;
+Screen ScheduleMainMenuUI::character_creation(Entity &entity,
+                                              UIContext<InputAction> &context) {
   auto elem =
       imm::div(context, mk(entity),
                ComponentConfig{}
@@ -215,7 +217,7 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
     if (imm::button(
             context, mk(elem.ent()),
             ComponentConfig{}.with_padding(button_padding).with_label("go"))) {
-      next_active_screen = Screen::None;
+      GameStateManager::get().start_game();
     }
   }
 
@@ -224,7 +226,7 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("back"))) {
-      next_active_screen = Screen::Main;
+      GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
     }
   }
 
@@ -233,7 +235,8 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("round settings"))) {
-      next_active_screen = Screen::RoundSettings;
+      GameStateManager::get().set_next_screen(
+          GameStateManager::Screen::RoundSettings);
     }
   }
 
@@ -337,7 +340,34 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
     }
   }
 
-  return next_active_screen;
+  return GameStateManager::get().next_screen.value_or(
+      GameStateManager::get().active_screen);
+}
+
+void ScheduleMainMenuUI::for_each_with(Entity &entity,
+                                       UIContext<InputAction> &context, float) {
+  // Apply any queued screen changes at the start of the frame
+  GameStateManager::get().update_screen();
+
+  switch (get_active_screen()) {
+  case Screen::None:
+    break;
+  case Screen::CharacterCreation:
+    set_active_screen(character_creation(entity, context));
+    break;
+  case Screen::About:
+    set_active_screen(about_screen(entity, context));
+    break;
+  case Screen::Settings:
+    set_active_screen(settings_screen(entity, context));
+    break;
+  case Screen::Main:
+    set_active_screen(main_screen(entity, context));
+    break;
+  case Screen::RoundSettings:
+    set_active_screen(round_settings(entity, context));
+    break;
+  }
 }
 
 void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
@@ -377,10 +407,8 @@ void round_score_settings(Entity &entity, UIContext<InputAction> &context) {
                "Score Needed: {}", rl_settings.score_needed_to_win)));
 }
 
-ScheduleMainMenuUI::Screen
-ScheduleMainMenuUI::round_settings(Entity &entity,
-                                   UIContext<InputAction> &context) {
-  Screen next_active_screen = active_screen;
+Screen ScheduleMainMenuUI::round_settings(Entity &entity,
+                                          UIContext<InputAction> &context) {
   auto elem =
       imm::div(context, mk(entity),
                ComponentConfig{}
@@ -451,16 +479,16 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("back"))) {
-      next_active_screen = Screen::CharacterCreation;
+      GameStateManager::get().set_next_screen(
+          GameStateManager::Screen::CharacterCreation);
     }
   }
-  return next_active_screen;
+  return GameStateManager::get().next_screen.value_or(
+      GameStateManager::get().active_screen);
 }
 
-ScheduleMainMenuUI::Screen
-ScheduleMainMenuUI::main_screen(Entity &entity,
-                                UIContext<InputAction> &context) {
-  Screen next_active_screen = active_screen;
+Screen ScheduleMainMenuUI::main_screen(Entity &entity,
+                                       UIContext<InputAction> &context) {
   auto elem =
       imm::div(context, mk(entity),
                ComponentConfig{}
@@ -482,7 +510,8 @@ ScheduleMainMenuUI::main_screen(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("play"))) {
-      next_active_screen = Screen::CharacterCreation;
+      GameStateManager::get().set_next_screen(
+          GameStateManager::Screen::CharacterCreation);
     }
   }
 
@@ -491,7 +520,7 @@ ScheduleMainMenuUI::main_screen(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("about"))) {
-      next_active_screen = Screen::About;
+      GameStateManager::get().set_next_screen(GameStateManager::Screen::About);
     }
   }
 
@@ -500,7 +529,8 @@ ScheduleMainMenuUI::main_screen(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("settings"))) {
-      next_active_screen = Screen::Settings;
+      GameStateManager::get().set_next_screen(
+          GameStateManager::Screen::Settings);
     }
   }
 
@@ -513,26 +543,25 @@ ScheduleMainMenuUI::main_screen(Entity &entity,
     }
   }
 
-  return next_active_screen;
+  return GameStateManager::get().next_screen.value_or(
+      GameStateManager::get().active_screen);
 }
 
-ScheduleMainMenuUI::Screen
-ScheduleMainMenuUI::settings_screen(Entity &entity,
-                                    UIContext<InputAction> &context) {
-  Screen next_active_screen = active_screen;
+Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
+                                           UIContext<InputAction> &context) {
   auto elem =
       imm::div(context, mk(entity),
                ComponentConfig{}
                    .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_absolute_position()
-                   .with_debug_name("main_screen"));
+                   .with_debug_name("settings_screen"));
 
   auto control_group =
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_padding(control_group_padding)
+                   .with_padding(button_group_padding)
                    .with_absolute_position()
                    .with_debug_name("control_group"));
 
@@ -601,17 +630,16 @@ ScheduleMainMenuUI::settings_screen(Entity &entity,
         current_resolution_provider->current_resolution);
     // TODO do we want to write the settings, or should we have a save button?
 
-    next_active_screen = Screen::Main;
+    GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
   }
-  return next_active_screen;
+  return GameStateManager::get().next_screen.value_or(
+      GameStateManager::get().active_screen);
 }
 
-ScheduleMainMenuUI::Screen
-ScheduleMainMenuUI::about_screen(Entity &entity,
-                                 UIContext<InputAction> &context) {
-  Screen next_active_screen = active_screen;
+Screen ScheduleMainMenuUI::about_screen(Entity &entity,
+                                        UIContext<InputAction> &context) {
   if (!current_resolution_provider)
-    return next_active_screen;
+    return GameStateManager::get().active_screen;
 
   auto elem =
       imm::div(context, mk(entity),
@@ -621,11 +649,11 @@ ScheduleMainMenuUI::about_screen(Entity &entity,
                    .with_absolute_position()
                    .with_debug_name("about_screen"));
 
-  auto about_group =
+  auto control_group =
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_padding(control_group_padding)
+                   .with_padding(button_group_padding)
                    .with_absolute_position()
                    .with_debug_name("control_group"));
 
@@ -655,12 +683,16 @@ ScheduleMainMenuUI::about_screen(Entity &entity,
     x_pos += x_spacing;
   }
 
-  if (imm::button(
-          context, mk(about_group.ent()),
-          ComponentConfig{}.with_padding(button_padding).with_label("back"))) {
-    next_active_screen = Screen::Main;
+  {
+    if (imm::button(context, mk(control_group.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("back"))) {
+      GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
+    }
   }
-  return next_active_screen;
+  return GameStateManager::get().next_screen.value_or(
+      GameStateManager::get().active_screen);
 }
 
 bool ScheduleDebugUI::should_run(float dt) {
