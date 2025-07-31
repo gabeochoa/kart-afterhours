@@ -305,7 +305,7 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
     case RoundType::Score:
       round_score_preview(elem.ent(), context);
       break;
-    case RoundType::Tag:
+    case RoundType::CatAndMouse:
       // TODO currently no settings
       break;
     default:
@@ -467,7 +467,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
   case RoundType::Score:
     round_score_settings(settings_group.ent(), context);
     break;
-  case RoundType::Tag:
+  case RoundType::CatAndMouse:
     // TODO currently no settings
     break;
   default:

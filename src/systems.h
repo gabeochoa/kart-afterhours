@@ -983,6 +983,9 @@ struct RenderPlayerHUD : System<Transform, HasHealth> {
     case RoundType::Kills:
       render_kills(entity, transform, color);
       break;
+    case RoundType::CatAndMouse:
+      render_cat_indicator(entity, transform, color);
+      break;
     default:
       break;
     }
@@ -1020,6 +1023,78 @@ private:
                      transform.pos().y - transform.size.y - 25.f, text_size,
                      color);
   }
+
+  void render_cat_indicator(const Entity &entity, const Transform &transform,
+                            raylib::Color color) const {
+    if (!entity.has<HasCatMouseTracking>())
+      return;
+
+    const auto &catMouseTracking = entity.get<HasCatMouseTracking>();
+
+    // Draw crown for cat
+    if (catMouseTracking.is_cat) {
+      // Draw a crown above the player who is "it"
+      const float crown_size = 15.f;
+      const float crown_y_offset = transform.size.y + 20.f;
+
+      // Crown position (centered above the player)
+      vec2 crown_pos = transform.pos() - vec2{crown_size / 2.f, crown_y_offset};
+
+      // Draw crown using simple shapes
+      raylib::Color crown_color = raylib::GOLD;
+
+      // Crown base
+      raylib::DrawRectangle(crown_pos.x, crown_pos.y, crown_size,
+                            crown_size / 3.f, crown_color);
+
+      // Crown points (3 triangles)
+      float point_width = crown_size / 3.f;
+      for (int i = 0; i < 3; i++) {
+        float x = crown_pos.x + (i * point_width);
+        raylib::DrawTriangle(
+            vec2{x, crown_pos.y},
+            vec2{x + point_width / 2.f, crown_pos.y - crown_size / 2.f},
+            vec2{x + point_width, crown_pos.y}, crown_color);
+      }
+
+      // Crown jewels (small circles)
+      raylib::DrawCircleV(crown_pos + vec2{crown_size / 2.f, crown_size / 6.f},
+                          2.f, raylib::RED);
+    }
+
+    // Draw shield for players in cooldown (safe period)
+    float current_time = raylib::GetTime();
+    if (current_time - catMouseTracking.last_tag_time < 2.0f) {
+      // TODO: Add pulsing animation to shield to make it more obvious
+      // TODO: Add countdown timer above shield showing remaining safe time
+      // Draw a shield above the player who is safe
+      const float shield_size = 12.f;
+      const float shield_y_offset = transform.size.y + 35.f; // Above crown
+
+      // Shield position (centered above the player)
+      vec2 shield_pos =
+          transform.pos() - vec2{shield_size / 2.f, shield_y_offset};
+
+      // Draw shield using simple shapes
+      raylib::Color shield_color = raylib::SKYBLUE;
+
+      // Shield base (triangle pointing down)
+      raylib::DrawTriangle(
+          vec2{shield_pos.x + shield_size / 2.f, shield_pos.y}, // Top point
+          vec2{shield_pos.x, shield_pos.y + shield_size},       // Bottom left
+          vec2{shield_pos.x + shield_size,
+               shield_pos.y + shield_size}, // Bottom right
+          shield_color);
+
+      // Shield border
+      raylib::DrawTriangleLines(
+          vec2{shield_pos.x + shield_size / 2.f, shield_pos.y}, // Top point
+          vec2{shield_pos.x, shield_pos.y + shield_size},       // Bottom left
+          vec2{shield_pos.x + shield_size,
+               shield_pos.y + shield_size}, // Bottom right
+          raylib::WHITE);
+    }
+  }
 };
 
 struct CheckLivesWinCondition : System<> {
@@ -1052,6 +1127,165 @@ struct CheckLivesWinCondition : System<> {
     else if (players_with_lives.empty()) {
       log_info("All players eliminated - round is a tie!");
       GameStateManager::get().end_game();
+    }
+  }
+};
+
+struct UpdateCatMouseTimers : System<HasCatMouseTracking> {
+  virtual void for_each_with(Entity &entity,
+                             HasCatMouseTracking &catMouseTracking,
+                             float dt) override {
+    // Only increment mouse time for players who are not the cat
+    if (!catMouseTracking.is_cat) {
+      catMouseTracking.time_as_mouse += dt;
+    }
+  }
+};
+
+struct HandleCatMouseTagTransfer : System<Transform, HasCatMouseTracking> {
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             HasCatMouseTracking &catMouseTracking,
+                             float) override {
+    // Only process if this entity is the cat
+    if (!catMouseTracking.is_cat) {
+      return;
+    }
+
+    // TODO: Add sound effect when cat tags mouse
+    // TODO: Add particle effect or visual feedback when tag occurs
+    // TODO: Consider different collision detection (maybe just front of car
+    // hits back of car)
+
+    // Find all other players (mice) that this cat can tag
+    auto mice = EntityQuery()
+                    .whereHasComponent<Transform>()
+                    .whereHasComponent<HasCatMouseTracking>()
+                    .whereHasComponent<PlayerID>()
+                    .whereLambda([](const Entity &e) {
+                      return !e.get<HasCatMouseTracking>().is_cat;
+                    })
+                    .gen();
+
+    // Check for collisions with mice
+    for (auto &mouse_ref : mice) {
+      Entity &mouse = mouse_ref.get();
+      Transform &mouseTransform = mouse.get<Transform>();
+      HasCatMouseTracking &mouseTracking = mouse.get<HasCatMouseTracking>();
+
+      // Simple collision check (rectangular overlap)
+      if (raylib::CheckCollisionRecs(transform.rect(), mouseTransform.rect())) {
+        // Check if mouse has been tagged recently (2 second cooldown)
+        float current_time = raylib::GetTime();
+        if (current_time - mouseTracking.last_tag_time < 2.0f) {
+          return; // Mouse is still in cooldown, can't be tagged
+        }
+
+        // Tag transfer: cat becomes mouse, mouse becomes cat
+        catMouseTracking.is_cat = false;
+        mouseTracking.is_cat = true;
+
+        // Update tag times
+        catMouseTracking.last_tag_time = current_time;
+        mouseTracking.last_tag_time = current_time;
+
+        log_info("Player {} tagged Player {}!", entity.get<PlayerID>().id,
+                 mouse.get<PlayerID>().id);
+        return; // Only tag one mouse per frame
+      }
+    }
+  }
+};
+
+struct InitializeCatMouseGame : System<> {
+  bool initialized = false;
+  // TODO: Add option to start with random cat vs. player with most kills from
+  // previous round
+  // TODO: Add option to start with player who was cat the longest in previous
+  // round
+
+  virtual void once(float) override {
+    // Only run for Cat & Mouse round type
+    if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
+      return;
+    }
+    // Only run when game is active
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+    // Only initialize once
+    if (initialized) {
+      return;
+    }
+
+    // Find all players
+    auto players = EntityQuery()
+                       .whereHasComponent<PlayerID>()
+                       .whereHasComponent<HasCatMouseTracking>()
+                       .gen();
+
+    if (players.empty()) {
+      return;
+    }
+
+    // Randomly select one player to be the initial cat
+    size_t cat_index = rand() % players.size();
+    players[cat_index].get().get<HasCatMouseTracking>().is_cat = true;
+
+    log_info("Player {} is the initial cat!",
+             players[cat_index].get().get<PlayerID>().id);
+
+    initialized = true;
+  }
+};
+
+struct CheckCatMouseWinCondition : System<> {
+  virtual void once(float) override {
+    // Only check win conditions for Cat & Mouse round type and when game is
+    // active
+    if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
+      return;
+    }
+    // Only run when game is active
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+
+    auto &cat_mouse_settings =
+        RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+
+    // Check if time limit has been reached
+    if (cat_mouse_settings.current_round_time > 0) {
+      cat_mouse_settings.current_round_time -= raylib::GetFrameTime();
+      if (cat_mouse_settings.current_round_time <= 0) {
+        // Time's up! Find the player with the most mouse time (least cat time)
+        auto players_with_tracking =
+            EntityQuery()
+                .whereHasComponent<PlayerID>()
+                .whereHasComponent<HasCatMouseTracking>()
+                .gen();
+
+        if (players_with_tracking.empty()) {
+          log_info("No players with tracking - round is a tie!");
+          GameStateManager::get().end_game();
+          return;
+        }
+
+        // Find the player with the most mouse time (least cat time)
+        auto winner = std::max_element(
+            players_with_tracking.begin(), players_with_tracking.end(),
+            [](const auto &a, const auto &b) {
+              return a.get().template get<HasCatMouseTracking>().time_as_mouse <
+                     b.get().template get<HasCatMouseTracking>().time_as_mouse;
+            });
+
+        log_info(
+            "Player {} wins the Cat & Mouse round with {:.1f}s mouse time!",
+            winner->get().get<PlayerID>().id,
+            winner->get().get<HasCatMouseTracking>().time_as_mouse);
+        // TODO: Add victory screen showing final mouse times for all players
+        // TODO: Add option to continue playing (best of 3, etc.)
+        GameStateManager::get().end_game();
+      }
     }
   }
 };

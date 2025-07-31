@@ -11,7 +11,7 @@ enum struct RoundType : size_t {
   Lives,
   Kills,
   Score,
-  Tag,
+  CatAndMouse,
 };
 constexpr static size_t num_round_types = magic_enum::enum_count<RoundType>();
 constexpr size_t enum_to_index(RoundType type) {
@@ -62,7 +62,51 @@ struct RoundScoreSettings : RoundSettings {
   int score_needed_to_win = 3;
 };
 
-struct RoundTagSettings : RoundSettings {};
+struct RoundCatAndMouseSettings : RoundSettings {
+  // TODO: audit cooldown time setting
+  // TODO: Add "tag back" rule option (allow/disallow tag backs)
+  // TODO: Add countdown before game starts (players can drive around until
+  // first cat is chosen)
+  // TODO: Add UI announcement of who is the current cat on game start
+
+  enum struct TimeOptions : size_t {
+    Unlimited,
+    Seconds_30,
+    Minutes_1,
+  } time_option = TimeOptions::Seconds_30;
+
+  // Countdown before game starts (players can drive around)
+  float countdown_before_start = 3.0f; // 3 seconds to get ready
+
+  // Whether to announce the cat in UI
+  bool announce_cat_in_ui = true;
+
+  // Whether to show countdown timer in UI
+  bool show_countdown_timer = true;
+
+  void set_time_option(const int index) {
+    time_option = magic_enum::enum_value<TimeOptions>(index);
+    reset_round_time();
+  }
+
+  void reset_round_time() {
+    float new_time = -1;
+    switch (time_option) {
+    case TimeOptions::Unlimited:
+      new_time = -1;
+      break;
+    case TimeOptions::Seconds_30:
+      new_time = 30.f;
+      break;
+    case TimeOptions::Minutes_1:
+      new_time = 60.f;
+      break;
+    }
+    current_round_time = new_time;
+  }
+
+  float current_round_time = 30.f; // Default to 30 seconds
+};
 
 SINGLETON_FWD(RoundManager)
 struct RoundManager {
@@ -79,8 +123,8 @@ struct RoundManager {
         std::make_unique<RoundKillsSettings>();
     settings[enum_to_index(RoundType::Score)] =
         std::make_unique<RoundScoreSettings>();
-    settings[enum_to_index(RoundType::Tag)] =
-        std::make_unique<RoundTagSettings>();
+    settings[enum_to_index(RoundType::CatAndMouse)] =
+        std::make_unique<RoundCatAndMouseSettings>();
 
     settings[0]->enabled_weapons.reset().set(0);
     settings[1]->enabled_weapons.reset().set(1);
@@ -102,7 +146,7 @@ struct RoundManager {
       return static_cast<T &>(rt_settings);
     case RoundType::Score:
       return static_cast<T &>(rt_settings);
-    case RoundType::Tag:
+    case RoundType::CatAndMouse:
       return static_cast<T &>(rt_settings);
     }
   }

@@ -110,6 +110,12 @@ void game() {
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
     systems.register_update_system(std::make_unique<CheckLivesWinCondition>());
     systems.register_update_system(std::make_unique<CheckKillsWinCondition>());
+    systems.register_update_system(std::make_unique<InitializeCatMouseGame>());
+    systems.register_update_system(std::make_unique<UpdateCatMouseTimers>());
+    systems.register_update_system(
+        std::make_unique<HandleCatMouseTagTransfer>());
+    systems.register_update_system(
+        std::make_unique<CheckCatMouseWinCondition>());
 
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
     systems.register_update_system(std::make_unique<UpdateShaderValues>());

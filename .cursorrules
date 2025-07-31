@@ -7,6 +7,11 @@ Use short, descriptive commit messages with prefixes:
 - `be -` for backend/engine changes or refactoring
 - `ui -` for UI changes
 
+Rules:
+- Use all lowercase
+- Avoid special characters like ampersands (&) - use "and" instead
+- Keep messages concise and descriptive
+
 Examples:
 - `implement proper kill attribution system`
 - `bf - fix UI not showing after game ends`

@@ -265,6 +265,14 @@ struct HasKillCountTracker : BaseComponent {
   HasKillCountTracker(int initial_kills) : kills(initial_kills) {}
 };
 
+struct HasCatMouseTracking : BaseComponent {
+  float time_as_mouse = 0.0f;
+  bool is_cat = false;
+  float last_tag_time =
+      -1.f; // TODO: Consider making this configurable per round
+  HasCatMouseTracking() = default;
+};
+
 /// @brief Used to make a component whose transform
 /// can move during the game loop to wrap around the screen.
 /// e.g. if you go passed the width of the screen (right-side),
