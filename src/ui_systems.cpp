@@ -69,6 +69,8 @@ bool ScheduleMainMenuUI::should_run(float) {
   inpc = input::get_input_collector<InputAction>();
   if (GameStateManager::get().is_game_active()) {
     ui_visible = false;
+  } else if (GameStateManager::get().is_menu_active()) {
+    ui_visible = true;
   }
 
   const bool start_pressed =
