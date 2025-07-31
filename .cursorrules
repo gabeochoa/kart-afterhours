@@ -1,0 +1,79 @@
+# Kart Afterhours Project Rules
+
+## Git Commit Format
+Use short, descriptive commit messages with prefixes:
+- no prefix for new features
+- `bf -` for bug fixes  
+- `be -` for backend/engine changes or refactoring
+- `ui -` for UI changes
+
+Examples:
+- `implement proper kill attribution system`
+- `bf - fix UI not showing after game ends`
+- `be - combine RenderHealthAndLives and RenderKills into unified RenderPlayerHUD`
+
+## Code Style
+- Keep functions focused and single-purpose
+- Prefer early returns to reduce nesting
+- Dont add extraneous comments 
+
+## Project Structure
+- `src/` contains main game code
+- `vendor/` contains third-party libraries
+- `resources/` contains assets (images, sounds, fonts)
+- `output/` contains build artifacts
+
+## Build System
+- Use `xmake` for building
+- Use `make` as alternative
+- Game executable is `kart.exe`
+
+## Debugging
+- Use `log_info()`, `log_warn()`, `log_error()` for logging
+- Add debug logs for complex systems like damage tracking
+- Remove verbose debug logs before committing
+
+## TODO Comments
+- Use `TODO` for incomplete features or known issues
+- Use `TODO` for performance optimizations (e.g., "TODO this allocates...")
+- Use `TODO` for future improvements (e.g., "TODO add random generator")
+
+## Component Patterns
+- All components inherit from `BaseComponent`
+- Use `struct` for components, not `class`
+- Components should be simple data containers
+- Use `std::optional` for nullable fields
+- Use `enum class` for component state enums
+
+## System Patterns
+- Systems inherit from `System<Components...>`
+- Override `for_each_with(Entity&, Components&..., float)` for main logic
+- Use `virtual void for_each_with(...) override` syntax
+- Systems should be focused and single-purpose
+- Use early returns to reduce nesting
+
+## Singleton Patterns
+- Use `SINGLETON_FWD(Type)` and `SINGLETON(Type)` macros
+- Singletons should have `get()` static method
+- Use `SINGLETON_PARAM` for parameterized singletons
+- Delete copy constructor and assignment operator
+
+## Enum Patterns
+- Use `enum struct` for type safety
+- Use `magic_enum` for enum utilities
+- Use `magic_enum::enum_names<EnumType>()` for string lists
+- Use `magic_enum::enum_count<EnumType>()` for count
+
+## Naming Conventions
+- Use `camelCase` or snake_case for variables and functions
+- Use `PascalCase` for structs, classes, and enums
+- Use `UPPER_CASE` for constants and macros
+- Use descriptive names that indicate purpose
+- Use `has_` prefix for boolean components (e.g., `HasHealth`)
+- Use `Can_` prefix for capability components (e.g., `CanDamage`)
+
+## File Organization
+- Use `#pragma once` at top of header files
+- Group includes: standard library, third-party, project headers
+- Use forward declarations when possible
+- Keep header files focused and minimal 
