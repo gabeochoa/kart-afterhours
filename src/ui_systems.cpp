@@ -203,16 +203,13 @@ ScheduleMainMenuUI::Screen
 ScheduleMainMenuUI::character_creation(Entity &entity,
                                        UIContext<InputAction> &context) {
   Screen next_active_screen = active_screen;
-  auto elem = imm::div(context, mk(entity));
-  {
-    elem.ent()
-        .get<UIComponent>()
-        .enable_font(get_font_name(FontID::EQPro), 75.f)
-        .set_desired_width(screen_pct(1.f))
-        .set_desired_height(screen_pct(1.f))
-        .make_absolute();
-    elem.ent().get<ui::UIComponentDebug>().set("character_creation");
-  }
+  auto elem =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_font(get_font_name(FontID::EQPro), 75.f)
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute(true)
+                   .with_debug_name("character_creation"));
 
   {
     if (imm::button(
@@ -403,12 +400,9 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
   {
     auto win_condition_div =
         imm::div(context, mk(settings_group.ent()),
-                 ComponentConfig{}.with_debug_name("win_condition_div"));
-    {
-      win_condition_div.ent().get<UIComponent>().set_desired_padding({
-          .right = screen_pct(0.2f),
-      });
-    }
+                 ComponentConfig{}
+                     .with_debug_name("win_condition_div")
+                     .with_padding(Padding{.right = screen_pct(0.2f)}));
 
     if (auto result = imm::button_group(
             context, mk(win_condition_div.ent()), RoundType_NAMES,
@@ -467,27 +461,21 @@ ScheduleMainMenuUI::Screen
 ScheduleMainMenuUI::main_screen(Entity &entity,
                                 UIContext<InputAction> &context) {
   Screen next_active_screen = active_screen;
-  auto elem = imm::div(context, mk(entity));
-  {
-    elem.ent()
-        .get<UIComponent>()
-        .enable_font(get_font_name(FontID::EQPro), 75.f)
-        .set_desired_width(screen_pct(1.f))
-        .set_desired_height(screen_pct(1.f))
-        .make_absolute();
-    elem.ent().get<ui::UIComponentDebug>().set("main_screen");
-  }
+  auto elem =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_font(get_font_name(FontID::EQPro), 75.f)
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute(true)
+                   .with_debug_name("main_screen"));
 
-  auto btn_group = imm::div(context, mk(elem.ent()));
-  {
-    btn_group.ent()
-        .get<UIComponent>()
-        .set_desired_width(screen_pct(1.f))
-        .set_desired_height(screen_pct(1.f))
-        .set_desired_padding(button_group_padding)
-        .make_absolute();
-    btn_group.ent().get<ui::UIComponentDebug>().set("btn_group");
-  }
+  auto btn_group =
+      imm::div(context, mk(elem.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_padding(button_group_padding)
+                   .with_absolute(true)
+                   .with_debug_name("btn_group"));
 
   {
     if (imm::button(context, mk(btn_group.ent()),
@@ -532,16 +520,13 @@ ScheduleMainMenuUI::Screen
 ScheduleMainMenuUI::settings_screen(Entity &entity,
                                     UIContext<InputAction> &context) {
   Screen next_active_screen = active_screen;
-  auto elem = imm::div(context, mk(entity));
-  {
-    elem.ent()
-        .get<UIComponent>()
-        .enable_font(get_font_name(FontID::EQPro), 75.f)
-        .set_desired_width(screen_pct(1.f))
-        .set_desired_height(screen_pct(1.f))
-        .make_absolute();
-    elem.ent().get<ui::UIComponentDebug>().set("main_screen");
-  }
+  auto elem =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_font(get_font_name(FontID::EQPro), 75.f)
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute(true)
+                   .with_debug_name("main_screen"));
 
   auto control_group =
       imm::div(context, mk(elem.ent()),
@@ -628,16 +613,13 @@ ScheduleMainMenuUI::about_screen(Entity &entity,
   if (!current_resolution_provider)
     return next_active_screen;
 
-  auto elem = imm::div(context, mk(entity));
-  {
-    elem.ent()
-        .get<UIComponent>()
-        .enable_font(get_font_name(FontID::EQPro), 75.f)
-        .set_desired_width(screen_pct(1.f))
-        .set_desired_height(screen_pct(1.f))
-        .make_absolute();
-    elem.ent().get<ui::UIComponentDebug>().set("about_screen");
-  }
+  auto elem =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_font(get_font_name(FontID::EQPro), 75.f)
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute(true)
+                   .with_debug_name("about_screen"));
 
   auto about_group =
       imm::div(context, mk(elem.ent()),
@@ -718,11 +700,9 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
 
   // Row 1
   {
-    auto elem = imm::div(context, mk(entity));
-    elem.ent()
-        .get<UIComponent>()
-        // TODO use config once it exists
-        .set_flex_direction(FlexDirection::Row);
+    auto elem =
+        imm::div(context, mk(entity),
+                 ComponentConfig{}.with_flex_direction(FlexDirection::Row));
 
     // Max speed
     {
@@ -826,11 +806,9 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
 
   // Row 2
   {
-    auto elem = imm::div(context, mk(entity));
-    elem.ent()
-        .get<UIComponent>()
-        // TODO use config once it exists
-        .set_flex_direction(FlexDirection::Row);
+    auto elem =
+        imm::div(context, mk(entity),
+                 ComponentConfig{}.with_flex_direction(FlexDirection::Row));
 
     // Skid Threshold
     {
