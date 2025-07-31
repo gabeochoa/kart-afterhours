@@ -104,43 +104,31 @@ void ScheduleMainMenuUI::character_selector_column(
                                   : colorManager.get_next_NO_STORE(index);
 
   const auto num_cols = std::min(4.f, static_cast<float>(num_slots));
-  auto column = imm::div(context, mk(parent, (int)index),
-                         ComponentConfig{
-                             .size =
-                                 ComponentSize{
-                                     percent(1.f / num_cols, 0.1f),
-                                     percent(1.f, 0.4f),
-                                 },
-                             .margin =
-                                 Margin{
-                                     .top = percent(0.05f),
-                                     .bottom = percent(0.05f),
-                                     .left = percent(0.05f),
-                                     .right = percent(0.05f),
-                                 },
-                             .color_usage = Theme::Usage::Custom,
-                             .custom_color = bg_color,
-                             // disable round
-                             .rounded_corners = std::bitset<4>().reset(),
-                         });
+  auto column =
+      imm::div(context, mk(parent, (int)index),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(1.f / num_cols, 0.1f),
+                                            percent(1.f, 0.4f)})
+                   .with_margin(Margin{.top = percent(0.05f),
+                                       .bottom = percent(0.05f),
+                                       .left = percent(0.05f),
+                                       .right = percent(0.05f)})
+                   .with_color_usage(Theme::Usage::Custom)
+                   .with_custom_color(bg_color)
+                   .disable_rounded_corners());
 
   if (car.has_value()) {
     // Note: we arent using mk() here...
-    imm::div(context, mk(column.ent()),
-             ComponentConfig{
-                 .size =
-                     ComponentSize{
-                         percent(1.f),
-                         percent(0.2f, 0.4f),
-                     },
-                 .label = std::format("{} {}", index, car->id),
-                 .color_usage = Theme::Usage::Custom,
-                 .custom_color = bg_color,
-                 // disable round
-                 .rounded_corners = std::bitset<4>().reset(),
-                 .debug_name = std::format("player_car {} {} {} {}", index,
-                                           car->id, players.size(), ais.size()),
-             });
+    imm::div(
+        context, mk(column.ent()),
+        ComponentConfig{}
+            .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+            .with_label(std::format("{} {}", index, car->id))
+            .with_color_usage(Theme::Usage::Custom)
+            .with_custom_color(bg_color)
+            .disable_rounded_corners()
+            .with_debug_name(std::format("player_car {} {} {} {}", index,
+                                         car->id, players.size(), ais.size())));
   }
 
   bool player_right = false;
@@ -169,18 +157,12 @@ void ScheduleMainMenuUI::character_selector_column(
   if (show_next_color_button) {
     if (auto elem = imm::button(
             context, mk(column.ent()),
-            ComponentConfig{
-                .size =
-                    ComponentSize{
-                        percent(1.f),
-                        percent(0.2f, 0.4f),
-                    },
-                .label = "Next Color",
-                // disable round
-                .rounded_corners = std::bitset<4>().reset(),
-                .skip_when_tabbing = true,
-                .debug_name = std::format("next_color button {} ", index),
-            });
+            ComponentConfig{}
+                .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+                .with_label("Next Color")
+                .disable_rounded_corners()
+                .with_skip_tabbing(true)
+                .with_debug_name(std::format("next_color button {} ", index)));
         elem || player_right) {
       colorManager.release_and_get_next(car->id);
     }
@@ -192,42 +174,24 @@ void ScheduleMainMenuUI::character_selector_column(
     // - maybe maybe the color more see through?
     // - add just a dotted line or just outline?
     if (imm::button(context, mk(column.ent()),
-                    ComponentConfig{
-                        .size =
-                            ComponentSize{
-                                percent(1.f),
-                                pixels(50.f),
-                            },
-                        .padding =
-                            Padding{
-                                .top = percent(0.25f),
-                            },
-                        .label = "Add AI",
-                        // disable round
-                        .rounded_corners = std::bitset<4>().reset(),
-                        .debug_name = "add_ai_button",
-                    })) {
+                    ComponentConfig{}
+                        .with_size(ComponentSize{percent(1.f), pixels(50.f)})
+                        .with_padding(Padding{.top = percent(0.25f)})
+                        .with_label("Add AI")
+                        .disable_rounded_corners()
+                        .with_debug_name("add_ai_button"))) {
       make_ai();
     }
   }
 
   if (is_slot_ai && car.has_value()) {
     if (imm::button(context, mk(column.ent()),
-                    ComponentConfig{
-                        .size =
-                            ComponentSize{
-                                percent(1.f),
-                                pixels(50.f),
-                            },
-                        .padding =
-                            Padding{
-                                .top = percent(0.25f),
-                            },
-                        .label = "Remove AI",
-                        // disable round
-                        .rounded_corners = std::bitset<4>().reset(),
-                        .debug_name = "remove_ai_button",
-                    })) {
+                    ComponentConfig{}
+                        .with_size(ComponentSize{percent(1.f), pixels(50.f)})
+                        .with_padding(Padding{.top = percent(0.25f)})
+                        .with_label("Remove AI")
+                        .disable_rounded_corners()
+                        .with_debug_name("remove_ai_button"))) {
 
       colorManager.release_only(car->id);
       car->cleanup = true;
@@ -292,10 +256,8 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
           RoundManager::get().get_active_rt<RoundLivesSettings>();
 
       imm::div(context, mk(entity),
-               ComponentConfig{
-                   .label = std::format("Num Lives: {}",
-                                        rl_settings.num_starting_lives),
-               });
+               ComponentConfig{}.with_label(std::format(
+                   "Num Lives: {}", rl_settings.num_starting_lives)));
     };
 
     auto round_kills_preview = [](Entity &entity,
@@ -304,10 +266,8 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
           RoundManager::get().get_active_rt<RoundKillsSettings>();
 
       imm::div(context, mk(entity),
-               ComponentConfig{
-                   .label = std::format("Round Length: {}",
-                                        rl_settings.current_round_time),
-               });
+               ComponentConfig{}.with_label(std::format(
+                   "Round Length: {}", rl_settings.current_round_time)));
     };
 
     auto round_score_preview = [](Entity &entity,
@@ -316,10 +276,8 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
           RoundManager::get().get_active_rt<RoundScoreSettings>();
 
       imm::div(context, mk(entity),
-               ComponentConfig{
-                   .label = std::format("Score Needed: {}",
-                                        rl_settings.score_needed_to_win),
-               });
+               ComponentConfig{}.with_label(std::format(
+                   "Score Needed: {}", rl_settings.score_needed_to_win)));
     };
 
     {
@@ -409,21 +367,17 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
 void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundLivesSettings>();
 
-  imm::div(
-      context, mk(entity),
-      ComponentConfig{
-          .label = std::format("Num Lives: {}", rl_settings.num_starting_lives),
-      });
+  imm::div(context, mk(entity),
+           ComponentConfig{}.with_label(
+               std::format("Num Lives: {}", rl_settings.num_starting_lives)));
 }
 
 void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundKillsSettings>();
 
   imm::div(context, mk(entity),
-           ComponentConfig{
-               .label = std::format("Round Length: {}",
-                                    rl_settings.current_round_time),
-           });
+           ComponentConfig{}.with_label(std::format(
+               "Round Length: {}", rl_settings.current_round_time)));
 
   {
     ComponentConfig resolution_config;
@@ -445,10 +399,8 @@ void round_score_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundScoreSettings>();
 
   imm::div(context, mk(entity),
-           ComponentConfig{
-               .label = std::format("Score Needed: {}",
-                                    rl_settings.score_needed_to_win),
-           });
+           ComponentConfig{}.with_label(std::format(
+               "Score Needed: {}", rl_settings.score_needed_to_win)));
 }
 
 ScheduleMainMenuUI::Screen
@@ -489,13 +441,12 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
 
     if (auto result = imm::button_group(
             context, mk(win_condition_div.ent()), RoundType_NAMES,
-            ComponentConfig{
-                .label = "Win Condition",
-                .flex_direction = FlexDirection::Row,
-                .size = ComponentSize{pixels(100.f * RoundType_NAMES.size()),
-                                      children(50.f)},
-                .select_on_focus = true,
-            });
+            ComponentConfig{}
+                .with_label("Win Condition")
+                .with_flex_direction(FlexDirection::Row)
+                .with_size(ComponentSize{pixels(100.f * RoundType_NAMES.size()),
+                                         children(50.f)})
+                .with_select_on_focus(true));
         result) {
       RoundManager::get().set_active_round_type(result.as<int>());
     }
