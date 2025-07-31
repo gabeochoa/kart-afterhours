@@ -494,6 +494,7 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
                 .flex_direction = FlexDirection::Row,
                 .size = ComponentSize{pixels(100.f * RoundType_NAMES.size()),
                                       children(50.f)},
+                .select_on_focus = true,
             });
         result) {
       RoundManager::get().set_active_round_type(result.as<int>());
