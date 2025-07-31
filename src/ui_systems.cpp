@@ -215,35 +215,27 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
   }
 
   {
-    ComponentConfig _button_config;
-    _button_config.padding = button_padding;
-    _button_config.label = "go";
-    if (imm::button(context, mk(elem.ent()), std::move(_button_config))
-        //
-    ) {
+    if (imm::button(
+            context, mk(elem.ent()),
+            ComponentConfig{}.with_padding(button_padding).with_label("go"))) {
       next_active_screen = Screen::None;
     }
   }
 
   {
-    ComponentConfig back_button_config;
-    back_button_config.padding = button_padding;
-    back_button_config.label = "back";
-    if (imm::button(context, mk(elem.ent()), std::move(back_button_config))
-        //
-    ) {
+    if (imm::button(context, mk(elem.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("back"))) {
       next_active_screen = Screen::Main;
     }
   }
 
   {
-    ComponentConfig button_config;
-    button_config.padding = button_padding;
-    button_config.label = "round settings";
-
-    if (imm::button(context, mk(elem.ent()), std::move(button_config))
-        //
-    ) {
+    if (imm::button(context, mk(elem.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("round settings"))) {
       next_active_screen = Screen::RoundSettings;
     }
   }
@@ -281,12 +273,11 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
     };
 
     {
-      ComponentConfig cmp_config;
-      cmp_config.label = std::format(
-          "Win Condition: {}",
-          magic_enum::enum_name(RoundManager::get().active_round_type));
-
-      imm::div(context, mk(elem.ent()), std::move(cmp_config));
+      imm::div(
+          context, mk(elem.ent()),
+          ComponentConfig{}.with_label(std::format(
+              "Win Condition: {}",
+              magic_enum::enum_name(RoundManager::get().active_round_type))));
     }
 
     /*
@@ -326,35 +317,23 @@ ScheduleMainMenuUI::character_creation(Entity &entity,
   // 0-4 => 1, 5->8 -> 2
   int fours = static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
 
-  auto btn_group =
-      imm::div(context, mk(elem.ent()),
-               ComponentConfig{
-                   .size =
-                       ComponentSize{
-                           screen_pct(1.f),
-                           screen_pct(1.f),
-                       },
-                   .margin =
-                       Margin{
-                           .top = screen_pct(fours == 1 ? 0.2f : 0.05f),
-                           .left = screen_pct(0.2f),
-                           .right = screen_pct(0.1f),
-                       },
-                   .is_absolute = true,
-                   .debug_name = "btn_group",
-               });
+  auto btn_group = imm::div(
+      context, mk(elem.ent()),
+      ComponentConfig{}
+          .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+          .with_margin(Margin{.top = screen_pct(fours == 1 ? 0.2f : 0.05f),
+                              .left = screen_pct(0.2f),
+                              .right = screen_pct(0.1f)})
+          .with_absolute(true)
+          .with_debug_name("btn_group"));
 
   for (int row_id = 0; row_id < fours; row_id++) {
-    auto row = imm::div(context, mk(btn_group.ent(), row_id),
-                        ComponentConfig{
-                            .size =
-                                ComponentSize{
-                                    percent(1.f),
-                                    percent(0.5f, 0.4f),
-                                },
-                            .flex_direction = FlexDirection::Row,
-                            .debug_name = "row",
-                        });
+    auto row = imm::div(
+        context, mk(btn_group.ent(), row_id),
+        ComponentConfig{}
+            .with_size(ComponentSize{percent(1.f), percent(0.5f, 0.4f)})
+            .with_flex_direction(FlexDirection::Row)
+            .with_debug_name("row"));
     size_t start = row_id * 4;
     for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
       character_selector_column(row.ent(), context, i, num_slots);
@@ -380,15 +359,13 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
                "Round Length: {}", rl_settings.current_round_time)));
 
   {
-    ComponentConfig resolution_config;
-    resolution_config.label = "Round Length";
-
     // TODO replace with actual strings
     auto options = magic_enum::enum_names<RoundKillsSettings::TimeOptions>();
     auto option_index = magic_enum::enum_index(rl_settings.time_option).value();
 
-    if (auto result = imm::dropdown(context, mk(entity), options, option_index,
-                                    std::move(resolution_config));
+    if (auto result =
+            imm::dropdown(context, mk(entity), options, option_index,
+                          ComponentConfig{}.with_label("Round Length"));
         result) {
       rl_settings.set_time_option(result.as<int>());
     }
@@ -407,28 +384,21 @@ ScheduleMainMenuUI::Screen
 ScheduleMainMenuUI::round_settings(Entity &entity,
                                    UIContext<InputAction> &context) {
   Screen next_active_screen = active_screen;
-  auto elem = imm::div(context, mk(entity),
-                       ComponentConfig{}.with_debug_name("round_settings"));
-  {
-    elem.ent()
-        .get<UIComponent>()
-        .enable_font(get_font_name(FontID::EQPro), 75.f)
-        .set_desired_width(screen_pct(1.f))
-        .set_desired_height(screen_pct(1.f))
-        .make_absolute();
-  }
+  auto elem =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_debug_name("round_settings")
+                   .with_font(get_font_name(FontID::EQPro), 75.f)
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute(true));
 
   auto settings_group =
       imm::div(context, mk(elem.ent()),
-               ComponentConfig{}.with_debug_name("settings_group"));
-  {
-    settings_group.ent()
-        .get<UIComponent>()
-        .set_desired_width(screen_pct(1.f))
-        .set_desired_height(screen_pct(1.f))
-        .set_desired_padding(button_group_padding)
-        .make_absolute();
-  }
+               ComponentConfig{}
+                   .with_debug_name("settings_group")
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_padding(button_group_padding)
+                   .with_absolute(true));
 
   {
     auto win_condition_div =
@@ -483,14 +453,10 @@ ScheduleMainMenuUI::round_settings(Entity &entity,
   }
 
   {
-    ComponentConfig back_button_config;
-    back_button_config.padding = button_padding;
-    back_button_config.label = "back";
-
     if (imm::button(context, mk(settings_group.ent()),
-                    std::move(back_button_config))
-        //
-    ) {
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("back"))) {
       next_active_screen = Screen::CharacterCreation;
     }
   }
@@ -524,51 +490,37 @@ ScheduleMainMenuUI::main_screen(Entity &entity,
   }
 
   {
-    ComponentConfig play_button_config;
-    play_button_config.padding = button_padding;
-    play_button_config.label = "play";
-
-    if (imm::button(context, mk(btn_group.ent()), std::move(play_button_config))
-        //
-    ) {
+    if (imm::button(context, mk(btn_group.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("play"))) {
       next_active_screen = Screen::CharacterCreation;
     }
   }
 
   {
-    ComponentConfig about_button_config;
-    about_button_config.padding = button_padding;
-    about_button_config.label = "about";
-
     if (imm::button(context, mk(btn_group.ent()),
-                    std::move(about_button_config))
-        //
-    ) {
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("about"))) {
       next_active_screen = Screen::About;
     }
   }
 
   {
-    ComponentConfig settings_button_config;
-    settings_button_config.padding = button_padding;
-    settings_button_config.label = "settings";
-
     if (imm::button(context, mk(btn_group.ent()),
-                    std::move(settings_button_config))
-        //
-    ) {
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("settings"))) {
       next_active_screen = Screen::Settings;
     }
   }
 
   {
-    ComponentConfig exit_button_config;
-    exit_button_config.padding = button_padding;
-    exit_button_config.label = "exit";
-
-    if (imm::button(context, mk(btn_group.ent()), std::move(exit_button_config))
-        //
-    ) {
+    if (imm::button(context, mk(btn_group.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("exit"))) {
       exit_game();
     }
   }
@@ -591,25 +543,23 @@ ScheduleMainMenuUI::settings_screen(Entity &entity,
     elem.ent().get<ui::UIComponentDebug>().set("main_screen");
   }
 
-  ComponentConfig control_group_config;
-  control_group_config.size = {screen_pct(1.f), screen_pct(1.f)};
-  control_group_config.padding = control_group_padding;
-  control_group_config.is_absolute = true;
-  control_group_config.debug_name = "control_group";
-
   auto control_group =
-      imm::div(context, mk(elem.ent()), std::move(control_group_config));
+      imm::div(context, mk(elem.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_padding(control_group_padding)
+                   .with_absolute(true)
+                   .with_debug_name("control_group"));
 
   {
     float master_volume = Settings::get().get_master_volume();
     auto label = fmt::format("Master Volume\n {:2.0f}", master_volume * 100.f);
 
-    ComponentConfig master_volume_config;
-    master_volume_config.size = {pixels(300.f), pixels(50.f)};
-    master_volume_config.label = std::move(label);
-
-    if (auto result = slider(context, mk(control_group.ent()), master_volume,
-                             std::move(master_volume_config));
+    if (auto result =
+            slider(context, mk(control_group.ent()), master_volume,
+                   ComponentConfig{}
+                       .with_size(ComponentSize{pixels(300.f), pixels(50.f)})
+                       .with_label(std::move(label)));
         result) {
       master_volume = result.as<float>();
       Settings::get().update_master_volume(master_volume);
@@ -620,12 +570,11 @@ ScheduleMainMenuUI::settings_screen(Entity &entity,
     float music_volume = Settings::get().get_music_volume();
     auto label = fmt::format("Music Volume\n {:2.0f}", music_volume * 100.f);
 
-    ComponentConfig music_volume_config;
-    music_volume_config.size = {pixels(300.f), pixels(50.f)};
-    music_volume_config.label = std::move(label);
-
-    if (auto result = slider(context, mk(control_group.ent()), music_volume,
-                             std::move(music_volume_config));
+    if (auto result =
+            slider(context, mk(control_group.ent()), music_volume,
+                   ComponentConfig{}
+                       .with_size(ComponentSize{pixels(300.f), pixels(50.f)})
+                       .with_label(std::move(label)));
         result) {
       music_volume = result.as<float>();
       Settings::get().update_music_volume(music_volume);
@@ -636,12 +585,11 @@ ScheduleMainMenuUI::settings_screen(Entity &entity,
     float sfx_volume = Settings::get().get_sfx_volume();
     auto label = fmt::format("SFX Volume\n {:2.0f}", sfx_volume * 100.f);
 
-    ComponentConfig sfx_volume_config;
-    sfx_volume_config.size = {pixels(300.f), pixels(50.f)};
-    sfx_volume_config.label = std::move(label);
-
-    if (auto result = slider(context, mk(control_group.ent()), sfx_volume,
-                             std::move(sfx_volume_config));
+    if (auto result =
+            slider(context, mk(control_group.ent()), sfx_volume,
+                   ComponentConfig{}
+                       .with_size(ComponentSize{pixels(300.f), pixels(50.f)})
+                       .with_label(std::move(label)));
         result) {
       sfx_volume = result.as<float>();
       Settings::get().update_sfx_volume(sfx_volume);
@@ -649,11 +597,9 @@ ScheduleMainMenuUI::settings_screen(Entity &entity,
   }
 
   {
-    ComponentConfig resolution_config;
-    resolution_config.label = "Resolution";
-
     if (imm::dropdown(context, mk(control_group.ent()), resolution_strs,
-                      resolution_index, std::move(resolution_config))) {
+                      resolution_index,
+                      ComponentConfig{}.with_label("Resolution"))) {
       resolution_provider->on_data_changed(resolution_index);
     }
   }
@@ -663,14 +609,9 @@ ScheduleMainMenuUI::settings_screen(Entity &entity,
     Settings::get().toggle_fullscreen();
   }
 
-  ComponentConfig back_button_config;
-  back_button_config.padding = button_padding;
-  back_button_config.label = "back";
-
-  if (imm::button(context, mk(control_group.ent()),
-                  std::move(back_button_config))
-      //
-  ) {
+  if (imm::button(
+          context, mk(control_group.ent()),
+          ComponentConfig{}.with_padding(button_padding).with_label("back"))) {
     Settings::get().update_resolution(
         current_resolution_provider->current_resolution);
     // TODO do we want to write the settings, or should we have a save button?
@@ -698,14 +639,13 @@ ScheduleMainMenuUI::about_screen(Entity &entity,
     elem.ent().get<ui::UIComponentDebug>().set("about_screen");
   }
 
-  ComponentConfig about_screen_config;
-  about_screen_config.size = {screen_pct(1.f), screen_pct(1.f)};
-  about_screen_config.padding = control_group_padding;
-  about_screen_config.is_absolute = true;
-  about_screen_config.debug_name = "control_group";
-
   auto about_group =
-      imm::div(context, mk(elem.ent()), std::move(about_screen_config));
+      imm::div(context, mk(elem.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_padding(control_group_padding)
+                   .with_absolute(true)
+                   .with_debug_name("control_group"));
 
   raylib::Texture2D sheet = EntityHelper::get_singleton_cmp<
                                 afterhours::texture_manager::HasSpritesheet>()
@@ -733,13 +673,9 @@ ScheduleMainMenuUI::about_screen(Entity &entity,
     x_pos += x_spacing;
   }
 
-  ComponentConfig back_button_config;
-  back_button_config.padding = button_padding;
-  back_button_config.label = "back";
-
-  if (imm::button(context, mk(about_group.ent()), std::move(back_button_config))
-      //
-  ) {
+  if (imm::button(
+          context, mk(about_group.ent()),
+          ComponentConfig{}.with_padding(button_padding).with_label("back"))) {
     next_active_screen = Screen::Main;
   }
   return next_active_screen;
@@ -794,12 +730,10 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
           fmt::format("Max Speed\n {:.2f} m/s", Config::get().max_speed.data);
       auto pct = Config::get().max_speed.get_pct();
 
-      ComponentConfig max_speed_slider_config;
-      max_speed_slider_config.label = std::move(max_speed_label);
-      max_speed_slider_config.skip_when_tabbing = true;
-
       if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(max_speed_slider_config));
+                               ComponentConfig{}
+                                   .with_label(std::move(max_speed_label))
+                                   .with_skip_tabbing(true));
           result) {
         Config::get().max_speed.set_pct(result.as<float>());
       }
@@ -812,13 +746,11 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
                       Config::get().breaking_acceleration.data);
       auto pct = Config::get().breaking_acceleration.get_pct();
 
-      ComponentConfig breaking_acceleration_slider_config;
-      breaking_acceleration_slider_config.label =
-          std::move(max_breaking_acceleration_label);
-      breaking_acceleration_slider_config.skip_when_tabbing = true;
-
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(breaking_acceleration_slider_config));
+      if (auto result =
+              slider(context, mk(elem.ent()), pct,
+                     ComponentConfig{}
+                         .with_label(std::move(max_breaking_acceleration_label))
+                         .with_skip_tabbing(true));
           result) {
         Config::get().breaking_acceleration.set_pct(result.as<float>());
       }
@@ -831,13 +763,11 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
                       Config::get().forward_acceleration.data);
       auto pct = Config::get().forward_acceleration.get_pct();
 
-      ComponentConfig forward_acceleration_slider_config;
-      forward_acceleration_slider_config.label =
-          std::move(forward_acceleration_label);
-      forward_acceleration_slider_config.skip_when_tabbing = true;
-
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(forward_acceleration_slider_config));
+      if (auto result =
+              slider(context, mk(elem.ent()), pct,
+                     ComponentConfig{}
+                         .with_label(std::move(forward_acceleration_label))
+                         .with_skip_tabbing(true));
           result) {
         Config::get().forward_acceleration.set_pct(result.as<float>());
       }
@@ -850,13 +780,11 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
                       Config::get().reverse_acceleration.data);
       auto pct = Config::get().reverse_acceleration.get_pct();
 
-      ComponentConfig reverse_acceleration_slider_config;
-      reverse_acceleration_slider_config.label =
-          std::move(reverse_acceleration_label);
-      reverse_acceleration_slider_config.skip_when_tabbing = true;
-
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(reverse_acceleration_slider_config));
+      if (auto result =
+              slider(context, mk(elem.ent()), pct,
+                     ComponentConfig{}
+                         .with_label(std::move(reverse_acceleration_label))
+                         .with_skip_tabbing(true));
           result) {
         Config::get().reverse_acceleration.set_pct(result.as<float>());
       }
@@ -869,13 +797,11 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
                       Config::get().boost_acceleration.data);
       auto pct = Config::get().boost_acceleration.get_pct();
 
-      ComponentConfig boost_acceleration_slider_config;
-      boost_acceleration_slider_config.label =
-          std::move(boost_acceleration_label);
-      boost_acceleration_slider_config.skip_when_tabbing = true;
-
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(boost_acceleration_slider_config));
+      if (auto result =
+              slider(context, mk(elem.ent()), pct,
+                     ComponentConfig{}
+                         .with_label(std::move(boost_acceleration_label))
+                         .with_skip_tabbing(true));
           result) {
         Config::get().boost_acceleration.set_pct(result.as<float>());
       }
@@ -888,12 +814,10 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
                       Config::get().boost_decay_percent.data);
       auto pct = Config::get().boost_decay_percent.get_pct();
 
-      ComponentConfig boost_decay_slider_config;
-      boost_decay_slider_config.label = std::move(boost_decay_label);
-      boost_decay_slider_config.skip_when_tabbing = true;
-
       if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(boost_decay_slider_config));
+                               ComponentConfig{}
+                                   .with_label(std::move(boost_decay_label))
+                                   .with_skip_tabbing(true));
           result) {
         Config::get().boost_decay_percent.set_pct(result.as<float>());
       }
@@ -914,12 +838,10 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
           "Skid \nThreshold \n {:.2f} %", Config::get().skid_threshold.data);
       auto pct = Config::get().skid_threshold.get_pct();
 
-      ComponentConfig skid_threshold_slider_config;
-      skid_threshold_slider_config.label = std::move(skid_threshold_label);
-      skid_threshold_slider_config.skip_when_tabbing = true;
-
       if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(skid_threshold_slider_config));
+                               ComponentConfig{}
+                                   .with_label(std::move(skid_threshold_label))
+                                   .with_skip_tabbing(true));
           result) {
         Config::get().skid_threshold.set_pct(result.as<float>());
       }
@@ -932,13 +854,11 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
                       Config::get().steering_sensitivity.data);
       auto pct = Config::get().steering_sensitivity.get_pct();
 
-      ComponentConfig steering_sensitivity_slider_config;
-      steering_sensitivity_slider_config.label =
-          std::move(steering_sensitivity_label);
-      steering_sensitivity_slider_config.skip_when_tabbing = true;
-
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(steering_sensitivity_slider_config));
+      if (auto result =
+              slider(context, mk(elem.ent()), pct,
+                     ComponentConfig{}
+                         .with_label(std::move(steering_sensitivity_label))
+                         .with_skip_tabbing(true));
           result) {
         Config::get().steering_sensitivity.set_pct(result.as<float>());
       }
@@ -951,14 +871,11 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
                       Config::get().minimum_steering_radius.data);
       auto pct = Config::get().minimum_steering_radius.get_pct();
 
-      ComponentConfig minimum_steering_radius_slider_config;
-      minimum_steering_radius_slider_config.label =
-          std::move(minimum_steering_radius_label);
-      minimum_steering_radius_slider_config.skip_when_tabbing = true;
-
       if (auto result =
               slider(context, mk(elem.ent()), pct,
-                     std::move(minimum_steering_radius_slider_config));
+                     ComponentConfig{}
+                         .with_label(std::move(minimum_steering_radius_label))
+                         .with_skip_tabbing(true));
           result) {
         Config::get().minimum_steering_radius.set_pct(result.as<float>());
       }
@@ -971,14 +888,11 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
                       Config::get().maximum_steering_radius.data);
       auto pct = Config::get().maximum_steering_radius.get_pct();
 
-      ComponentConfig maximum_steering_radius_slider_config;
-      maximum_steering_radius_slider_config.label =
-          std::move(maximum_steering_radius_label);
-      maximum_steering_radius_slider_config.skip_when_tabbing = true;
-
       if (auto result =
               slider(context, mk(elem.ent()), pct,
-                     std::move(maximum_steering_radius_slider_config));
+                     ComponentConfig{}
+                         .with_label(std::move(maximum_steering_radius_label))
+                         .with_skip_tabbing(true));
           result) {
         Config::get().maximum_steering_radius.set_pct(result.as<float>());
       }
@@ -990,12 +904,11 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
           "Collision \nScalar \n {:.4f}", Config::get().collision_scalar.data);
       auto pct = Config::get().collision_scalar.get_pct();
 
-      ComponentConfig collision_scalar_slider_config;
-      collision_scalar_slider_config.label = std::move(collision_scalar_label);
-      collision_scalar_slider_config.skip_when_tabbing = true;
-
-      if (auto result = slider(context, mk(elem.ent()), pct,
-                               std::move(collision_scalar_slider_config));
+      if (auto result =
+              slider(context, mk(elem.ent()), pct,
+                     ComponentConfig{}
+                         .with_label(std::move(collision_scalar_label))
+                         .with_skip_tabbing(true));
           result) {
         Config::get().collision_scalar.set_pct(result.as<float>());
       }
