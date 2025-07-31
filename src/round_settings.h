@@ -24,7 +24,7 @@ struct RoundSettings {
 };
 
 struct RoundLivesSettings : RoundSettings {
-  int num_starting_lives = 3;
+  int num_starting_lives = 1;
 };
 
 struct RoundKillsSettings : RoundSettings {
@@ -125,6 +125,6 @@ struct RoundManager {
       auto &lives_settings = get_active_rt<RoundLivesSettings>();
       return lives_settings.num_starting_lives;
     }
-    return 1; // default fallback for non-Lives round types
+    return 3; // default fallback for non-Lives round types
   }
 };
