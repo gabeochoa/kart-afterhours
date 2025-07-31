@@ -2,6 +2,7 @@
 #pragma once
 
 #include "components.h"
+#include "game_state_manager.h"
 #include "makers.h"
 #include "query.h"
 #include "round_settings.h"
@@ -935,11 +936,14 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
 
 struct CheckLivesWinCondition : System<> {
   virtual void once(float) override {
-    // Only check win conditions for Lives round type
+    // Only check win conditions for Lives round type and when game is active
     if (RoundManager::get().active_round_type != RoundType::Lives) {
       return;
     }
-
+    // Only run when game is active
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
     // Count players with remaining lives
     auto players_with_lives =
         EntityQuery()
@@ -949,20 +953,17 @@ struct CheckLivesWinCondition : System<> {
               return e.get<HasMultipleLives>().num_lives_remaining > 0;
             })
             .gen();
-
-    if (players_with_lives.size() >= 1) {
-      // not over yet
-      return;
-    }
-
+    // If only one player has lives remaining, they win
     if (players_with_lives.size() == 1) {
-      Entity &winner = players_with_lives[0];
+      Entity &winner =
+          players_with_lives[0].get(); // Fixed from players_with_lives[0]
       log_info("Player {} wins the Lives round!", winner.get<PlayerID>().id);
-    } else if (players_with_lives.empty()) {
-      log_info("All players eliminated - round is a tie!");
+      GameStateManager::get().end_game();
     }
-
-    // TODO: Implement round end logic here
-    // For now, just crash the game
+    // If no players have lives, it's a tie
+    else if (players_with_lives.empty()) {
+      log_info("All players eliminated - round is a tie!");
+      GameStateManager::get().end_game();
+    }
   }
 };

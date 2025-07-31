@@ -3,6 +3,7 @@
 
 #include "library.h"
 #include "rl.h"
+#include <optional>
 
 #include "weapons.h"
 
