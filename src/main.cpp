@@ -109,6 +109,7 @@ void game() {
     systems.register_update_system(std::make_unique<DrainLife>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
     systems.register_update_system(std::make_unique<CheckLivesWinCondition>());
+    systems.register_update_system(std::make_unique<CheckKillsWinCondition>());
 
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
     systems.register_update_system(std::make_unique<UpdateShaderValues>());
@@ -140,6 +141,7 @@ void game() {
       texture_manager::register_render_systems(systems);
       //
       systems.register_render_system(std::make_unique<RenderHealthAndLives>());
+      systems.register_render_system(std::make_unique<RenderKills>());
       systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
       systems.register_render_system(std::make_unique<RenderOOB>());
       systems.register_render_system(std::make_unique<RenderLabels>());

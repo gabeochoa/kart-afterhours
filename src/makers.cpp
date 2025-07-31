@@ -141,6 +141,7 @@ Entity &make_car(size_t id) {
 
   int starting_lives = RoundManager::get().fetch_num_starting_lives();
   entity.addComponent<HasMultipleLives>(starting_lives);
+  entity.addComponent<HasKillCountTracker>();
 
   auto &transform = entity.addComponent<Transform>(
       get_spawn_position((size_t)id), vec2{15.f, 25.f});

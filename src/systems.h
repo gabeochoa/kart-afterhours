@@ -822,10 +822,31 @@ struct ProcessDeath : System<Transform, HasHealth> {
     }
 
     if (entity.has<HasMultipleLives>()) {
+      if (RoundManager::get().active_round_type == RoundType::Kills) {
+        hasHealth.amount = hasHealth.max_amount;
+        return;
+      }
+
       entity.get<HasMultipleLives>().num_lives_remaining -= 1;
       if (entity.get<HasMultipleLives>().num_lives_remaining) {
         hasHealth.amount = hasHealth.max_amount;
         return;
+      }
+    }
+
+    // TODO implement tracking for what item killed the player
+    if (RoundManager::get().active_round_type == RoundType::Kills) {
+      // For now, we'll give a kill to a random player for testing
+      // TODO: Implement proper kill attribution
+      auto players = EntityQuery(true /* force merge */)
+                         .whereHasComponent<PlayerID>()
+                         .whereHasComponent<HasKillCountTracker>()
+                         .gen();
+
+      if (!players.empty()) {
+        // Give a kill to the first player for now
+        // In a real implementation, you'd track who actually caused the death
+        players[0].get().template get<HasKillCountTracker>().kills++;
       }
     }
 
@@ -922,15 +943,42 @@ struct RenderHealthAndLives : System<Transform, HasHealth, HasMultipleLives> {
         },
         rotation_origin, 0.0f, color);
 
-    float rad = 5.f;
-    vec2 off{rad * 2 + 2, 0.f};
-    for (int i = 0; i < hasMultipleLives.num_lives_remaining; i++) {
-      raylib::DrawCircleV(
-          transform.pos() -
-              vec2{transform.size.x / 2.f, transform.size.y + 15.f + rad} +
-              (off * (float)i),
-          rad, color);
+    // Don't render lives for Kills round since they're unlimited
+    if (RoundManager::get().active_round_type != RoundType::Kills) {
+      float rad = 5.f;
+      vec2 off{rad * 2 + 2, 0.f};
+      for (int i = 0; i < hasMultipleLives.num_lives_remaining; i++) {
+        raylib::DrawCircleV(
+            transform.pos() -
+                vec2{transform.size.x / 2.f, transform.size.y + 15.f + rad} +
+                (off * (float)i),
+            rad, color);
+      }
     }
+  }
+};
+
+struct RenderKills : System<Transform, HasKillCountTracker> {
+  virtual void for_each_with(const Entity &entity, const Transform &transform,
+                             const HasKillCountTracker &hasKillCountTracker,
+                             float) const override {
+    // Only render kills for Kills round type
+    if (RoundManager::get().active_round_type != RoundType::Kills) {
+      return;
+    }
+
+    raylib::Color color = entity.has_child_of<HasColor>()
+                              ? entity.get_with_child<HasColor>().color()
+                              : raylib::WHITE;
+
+    // Render kills count above the entity
+    std::string kills_text =
+        std::to_string(hasKillCountTracker.kills) + " kills";
+    float text_size = 12.f;
+
+    raylib::DrawText(kills_text.c_str(), transform.pos().x - 30.f,
+                     transform.pos().y - transform.size.y - 25.f, text_size,
+                     color);
   }
 };
 
@@ -964,6 +1012,53 @@ struct CheckLivesWinCondition : System<> {
     else if (players_with_lives.empty()) {
       log_info("All players eliminated - round is a tie!");
       GameStateManager::get().end_game();
+    }
+  }
+};
+
+struct CheckKillsWinCondition : System<> {
+  virtual void once(float) override {
+    // Only check win conditions for Kills round type and when game is active
+    if (RoundManager::get().active_round_type != RoundType::Kills) {
+      return;
+    }
+    // Only run when game is active
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+
+    auto &kills_settings =
+        RoundManager::get().get_active_rt<RoundKillsSettings>();
+
+    // Check if time limit has been reached
+    if (kills_settings.current_round_time > 0) {
+      kills_settings.current_round_time -= raylib::GetFrameTime();
+      if (kills_settings.current_round_time <= 0) {
+        // Time's up! Find the player with the most kills
+        auto players_with_kills = EntityQuery()
+                                      .whereHasComponent<PlayerID>()
+                                      .whereHasComponent<HasKillCountTracker>()
+                                      .gen();
+
+        if (players_with_kills.empty()) {
+          log_info("No players with kills - round is a tie!");
+          GameStateManager::get().end_game();
+          return;
+        }
+
+        // Find the player with the most kills
+        auto winner = std::max_element(
+            players_with_kills.begin(), players_with_kills.end(),
+            [](const auto &a, const auto &b) {
+              return a.get().template get<HasKillCountTracker>().kills <
+                     b.get().template get<HasKillCountTracker>().kills;
+            });
+
+        log_info("Player {} wins the Kills round with {} kills!",
+                 winner->get().get<PlayerID>().id,
+                 winner->get().get<HasKillCountTracker>().kills);
+        GameStateManager::get().end_game();
+      }
     }
   }
 };
