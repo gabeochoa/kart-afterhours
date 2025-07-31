@@ -161,16 +161,40 @@ Entity &make_car(size_t id) {
       transform.position, transform.size, transform.angle,
       idx_to_sprite_frame(0, 1), 1.f, entity.get<HasColor>().color());
 
-  entity.addComponent<CanShoot>()
-      .register_weapon(InputAction::ShootLeft, Weapon::FiringDirection::Forward,
-                       Weapon::Type::Shotgun)
-      .register_weapon(InputAction::ShootRight,
-                       Weapon::FiringDirection::Forward,
-                       Weapon::Type::MachineGun);
-  // .register_weapon(InputAction::ShootLeft, Weapon::FiringDirection::Left,
-  // Weapon::Type::Cannon)
-  //.register_weapon(InputAction::ShootRight, Weapon::FiringDirection::Right,
-  //                 Weapon::Type::Cannon);
+  auto &enabled_weapons = RoundManager::get().get_enabled_weapons();
+  auto &can_shoot = entity.addComponent<CanShoot>();
+
+  if (enabled_weapons.test(static_cast<size_t>(Weapon::Type::Cannon))) {
+    can_shoot.register_weapon(InputAction::ShootLeft,
+                              Weapon::FiringDirection::Forward,
+                              Weapon::Type::Cannon);
+  }
+  if (enabled_weapons.test(static_cast<size_t>(Weapon::Type::Sniper))) {
+    can_shoot.register_weapon(InputAction::ShootRight,
+                              Weapon::FiringDirection::Forward,
+                              Weapon::Type::Sniper);
+  }
+  if (enabled_weapons.test(static_cast<size_t>(Weapon::Type::Shotgun))) {
+    can_shoot.register_weapon(InputAction::ShootLeft,
+                              Weapon::FiringDirection::Forward,
+                              Weapon::Type::Shotgun);
+  }
+  if (enabled_weapons.test(static_cast<size_t>(Weapon::Type::MachineGun))) {
+    can_shoot.register_weapon(InputAction::ShootRight,
+                              Weapon::FiringDirection::Forward,
+                              Weapon::Type::MachineGun);
+  }
+
+  // Fallback to default weapons if none are enabled
+  if (enabled_weapons.none()) {
+    can_shoot
+        .register_weapon(InputAction::ShootLeft,
+                         Weapon::FiringDirection::Forward,
+                         Weapon::Type::Shotgun)
+        .register_weapon(InputAction::ShootRight,
+                         Weapon::FiringDirection::Forward,
+                         Weapon::Type::MachineGun);
+  }
 
   return entity;
 }
