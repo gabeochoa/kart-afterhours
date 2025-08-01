@@ -51,12 +51,11 @@ void game() {
 
   // normal update
   {
-    bool create_map = true;
-    systems.register_render_system([&](float) {
-      if (create_map) {
+    bool create_player = true;
+    systems.register_update_system([&](float) {
+      if (create_player) {
         make_player(0);
-        MapManager::get().create_map();
-        create_map = false;
+        create_player = false;
       }
     });
     systems.register_update_system(std::make_unique<Shoot>());
