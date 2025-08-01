@@ -1236,14 +1236,11 @@ struct InitializeCatMouseGame : System<> {
       return;
     }
 
-    auto players = EntityQuery().whereHasComponent<HasCatMouseTracking>().gen();
-    if (players.empty()) {
+    auto initial_cat =
+        EntityQuery().whereHasComponent<HasCatMouseTracking>().gen_random();
+    if (!initial_cat) {
       return;
     }
-
-    // Randomly select one player to be the initial cat
-    size_t cat_index = rand() % players.size();
-    auto initial_cat = players[cat_index];
 
     // Initialize the game
     auto &cat_mouse_settings =
@@ -1253,12 +1250,12 @@ struct InitializeCatMouseGame : System<> {
     cat_mouse_settings.countdown_before_start = 3.0f; // Reset countdown
     cat_mouse_settings.reset_round_time();
 
-    initial_cat.get().get<HasCatMouseTracking>().is_cat = true;
+    initial_cat->get<HasCatMouseTracking>().is_cat = true;
 
     std::string cat_id =
-        initial_cat.get().has<PlayerID>()
-            ? "Player " + std::to_string(initial_cat.get().get<PlayerID>().id)
-            : "AI " + std::to_string(initial_cat.get().id);
+        initial_cat->has<PlayerID>()
+            ? "Player " + std::to_string(initial_cat->get<PlayerID>().id)
+            : "AI " + std::to_string(initial_cat->id);
 
     log_info("{} is the initial cat!", cat_id);
 
