@@ -144,8 +144,11 @@ void ScheduleMainMenuUI::character_selector_column(
   ManagesAvailableColors &colorManager =
       *EntityHelper::get_singleton_cmp<ManagesAvailableColors>();
 
-  auto bg_color = car.has_value() ? car->get<HasColor>().color()
-                                  : colorManager.get_next_NO_STORE(index);
+  auto bg_color = car.has_value() //
+                      ? car->get<HasColor>().color()
+                      // Make it more transparent for empty slots
+                      : afterhours::colors::opacity_pct(
+                            colorManager.get_next_NO_STORE(index), 0.1f);
 
   const auto num_cols = std::min(4.f, static_cast<float>(num_slots));
 
