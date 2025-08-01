@@ -28,8 +28,6 @@ const std::array<MapConfig, 5> MapManager::available_maps = {
       .compatible_round_types = std::bitset<4>(0b1000)}}}; // CatAndMouse only
 
 void MapManager::create_arena_map() {
-  make_player(0);
-
   auto *pcr = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesCurrentResolution>();
   window_manager::Resolution resolution = pcr->current_resolution;
@@ -67,8 +65,6 @@ void MapManager::create_arena_map() {
 }
 
 void MapManager::create_maze_map() {
-  make_player(0);
-
   auto *pcr = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesCurrentResolution>();
   window_manager::Resolution resolution = pcr->current_resolution;
@@ -107,8 +103,6 @@ void MapManager::create_maze_map() {
 }
 
 void MapManager::create_race_map() {
-  make_player(0);
-
   auto *pcr = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesCurrentResolution>();
   window_manager::Resolution resolution = pcr->current_resolution;
@@ -147,8 +141,6 @@ void MapManager::create_race_map() {
 }
 
 void MapManager::create_battle_map() {
-  make_player(0);
-
   auto *pcr = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesCurrentResolution>();
   window_manager::Resolution resolution = pcr->current_resolution;
@@ -183,8 +175,6 @@ void MapManager::create_battle_map() {
 }
 
 void MapManager::create_catmouse_map() {
-  make_player(0);
-
   auto *pcr = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesCurrentResolution>();
   window_manager::Resolution resolution = pcr->current_resolution;

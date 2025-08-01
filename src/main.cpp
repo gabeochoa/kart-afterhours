@@ -54,6 +54,7 @@ void game() {
     bool create_map = true;
     systems.register_render_system([&](float) {
       if (create_map) {
+        make_player(0);
         MapManager::get().create_map();
         create_map = false;
       }

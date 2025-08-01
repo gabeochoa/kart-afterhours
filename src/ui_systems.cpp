@@ -582,9 +582,123 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
 
 Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                                          UIContext<InputAction> &context) {
-  // TODO Simple map selection - just start with arena map for now
-  MapManager::get().set_selected_map(0); // Arena map
-  GameStateManager::get().start_game();
+  auto elem =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_font(get_font_name(FontID::EQPro), 75.f)
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute_position()
+                   .with_debug_name("map_selection"));
+
+  {
+
+    auto button_group =
+        imm::div(context, mk(entity),
+                 ComponentConfig{}
+                     .with_font(get_font_name(FontID::EQPro), 75.f)
+                     .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                     .with_absolute_position()
+                     .with_debug_name("map_selection"));
+    if (imm::button(
+            context, mk(button_group.ent()),
+            ComponentConfig{}.with_padding(button_padding).with_label("go"))) {
+      MapManager::get().create_map();
+      GameStateManager::get().start_game();
+    }
+
+    if (imm::button(context, mk(button_group.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("back"))) {
+      GameStateManager::get().set_next_screen(
+          GameStateManager::Screen::CharacterCreation);
+    }
+  }
+
+  auto preview_box =
+      imm::div(context, mk(elem.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(1.0f), percent(0.4f)})
+                   .with_margin(Margin{
+                       .top = percent(0.1f),
+                       .left = percent(0.1f),
+                       .bottom = percent(0.1f),
+                       .right = percent(0.1f),
+                   })
+                   .with_debug_name("preview_box")
+                   .with_skip_tabbing(true));
+
+  // Get current round type and compatible maps
+  auto current_round_type = RoundManager::get().active_round_type;
+  auto compatible_maps =
+      MapManager::get().get_maps_for_round_type(current_round_type);
+  auto selected_map_index = MapManager::get().get_selected_map();
+  {
+
+    // Find the currently selected map in the compatible maps list
+    auto selected_map_it =
+        std::find_if(compatible_maps.begin(), compatible_maps.end(),
+                     [selected_map_index](const auto &pair) {
+                       return pair.first == selected_map_index;
+                     });
+
+    // Display selected map info in preview box
+    if (selected_map_it != compatible_maps.end()) {
+      const auto &selected_map = selected_map_it->second;
+      imm::div(context, mk(preview_box.ent()),
+               ComponentConfig{}
+                   .with_label(selected_map.display_name)
+                   .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                   .with_debug_name("map_title"));
+
+      imm::div(context, mk(preview_box.ent()),
+               ComponentConfig{}
+                   .with_label(selected_map.description)
+                   .with_size(ComponentSize{percent(1.f), percent(0.7f)})
+                   .with_margin(Margin{.top = percent(0.3f)})
+                   .with_debug_name("map_description"));
+    }
+  }
+
+  // Grid of map options (bottom)
+  auto map_grid =
+      imm::div(context, mk(elem.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(1.f), percent(0.5f)})
+                   .with_margin(Margin{
+                       .top = percent(0.1f),
+                       .left = percent(0.1f),
+                       .bottom = percent(0.1f),
+                       .right = percent(0.1f),
+                   })
+                   .with_flex_direction(FlexDirection::Row)
+                   .with_debug_name("map_grid"));
+
+  for (size_t i = 0; i < compatible_maps.size(); i++) {
+    const auto &map_pair = compatible_maps[i];
+    const auto &map_config = map_pair.second;
+    int map_index = map_pair.first;
+
+    auto map_card =
+        imm::div(context, mk(map_grid.ent(), i),
+                 ComponentConfig{}
+                     .with_debug_name("map_card")
+                     .with_size(ComponentSize{
+                         percent(1.f / compatible_maps.size()), percent(1.f)}));
+
+    if (imm::button(context, mk(map_card.ent(), map_card.ent().id),
+                    ComponentConfig{}
+                        .with_label(map_config.display_name)
+                        .with_size(ComponentSize{percent(1.f), percent(1.f)})
+                        .with_margin(Margin{
+                            .top = percent(0.1f),
+                            .left = percent(0.1f),
+                            .bottom = percent(0.1f),
+                            .right = percent(0.1f),
+                        }))) {
+      MapManager::get().set_selected_map(map_index);
+    }
+  }
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
