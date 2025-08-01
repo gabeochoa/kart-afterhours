@@ -20,6 +20,7 @@ enum class InputAction {
   WidgetMod,
   WidgetBack,
   MenuBack,
+  PauseButton,
   ToggleUIDebug,
   ToggleUILayoutDebug,
 };
@@ -101,6 +102,10 @@ inline auto get_mapping() {
                                      raylib::GAMEPAD_BUTTON_MIDDLE_RIGHT};
 
   mapping[InputAction::MenuBack] = {
+      raylib::KEY_ESCAPE,
+  };
+
+  mapping[InputAction::PauseButton] = {
       raylib::KEY_ESCAPE,
   };
 

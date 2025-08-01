@@ -92,6 +92,7 @@ void game() {
     {
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
       systems.register_update_system(std::make_unique<ScheduleDebugUI>());
+      systems.register_update_system(std::make_unique<SchedulePauseUI>());
     }
     ui::register_after_ui_updates<InputAction>(systems);
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());

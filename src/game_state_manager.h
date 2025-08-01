@@ -8,8 +8,9 @@ struct GameStateManager {
   SINGLETON(GameStateManager)
 
   enum struct GameState {
-    Menu,    // UI is active (main menu, settings, etc.)
-    Playing, // Game is active and running
+    Menu,
+    Playing,
+    Paused,
   } current_state = GameState::Menu;
 
   enum struct Screen {
@@ -36,6 +37,18 @@ struct GameStateManager {
     log_info("Game ended! Returning to character creation.");
   }
 
+  void pause_game() {
+    if (current_state == GameState::Playing) {
+      current_state = GameState::Paused;
+    }
+  }
+
+  void unpause_game() {
+    if (current_state == GameState::Paused) {
+      current_state = GameState::Playing;
+    }
+  }
+
   void set_screen(Screen screen) { active_screen = screen; }
 
   void set_next_screen(Screen screen) { next_screen = screen; }
@@ -53,5 +66,8 @@ struct GameStateManager {
   }
   [[nodiscard]] bool is_menu_active() const {
     return current_state == GameState::Menu;
+  }
+  [[nodiscard]] bool is_paused() const {
+    return current_state == GameState::Paused;
   }
 };

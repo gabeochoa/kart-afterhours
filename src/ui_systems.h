@@ -71,3 +71,13 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
   virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
                              float) override;
 };
+
+struct SchedulePauseUI : System<afterhours::ui::UIContext<InputAction>> {
+  input::PossibleInputCollector<InputAction> inpc;
+
+  void exit_game() { running = false; }
+
+  virtual bool should_run(float) override;
+  virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
+                             float) override;
+};

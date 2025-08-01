@@ -1027,3 +1027,88 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
     }
   }
 }
+
+bool SchedulePauseUI::should_run(float) {
+  inpc = input::get_input_collector<InputAction>();
+  return GameStateManager::get().is_game_active() ||
+         GameStateManager::get().is_paused();
+}
+
+void SchedulePauseUI::for_each_with(Entity &entity,
+                                    UIContext<InputAction> &context, float) {
+  // Handle pause button input
+  const bool pause_pressed =
+      std::ranges::any_of(inpc.inputs_pressed(), [](const auto &actions_done) {
+        return actions_done.action == InputAction::PauseButton;
+      });
+
+  if (pause_pressed) {
+    if (GameStateManager::get().is_paused()) {
+      GameStateManager::get().unpause_game();
+      return;
+    } else if (GameStateManager::get().is_game_active()) {
+      GameStateManager::get().pause_game();
+      return;
+    }
+  }
+
+  // Only show pause UI when paused
+  if (!GameStateManager::get().is_paused()) {
+    return;
+  }
+
+  // Create pause menu UI
+  auto elem =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_font(get_font_name(FontID::EQPro), 75.f)
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute_position()
+                   .with_debug_name("pause_screen"));
+
+  auto control_group =
+      imm::div(context, mk(elem.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_padding(button_group_padding)
+                   .with_absolute_position()
+                   .with_debug_name("pause_control_group"));
+
+  // Pause title
+  {
+    imm::div(context, mk(control_group.ent()),
+             ComponentConfig{}
+                 .with_label("paused")
+                 .with_font(get_font_name(FontID::EQPro), 100.f)
+                 .with_skip_tabbing(true)
+                 .with_size(ComponentSize{pixels(400.f), pixels(100.f)}));
+  }
+
+  // Resume button
+  {
+    if (imm::button(context, mk(control_group.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("resume"))) {
+      GameStateManager::get().unpause_game();
+    }
+  }
+
+  {
+    if (imm::button(context, mk(control_group.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("back to setup"))) {
+      GameStateManager::get().end_game();
+    }
+  }
+
+  {
+    if (imm::button(context, mk(control_group.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("exit game"))) {
+      exit_game();
+    }
+  }
+}
