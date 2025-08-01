@@ -1,11 +1,19 @@
 
 #pragma once
 
+#include "afterhours/ah.h"
 #include "components.h"
 #include "game_state_manager.h"
 #include "makers.h"
 #include "query.h"
 #include "round_settings.h"
+
+template <typename... Components>
+struct PausableSystem : afterhours::System<Components...> {
+  virtual bool should_run(float) override {
+    return !GameStateManager::get().is_paused();
+  }
+};
 
 struct UpdateSpriteTransform
     : System<Transform, afterhours::texture_manager::HasSprite> {
@@ -190,7 +198,7 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
   }
 };
 
-struct Shoot : System<PlayerID, Transform, CanShoot> {
+struct Shoot : PausableSystem<PlayerID, Transform, CanShoot> {
   input::PossibleInputCollector<InputAction> inpc;
 
   virtual void once(float) override {
@@ -391,7 +399,7 @@ struct UpdateTrackingEntities : System<Transform, TracksEntity> {
   }
 };
 
-struct UpdateCollidingEntities : System<Transform> {
+struct UpdateCollidingEntities : PausableSystem<Transform> {
 
   std::set<int> ids;
 
@@ -555,7 +563,7 @@ struct UpdateCollidingEntities : System<Transform> {
   }
 };
 
-struct VelFromInput : System<PlayerID, Transform> {
+struct VelFromInput : PausableSystem<PlayerID, Transform> {
   virtual void for_each_with(Entity &, PlayerID &playerID, Transform &transform,
                              float dt) override {
     input::PossibleInputCollector<InputAction> inpc =
@@ -670,7 +678,7 @@ struct VelFromInput : System<PlayerID, Transform> {
   }
 };
 
-struct AIVelocity : System<AIControlled, Transform> {
+struct AIVelocity : PausableSystem<AIControlled, Transform> {
 
   virtual void for_each_with(Entity &, AIControlled &ai, Transform &transform,
                              float dt) override {
@@ -718,7 +726,7 @@ struct AIVelocity : System<AIControlled, Transform> {
   }
 };
 
-struct Move : System<Transform> {
+struct Move : PausableSystem<Transform> {
 
   virtual void for_each_with(Entity &, Transform &transform, float) override {
     transform.position += transform.velocity;
@@ -739,7 +747,7 @@ struct DrainLife : System<HasLifetime> {
   }
 };
 
-struct ProcessDamage : System<Transform, HasHealth> {
+struct ProcessDamage : PausableSystem<Transform, HasHealth> {
 
   virtual void for_each_with(Entity &entity, Transform &transform,
                              HasHealth &hasHealth, float dt) override {
@@ -808,7 +816,7 @@ struct ProcessCollisionAbsorption : System<Transform, CollisionAbsorber> {
   }
 };
 
-struct ProcessDeath : System<Transform, HasHealth> {
+struct ProcessDeath : PausableSystem<Transform, HasHealth> {
 
   virtual void for_each_with(Entity &entity, Transform &transform,
                              HasHealth &hasHealth, float) override {
