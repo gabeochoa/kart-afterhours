@@ -311,6 +311,29 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                    "Score Needed: {}", rl_settings.score_needed_to_win)));
     };
 
+    auto round_cat_mouse_preview = [](Entity &entity,
+                                      UIContext<InputAction> &context) {
+      auto &rl_settings =
+          RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+
+      std::string time_display;
+      switch (rl_settings.time_option) {
+      case RoundCatAndMouseSettings::TimeOptions::Unlimited:
+        time_display = "Unlimited";
+        break;
+      case RoundCatAndMouseSettings::TimeOptions::Seconds_30:
+        time_display = "30s";
+        break;
+      case RoundCatAndMouseSettings::TimeOptions::Minutes_1:
+        time_display = "1m";
+        break;
+      }
+
+      imm::div(context, mk(entity),
+               ComponentConfig{}.with_label(
+                   std::format("Round Length: {}", time_display)));
+    };
+
     {
       imm::div(
           context, mk(elem.ent()),
@@ -343,7 +366,7 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
       round_score_preview(elem.ent(), context);
       break;
     case RoundType::CatAndMouse:
-      // TODO currently no settings
+      round_cat_mouse_preview(elem.ent(), context);
       break;
     default:
       log_error("You need to add a handler for UI settings for round type {}",
@@ -449,10 +472,6 @@ void round_score_settings(Entity &entity, UIContext<InputAction> &context) {
 void round_cat_mouse_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &cm_settings =
       RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
-
-  imm::div(context, mk(entity),
-           ComponentConfig{}.with_label(std::format(
-               "Round Length: {}", cm_settings.current_round_time)));
 
   {
     auto options =
