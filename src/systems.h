@@ -1166,7 +1166,6 @@ struct HandleCatMouseTagTransfer : System<Transform, HasCatMouseTracking> {
     auto mice = EntityQuery()
                     .whereHasComponent<Transform>()
                     .whereHasComponent<HasCatMouseTracking>()
-                    .whereHasComponent<PlayerID>()
                     .whereLambda([](const Entity &e) {
                       return !e.get<HasCatMouseTracking>().is_cat;
                     })
@@ -1197,8 +1196,16 @@ struct HandleCatMouseTagTransfer : System<Transform, HasCatMouseTracking> {
         catMouseTracking.last_tag_time = current_time;
         mouseTracking.last_tag_time = current_time;
 
-        log_info("Player {} tagged Player {}!", entity.get<PlayerID>().id,
-                 mouse.get<PlayerID>().id);
+        std::string cat_id =
+            entity.has<PlayerID>()
+                ? "Player " + std::to_string(entity.get<PlayerID>().id)
+                : "AI " + std::to_string(entity.id);
+        std::string mouse_id =
+            mouse.has<PlayerID>()
+                ? "Player " + std::to_string(mouse.get<PlayerID>().id)
+                : "AI " + std::to_string(mouse.id);
+
+        log_info("{} tagged {}!", cat_id, mouse_id);
         return; // Only tag one mouse per frame
       }
     }
@@ -1213,25 +1220,23 @@ struct InitializeCatMouseGame : System<> {
   // round
 
   virtual void once(float) override {
+
     // Only run for Cat & Mouse round type
     if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
       return;
     }
+
     // Only run when game is active
     if (!GameStateManager::get().is_game_active()) {
       return;
     }
+
     // Only initialize once
     if (initialized) {
       return;
     }
 
-    // Find all players
-    auto players = EntityQuery()
-                       .whereHasComponent<PlayerID>()
-                       .whereHasComponent<HasCatMouseTracking>()
-                       .gen();
-
+    auto players = EntityQuery().whereHasComponent<HasCatMouseTracking>().gen();
     if (players.empty()) {
       return;
     }
@@ -1250,8 +1255,12 @@ struct InitializeCatMouseGame : System<> {
 
     initial_cat.get().get<HasCatMouseTracking>().is_cat = true;
 
-    log_info("Player {} is the initial cat!",
-             initial_cat.get().get<PlayerID>().id);
+    std::string cat_id =
+        initial_cat.get().has<PlayerID>()
+            ? "Player " + std::to_string(initial_cat.get().get<PlayerID>().id)
+            : "AI " + std::to_string(initial_cat.get().id);
+
+    log_info("{} is the initial cat!", cat_id);
 
     initialized = true;
   }
@@ -1278,10 +1287,7 @@ struct CheckCatMouseWinCondition : System<> {
       if (cat_mouse_settings.current_round_time <= 0) {
         // Time's up! Find the player with the most mouse time (least cat time)
         auto players_with_tracking =
-            EntityQuery()
-                .whereHasComponent<PlayerID>()
-                .whereHasComponent<HasCatMouseTracking>()
-                .gen();
+            EntityQuery().whereHasComponent<HasCatMouseTracking>().gen();
 
         if (players_with_tracking.empty()) {
           log_info("No players with tracking - round is a tie!");
@@ -1297,10 +1303,15 @@ struct CheckCatMouseWinCondition : System<> {
                      b.get().template get<HasCatMouseTracking>().time_as_mouse;
             });
 
-        log_info(
-            "Player {} wins the Cat & Mouse round with {:.1f}s mouse time!",
-            winner->get().get<PlayerID>().id,
-            winner->get().get<HasCatMouseTracking>().time_as_mouse);
+        // Get winner identifier for logging
+        std::string winner_id =
+            winner->get().has<PlayerID>()
+                ? "Player " + std::to_string(winner->get().get<PlayerID>().id)
+                : "AI " + std::to_string(winner->get().id);
+
+        log_info("{} wins the Cat & Mouse round with {:.1f}s mouse time!",
+                 winner_id,
+                 winner->get().get<HasCatMouseTracking>().time_as_mouse);
 
         cat_mouse_settings.state =
             RoundCatAndMouseSettings::GameState::GameOver;
