@@ -89,6 +89,10 @@ struct RoundCatAndMouseSettings : RoundSettings {
   // Whether to show countdown timer in UI
   bool show_countdown_timer = true;
 
+  // how long a player is safe after being tagged
+  // TODO: Add tag cooldown setting to settings UI
+  float tag_cooldown_time = 2.0f;
+
 private:
   static float get_time_from_option(TimeOptions option) {
     switch (option) {

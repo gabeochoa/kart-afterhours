@@ -1068,7 +1068,10 @@ private:
 
     // Draw shield for players in cooldown (safe period)
     float current_time = static_cast<float>(raylib::GetTime());
-    if (current_time - catMouseTracking.last_tag_time < 2.0f) {
+    auto &cat_mouse_settings =
+        RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+    if (current_time - catMouseTracking.last_tag_time <
+        cat_mouse_settings.tag_cooldown_time) {
       // TODO: Add pulsing animation to shield to make it more obvious
       // TODO: Add countdown timer above shield showing remaining safe time
       // Draw a shield above the player who is safe
@@ -1177,9 +1180,12 @@ struct HandleCatMouseTagTransfer : System<Transform, HasCatMouseTracking> {
 
       // Simple collision check (rectangular overlap)
       if (raylib::CheckCollisionRecs(transform.rect(), mouseTransform.rect())) {
-        // Check if mouse has been tagged recently (2 second cooldown)
+        // Check if mouse has been tagged recently
         float current_time = static_cast<float>(raylib::GetTime());
-        if (current_time - mouseTracking.last_tag_time < 2.0f) {
+        auto &cat_mouse_settings =
+            RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+        if (current_time - mouseTracking.last_tag_time <
+            cat_mouse_settings.tag_cooldown_time) {
           return; // Mouse is still in cooldown, can't be tagged
         }
 
