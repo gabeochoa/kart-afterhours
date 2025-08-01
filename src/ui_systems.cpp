@@ -148,6 +148,11 @@ void ScheduleMainMenuUI::character_selector_column(
                                   : colorManager.get_next_NO_STORE(index);
 
   const auto num_cols = std::min(4.f, static_cast<float>(num_slots));
+
+  if (is_last_slot && (players.size() + ais.size()) >= input::MAX_GAMEPAD_ID) {
+    return;
+  }
+
   auto column =
       imm::div(context, mk(parent, (int)index),
                ComponentConfig{}
