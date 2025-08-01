@@ -680,7 +680,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     int map_index = map_pair.first;
 
     auto map_card =
-        imm::div(context, mk(map_grid.ent(), i),
+        imm::div(context, mk(map_grid.ent(), static_cast<EntityID>(i)),
                  ComponentConfig{}
                      .with_debug_name("map_card")
                      .with_size(ComponentSize{
