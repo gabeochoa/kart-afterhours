@@ -16,6 +16,7 @@ struct GameStateManager {
     None, // No Main Menu (ie game active)
     Main,
     CharacterCreation,
+    MapSelection,
     About,
     RoundSettings,
     Settings,

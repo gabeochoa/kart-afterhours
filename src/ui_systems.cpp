@@ -3,7 +3,8 @@
 
 #include "game_state_manager.h"
 #include "input_mapping.h"
-#include "makers.h"  // make_ai()
+#include "makers.h" // make_ai()
+#include "map_system.h"
 #include "preload.h" // FontID
 #include "round_settings.h"
 
@@ -262,10 +263,12 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                    .with_debug_name("character_creation"));
 
   {
-    if (imm::button(
-            context, mk(elem.ent()),
-            ComponentConfig{}.with_padding(button_padding).with_label("go"))) {
-      GameStateManager::get().start_game();
+    if (imm::button(context, mk(elem.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("select map"))) {
+      GameStateManager::get().set_next_screen(
+          GameStateManager::Screen::MapSelection);
     }
   }
 
@@ -437,6 +440,9 @@ void ScheduleMainMenuUI::for_each_with(Entity &entity,
   case Screen::RoundSettings:
     set_active_screen(round_settings(entity, context));
     break;
+  case Screen::MapSelection:
+    set_active_screen(map_selection(entity, context));
+    break;
   }
 }
 
@@ -570,6 +576,16 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
       navigate_back();
     }
   }
+  return GameStateManager::get().next_screen.value_or(
+      GameStateManager::get().active_screen);
+}
+
+Screen ScheduleMainMenuUI::map_selection(Entity &entity,
+                                         UIContext<InputAction> &context) {
+  // TODO Simple map selection - just start with arena map for now
+  MapManager::get().set_selected_map(0); // Arena map
+  GameStateManager::get().start_game();
+
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
 }

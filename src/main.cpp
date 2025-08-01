@@ -10,6 +10,7 @@ backward::SignalHandling sh;
 //
 #include "argh.h"
 #include "intro.h"
+#include "map_system.h"
 #include "preload.h"
 #include "shader_library.h"
 #include "sound_systems.h"
@@ -21,43 +22,6 @@ bool running = true;
 raylib::RenderTexture2D mainRT;
 
 using namespace afterhours;
-
-void make_default_map() {
-  make_player(0);
-
-  auto *pcr = EntityHelper::get_singleton_cmp<
-      window_manager::ProvidesCurrentResolution>();
-
-  window_manager::Resolution resolution = pcr->current_resolution;
-
-  const auto screen_pct = [resolution](float x, float y) {
-    return Rectangle{
-        resolution.width * x,
-        resolution.height * y,
-        50.f,
-        50.f,
-    };
-  };
-
-  const CollisionConfig rock_collision_config{
-      .mass = std::numeric_limits<float>::max(),
-      .friction = 1.f,
-      .restitution = 0.f,
-  };
-
-  make_obstacle(screen_pct(0.2f, 0.2f), raylib::BLACK, rock_collision_config);
-  make_obstacle(screen_pct(0.2f, 0.8f), raylib::BLACK, rock_collision_config);
-  make_obstacle(screen_pct(0.8f, 0.8f), raylib::BLACK, rock_collision_config);
-  make_obstacle(screen_pct(0.8f, 0.2f), raylib::BLACK, rock_collision_config);
-
-  const CollisionConfig ball_collision_config{
-      .mass = 100.f,
-      .friction = 0.f,
-      .restitution = .75f,
-  };
-
-  make_obstacle(screen_pct(0.5f, 0.2f), raylib::WHITE, ball_collision_config);
-}
 
 void game() {
   mainRT = raylib::LoadRenderTexture(Settings::get().get_screen_width(),
@@ -90,7 +54,7 @@ void game() {
     bool create_map = true;
     systems.register_render_system([&](float) {
       if (create_map) {
-        make_default_map();
+        MapManager::get().create_map();
         create_map = false;
       }
     });

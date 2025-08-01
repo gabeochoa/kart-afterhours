@@ -48,6 +48,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   void navigate_to_screen(Screen screen);
 
   Screen character_creation(Entity &entity, UIContext<InputAction> &context);
+  Screen map_selection(Entity &entity, UIContext<InputAction> &context);
   Screen round_settings(Entity &entity, UIContext<InputAction> &context);
   Screen main_screen(Entity &entity, UIContext<InputAction> &context);
   Screen settings_screen(Entity &entity, UIContext<InputAction> &context);
