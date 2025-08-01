@@ -1019,13 +1019,15 @@ private:
         std::to_string(hasKillCountTracker.kills) + " kills";
     float text_size = 12.f;
 
-    raylib::DrawText(kills_text.c_str(), transform.pos().x - 30.f,
-                     transform.pos().y - transform.size.y - 25.f, text_size,
-                     color);
+    raylib::DrawText(
+        kills_text.c_str(), static_cast<int>(transform.pos().x - 30.f),
+        static_cast<int>(transform.pos().y - transform.size.y - 25.f),
+        static_cast<int>(text_size), color);
   }
 
   void render_cat_indicator(const Entity &entity, const Transform &transform,
-                            raylib::Color color) const {
+                            raylib::Color) const {
+    // TODO add color to entity
     if (!entity.has<HasCatMouseTracking>())
       return;
 
@@ -1044,8 +1046,10 @@ private:
       raylib::Color crown_color = raylib::GOLD;
 
       // Crown base
-      raylib::DrawRectangle(crown_pos.x, crown_pos.y, crown_size,
-                            crown_size / 3.f, crown_color);
+      raylib::DrawRectangle(static_cast<int>(crown_pos.x),
+                            static_cast<int>(crown_pos.y),
+                            static_cast<int>(crown_size),
+                            static_cast<int>(crown_size / 3.f), crown_color);
 
       // Crown points (3 triangles)
       float point_width = crown_size / 3.f;
@@ -1063,7 +1067,7 @@ private:
     }
 
     // Draw shield for players in cooldown (safe period)
-    float current_time = raylib::GetTime();
+    float current_time = static_cast<float>(raylib::GetTime());
     if (current_time - catMouseTracking.last_tag_time < 2.0f) {
       // TODO: Add pulsing animation to shield to make it more obvious
       // TODO: Add countdown timer above shield showing remaining safe time
@@ -1132,8 +1136,7 @@ struct CheckLivesWinCondition : System<> {
 };
 
 struct UpdateCatMouseTimers : System<HasCatMouseTracking> {
-  virtual void for_each_with(Entity &entity,
-                             HasCatMouseTracking &catMouseTracking,
+  virtual void for_each_with(Entity &, HasCatMouseTracking &catMouseTracking,
                              float dt) override {
     // Only increment mouse time for players who are not the cat
     if (!catMouseTracking.is_cat) {
@@ -1175,7 +1178,7 @@ struct HandleCatMouseTagTransfer : System<Transform, HasCatMouseTracking> {
       // Simple collision check (rectangular overlap)
       if (raylib::CheckCollisionRecs(transform.rect(), mouseTransform.rect())) {
         // Check if mouse has been tagged recently (2 second cooldown)
-        float current_time = raylib::GetTime();
+        float current_time = static_cast<float>(raylib::GetTime());
         if (current_time - mouseTracking.last_tag_time < 2.0f) {
           return; // Mouse is still in cooldown, can't be tagged
         }
@@ -1414,20 +1417,22 @@ struct RenderCatMouseTimer : System<window_manager::ProvidesCurrentResolution> {
             std::format("{:.1f}s", cat_mouse_settings.current_round_time);
       }
       const float text_width =
-          raylib::MeasureText(timer_text.c_str(), text_size);
-      raylib::DrawText(timer_text.c_str(), timer_x - text_width / 2.0f, timer_y,
-                       text_size, timer_color);
+          raylib::MeasureText(timer_text.c_str(), static_cast<int>(text_size));
+      raylib::DrawText(
+          timer_text.c_str(), static_cast<int>(timer_x - text_width / 2.0f),
+          static_cast<int>(timer_y), static_cast<int>(text_size), timer_color);
     }
 
     if (cat_mouse_settings.state ==
         RoundCatAndMouseSettings::GameState::Countdown) {
       std::string countdown_text = std::format(
           "Get Ready! {:.0f}", cat_mouse_settings.countdown_before_start);
-      const float countdown_text_width =
-          raylib::MeasureText(countdown_text.c_str(), text_size);
-      raylib::DrawText(
-          countdown_text.c_str(), timer_x - countdown_text_width / 2.0f,
-          timer_y + screen_height * 0.056f, text_size, raylib::YELLOW);
+      const float countdown_text_width = raylib::MeasureText(
+          countdown_text.c_str(), static_cast<int>(text_size));
+      raylib::DrawText(countdown_text.c_str(),
+                       static_cast<int>(timer_x - countdown_text_width / 2.0f),
+                       static_cast<int>(timer_y + screen_height * 0.056f),
+                       static_cast<int>(text_size), raylib::YELLOW);
     }
   }
 };
