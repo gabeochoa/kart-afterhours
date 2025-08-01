@@ -34,28 +34,29 @@ struct RoundKillsSettings : RoundSettings {
     Minutes_1,
   } time_option = TimeOptions::Unlimited;
 
+private:
+  static float get_time_from_option(TimeOptions option) {
+    switch (option) {
+    case TimeOptions::Unlimited:
+      return -1.0f;
+    case TimeOptions::Seconds_30:
+      return 30.0f;
+    case TimeOptions::Minutes_1:
+      return 60.0f;
+    }
+    return -1.0f; // Default fallback for kills
+  }
+
+public:
+  float current_round_time = -1;
   void set_time_option(const int index) {
     time_option = magic_enum::enum_value<TimeOptions>(index);
     reset_round_time();
   }
 
   void reset_round_time() {
-    float new_time = -1;
-    switch (time_option) {
-    case TimeOptions::Unlimited:
-      new_time = -1;
-      break;
-    case TimeOptions::Seconds_30:
-      new_time = 30.f;
-      break;
-    case TimeOptions::Minutes_1:
-      new_time = 60.f;
-      break;
-    }
-    current_round_time = new_time;
+    current_round_time = get_time_from_option(time_option);
   }
-
-  float current_round_time = -1;
 };
 
 struct RoundScoreSettings : RoundSettings {
@@ -65,9 +66,13 @@ struct RoundScoreSettings : RoundSettings {
 struct RoundCatAndMouseSettings : RoundSettings {
   // TODO: audit cooldown time setting
   // TODO: Add "tag back" rule option (allow/disallow tag backs)
-  // TODO: Add countdown before game starts (players can drive around until
-  // first cat is chosen)
   // TODO: Add UI announcement of who is the current cat on game start
+
+  enum struct GameState : size_t {
+    Countdown,
+    InGame,
+    GameOver,
+  } state = GameState::Countdown;
 
   enum struct TimeOptions : size_t {
     Unlimited,
@@ -84,28 +89,29 @@ struct RoundCatAndMouseSettings : RoundSettings {
   // Whether to show countdown timer in UI
   bool show_countdown_timer = true;
 
+private:
+  static float get_time_from_option(TimeOptions option) {
+    switch (option) {
+    case TimeOptions::Unlimited:
+      return -1.0f;
+    case TimeOptions::Seconds_30:
+      return 30.0f;
+    case TimeOptions::Minutes_1:
+      return 60.0f;
+    }
+    return 30.0f; // Default fallback
+  }
+
+public:
+  float current_round_time = 30.f; // Default to 30 seconds
   void set_time_option(const int index) {
     time_option = magic_enum::enum_value<TimeOptions>(index);
     reset_round_time();
   }
 
   void reset_round_time() {
-    float new_time = -1;
-    switch (time_option) {
-    case TimeOptions::Unlimited:
-      new_time = -1;
-      break;
-    case TimeOptions::Seconds_30:
-      new_time = 30.f;
-      break;
-    case TimeOptions::Minutes_1:
-      new_time = 60.f;
-      break;
-    }
-    current_round_time = new_time;
+    current_round_time = get_time_from_option(time_option);
   }
-
-  float current_round_time = 30.f; // Default to 30 seconds
 };
 
 SINGLETON_FWD(RoundManager)

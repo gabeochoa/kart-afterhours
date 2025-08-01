@@ -73,3 +73,11 @@ constexpr static vec2 calc(const Rectangle &rect, const vec2 &point) {
   }
   return {0, 0};
 }
+
+constexpr static int truncate_to_minutes(float seconds) {
+  return static_cast<int>(seconds) / 60;
+}
+
+constexpr static int truncate_to_seconds(float total_seconds) {
+  return static_cast<int>(total_seconds) % 60;
+}

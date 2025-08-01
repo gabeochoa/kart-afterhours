@@ -112,6 +112,7 @@ void game() {
     systems.register_update_system(std::make_unique<CheckKillsWinCondition>());
     systems.register_update_system(std::make_unique<InitializeCatMouseGame>());
     systems.register_update_system(std::make_unique<UpdateCatMouseTimers>());
+    systems.register_update_system(std::make_unique<UpdateCatMouseCountdown>());
     systems.register_update_system(
         std::make_unique<HandleCatMouseTagTransfer>());
     systems.register_update_system(
@@ -151,6 +152,7 @@ void game() {
       systems.register_render_system(std::make_unique<RenderOOB>());
       systems.register_render_system(std::make_unique<RenderLabels>());
       systems.register_render_system(std::make_unique<CarRumble>());
+      systems.register_render_system(std::make_unique<RenderCatMouseTimer>());
     }
     systems.register_render_system([&](float) { raylib::EndTextureMode(); });
     systems.register_render_system([&](float) { raylib::BeginDrawing(); });

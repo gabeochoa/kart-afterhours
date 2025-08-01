@@ -409,6 +409,28 @@ void round_score_settings(Entity &entity, UIContext<InputAction> &context) {
                "Score Needed: {}", rl_settings.score_needed_to_win)));
 }
 
+void round_cat_mouse_settings(Entity &entity, UIContext<InputAction> &context) {
+  auto &cm_settings =
+      RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+
+  imm::div(context, mk(entity),
+           ComponentConfig{}.with_label(std::format(
+               "Round Length: {}", cm_settings.current_round_time)));
+
+  {
+    auto options =
+        magic_enum::enum_names<RoundCatAndMouseSettings::TimeOptions>();
+    auto option_index = magic_enum::enum_index(cm_settings.time_option).value();
+
+    if (auto result =
+            imm::dropdown(context, mk(entity), options, option_index,
+                          ComponentConfig{}.with_label("Round Length"));
+        result) {
+      cm_settings.set_time_option(result.as<int>());
+    }
+  }
+}
+
 Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                                           UIContext<InputAction> &context) {
   auto elem =
@@ -468,7 +490,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     round_score_settings(settings_group.ent(), context);
     break;
   case RoundType::CatAndMouse:
-    // TODO currently no settings
+    round_cat_mouse_settings(settings_group.ent(), context);
     break;
   default:
     log_error("You need to add a handler for UI settings for round type {}",

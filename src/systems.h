@@ -1229,10 +1229,20 @@ struct InitializeCatMouseGame : System<> {
 
     // Randomly select one player to be the initial cat
     size_t cat_index = rand() % players.size();
-    players[cat_index].get().get<HasCatMouseTracking>().is_cat = true;
+    auto initial_cat = players[cat_index];
+
+    // Initialize the game
+    auto &cat_mouse_settings =
+        RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+
+    cat_mouse_settings.state = RoundCatAndMouseSettings::GameState::Countdown;
+    cat_mouse_settings.countdown_before_start = 3.0f; // Reset countdown
+    cat_mouse_settings.reset_round_time();
+
+    initial_cat.get().get<HasCatMouseTracking>().is_cat = true;
 
     log_info("Player {} is the initial cat!",
-             players[cat_index].get().get<PlayerID>().id);
+             initial_cat.get().get<PlayerID>().id);
 
     initialized = true;
   }
@@ -1282,6 +1292,10 @@ struct CheckCatMouseWinCondition : System<> {
             "Player {} wins the Cat & Mouse round with {:.1f}s mouse time!",
             winner->get().get<PlayerID>().id,
             winner->get().get<HasCatMouseTracking>().time_as_mouse);
+
+        cat_mouse_settings.state =
+            RoundCatAndMouseSettings::GameState::GameOver;
+
         // TODO: Add victory screen showing final mouse times for all players
         // TODO: Add option to continue playing (best of 3, etc.)
         GameStateManager::get().end_game();
@@ -1333,6 +1347,87 @@ struct CheckKillsWinCondition : System<> {
                  winner->get().get<HasKillCountTracker>().kills);
         GameStateManager::get().end_game();
       }
+    }
+  }
+};
+
+struct UpdateCatMouseCountdown : System<> {
+  virtual void once(float dt) override {
+    if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
+      return;
+    }
+
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+
+    auto &cat_mouse_settings =
+        RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+
+    if (cat_mouse_settings.state ==
+        RoundCatAndMouseSettings::GameState::Countdown) {
+      cat_mouse_settings.countdown_before_start -= dt;
+      if (cat_mouse_settings.countdown_before_start <= 0) {
+        cat_mouse_settings.countdown_before_start = 0;
+        cat_mouse_settings.state = RoundCatAndMouseSettings::GameState::InGame;
+        log_info("Cat & Mouse game starting!");
+      }
+    }
+  }
+};
+
+struct RenderCatMouseTimer : System<window_manager::ProvidesCurrentResolution> {
+  virtual void for_each_with(const Entity &,
+                             const window_manager::ProvidesCurrentResolution &,
+                             float) const override {
+
+    if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
+      return;
+    }
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+
+    auto &cat_mouse_settings =
+        RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+
+    const int screen_width = raylib::GetScreenWidth();
+    const int screen_height = raylib::GetScreenHeight();
+
+    const float timer_x = screen_width * 0.5f;
+    const float timer_y = screen_height * 0.07f;
+    const float text_size = screen_height * 0.033f;
+    const raylib::Color timer_color = raylib::WHITE;
+
+    if (cat_mouse_settings.state ==
+            RoundCatAndMouseSettings::GameState::InGame &&
+        cat_mouse_settings.current_round_time > 0) {
+      std::string timer_text;
+      if (cat_mouse_settings.current_round_time >= 60.0f) {
+        int minutes =
+            truncate_to_minutes(cat_mouse_settings.current_round_time);
+        int seconds =
+            truncate_to_seconds(cat_mouse_settings.current_round_time);
+        timer_text = std::format("{}:{:02d}", minutes, seconds);
+      } else {
+        timer_text =
+            std::format("{:.1f}s", cat_mouse_settings.current_round_time);
+      }
+      const float text_width =
+          raylib::MeasureText(timer_text.c_str(), text_size);
+      raylib::DrawText(timer_text.c_str(), timer_x - text_width / 2.0f, timer_y,
+                       text_size, timer_color);
+    }
+
+    if (cat_mouse_settings.state ==
+        RoundCatAndMouseSettings::GameState::Countdown) {
+      std::string countdown_text = std::format(
+          "Get Ready! {:.0f}", cat_mouse_settings.countdown_before_start);
+      const float countdown_text_width =
+          raylib::MeasureText(countdown_text.c_str(), text_size);
+      raylib::DrawText(
+          countdown_text.c_str(), timer_x - countdown_text_width / 2.0f,
+          timer_y + screen_height * 0.056f, text_size, raylib::YELLOW);
     }
   }
 };
