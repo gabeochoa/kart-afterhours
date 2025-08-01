@@ -84,20 +84,20 @@ void MapManager::create_maze_map() {
       .restitution = 0.f,
   };
 
-  // Create maze walls
   // Horizontal walls
+  auto wall_color = afterhours::colors::increase(raylib::DARKGRAY, 2);
   for (int i = 0; i < 5; i++) {
-    make_obstacle(screen_pct(0.1f + i * 0.2f, 0.3f, 30, 30), raylib::DARKGRAY,
+    make_obstacle(screen_pct(0.1f + i * 0.2f, 0.3f, 30, 30), wall_color,
                   wall_config);
-    make_obstacle(screen_pct(0.1f + i * 0.2f, 0.7f, 30, 30), raylib::DARKGRAY,
+    make_obstacle(screen_pct(0.1f + i * 0.2f, 0.7f, 30, 30), wall_color,
                   wall_config);
   }
 
   // Vertical walls
   for (int i = 0; i < 3; i++) {
-    make_obstacle(screen_pct(0.3f, 0.1f + i * 0.3f, 30, 30), raylib::DARKGRAY,
+    make_obstacle(screen_pct(0.3f, 0.1f + i * 0.3f, 30, 30), wall_color,
                   wall_config);
-    make_obstacle(screen_pct(0.7f, 0.1f + i * 0.3f, 30, 30), raylib::DARKGRAY,
+    make_obstacle(screen_pct(0.7f, 0.1f + i * 0.3f, 30, 30), wall_color,
                   wall_config);
   }
 }
