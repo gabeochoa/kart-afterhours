@@ -677,7 +677,8 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
   }
 
   if (imm::checkbox(context, mk(control_group.ent()),
-                    Settings::get().get_fullscreen_enabled())) {
+                    Settings::get().get_fullscreen_enabled(),
+                    ComponentConfig{}.with_label("Fullscreen"))) {
     Settings::get().toggle_fullscreen();
   }
 
