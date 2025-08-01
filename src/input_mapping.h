@@ -19,6 +19,7 @@ enum class InputAction {
   WidgetPress,
   WidgetMod,
   WidgetBack,
+  MenuBack,
   ToggleUIDebug,
   ToggleUILayoutDebug,
 };
@@ -98,6 +99,10 @@ inline auto get_mapping() {
 
   mapping[InputAction::WidgetMod] = {raylib::KEY_LEFT_SHIFT,
                                      raylib::GAMEPAD_BUTTON_MIDDLE_RIGHT};
+
+  mapping[InputAction::MenuBack] = {
+      raylib::KEY_ESCAPE,
+  };
 
   mapping[InputAction::ToggleUIDebug] = {
       raylib::KEY_GRAVE,

@@ -38,10 +38,14 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   std::vector<RefEntity> ais;
   input::PossibleInputCollector<InputAction> inpc;
 
+  std::vector<Screen> navigation_stack;
+
   void update_resolution_cache();
   void character_selector_column(Entity &parent,
                                  UIContext<InputAction> &context,
                                  const size_t index, const size_t num_slots);
+  void navigate_back();
+  void navigate_to_screen(Screen screen);
 
   Screen character_creation(Entity &entity, UIContext<InputAction> &context);
   Screen round_settings(Entity &entity, UIContext<InputAction> &context);

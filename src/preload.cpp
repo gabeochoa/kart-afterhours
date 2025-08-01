@@ -58,6 +58,9 @@ Preload &Preload::init(const char *title) {
   raylib::InitAudioDevice();
   raylib::SetMasterVolume(1.f);
 
+  // Disable default escape key exit behavior so we can handle it manually
+  raylib::SetExitKey(0);
+
   load_gamepad_mappings();
   load_sounds();
 

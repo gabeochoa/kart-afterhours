@@ -33,6 +33,27 @@ Padding button_padding = Padding{
     .right = pixels(0.f),
 };
 
+void ScheduleMainMenuUI::navigate_back() {
+  // If we're on the main screen, exit the game
+  if (GameStateManager::get().active_screen == GameStateManager::Screen::Main ||
+      navigation_stack.empty()) {
+    exit_game();
+    return;
+  }
+
+  Screen previous_screen = navigation_stack.back();
+  navigation_stack.pop_back();
+  GameStateManager::get().set_next_screen(previous_screen);
+}
+
+void ScheduleMainMenuUI::navigate_to_screen(Screen screen) {
+  if (GameStateManager::get().active_screen != screen) {
+    navigation_stack.push_back(GameStateManager::get().active_screen);
+  }
+
+  GameStateManager::get().set_next_screen(screen);
+}
+
 void ScheduleMainMenuUI::update_resolution_cache() {
   resolution_provider = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesAvailableWindowResolutions>();
@@ -57,6 +78,13 @@ void ScheduleMainMenuUI::once(float) {
     update_resolution_cache();
   }
 
+  if (navigation_stack.empty()) {
+    if (GameStateManager::get().active_screen !=
+        GameStateManager::Screen::Main) {
+      navigation_stack.push_back(GameStateManager::Screen::Main);
+    }
+  }
+
   // character creator
   {
     players = EQ().whereHasComponent<PlayerID>().orderByPlayerID().gen();
@@ -79,10 +107,20 @@ bool ScheduleMainMenuUI::should_run(float) {
       });
 
   if (!ui_visible && start_pressed) {
-    GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
+    navigate_to_screen(GameStateManager::Screen::Main);
     ui_visible = true;
   } else if (ui_visible && start_pressed) {
     ui_visible = false;
+  }
+
+  // Handle escape key for back navigation
+  const bool escape_pressed =
+      std::ranges::any_of(inpc.inputs_pressed(), [](const auto &actions_done) {
+        return actions_done.action == InputAction::MenuBack;
+      });
+
+  if (escape_pressed && ui_visible) {
+    navigate_back();
   }
 
   return ui_visible;
@@ -237,8 +275,7 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("round settings"))) {
-      GameStateManager::get().set_next_screen(
-          GameStateManager::Screen::RoundSettings);
+      navigate_to_screen(GameStateManager::Screen::RoundSettings);
     }
   }
 
@@ -503,8 +540,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("back"))) {
-      GameStateManager::get().set_next_screen(
-          GameStateManager::Screen::CharacterCreation);
+      navigate_back();
     }
   }
   return GameStateManager::get().next_screen.value_or(
@@ -534,8 +570,7 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("play"))) {
-      GameStateManager::get().set_next_screen(
-          GameStateManager::Screen::CharacterCreation);
+      navigate_to_screen(GameStateManager::Screen::CharacterCreation);
     }
   }
 
@@ -544,7 +579,7 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("about"))) {
-      GameStateManager::get().set_next_screen(GameStateManager::Screen::About);
+      navigate_to_screen(GameStateManager::Screen::About);
     }
   }
 
@@ -553,8 +588,7 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("settings"))) {
-      GameStateManager::get().set_next_screen(
-          GameStateManager::Screen::Settings);
+      navigate_to_screen(GameStateManager::Screen::Settings);
     }
   }
 
@@ -654,7 +688,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
         current_resolution_provider->current_resolution);
     // TODO do we want to write the settings, or should we have a save button?
 
-    GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
+    navigate_back();
   }
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
@@ -712,7 +746,7 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
                     ComponentConfig{}
                         .with_padding(button_padding)
                         .with_label("back"))) {
-      GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
+      navigate_back();
     }
   }
   return GameStateManager::get().next_screen.value_or(
