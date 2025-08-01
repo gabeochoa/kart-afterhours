@@ -863,7 +863,7 @@ private:
     }
 
     // Look up the entity that caused the damage
-    auto damager_entities = EntityQuery(true /* force merge */)
+    auto damager_entities = EntityQuery({.force_merge = true})
                                 .whereID(*hasHealth.last_damaged_by)
                                 .gen();
 
@@ -882,7 +882,7 @@ private:
     input::GamepadID killer_player_id = damager.get<PlayerID>().id;
 
     // Find the player with this ID and give them a kill
-    auto killer_players = EntityQuery(true /* force merge */)
+    auto killer_players = EntityQuery({.force_merge = true})
                               .whereHasComponent<PlayerID>()
                               .whereHasComponent<HasKillCountTracker>()
                               .whereLambda([killer_player_id](const Entity &e) {

@@ -212,6 +212,7 @@ Entity &make_obstacle(raylib::Rectangle rect, const raylib::Color color,
   entity.addComponent<HasColor>(color);
   entity.addComponent<CollisionAbsorber>(
       CollisionAbsorber::AbsorberType::Absorber);
+  entity.addComponent<MapGenerated>();
   // TODO create a rock or other random obstacle sprite
   // entity.addComponent<afterhours::texture_manager::HasSprite>(
   //     transform.position, transform.size, transform.angle,
@@ -251,10 +252,10 @@ void make_player(input::GamepadID id) {
 void make_ai() {
   // force merge because we are creating entities not inside a system
   // and theres an ent query inside
-  size_t num_players = EntityQuery(true /* force merge*/)
+  size_t num_players = EntityQuery({.force_merge = true})
                            .whereHasComponent<PlayerID>()
                            .gen_count();
-  size_t num_ais = EntityQuery(true /* force merge*/)
+  size_t num_ais = EntityQuery({.force_merge = true})
                        .whereHasComponent<AIControlled>()
                        .gen_count();
   auto &entity = make_car(num_players + num_ais);

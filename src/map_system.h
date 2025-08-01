@@ -40,7 +40,18 @@ struct MapManager {
 
   [[nodiscard]] int get_selected_map() const { return selected_map_index; }
 
+  void cleanup_map_generated_entities() {
+    auto map_generated_entities = EntityQuery({.force_merge = true})
+                                      .whereHasComponent<MapGenerated>()
+                                      .gen();
+    for (auto &entity : map_generated_entities) {
+      entity.get().cleanup = true;
+    }
+  }
+
   void create_map() {
+    cleanup_map_generated_entities();
+
     if (selected_map_index >= 0 &&
         selected_map_index < static_cast<int>(available_maps.size())) {
       available_maps[selected_map_index].create_map_func();
