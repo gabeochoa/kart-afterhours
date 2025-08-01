@@ -20,7 +20,8 @@ Examples:
 ## Code Style
 - Keep functions focused and single-purpose
 - Prefer early returns to reduce nesting
-- Dont add extraneous comments 
+- Dont add any comments unless explicitly asked 
+- use a function instead of a line with multiple ternary expressions
 
 ## Project Structure
 - `src/` contains main game code
