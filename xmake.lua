@@ -15,6 +15,9 @@ add_cxxflags([[
     -fmax-errors=10 
     -Wall -Wextra -Wpedantic
     -Wuninitialized -Wshadow -Wconversion
+    -pipe
+    -fno-stack-protector
+    -fno-common
 ]]
 )
 add_cxxflags([[
