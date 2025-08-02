@@ -37,7 +37,7 @@ void MapManager::initialize_preview_textures() {
   if (preview_textures_initialized) return;
   
   const int preview_width = 300;
-  const int preview_height = 200;
+  const int preview_height = 300; // Changed from 200 to 300 for square preview
   
   for (size_t i = 0; i < preview_textures.size(); i++) {
     preview_textures[i] = raylib::LoadRenderTexture(preview_width, preview_height);
@@ -54,15 +54,15 @@ void MapManager::generate_map_preview(int map_index) {
   vec2 preview_offset = {100000.0f, 100000.0f}; // Very far from any game activity
   available_maps[map_index].create_preview_map_func(preview_offset);
   
-  // Calculate proper camera setup for 300x200 texture showing 800x600 preview area
+  // Calculate proper camera setup for 300x300 square texture showing 800x600 preview area
   raylib::Camera2D camera = {};
   
-  // Calculate zoom to fit 800x600 area into 300x200 texture
+  // Calculate zoom to fit 800x600 area into 300x300 square texture
   float zoom_x = 300.0f / 800.0f; // 0.375
-  float zoom_y = 200.0f / 600.0f; // 0.333
-  camera.zoom = std::min(zoom_x, zoom_y) * 0.8f; // Use smaller zoom with margin, about 0.26
+  float zoom_y = 300.0f / 600.0f; // 0.5
+  camera.zoom = std::min(zoom_x, zoom_y) * 0.8f; // Use smaller zoom with margin, about 0.3
   
-  camera.offset = {150.0f, 100.0f}; // Center of 300x200 preview texture
+  camera.offset = {150.0f, 150.0f}; // Center of 300x300 square preview texture
   
   // Target the center of the preview map area
   vec2 preview_center = {preview_offset.x + 400.0f, preview_offset.y + 300.0f};

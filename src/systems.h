@@ -113,17 +113,16 @@ struct RenderMapPreviewOnScreen : System<window_manager::ProvidesCurrentResoluti
     // Draw the preview texture in the center-left area of the screen
     const auto& preview_texture = MapManager::get().get_preview_texture(selected_map);
     
-    // Calculate position and size for the preview (in the preview box area)
+    // Calculate position and size for the square preview (in the preview box area)
     float preview_x = resolution.width * 0.1f;   // 10% from left
     float preview_y = resolution.height * 0.3f;  // 30% from top
-    float preview_w = resolution.width * 0.8f;   // 80% width
-    float preview_h = resolution.height * 0.2f;  // 20% height
+    float preview_size = std::min(resolution.width * 0.8f, resolution.height * 0.4f); // Square size based on available space
     
-    // Draw the preview texture scaled to fit
+    // Draw the square preview texture
     Rectangle source = {0, 0, 
                        static_cast<float>(preview_texture.texture.width),
                        -static_cast<float>(preview_texture.texture.height)};
-    Rectangle dest = {preview_x, preview_y, preview_w, preview_h};
+    Rectangle dest = {preview_x, preview_y, preview_size, preview_size}; // Square destination
     
     raylib::DrawTexturePro(preview_texture.texture, source, dest, 
                           {0, 0}, 0.0f, raylib::WHITE);
