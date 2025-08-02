@@ -151,10 +151,8 @@ struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
       }
       return;
     }
-
-    // we need to add a new player
-
-    for (int i = 0; i < (int)maxGamepadID.count() + 1; i++) {
+    // TODO add +1 here to auto gen extra players
+    for (int i = 0; i < (int)maxGamepadID.count(); i++) {
       bool found = false;
       for (Entity &player : existing_players) {
         if (i == player.get<PlayerID>().id) {

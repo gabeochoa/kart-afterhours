@@ -54,7 +54,7 @@ void game() {
     bool create_startup = true;
     systems.register_update_system([&](float) {
       if (create_startup) {
-        make_player(0);
+        // make_player(0);
         // TODO id love to have this but its hard to read the UI
         // because the racing lines and stuff go over it
         // MapManager::get().create_map();
