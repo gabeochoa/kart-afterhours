@@ -2,7 +2,6 @@
 
 #include "afterhours/src/singleton.h"
 #include "library.h"
-
 #include "rl.h"
 
 SINGLETON_FWD(ShaderLibrary)
@@ -23,18 +22,15 @@ struct ShaderLibrary {
   void unload_all() { impl.unload_all(); }
 
   void update_values(const vec2 *rez, const float *time) {
-    (void)rez;
-    (void)time;
-    // for (auto &kv : impl.storage) {
-    // auto &shader = kv.second;
-    // TODO this doesnt seem to work on my personal laptop?
-    // int time_loc = raylib::GetShaderLocation(shader, "time");
-    // int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
-    // raylib::SetShaderValue(shader, resolution_loc, rez,
-    // raylib::SHADER_UNIFORM_VEC2);
-    // raylib::SetShaderValue(shader, time_loc, time,
-    // raylib::SHADER_UNIFORM_FLOAT);
-    // }
+    for (auto &kv : impl.storage) {
+      auto &shader = kv.second;
+      int time_loc = raylib::GetShaderLocation(shader, "time");
+      int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
+      raylib::SetShaderValue(shader, resolution_loc, rez,
+                             raylib::SHADER_UNIFORM_VEC2);
+      raylib::SetShaderValue(shader, time_loc, time,
+                             raylib::SHADER_UNIFORM_FLOAT);
+    }
   }
 
 private:
