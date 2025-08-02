@@ -682,6 +682,7 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
                              Transform &transform, float dt) override {
     (void)dt;
 
+    // TODO make the ai have a difficulty slider
     auto round_type = RoundManager::get().active_round_type;
 
     switch (round_type) {
@@ -698,17 +699,34 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
 
 private:
   void default_ai_target(AIControlled &ai, Transform &transform) {
+    // Check if we're close enough to current target to pick a new one
+    float distance_to_target = distance_sq(transform.pos(), ai.target);
+    if (distance_to_target > 100.0f) {
+      return;
+    }
+
     auto opt_entity = EQ().whereHasComponent<PlayerID>().gen_first();
     if (opt_entity.valid()) {
       ai.target = opt_entity->get<Transform>().pos();
     } else {
-      log_warn("No player found for AI");
+      float screen_width = raylib::GetScreenWidth();
+      float screen_height = raylib::GetScreenHeight();
+      ai.target = vec_rand_in_box(Rectangle{0, 0, screen_width, screen_height});
     }
   }
 
   void cat_mouse_ai_target(Entity &entity, AIControlled &ai,
                            Transform &transform) {
     if (!entity.has<HasCatMouseTracking>()) {
+      default_ai_target(ai, transform);
+      return;
+    }
+
+    // Check if cat and mouse game is properly initialized
+    auto &cat_mouse_settings =
+        RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+    if (cat_mouse_settings.state !=
+        RoundCatAndMouseSettings::GameState::InGame) {
       default_ai_target(ai, transform);
       return;
     }
@@ -781,13 +799,26 @@ private:
       }
     }
 
+    // Get screen bounds
+    int screen_width = raylib::GetScreenWidth();
+    int screen_height = raylib::GetScreenHeight();
+
+    // Calculate direction away from cat
     vec2 away_from_cat = transform.pos() - closest_cat_pos;
     if (vec_mag(away_from_cat) < 0.1f) {
       away_from_cat = vec2(1.0f, 0.0f);
     }
     away_from_cat = vec_norm(away_from_cat);
 
-    ai.target = transform.pos() + away_from_cat * 200.0f;
+    // Use current velocity direction if moving, otherwise use away from cat
+    vec2 move_direction = away_from_cat;
+    if (vec_mag(transform.velocity) > 1.0f) {
+      move_direction = vec_norm(transform.velocity);
+    }
+
+    vec2 target_pos = transform.pos() + move_direction * 100.0f;
+
+    ai.target = target_pos;
   }
 };
 

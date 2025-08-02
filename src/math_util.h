@@ -81,3 +81,10 @@ constexpr static int truncate_to_minutes(float seconds) {
 constexpr static int truncate_to_seconds(float total_seconds) {
   return static_cast<int>(total_seconds) % 60;
 }
+
+static vec2 vec_rand_in_box(const Rectangle &rect) {
+  return vec2{
+      rect.x + static_cast<float>(rand() % static_cast<int>(rect.width)),
+      rect.y + static_cast<float>(rand() % static_cast<int>(rect.height)),
+  };
+}
