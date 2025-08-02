@@ -76,9 +76,10 @@ struct RoundCatAndMouseSettings : RoundSettings {
 
   enum struct TimeOptions : size_t {
     Unlimited,
+    Seconds_10,
     Seconds_30,
     Minutes_1,
-  } time_option = TimeOptions::Seconds_30;
+  } time_option = TimeOptions::Seconds_10;
 
   // Countdown before game starts (players can drive around)
   float countdown_before_start = 3.0f; // 3 seconds to get ready
@@ -98,6 +99,8 @@ private:
     switch (option) {
     case TimeOptions::Unlimited:
       return -1.0f;
+    case TimeOptions::Seconds_10:
+      return 10.0f;
     case TimeOptions::Seconds_30:
       return 30.0f;
     case TimeOptions::Minutes_1:

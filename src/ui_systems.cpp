@@ -376,8 +376,7 @@ void ScheduleMainMenuUI::render_kills_stats(UIContext<InputAction> &context,
 }
 
 void ScheduleMainMenuUI::render_score_stats(UIContext<InputAction> &context,
-                                            Entity &parent,
-                                            const OptEntity &car,
+                                            Entity &parent, const OptEntity &,
                                             raylib::Color bg_color) {
   // TODO: Add score tracking component
   std::string stats_text = "Score: N/A";
@@ -418,8 +417,7 @@ void ScheduleMainMenuUI::render_cat_mouse_stats(UIContext<InputAction> &context,
 }
 
 void ScheduleMainMenuUI::render_unknown_stats(UIContext<InputAction> &context,
-                                              Entity &parent,
-                                              const OptEntity &car,
+                                              Entity &parent, const OptEntity &,
                                               raylib::Color bg_color) {
   std::string stats_text = "Unknown";
 
@@ -511,6 +509,9 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
       switch (rl_settings.time_option) {
       case RoundCatAndMouseSettings::TimeOptions::Unlimited:
         time_display = "Unlimited";
+        break;
+      case RoundCatAndMouseSettings::TimeOptions::Seconds_10:
+        time_display = "10s";
         break;
       case RoundCatAndMouseSettings::TimeOptions::Seconds_30:
         time_display = "30s";
