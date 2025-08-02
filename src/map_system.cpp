@@ -128,10 +128,10 @@ void MapManager::create_arena_map_at_offset(vec2 offset) {
   const float preview_width = 800.0f;
   const float preview_height = 600.0f;
 
-  const auto screen_pct = [offset, preview_width, preview_height](float x, float y, float w, float h) {
+  const auto screen_pct = [preview_width, preview_height](float x, float y, float w, float h) {
     return Rectangle{
-        offset.x + preview_width * x,
-        offset.y + preview_height * y,
+        preview_width * x,
+        preview_height * y,
         w,
         h,
     };
@@ -150,24 +150,24 @@ void MapManager::create_arena_map_at_offset(vec2 offset) {
   };
 
   // Corner obstacles
-  make_preview_obstacle(screen_pct(0.2f, 0.2f, 50, 50), raylib::BLACK, rock_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.2f, 0.8f, 50, 50), raylib::BLACK, rock_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.8f, 0.8f, 50, 50), raylib::BLACK, rock_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.8f, 0.2f, 50, 50), raylib::BLACK, rock_config, {0, 0});
+  make_preview_obstacle(screen_pct(0.2f, 0.2f, 50, 50), raylib::BLACK, rock_config, offset);
+  make_preview_obstacle(screen_pct(0.2f, 0.8f, 50, 50), raylib::BLACK, rock_config, offset);
+  make_preview_obstacle(screen_pct(0.8f, 0.8f, 50, 50), raylib::BLACK, rock_config, offset);
+  make_preview_obstacle(screen_pct(0.8f, 0.2f, 50, 50), raylib::BLACK, rock_config, offset);
 
   // Center obstacles
-  make_preview_obstacle(screen_pct(0.5f, 0.2f, 50, 50), raylib::WHITE, ball_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.5f, 0.8f, 50, 50), raylib::WHITE, ball_config, {0, 0});
+  make_preview_obstacle(screen_pct(0.5f, 0.2f, 50, 50), raylib::WHITE, ball_config, offset);
+  make_preview_obstacle(screen_pct(0.5f, 0.8f, 50, 50), raylib::WHITE, ball_config, offset);
 }
 
 void MapManager::create_maze_map_at_offset(vec2 offset) {
   const float preview_width = 800.0f;
   const float preview_height = 600.0f;
 
-  const auto screen_pct = [offset, preview_width, preview_height](float x, float y, float w, float h) {
+  const auto screen_pct = [preview_width, preview_height](float x, float y, float w, float h) {
     return Rectangle{
-        offset.x + preview_width * x,
-        offset.y + preview_height * y,
+        preview_width * x,
+        preview_height * y,
         w,
         h,
     };
@@ -183,14 +183,14 @@ void MapManager::create_maze_map_at_offset(vec2 offset) {
   
   // Horizontal walls
   for (int i = 0; i < 5; i++) {
-    make_preview_obstacle(screen_pct(0.1f + i * 0.2f, 0.3f, 30, 30), wall_color, wall_config, {0, 0});
-    make_preview_obstacle(screen_pct(0.1f + i * 0.2f, 0.7f, 30, 30), wall_color, wall_config, {0, 0});
+    make_preview_obstacle(screen_pct(0.1f + i * 0.2f, 0.3f, 30, 30), wall_color, wall_config, offset);
+    make_preview_obstacle(screen_pct(0.1f + i * 0.2f, 0.7f, 30, 30), wall_color, wall_config, offset);
   }
 
   // Vertical walls
   for (int i = 0; i < 3; i++) {
-    make_preview_obstacle(screen_pct(0.3f, 0.1f + i * 0.3f, 30, 30), wall_color, wall_config, {0, 0});
-    make_preview_obstacle(screen_pct(0.7f, 0.1f + i * 0.3f, 30, 30), wall_color, wall_config, {0, 0});
+    make_preview_obstacle(screen_pct(0.3f, 0.1f + i * 0.3f, 30, 30), wall_color, wall_config, offset);
+    make_preview_obstacle(screen_pct(0.7f, 0.1f + i * 0.3f, 30, 30), wall_color, wall_config, offset);
   }
 }
 
@@ -198,10 +198,10 @@ void MapManager::create_race_map_at_offset(vec2 offset) {
   const float preview_width = 800.0f;
   const float preview_height = 600.0f;
 
-  const auto screen_pct = [offset, preview_width, preview_height](float x, float y, float w, float h) {
+  const auto screen_pct = [preview_width, preview_height](float x, float y, float w, float h) {
     return Rectangle{
-        offset.x + preview_width * x,
-        offset.y + preview_height * y,
+        preview_width * x,
+        preview_height * y,
         w,
         h,
     };
@@ -218,7 +218,7 @@ void MapManager::create_race_map_at_offset(vec2 offset) {
     float angle = i * 0.785f; // 45 degrees
     float x = 0.5f + 0.3f * cos(angle);
     float y = 0.5f + 0.3f * sin(angle);
-    make_preview_obstacle(screen_pct(x, y, 40, 40), raylib::ORANGE, barrier_config, {0, 0});
+    make_preview_obstacle(screen_pct(x, y, 40, 40), raylib::ORANGE, barrier_config, offset);
   }
 
   // Inner track
@@ -226,7 +226,7 @@ void MapManager::create_race_map_at_offset(vec2 offset) {
     float angle = i * 1.047f; // 60 degrees
     float x = 0.5f + 0.15f * cos(angle);
     float y = 0.5f + 0.15f * sin(angle);
-    make_preview_obstacle(screen_pct(x, y, 40, 40), raylib::RED, barrier_config, {0, 0});
+    make_preview_obstacle(screen_pct(x, y, 40, 40), raylib::RED, barrier_config, offset);
   }
 }
 
@@ -234,10 +234,10 @@ void MapManager::create_battle_map_at_offset(vec2 offset) {
   const float preview_width = 800.0f;
   const float preview_height = 600.0f;
 
-  const auto screen_pct = [offset, preview_width, preview_height](float x, float y, float w, float h) {
+  const auto screen_pct = [preview_width, preview_height](float x, float y, float w, float h) {
     return Rectangle{
-        offset.x + preview_width * x,
-        offset.y + preview_height * y,
+        preview_width * x,
+        preview_height * y,
         w,
         h,
     };
@@ -250,26 +250,26 @@ void MapManager::create_battle_map_at_offset(vec2 offset) {
   };
 
   // Corner cover
-  make_preview_obstacle(screen_pct(0.15f, 0.15f, 35, 35), raylib::BROWN, cover_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.85f, 0.15f, 35, 35), raylib::BROWN, cover_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.15f, 0.85f, 35, 35), raylib::BROWN, cover_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.85f, 0.85f, 35, 35), raylib::BROWN, cover_config, {0, 0});
+  make_preview_obstacle(screen_pct(0.15f, 0.15f, 35, 35), raylib::BROWN, cover_config, offset);
+  make_preview_obstacle(screen_pct(0.85f, 0.15f, 35, 35), raylib::BROWN, cover_config, offset);
+  make_preview_obstacle(screen_pct(0.15f, 0.85f, 35, 35), raylib::BROWN, cover_config, offset);
+  make_preview_obstacle(screen_pct(0.85f, 0.85f, 35, 35), raylib::BROWN, cover_config, offset);
 
   // Center cover
-  make_preview_obstacle(screen_pct(0.5f, 0.3f, 35, 35), raylib::BROWN, cover_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.5f, 0.7f, 35, 35), raylib::BROWN, cover_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.3f, 0.5f, 35, 35), raylib::BROWN, cover_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.7f, 0.5f, 35, 35), raylib::BROWN, cover_config, {0, 0});
+  make_preview_obstacle(screen_pct(0.5f, 0.3f, 35, 35), raylib::BROWN, cover_config, offset);
+  make_preview_obstacle(screen_pct(0.5f, 0.7f, 35, 35), raylib::BROWN, cover_config, offset);
+  make_preview_obstacle(screen_pct(0.3f, 0.5f, 35, 35), raylib::BROWN, cover_config, offset);
+  make_preview_obstacle(screen_pct(0.7f, 0.5f, 35, 35), raylib::BROWN, cover_config, offset);
 }
 
 void MapManager::create_catmouse_map_at_offset(vec2 offset) {
   const float preview_width = 800.0f;
   const float preview_height = 600.0f;
 
-  const auto screen_pct = [offset, preview_width, preview_height](float x, float y, float w, float h) {
+  const auto screen_pct = [preview_width, preview_height](float x, float y, float w, float h) {
     return Rectangle{
-        offset.x + preview_width * x,
-        offset.y + preview_height * y,
+        preview_width * x,
+        preview_height * y,
         w,
         h,
     };
@@ -282,16 +282,16 @@ void MapManager::create_catmouse_map_at_offset(vec2 offset) {
   };
 
   // Safe zones (smaller, harder to reach)
-  make_preview_obstacle(screen_pct(0.1f, 0.1f, 25, 25), raylib::GREEN, safe_zone_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.9f, 0.1f, 25, 25), raylib::GREEN, safe_zone_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.1f, 0.9f, 25, 25), raylib::GREEN, safe_zone_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.9f, 0.9f, 25, 25), raylib::GREEN, safe_zone_config, {0, 0});
+  make_preview_obstacle(screen_pct(0.1f, 0.1f, 25, 25), raylib::GREEN, safe_zone_config, offset);
+  make_preview_obstacle(screen_pct(0.9f, 0.1f, 25, 25), raylib::GREEN, safe_zone_config, offset);
+  make_preview_obstacle(screen_pct(0.1f, 0.9f, 25, 25), raylib::GREEN, safe_zone_config, offset);
+  make_preview_obstacle(screen_pct(0.9f, 0.9f, 25, 25), raylib::GREEN, safe_zone_config, offset);
 
   // Chase obstacles
-  make_preview_obstacle(screen_pct(0.5f, 0.2f, 25, 25), raylib::BLUE, safe_zone_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.5f, 0.8f, 25, 25), raylib::BLUE, safe_zone_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.2f, 0.5f, 25, 25), raylib::BLUE, safe_zone_config, {0, 0});
-  make_preview_obstacle(screen_pct(0.8f, 0.5f, 25, 25), raylib::BLUE, safe_zone_config, {0, 0});
+  make_preview_obstacle(screen_pct(0.5f, 0.2f, 25, 25), raylib::BLUE, safe_zone_config, offset);
+  make_preview_obstacle(screen_pct(0.5f, 0.8f, 25, 25), raylib::BLUE, safe_zone_config, offset);
+  make_preview_obstacle(screen_pct(0.2f, 0.5f, 25, 25), raylib::BLUE, safe_zone_config, offset);
+  make_preview_obstacle(screen_pct(0.8f, 0.5f, 25, 25), raylib::BLUE, safe_zone_config, offset);
 }
 
 // Original map creation functions
