@@ -93,7 +93,7 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
 struct RenderMapPreviewOnScreen : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderMapPreviewOnScreen() {}
   virtual void for_each_with(
-      const Entity &,
+      const Entity & /* entity */,
       const window_manager::ProvidesCurrentResolution &pCurrentResolution,
       float) const override {
     
@@ -843,10 +843,6 @@ private:
         closest_cat_pos = cat_pos;
       }
     }
-
-    // Get screen bounds
-    int screen_width = raylib::GetScreenWidth();
-    int screen_height = raylib::GetScreenHeight();
 
     // Calculate direction away from cat
     vec2 away_from_cat = transform.pos() - closest_cat_pos;

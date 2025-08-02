@@ -50,8 +50,15 @@ void MapManager::initialize_preview_textures() {
 void MapManager::generate_map_preview(int map_index) {
   if (!preview_textures_initialized || map_index < 0 || map_index >= 5) return;
   
-  // Create preview entities at a completely isolated location
-  vec2 preview_offset = {100000.0f, 100000.0f}; // Very far from any game activity
+  // Clean up any existing preview entities first to prevent overlap
+  cleanup_preview_entities();
+  
+  // Create preview entities at widely separated offset locations for each map
+  // Each map gets its own 10,000x10,000 area to prevent any possible overlap
+  vec2 preview_offset = {
+    100000.0f + (map_index * 10000.0f), 
+    100000.0f + (map_index * 10000.0f)
+  };
   available_maps[map_index].create_preview_map_func(preview_offset);
   
   // Calculate proper camera setup for 300x300 square texture showing 800x600 preview area
@@ -73,7 +80,7 @@ void MapManager::generate_map_preview(int map_index) {
   
   raylib::BeginMode2D(camera);
   
-  // Get and render ONLY the preview entities we just created
+  // Get and render ONLY the preview entities we just created for this specific map
   auto preview_entities = EntityQuery({.force_merge = true})
                               .whereHasComponent<MapPreviewGenerated>()
                               .gen();
@@ -83,26 +90,38 @@ void MapManager::generate_map_preview(int map_index) {
       auto &transform = entity.get().get<Transform>();
       auto &color = entity.get().get<HasColor>();
       
-      // Draw rectangles using position directly (not centered)
-      raylib::DrawRectangle(
-          static_cast<int>(transform.position.x),
-          static_cast<int>(transform.position.y),
-          static_cast<int>(transform.size.x),
-          static_cast<int>(transform.size.y),
-          color.color());
+      // Only render entities that are in this map's area
+      if (transform.position.x >= preview_offset.x && 
+          transform.position.x < preview_offset.x + 800.0f &&
+          transform.position.y >= preview_offset.y && 
+          transform.position.y < preview_offset.y + 600.0f) {
+        
+        // Draw rectangles using position directly (not centered)
+        raylib::DrawRectangle(
+            static_cast<int>(transform.position.x),
+            static_cast<int>(transform.position.y),
+            static_cast<int>(transform.size.x),
+            static_cast<int>(transform.size.y),
+            color.color());
+      }
     }
   }
   
   raylib::EndMode2D();
   raylib::EndTextureMode();
   
-  // Immediately clean up preview entities to prevent them from appearing in main game
+  // Force immediate cleanup of preview entities to prevent them from appearing in main game
   cleanup_preview_entities();
 }
 
 void MapManager::generate_all_previews() {
+  // Clean up any existing preview entities before starting
+  cleanup_preview_entities();
+  
   for (int i = 0; i < 5; i++) {
     generate_map_preview(i);
+    // Ensure complete cleanup between each preview generation
+    cleanup_preview_entities();
   }
 }
 
@@ -124,6 +143,7 @@ void MapManager::cleanup_preview_entities() {
                               .whereHasComponent<MapPreviewGenerated>()
                               .gen();
   for (auto &entity : preview_entities) {
+    // Mark for cleanup using the standard pattern
     entity.get().cleanup = true;
   }
 }
