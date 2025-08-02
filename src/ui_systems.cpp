@@ -910,16 +910,18 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                      .with_debug_name("win_condition_div")
                      .with_padding(Padding{.right = screen_pct(0.2f)}));
 
-    if (auto result = imm::button_group(
+    static size_t selected_round_type =
+        static_cast<size_t>(RoundManager::get().active_round_type);
+
+    if (auto result = imm::navigation_bar(
             context, mk(win_condition_div.ent()), RoundType_NAMES,
+            selected_round_type,
             ComponentConfig{}
                 .with_label("Win Condition")
-                .with_flex_direction(FlexDirection::Row)
-                .with_size(ComponentSize{pixels(100.f * RoundType_NAMES.size()),
-                                         children(50.f)})
-                .with_select_on_focus(true));
+                .with_size(ComponentSize{pixels(300), pixels(50)}));
         result) {
-      RoundManager::get().set_active_round_type(result.as<int>());
+      RoundManager::get().set_active_round_type(
+          static_cast<int>(selected_round_type));
     }
   }
 
