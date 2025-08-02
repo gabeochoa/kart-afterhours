@@ -3,6 +3,7 @@
 #include "afterhours/src/singleton.h"
 #include "library.h"
 #include "rl.h"
+#include "std_include.h"
 
 SINGLETON_FWD(ShaderLibrary)
 struct ShaderLibrary {
@@ -26,10 +27,16 @@ struct ShaderLibrary {
       auto &shader = kv.second;
       int time_loc = raylib::GetShaderLocation(shader, "time");
       int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
-      raylib::SetShaderValue(shader, resolution_loc, rez,
-                             raylib::SHADER_UNIFORM_VEC2);
-      raylib::SetShaderValue(shader, time_loc, time,
-                             raylib::SHADER_UNIFORM_FLOAT);
+
+      // Only set uniforms if they exist in the shader
+      if (resolution_loc != -1) {
+        raylib::SetShaderValue(shader, resolution_loc, rez,
+                               raylib::SHADER_UNIFORM_VEC2);
+      }
+      if (time_loc != -1) {
+        raylib::SetShaderValue(shader, time_loc, time,
+                               raylib::SHADER_UNIFORM_FLOAT);
+      }
     }
   }
 

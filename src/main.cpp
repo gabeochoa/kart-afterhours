@@ -106,6 +106,8 @@ void game() {
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
   }
 
+  // TODO add support for entity level shaders
+
   // renders
   {
     systems.register_render_system([&](float) {

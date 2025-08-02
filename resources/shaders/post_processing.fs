@@ -37,5 +37,15 @@ void main()
     enhanced.r *= 1.05;
     enhanced.b *= 0.98;
     
+    // Add very subtle animated color shift based on time
+    float time_factor = sin(time * 0.5) * 0.02;
+    enhanced.r += time_factor;
+    enhanced.b -= time_factor;
+    
+    // Add subtle resolution-based vignette adjustment
+    float aspect_ratio = resolution.x / resolution.y;
+    float aspect_adjustment = 1.0 + (aspect_ratio - 1.0) * 0.1;
+    enhanced *= aspect_adjustment;
+    
     finalColor = vec4(enhanced, source.a);
 }
