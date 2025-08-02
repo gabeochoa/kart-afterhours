@@ -138,6 +138,10 @@ struct RenderEntities : System<Transform> {
       return;
     if (entity.has<afterhours::texture_manager::HasAnimation>())
       return;
+    
+    // Skip preview entities - they should only be rendered in preview textures
+    if (entity.has<MapPreviewGenerated>())
+      return;
 
     auto entitiy_color = entity.has_child_of<HasColor>()
                              ? entity.get_with_child<HasColor>().color()
