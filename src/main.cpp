@@ -94,6 +94,8 @@ void game() {
 
     ui::register_before_ui_updates<InputAction>(systems);
     {
+      systems.register_update_system(
+          std::make_unique<SetupGameStylingDefaults>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
       systems.register_update_system(std::make_unique<ScheduleDebugUI>());
       systems.register_update_system(std::make_unique<SchedulePauseUI>());

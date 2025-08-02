@@ -140,12 +140,13 @@ ElementResult create_styled_button(UIContext<InputAction> &context,
 ElementResult create_volume_slider(UIContext<InputAction> &context,
                                    Entity &parent, const std::string &label,
                                    float &volume,
-                                   std::function<void(float)> on_change) {
+                                   std::function<void(float)> on_change,
+                                   int index = 0) {
 
   auto volume_label = fmt::format("{}\n {:2.0f}", label, volume * 100.f);
 
   if (auto result =
-          slider(context, mk(parent), volume,
+          slider(context, mk(parent, index), volume,
                  ComponentConfig{}
                      .with_size(ComponentSize{pixels(300.f), pixels(50.f)})
                      .with_label(std::move(volume_label)))) {
@@ -1132,7 +1133,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
     float master_volume = Settings::get().get_master_volume();
     ui_helpers::create_volume_slider(
         context, control_group.ent(), "Master Volume", master_volume,
-        [](float volume) { Settings::get().update_master_volume(volume); });
+        [](float volume) { Settings::get().update_master_volume(volume); }, 0);
   }
 
   // Music volume slider
@@ -1140,7 +1141,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
     float music_volume = Settings::get().get_music_volume();
     ui_helpers::create_volume_slider(
         context, control_group.ent(), "Music Volume", music_volume,
-        [](float volume) { Settings::get().update_music_volume(volume); });
+        [](float volume) { Settings::get().update_music_volume(volume); }, 1);
   }
 
   // SFX volume slider
@@ -1148,7 +1149,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
     float sfx_volume = Settings::get().get_sfx_volume();
     ui_helpers::create_volume_slider(
         context, control_group.ent(), "SFX Volume", sfx_volume,
-        [](float volume) { Settings::get().update_sfx_volume(volume); });
+        [](float volume) { Settings::get().update_sfx_volume(volume); }, 2);
   }
 
   // Resolution dropdown
