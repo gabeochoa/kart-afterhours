@@ -131,7 +131,7 @@ void MapManager::create_arena_map_preview() {
   const float preview_width = 300.0f;
   const float preview_height = 200.0f;
   
-  const auto preview_pct = [](float x, float y, float w, float h) {
+  const auto preview_pct = [preview_width, preview_height](float x, float y, float w, float h) {
     return Rectangle{
         preview_width * x,
         preview_height * y,
@@ -155,7 +155,7 @@ void MapManager::create_maze_map_preview() {
   const float preview_width = 300.0f;
   const float preview_height = 200.0f;
   
-  const auto preview_pct = [](float x, float y, float w, float h) {
+  const auto preview_pct = [preview_width, preview_height](float x, float y, float w, float h) {
     return Rectangle{
         preview_width * x,
         preview_height * y,
@@ -204,7 +204,7 @@ void MapManager::create_battle_map_preview() {
   const float preview_width = 300.0f;
   const float preview_height = 200.0f;
   
-  const auto preview_pct = [](float x, float y, float w, float h) {
+  const auto preview_pct = [preview_width, preview_height](float x, float y, float w, float h) {
     return Rectangle{
         preview_width * x,
         preview_height * y,
@@ -230,7 +230,7 @@ void MapManager::create_catmouse_map_preview() {
   const float preview_width = 300.0f;
   const float preview_height = 200.0f;
   
-  const auto preview_pct = [](float x, float y, float w, float h) {
+  const auto preview_pct = [preview_width, preview_height](float x, float y, float w, float h) {
     return Rectangle{
         preview_width * x,
         preview_height * y,
