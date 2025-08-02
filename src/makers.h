@@ -11,7 +11,7 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset);
 /// Creates a vehicle with a unique @p id.
 /// @param id should be a unique number, dictates spawn positioning and
 /// labeling.
-Entity &make_car(size_t id);
+Entity &make_car(input::GamepadID id);
 
 /// Creates a simple rectangular shaped obstacle.
 /// @param rect is the location and placement of the obstacle.
@@ -19,9 +19,6 @@ Entity &make_car(size_t id);
 /// @param collision_config configures the physics of the obstacle.
 Entity &make_obstacle(raylib::Rectangle rect, const raylib::Color color,
                       const CollisionConfig &collision_config);
-
-Entity &make_preview_obstacle(raylib::Rectangle rect, const raylib::Color color,
-                              const CollisionConfig &collision_config, vec2 offset);
 
 void make_player(input::GamepadID id);
 void make_ai();

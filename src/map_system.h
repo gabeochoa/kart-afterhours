@@ -13,7 +13,6 @@ struct MapConfig {
   std::string description;
   std::bitset<magic_enum::enum_count<RoundType>()> compatible_round_types;
   std::function<void()> create_map_func; // Function to create the map
-  std::function<void(vec2)> create_preview_map_func; // Function to create preview map at offset
 };
 
 SINGLETON_FWD(MapManager)
@@ -79,28 +78,13 @@ struct MapManager {
   
   // Cleanup preview textures
   void cleanup_preview_textures();
-
-  // Cleanup preview entities
-  void cleanup_preview_entities();
+  void cleanup_preview_area(int map_index);
 
 private:
+  void create_selected_map();
   static void create_arena_map();
   static void create_maze_map();
   static void create_race_map();
   static void create_battle_map();
   static void create_catmouse_map();
-  
-  // Preview creation functions with offset
-  static void create_arena_map_at_offset(vec2 offset);
-  static void create_maze_map_at_offset(vec2 offset);
-  static void create_race_map_at_offset(vec2 offset);
-  static void create_battle_map_at_offset(vec2 offset);
-  static void create_catmouse_map_at_offset(vec2 offset);
-  
-  // Old preview creation functions (to be removed)
-  static void create_arena_map_preview();
-  static void create_maze_map_preview(); 
-  static void create_race_map_preview();
-  static void create_battle_map_preview();
-  static void create_catmouse_map_preview();
 };

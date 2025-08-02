@@ -333,8 +333,12 @@ struct MapGenerated : BaseComponent {
   // and should be cleaned up when a new map is created
 };
 
-/// @brief Component to mark entities generated for map previews
-struct MapPreviewGenerated : BaseComponent {
-  // This component marks entities that were generated for map preview rendering
-  // and should be cleaned up separately from the main map
+struct NotSystemBuilt : BaseComponent {
+  // If a system has this component, it will not be built automatically
+  // This is useful for systems that are built manually
+};
+
+struct DebugShowSystems : BaseComponent {
+  // If an entity has this component, it will show debug info for the system
+  // This is useful for debugging systems
 };
