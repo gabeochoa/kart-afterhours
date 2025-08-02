@@ -113,19 +113,20 @@ void game() {
       raylib::ClearBackground(raylib::DARKGRAY);
     });
     {
-      ui::register_render_systems<InputAction>(
-          systems, InputAction::ToggleUILayoutDebug);
-      //
       systems.register_render_system(std::make_unique<RenderSkid>());
       systems.register_render_system(std::make_unique<RenderEntities>());
       texture_manager::register_render_systems(systems);
       //
+      systems.register_render_system(std::make_unique<RenderCatMouseTimer>());
       systems.register_render_system(std::make_unique<RenderPlayerHUD>());
+      systems.register_render_system(std::make_unique<RenderLabels>());
       systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
       systems.register_render_system(std::make_unique<RenderOOB>());
-      systems.register_render_system(std::make_unique<RenderLabels>());
       systems.register_render_system(std::make_unique<CarRumble>());
-      systems.register_render_system(std::make_unique<RenderCatMouseTimer>());
+      //
+      ui::register_render_systems<InputAction>(
+          systems, InputAction::ToggleUILayoutDebug);
+      //
     }
     systems.register_render_system([&](float) { raylib::EndTextureMode(); });
     systems.register_render_system([&](float) { raylib::BeginDrawing(); });
