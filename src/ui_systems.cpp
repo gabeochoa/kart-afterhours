@@ -254,6 +254,184 @@ void ScheduleMainMenuUI::character_selector_column(
   }
 }
 
+void ScheduleMainMenuUI::round_end_player_column(
+    Entity &parent, UIContext<InputAction> &context, const size_t index,
+    const std::vector<OptEntity> &round_players,
+    const std::vector<OptEntity> &round_ais) {
+
+  bool is_slot_ai = index >= round_players.size();
+
+  OptEntity car;
+  if (index < round_players.size()) {
+    car = round_players[index];
+  } else {
+    car = round_ais[index - round_players.size()];
+  }
+
+  if (!car.has_value()) {
+    return;
+  }
+
+  auto bg_color = car->get<HasColor>().color();
+  const auto num_cols = std::min(
+      4.f, static_cast<float>(round_players.size() + round_ais.size()));
+
+  auto column =
+      imm::div(context, mk(parent, (int)index),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(1.f / num_cols, 0.1f),
+                                            percent(1.f, 0.4f)})
+                   .with_margin(Margin{.top = percent(0.05f),
+                                       .bottom = percent(0.05f),
+                                       .left = percent(0.05f),
+                                       .right = percent(0.05f)})
+                   .with_color_usage(Theme::Usage::Custom)
+                   .with_custom_color(bg_color)
+                   .disable_rounded_corners());
+
+  // Player info
+  {
+    std::string player_label = std::format("{} {}", index, car->id);
+    if (is_slot_ai) {
+      player_label += " (AI)";
+    }
+
+    imm::div(context, mk(column.ent(), 0),
+             ComponentConfig{}
+                 .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+                 .with_label(player_label)
+                 .with_color_usage(Theme::Usage::Custom)
+                 .with_custom_color(bg_color)
+                 .disable_rounded_corners()
+                 .with_debug_name(
+                     std::format("round_end_player {} {} {} {}", index, car->id,
+                                 round_players.size(), round_ais.size())));
+  }
+
+  // Round-specific stats
+  render_round_end_stats(context, column.ent(), car, bg_color);
+}
+
+void ScheduleMainMenuUI::render_round_end_stats(UIContext<InputAction> &context,
+                                                Entity &parent,
+                                                const OptEntity &car,
+                                                raylib::Color bg_color) {
+  switch (RoundManager::get().active_round_type) {
+  case RoundType::Lives:
+    render_lives_stats(context, parent, car, bg_color);
+    break;
+  case RoundType::Kills:
+    render_kills_stats(context, parent, car, bg_color);
+    break;
+  case RoundType::Score:
+    render_score_stats(context, parent, car, bg_color);
+    break;
+  case RoundType::CatAndMouse:
+    render_cat_mouse_stats(context, parent, car, bg_color);
+    break;
+  default:
+    render_unknown_stats(context, parent, car, bg_color);
+    break;
+  }
+}
+
+void ScheduleMainMenuUI::render_lives_stats(UIContext<InputAction> &context,
+                                            Entity &parent,
+                                            const OptEntity &car,
+                                            raylib::Color bg_color) {
+  if (!car->has<HasMultipleLives>()) {
+    return;
+  }
+
+  std::string stats_text = std::format(
+      "Lives: {}", car->get<HasMultipleLives>().num_lives_remaining);
+
+  imm::div(context, mk(parent, 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+               .with_label(stats_text)
+               .with_color_usage(Theme::Usage::Custom)
+               .with_custom_color(bg_color)
+               .disable_rounded_corners());
+}
+
+void ScheduleMainMenuUI::render_kills_stats(UIContext<InputAction> &context,
+                                            Entity &parent,
+                                            const OptEntity &car,
+                                            raylib::Color bg_color) {
+  if (!car->has<HasKillCountTracker>()) {
+    return;
+  }
+
+  std::string stats_text =
+      std::format("Kills: {}", car->get<HasKillCountTracker>().kills);
+
+  imm::div(context, mk(parent, 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+               .with_label(stats_text)
+               .with_color_usage(Theme::Usage::Custom)
+               .with_custom_color(bg_color)
+               .disable_rounded_corners());
+}
+
+void ScheduleMainMenuUI::render_score_stats(UIContext<InputAction> &context,
+                                            Entity &parent,
+                                            const OptEntity &car,
+                                            raylib::Color bg_color) {
+  // TODO: Add score tracking component
+  std::string stats_text = "Score: N/A";
+
+  imm::div(context, mk(parent, 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+               .with_label(stats_text)
+               .with_color_usage(Theme::Usage::Custom)
+               .with_custom_color(bg_color)
+               .disable_rounded_corners());
+}
+
+void ScheduleMainMenuUI::render_cat_mouse_stats(UIContext<InputAction> &context,
+                                                Entity &parent,
+                                                const OptEntity &car,
+                                                raylib::Color bg_color) {
+  if (!car->has<HasCatMouseTracking>()) {
+    return;
+  }
+
+  const auto &tracking = car->get<HasCatMouseTracking>();
+  std::string stats_text;
+
+  if (tracking.is_cat) {
+    stats_text = "Cat";
+  } else {
+    stats_text = std::format("Mouse: {:.1f}s", tracking.time_as_mouse);
+  }
+
+  imm::div(context, mk(parent, 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+               .with_label(stats_text)
+               .with_color_usage(Theme::Usage::Custom)
+               .with_custom_color(bg_color)
+               .disable_rounded_corners());
+}
+
+void ScheduleMainMenuUI::render_unknown_stats(UIContext<InputAction> &context,
+                                              Entity &parent,
+                                              const OptEntity &car,
+                                              raylib::Color bg_color) {
+  std::string stats_text = "Unknown";
+
+  imm::div(context, mk(parent, 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+               .with_label(stats_text)
+               .with_color_usage(Theme::Usage::Custom)
+               .with_custom_color(bg_color)
+               .disable_rounded_corners());
+}
+
 Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                                               UIContext<InputAction> &context) {
   auto elem =
@@ -1239,10 +1417,85 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
                ComponentConfig{}
                    .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_padding(button_group_padding)
                    .with_absolute_position()
                    .with_debug_name("round_end_screen"));
 
+  // Get players from the round (filter out entities marked for cleanup)
+  std::vector<OptEntity> round_players;
+  std::vector<OptEntity> round_ais;
+
+  try {
+    auto round_players_ref =
+        EQ(EntityQuery<EQ>::QueryOptions{.ignore_temp_warning = true})
+            .whereHasComponent<PlayerID>()
+            .orderByPlayerID()
+            .gen();
+    for (const auto &player_ref : round_players_ref) {
+      if (!player_ref.get().cleanup) {
+        round_players.push_back(OptEntity{player_ref.get()});
+      }
+    }
+  } catch (...) {
+    // If query fails, just continue with empty list
+  }
+
+  try {
+    auto round_ais_ref =
+        EQ(EntityQuery<EQ>::QueryOptions{.ignore_temp_warning = true})
+            .whereHasComponent<AIControlled>()
+            .gen();
+    for (const auto &ai_ref : round_ais_ref) {
+      if (!ai_ref.get().cleanup) {
+        round_ais.push_back(OptEntity{ai_ref.get()});
+      }
+    }
+  } catch (...) {
+    // If query fails, just continue with empty list
+  }
+
+  // Title
+  {
+    imm::div(context, mk(elem.ent()),
+             ComponentConfig{}
+                 .with_label("Round End")
+                 .with_font(get_font_name(FontID::EQPro), 100.f)
+                 .with_skip_tabbing(true)
+                 .with_size(ComponentSize{pixels(400.f), pixels(100.f)})
+                 .with_margin(Margin{.top = screen_pct(0.05f)}));
+  }
+
+  // Render players in a grid layout similar to character creation
+  size_t num_slots = round_players.size() + round_ais.size();
+  if (num_slots > 0) {
+    int fours =
+        static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
+
+    auto player_group = imm::div(
+        context, mk(elem.ent()),
+        ComponentConfig{}
+            .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+            .with_margin(Margin{.top = screen_pct(fours == 1 ? 0.3f : 0.15f),
+                                .left = screen_pct(0.2f),
+                                .right = screen_pct(0.1f)})
+            .with_absolute_position()
+            .with_debug_name("player_group"));
+
+    for (int row_id = 0; row_id < fours; row_id++) {
+      auto row = imm::div(
+          context, mk(player_group.ent(), row_id),
+          ComponentConfig{}
+              .with_size(ComponentSize{percent(1.f), percent(0.5f, 0.4f)})
+              .with_flex_direction(FlexDirection::Row)
+              .with_debug_name("row"));
+      size_t start = row_id * 4;
+      for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
+        round_end_player_column(row.ent(), context, i, round_players,
+                                round_ais);
+      }
+    }
+  }
+
+  // Button group at bottom
   auto button_group =
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}

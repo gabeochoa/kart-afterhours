@@ -1320,6 +1320,7 @@ struct CheckCatMouseWinCondition : System<> {
 
         cat_mouse_settings.state =
             RoundCatAndMouseSettings::GameState::GameOver;
+        cat_mouse_settings.current_round_time = 0;
 
         // TODO: Add victory screen showing final mouse times for all players
         // TODO: Add option to continue playing (best of 3, etc.)
@@ -1370,6 +1371,7 @@ struct CheckKillsWinCondition : System<> {
         log_info("Player {} wins the Kills round with {} kills!",
                  winner->get().get<PlayerID>().id,
                  winner->get().get<HasKillCountTracker>().kills);
+        kills_settings.current_round_time = 0;
         GameStateManager::get().end_game();
       }
     }

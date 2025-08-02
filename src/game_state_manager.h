@@ -1,6 +1,7 @@
 #pragma once
 
 #include "library.h"
+#include "round_settings.h"
 #include <optional>
 
 SINGLETON_FWD(GameStateManager)
