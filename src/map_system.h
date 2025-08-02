@@ -6,6 +6,7 @@
 #include <bitset>
 #include <functional>
 #include <magic_enum/magic_enum.hpp>
+#include "rl.h"
 
 struct MapConfig {
   std::string display_name;
@@ -20,8 +21,13 @@ struct MapManager {
 
   static const std::array<MapConfig, 5> available_maps;
   int selected_map_index = 0;
+  
+  // Map preview render textures
+  std::array<raylib::RenderTexture2D, 5> preview_textures;
+  bool preview_textures_initialized = false;
 
   MapManager() = default;
+  ~MapManager() { cleanup_preview_textures(); }
 
   std::vector<std::pair<int, MapConfig>>
   get_maps_for_round_type(RoundType round_type) {
@@ -57,6 +63,21 @@ struct MapManager {
       available_maps[selected_map_index].create_map_func();
     }
   }
+  
+  // Initialize preview render textures
+  void initialize_preview_textures();
+  
+  // Generate preview for a specific map
+  void generate_map_preview(int map_index);
+  
+  // Generate all map previews
+  void generate_all_previews();
+  
+  // Get preview texture for a map
+  [[nodiscard]] const raylib::RenderTexture2D& get_preview_texture(int map_index) const;
+  
+  // Cleanup preview textures
+  void cleanup_preview_textures();
 
 private:
   static void create_arena_map();
@@ -64,4 +85,11 @@ private:
   static void create_race_map();
   static void create_battle_map();
   static void create_catmouse_map();
+  
+  // Preview creation functions
+  static void create_arena_map_preview();
+  static void create_maze_map_preview(); 
+  static void create_race_map_preview();
+  static void create_battle_map_preview();
+  static void create_catmouse_map_preview();
 };

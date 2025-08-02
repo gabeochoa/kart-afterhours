@@ -94,6 +94,15 @@ void game() {
         std::make_unique<UpdateAnimationTransform>());
     texture_manager::register_update_systems(systems);
 
+    // Initialize map previews
+    systems.register_update_system([](float) {
+      static bool initialized = false;
+      if (!initialized) {
+        MapManager::get().initialize_preview_textures();
+        initialized = true;
+      }
+    });
+
     ui::register_before_ui_updates<InputAction>(systems);
     {
       systems.register_update_system(
@@ -118,6 +127,7 @@ void game() {
       //
       systems.register_render_system(std::make_unique<RenderSkid>());
       systems.register_render_system(std::make_unique<RenderEntities>());
+      systems.register_render_system(std::make_unique<RenderMapPreview>());
       texture_manager::register_render_systems(systems);
       //
       systems.register_render_system(std::make_unique<RenderPlayerHUD>());
