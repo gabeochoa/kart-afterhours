@@ -680,8 +680,8 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
 
 struct AITargetSelection : PausableSystem<AIControlled, Transform> {
 
-  virtual void for_each_with(Entity &, AIControlled &ai, Transform &transform,
-                             float dt) override {
+  virtual void for_each_with(Entity &entity, AIControlled &ai,
+                             Transform &transform, float dt) override {
     (void)dt;
 
     auto round_type = RoundManager::get().active_round_type;
@@ -690,8 +690,10 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
     case RoundType::Lives:
     case RoundType::Kills:
     case RoundType::Score:
-    case RoundType::CatAndMouse:
       default_ai_target(ai, transform);
+      break;
+    case RoundType::CatAndMouse:
+      cat_mouse_ai_target(entity, ai, transform);
       break;
     }
   }
@@ -704,6 +706,90 @@ private:
     } else {
       log_warn("No player found for AI");
     }
+  }
+
+  void cat_mouse_ai_target(Entity &entity, AIControlled &ai,
+                           Transform &transform) {
+    if (!entity.has<HasCatMouseTracking>()) {
+      default_ai_target(ai, transform);
+      return;
+    }
+
+    auto &cat_mouse_tracking = entity.get<HasCatMouseTracking>();
+
+    if (cat_mouse_tracking.is_cat) {
+      cat_targeting(ai, transform);
+    } else {
+      mouse_targeting(ai, transform);
+    }
+  }
+
+  void cat_targeting(AIControlled &ai, Transform &transform) {
+    auto mice = EntityQuery()
+                    .whereHasComponent<Transform>()
+                    .whereHasComponent<HasCatMouseTracking>()
+                    .whereLambda([](const Entity &e) {
+                      return !e.get<HasCatMouseTracking>().is_cat;
+                    })
+                    .gen();
+
+    if (mice.empty()) {
+      log_warn("No mice found for cat AI");
+      return;
+    }
+
+    vec2 closest_mouse_pos = mice[0].get().get<Transform>().pos();
+    float closest_distance = distance_sq(transform.pos(), closest_mouse_pos);
+
+    for (const auto &mouse_ref : mice) {
+      const auto &mouse = mouse_ref.get();
+      vec2 mouse_pos = mouse.get<Transform>().pos();
+      float distance = distance_sq(transform.pos(), mouse_pos);
+
+      if (distance < closest_distance) {
+        closest_distance = distance;
+        closest_mouse_pos = mouse_pos;
+      }
+    }
+
+    ai.target = closest_mouse_pos;
+  }
+
+  void mouse_targeting(AIControlled &ai, Transform &transform) {
+    auto cats = EntityQuery()
+                    .whereHasComponent<Transform>()
+                    .whereHasComponent<HasCatMouseTracking>()
+                    .whereLambda([](const Entity &e) {
+                      return e.get<HasCatMouseTracking>().is_cat;
+                    })
+                    .gen();
+
+    if (cats.empty()) {
+      log_warn("No cats found for mouse AI");
+      return;
+    }
+
+    vec2 closest_cat_pos = cats[0].get().get<Transform>().pos();
+    float closest_distance = distance_sq(transform.pos(), closest_cat_pos);
+
+    for (const auto &cat_ref : cats) {
+      const auto &cat = cat_ref.get();
+      vec2 cat_pos = cat.get<Transform>().pos();
+      float distance = distance_sq(transform.pos(), cat_pos);
+
+      if (distance < closest_distance) {
+        closest_distance = distance;
+        closest_cat_pos = cat_pos;
+      }
+    }
+
+    vec2 away_from_cat = transform.pos() - closest_cat_pos;
+    if (vec_mag(away_from_cat) < 0.1f) {
+      away_from_cat = vec2(1.0f, 0.0f);
+    }
+    away_from_cat = vec_norm(away_from_cat);
+
+    ai.target = transform.pos() + away_from_cat * 200.0f;
   }
 };
 
