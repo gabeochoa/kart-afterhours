@@ -61,11 +61,8 @@ const std::array<MapConfig, MapManager::MAP_COUNT> MapManager::available_maps = 
 void MapManager::initialize_preview_textures() {
   if (preview_textures_initialized) return;
   
-  const int preview_width = 300;
-  const int preview_height = 300;
-  
   for (size_t i = 0; i < preview_textures.size(); i++) {
-    preview_textures[i] = raylib::LoadRenderTexture(preview_width, preview_height);
+    preview_textures[i] = raylib::LoadRenderTexture(PREVIEW_TEXTURE_SIZE, PREVIEW_TEXTURE_SIZE);
   }
   
   preview_textures_initialized = true;

@@ -90,6 +90,8 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
+// TODO: Generalize this system to allow any UI component to be rendered from a texture
+// This could become RenderTextureOnUIComponent or similar, allowing reusable texture-based UI elements
 struct RenderMapPreviewOnScreen : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderMapPreviewOnScreen() {}
   virtual void for_each_with(
