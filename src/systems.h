@@ -676,6 +676,7 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
   }
 };
 
+// TODO feels like we will need pathfinding at some point
 struct AITargetSelection : PausableSystem<AIControlled, Transform> {
 
   virtual void for_each_with(Entity &entity, AIControlled &ai,
