@@ -678,16 +678,42 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
   }
 };
 
+struct AITargetSelection : PausableSystem<AIControlled, Transform> {
+
+  virtual void for_each_with(Entity &, AIControlled &ai, Transform &transform,
+                             float dt) override {
+    (void)dt;
+
+    auto round_type = RoundManager::get().active_round_type;
+
+    switch (round_type) {
+    case RoundType::Lives:
+    case RoundType::Kills:
+    case RoundType::Score:
+    case RoundType::CatAndMouse:
+      default_ai_target(ai, transform);
+      break;
+    }
+  }
+
+private:
+  void default_ai_target(AIControlled &ai, Transform &transform) {
+    auto opt_entity = EQ().whereHasComponent<PlayerID>().gen_first();
+    if (opt_entity.valid()) {
+      ai.target = opt_entity->get<Transform>().pos();
+    } else {
+      log_warn("No player found for AI");
+    }
+  }
+};
+
 struct AIVelocity : PausableSystem<AIControlled, Transform> {
 
   virtual void for_each_with(Entity &, AIControlled &ai, Transform &transform,
                              float dt) override {
 
-    // bool needs_target = (ai.target.x == 0 && ai.target.y == 0) ||
-    // distance_sq(ai.target, transform.pos()) < 10.f;
-    auto opt_entity = EQ().whereHasComponent<PlayerID>().gen_first();
-    if (opt_entity.valid()) {
-      ai.target = opt_entity->get<Transform>().pos();
+    if (ai.target.x == 0 && ai.target.y == 0) {
+      return;
     }
 
     vec2 dir = vec_norm(transform.pos() - ai.target);

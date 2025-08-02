@@ -74,6 +74,7 @@ void game() {
     systems.register_update_system(std::make_unique<WrapAroundTransform>());
     systems.register_update_system(
         std::make_unique<UpdateColorBasedOnEntityID>());
+    systems.register_update_system(std::make_unique<AITargetSelection>());
     systems.register_update_system(std::make_unique<AIVelocity>());
     systems.register_update_system(std::make_unique<DrainLife>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
