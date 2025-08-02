@@ -51,11 +51,15 @@ void game() {
 
   // normal update
   {
-    bool create_player = true;
+    bool create_startup = true;
     systems.register_update_system([&](float) {
-      if (create_player) {
+      if (create_startup) {
         make_player(0);
-        create_player = false;
+        // TODO id love to have this but its hard to read the UI
+        // because the racing lines and stuff go over it
+        // MapManager::get().create_map();
+        // make_ai();
+        create_startup = false;
       }
     });
     systems.register_update_system(std::make_unique<Shoot>());
