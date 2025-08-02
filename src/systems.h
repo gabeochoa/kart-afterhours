@@ -1149,6 +1149,9 @@ struct CheckLivesWinCondition : System<> {
 struct UpdateCatMouseTimers : System<HasCatMouseTracking> {
   virtual void for_each_with(Entity &, HasCatMouseTracking &catMouseTracking,
                              float dt) override {
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
     // Only increment mouse time for players who are not the cat
     if (!catMouseTracking.is_cat) {
       catMouseTracking.time_as_mouse += dt;
@@ -1160,6 +1163,11 @@ struct HandleCatMouseTagTransfer : System<Transform, HasCatMouseTracking> {
   virtual void for_each_with(Entity &entity, Transform &transform,
                              HasCatMouseTracking &catMouseTracking,
                              float) override {
+
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+
     // Only process if this entity is the cat
     if (!catMouseTracking.is_cat) {
       return;
