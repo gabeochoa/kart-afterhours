@@ -54,7 +54,7 @@ void game() {
     bool create_startup = true;
     systems.register_update_system([&](float) {
       if (create_startup) {
-        // make_player(0);
+        make_player(0);
         // TODO id love to have this but its hard to read the UI
         // because the racing lines and stuff go over it
         // MapManager::get().create_map();
@@ -115,6 +115,8 @@ void game() {
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
   }
 
+  // TODO add support for entity level shaders
+
   // renders
   {
     systems.register_render_system([&](float) {
@@ -122,20 +124,22 @@ void game() {
       raylib::ClearBackground(raylib::DARKGRAY);
     });
     {
-      ui::register_render_systems<InputAction>(
-          systems, InputAction::ToggleUILayoutDebug);
-      //
       systems.register_render_system(std::make_unique<RenderSkid>());
       systems.register_render_system(std::make_unique<RenderEntities>());
       texture_manager::register_render_systems(systems);
       //
+      systems.register_render_system(std::make_unique<RenderCatMouseTimer>());
       systems.register_render_system(std::make_unique<RenderPlayerHUD>());
+      systems.register_render_system(std::make_unique<RenderLabels>());
       systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
       systems.register_render_system(std::make_unique<RenderOOB>());
-      systems.register_render_system(std::make_unique<RenderLabels>());
       systems.register_render_system(std::make_unique<CarRumble>());
       systems.register_render_system(std::make_unique<RenderCatMouseTimer>());
       systems.register_render_system(std::make_unique<RenderMapPreviewOnScreen>());
+      //
+      ui::register_render_systems<InputAction>(
+          systems, InputAction::ToggleUILayoutDebug);
+      //
     }
     systems.register_render_system([&](float) { raylib::EndTextureMode(); });
     systems.register_render_system([&](float) { raylib::BeginDrawing(); });
