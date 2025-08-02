@@ -94,6 +94,15 @@ void game() {
         std::make_unique<UpdateAnimationTransform>());
     texture_manager::register_update_systems(systems);
 
+    // Initialize map previews
+    systems.register_update_system([](float) {
+      static bool initialized = false;
+      if (!initialized) {
+        MapManager::get().initialize_preview_textures();
+        initialized = true;
+      }
+    });
+
     ui::register_before_ui_updates<InputAction>(systems);
     {
       systems.register_update_system(
@@ -125,6 +134,8 @@ void game() {
       systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
       systems.register_render_system(std::make_unique<RenderOOB>());
       systems.register_render_system(std::make_unique<CarRumble>());
+      systems.register_render_system(std::make_unique<RenderCatMouseTimer>());
+      systems.register_render_system(std::make_unique<RenderMapPreviewOnScreen>());
       //
       ui::register_render_systems<InputAction>(
           systems, InputAction::ToggleUILayoutDebug);

@@ -1,10 +1,13 @@
 
 #include "ui_systems.h"
 
+#include "map_system.h"
+
+using namespace afterhours;
+
 #include "game_state_manager.h"
 #include "input_mapping.h"
 #include "makers.h" // make_ai()
-#include "map_system.h"
 #include "preload.h" // FontID
 #include "round_settings.h"
 
@@ -1031,17 +1034,27 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     // Display selected map info in preview box
     if (selected_map_it != compatible_maps.end()) {
       const auto &selected_map = selected_map_it->second;
+      
+      // Map title
       imm::div(context, mk(preview_box.ent()),
                ComponentConfig{}
                    .with_label(selected_map.display_name)
-                   .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                   .with_size(ComponentSize{percent(1.f), percent(0.2f)})
                    .with_debug_name("map_title"));
 
+      // Map preview area (image will be rendered by RenderMapPreviewOnScreen system)
+      imm::div(context, mk(preview_box.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(1.f), percent(0.6f)})
+                   .with_margin(Margin{.top = percent(0.2f)})
+                   .with_debug_name("map_preview"));
+
+      // Map description
       imm::div(context, mk(preview_box.ent()),
                ComponentConfig{}
                    .with_label(selected_map.description)
-                   .with_size(ComponentSize{percent(1.f), percent(0.7f)})
-                   .with_margin(Margin{.top = percent(0.3f)})
+                   .with_size(ComponentSize{percent(1.f), percent(0.2f)})
+                   .with_margin(Margin{.top = percent(0.8f)})
                    .with_debug_name("map_description"));
     }
   }

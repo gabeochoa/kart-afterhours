@@ -5,6 +5,7 @@
 #include "components.h"
 #include "game_state_manager.h"
 #include "makers.h"
+#include "map_system.h"
 #include "query.h"
 #include "round_settings.h"
 
@@ -89,14 +90,47 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
+// TODO: Generalize this system to allow any UI component to be rendered from a texture
+// This could become RenderTextureOnUIComponent or similar, allowing reusable texture-based UI elements
+struct RenderMapPreviewOnScreen : System<window_manager::ProvidesCurrentResolution> {
+  virtual ~RenderMapPreviewOnScreen() {}
+  virtual void for_each_with(
+      const Entity & /* entity */,
+      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
+      float) const override {
+    
+    if (GameStateManager::get().active_screen != GameStateManager::Screen::MapSelection) {
+      return;
+    }
+    
+    if (!MapManager::get().preview_textures_initialized) {
+      return;
+    }
+    
+    auto resolution = pCurrentResolution.current_resolution;
+    int selected_map = MapManager::get().get_selected_map();
+    const auto& preview_texture = MapManager::get().get_preview_texture(selected_map);
+    
+    float preview_x = resolution.width * 0.1f;
+    float preview_y = resolution.height * 0.3f;
+    float preview_size = std::min(resolution.width * 0.8f, resolution.height * 0.4f);
+    
+    Rectangle source = {0, 0, 
+                       static_cast<float>(preview_texture.texture.width),
+                       -static_cast<float>(preview_texture.texture.height)};
+    Rectangle dest = {preview_x, preview_y, preview_size, preview_size};
+    
+    raylib::DrawTexturePro(preview_texture.texture, source, dest, 
+                          {0, 0}, 0.0f, raylib::WHITE);
+  }
+};
+
 struct RenderEntities : System<Transform> {
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,
                              float) const override {
-    if (entity.has<afterhours::texture_manager::HasSpritesheet>())
-      return;
-    if (entity.has<afterhours::texture_manager::HasAnimation>())
-      return;
+    if (entity.has<afterhours::texture_manager::HasSpritesheet>()) return;
+    if (entity.has<afterhours::texture_manager::HasAnimation>()) return;
 
     auto entitiy_color = entity.has_child_of<HasColor>()
                              ? entity.get_with_child<HasColor>().color()
@@ -799,10 +833,6 @@ private:
         closest_cat_pos = cat_pos;
       }
     }
-
-    // Get screen bounds
-    int screen_width = raylib::GetScreenWidth();
-    int screen_height = raylib::GetScreenHeight();
 
     // Calculate direction away from cat
     vec2 away_from_cat = transform.pos() - closest_cat_pos;

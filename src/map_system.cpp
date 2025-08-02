@@ -4,7 +4,38 @@
 #include "rl.h"
 #include "round_settings.h"
 
-const std::array<MapConfig, 5> MapManager::available_maps = {
+// Map preview constants
+namespace {
+  // Preview texture dimensions (square for UI consistency)
+  // Range: 200-500px works well for most screen resolutions
+  constexpr int PREVIEW_TEXTURE_SIZE = 300;
+  
+  // Preview world area dimensions (standard game view)
+  // These match typical game camera view: 800x600px
+  constexpr float PREVIEW_WORLD_WIDTH = 800.0f;
+  constexpr float PREVIEW_WORLD_HEIGHT = 600.0f;
+  
+  // Preview isolation offset (keeps preview entities far from main game)
+  // Range: 50000+ to avoid any collision with main game area
+  // Should be >> largest possible screen resolution + wrap padding
+  constexpr float PREVIEW_BASE_OFFSET = 100000.0f;
+  
+  // Spacing between different map previews 
+  // Range: 20000+ to ensure complete separation between map preview areas
+  constexpr float PREVIEW_MAP_SPACING = 10000.0f;
+  
+  // Camera zoom margin (prevents edge clipping in preview)
+  // Range: 0.7-0.9, lower = more margin, higher = tighter crop
+  constexpr float PREVIEW_ZOOM_MARGIN = 0.8f;
+  
+  // Helper function to calculate preview offset for a given map index
+  vec2 get_preview_offset(int map_index) {
+    float offset = PREVIEW_BASE_OFFSET + (map_index * PREVIEW_MAP_SPACING);
+    return {offset, offset};
+  }
+}
+
+const std::array<MapConfig, MapManager::MAP_COUNT> MapManager::available_maps = {
     {{.display_name = "Arena",
       .description = "Classic open arena with strategic obstacles",
       .create_map_func = create_arena_map,
@@ -27,6 +58,120 @@ const std::array<MapConfig, 5> MapManager::available_maps = {
       .create_map_func = create_catmouse_map,
       .compatible_round_types = std::bitset<4>(0b1000)}}}; // CatAndMouse only
 
+void MapManager::initialize_preview_textures() {
+  if (preview_textures_initialized) return;
+  
+  for (size_t i = 0; i < preview_textures.size(); i++) {
+    preview_textures[i] = raylib::LoadRenderTexture(PREVIEW_TEXTURE_SIZE, PREVIEW_TEXTURE_SIZE);
+  }
+  
+  preview_textures_initialized = true;
+  generate_all_previews();
+}
+
+void MapManager::generate_map_preview(int map_index) {
+  if (!preview_textures_initialized || map_index < 0 || map_index >= MAP_COUNT) return;
+  
+  cleanup_preview_area(map_index);
+  available_maps[map_index].create_map_func();
+  
+  vec2 preview_offset = get_preview_offset(map_index);
+  
+  auto map_entities = EntityQuery({.force_merge = true})
+                          .whereHasComponent<MapGenerated>()
+                          .gen();
+                          
+  for (auto &entity : map_entities) {
+    if (entity.get().has<Transform>()) {
+      auto &transform = entity.get().get<Transform>();
+      transform.position.x += preview_offset.x;
+      transform.position.y += preview_offset.y;
+    }
+  }
+  
+  raylib::Camera2D camera = {};
+  float zoom_x = PREVIEW_TEXTURE_SIZE / PREVIEW_WORLD_WIDTH;
+  float zoom_y = PREVIEW_TEXTURE_SIZE / PREVIEW_WORLD_HEIGHT;
+  camera.zoom = std::min(zoom_x, zoom_y) * PREVIEW_ZOOM_MARGIN;
+  camera.offset = {PREVIEW_TEXTURE_SIZE / 2.0f, PREVIEW_TEXTURE_SIZE / 2.0f};
+  
+  vec2 preview_center = {preview_offset.x + PREVIEW_WORLD_WIDTH / 2.0f, 
+                         preview_offset.y + PREVIEW_WORLD_HEIGHT / 2.0f};
+  camera.target = preview_center;
+  
+  raylib::BeginTextureMode(preview_textures[map_index]);
+  raylib::ClearBackground(raylib::DARKGRAY);
+  raylib::BeginMode2D(camera);
+  
+  auto preview_entities = EntityQuery({.force_merge = true})
+                              .whereHasComponent<Transform>()
+                              .whereHasComponent<HasColor>()
+                              .gen();
+  
+  for (auto &entity : preview_entities) {
+    auto &transform = entity.get().get<Transform>();
+    auto &color = entity.get().get<HasColor>();
+    
+    if (transform.position.x >= preview_offset.x && 
+        transform.position.x < preview_offset.x + PREVIEW_WORLD_WIDTH &&
+        transform.position.y >= preview_offset.y && 
+        transform.position.y < preview_offset.y + PREVIEW_WORLD_HEIGHT) {
+      
+      raylib::DrawRectangle(
+          static_cast<int>(transform.position.x),
+          static_cast<int>(transform.position.y),
+          static_cast<int>(transform.size.x),
+          static_cast<int>(transform.size.y),
+          color.color());
+    }
+  }
+  
+  raylib::EndMode2D();
+  raylib::EndTextureMode();
+  cleanup_preview_area(map_index);
+}
+
+void MapManager::generate_all_previews() {
+  for (int i = 0; i < MAP_COUNT; i++) {
+    generate_map_preview(i);
+  }
+}
+
+const raylib::RenderTexture2D& MapManager::get_preview_texture(int map_index) const {
+  return preview_textures[map_index];
+}
+
+void MapManager::cleanup_preview_textures() {
+  if (!preview_textures_initialized) return;
+  
+  for (auto& texture : preview_textures) {
+    raylib::UnloadRenderTexture(texture);
+  }
+  preview_textures_initialized = false;
+}
+
+void MapManager::cleanup_preview_area(int map_index) {
+  vec2 preview_offset = get_preview_offset(map_index);
+  
+  auto entities_in_area = EntityQuery({.force_merge = true})
+                              .whereHasComponent<Transform>()
+                              .gen();
+                              
+  for (auto &entity : entities_in_area) {
+    if (entity.get().has<Transform>()) {
+      auto &transform = entity.get().get<Transform>();
+      
+      if (transform.position.x >= preview_offset.x && 
+          transform.position.x < preview_offset.x + PREVIEW_WORLD_WIDTH &&
+          transform.position.y >= preview_offset.y && 
+          transform.position.y < preview_offset.y + PREVIEW_WORLD_HEIGHT) {
+        entity.get().cleanup = true;
+      }
+    }
+  }
+}
+
+// Map creation functions
 void MapManager::create_arena_map() {
   auto *pcr = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesCurrentResolution>();

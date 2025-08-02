@@ -6,6 +6,7 @@
 #include <bitset>
 #include <functional>
 #include <magic_enum/magic_enum.hpp>
+#include "rl.h"
 
 struct MapConfig {
   std::string display_name;
@@ -18,10 +19,15 @@ SINGLETON_FWD(MapManager)
 struct MapManager {
   SINGLETON(MapManager)
 
-  static const std::array<MapConfig, 5> available_maps;
+  static constexpr int MAP_COUNT = 5;
+  static const std::array<MapConfig, MAP_COUNT> available_maps;
   int selected_map_index = 0;
+  
+  std::array<raylib::RenderTexture2D, MAP_COUNT> preview_textures;
+  bool preview_textures_initialized = false;
 
   MapManager() = default;
+  ~MapManager() { cleanup_preview_textures(); }
 
   std::vector<std::pair<int, MapConfig>>
   get_maps_for_round_type(RoundType round_type) {
@@ -57,6 +63,13 @@ struct MapManager {
       available_maps[selected_map_index].create_map_func();
     }
   }
+  
+  void initialize_preview_textures();
+  void generate_map_preview(int map_index);
+  void generate_all_previews();
+  [[nodiscard]] const raylib::RenderTexture2D& get_preview_texture(int map_index) const;
+  void cleanup_preview_textures();
+  void cleanup_preview_area(int map_index);
 
 private:
   static void create_arena_map();
