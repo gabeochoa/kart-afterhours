@@ -89,26 +89,6 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
-struct RenderMapPreview : System<afterhours::ui::UIComponent, MapPreviewTexture> {
-  virtual ~RenderMapPreview() {}
-  virtual void for_each_with(const Entity &entity,
-                             const afterhours::ui::UIComponent &ui_component,
-                             const MapPreviewTexture &preview_texture,
-                             float) const override {
-    // Get the computed layout position and size from the UI component
-    auto rect = ui_component.get_layout_as_rect();
-    
-    // Draw the preview texture scaled to fit the UI component area
-    Rectangle source = {0, 0, 
-                       static_cast<float>(preview_texture.texture.width),
-                       -static_cast<float>(preview_texture.texture.height)};
-    Rectangle dest = {rect.x, rect.y, rect.width, rect.height};
-    
-    raylib::DrawTexturePro(preview_texture.texture, source, dest, 
-                          {0, 0}, 0.0f, raylib::WHITE);
-  }
-};
-
 struct RenderEntities : System<Transform> {
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,

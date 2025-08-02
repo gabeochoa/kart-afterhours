@@ -127,7 +127,6 @@ void game() {
       //
       systems.register_render_system(std::make_unique<RenderSkid>());
       systems.register_render_system(std::make_unique<RenderEntities>());
-      systems.register_render_system(std::make_unique<RenderMapPreview>());
       texture_manager::register_render_systems(systems);
       //
       systems.register_render_system(std::make_unique<RenderPlayerHUD>());

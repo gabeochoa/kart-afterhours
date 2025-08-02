@@ -1042,20 +1042,13 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_size(ComponentSize{percent(1.f), percent(0.2f)})
                    .with_debug_name("map_title"));
 
-      // Map preview image
-      auto preview_container = imm::div(context, mk(preview_box.ent()),
-                                        ComponentConfig{}
-                                            .with_size(ComponentSize{percent(1.f), percent(0.6f)})
-                                            .with_margin(Margin{.top = percent(0.2f)})
-                                            .with_debug_name("map_preview"));
-      
-      // Add custom rendering for the preview texture
-      if (MapManager::get().preview_textures_initialized) {
-        const auto& preview_texture = MapManager::get().get_preview_texture(selected_map_index);
-        
-        // Store texture pointer for custom rendering
-        preview_container.ent().addComponent<MapPreviewTexture>(preview_texture.texture);
-      }
+      // Map preview placeholder area
+      auto preview_area = imm::div(context, mk(preview_box.ent()),
+                                   ComponentConfig{}
+                                       .with_size(ComponentSize{percent(1.f), percent(0.6f)})
+                                       .with_margin(Margin{.top = percent(0.2f)})
+                                       .with_label("Map Preview")
+                                       .with_debug_name("map_preview"));
 
       // Map description
       imm::div(context, mk(preview_box.ent()),

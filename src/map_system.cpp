@@ -188,7 +188,7 @@ void MapManager::create_race_map_preview() {
     float angle = i * 0.785f; // 45 degrees
     float x = preview_width * (0.5f + 0.3f * cos(angle));
     float y = preview_height * (0.5f + 0.3f * sin(angle));
-    raylib::DrawRectangle(x - 5, y - 5, 10, 10, raylib::ORANGE);
+    raylib::DrawRectangle(static_cast<int>(x - 5), static_cast<int>(y - 5), 10, 10, raylib::ORANGE);
   }
 
   // Inner track
@@ -196,7 +196,7 @@ void MapManager::create_race_map_preview() {
     float angle = i * 1.047f; // 60 degrees
     float x = preview_width * (0.5f + 0.15f * cos(angle));
     float y = preview_height * (0.5f + 0.15f * sin(angle));
-    raylib::DrawRectangle(x - 5, y - 5, 10, 10, raylib::RED);
+    raylib::DrawRectangle(static_cast<int>(x - 5), static_cast<int>(y - 5), 10, 10, raylib::RED);
   }
 }
 
