@@ -21,6 +21,7 @@ struct GameStateManager {
     About,
     RoundSettings,
     Settings,
+    RoundEnd,
   } active_screen = Screen::Main;
 
   std::optional<Screen> next_screen = std::nullopt;
@@ -33,8 +34,7 @@ struct GameStateManager {
 
   void end_game() {
     current_state = GameState::Menu;
-    active_screen = Screen::CharacterCreation;
-    log_info("Game ended! Returning to character creation.");
+    active_screen = Screen::RoundEnd;
   }
 
   void pause_game() {

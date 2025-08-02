@@ -8,6 +8,8 @@
 #include "preload.h" // FontID
 #include "round_settings.h"
 
+// TODO the top left buttons should be have some top/left padding
+
 using Screen = GameStateManager::Screen;
 //
 
@@ -442,6 +444,9 @@ void ScheduleMainMenuUI::for_each_with(Entity &entity,
     break;
   case Screen::MapSelection:
     set_active_screen(map_selection(entity, context));
+    break;
+  case Screen::RoundEnd:
+    set_active_screen(round_end_screen(entity, context));
     break;
   }
 }
@@ -1225,4 +1230,45 @@ void SchedulePauseUI::for_each_with(Entity &entity,
       exit_game();
     }
   }
+}
+
+Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
+                                            UIContext<InputAction> &context) {
+  auto elem =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_font(get_font_name(FontID::EQPro), 75.f)
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_padding(button_group_padding)
+                   .with_absolute_position()
+                   .with_debug_name("round_end_screen"));
+
+  auto button_group =
+      imm::div(context, mk(elem.ent()),
+               ComponentConfig{}
+                   .with_font(get_font_name(FontID::EQPro), 75.f)
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute_position()
+                   .with_debug_name("round_end_button_group"));
+
+  {
+    if (imm::button(context, mk(button_group.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("continue"))) {
+      navigate_to_screen(GameStateManager::Screen::CharacterCreation);
+    }
+  }
+
+  {
+    if (imm::button(context, mk(button_group.ent()),
+                    ComponentConfig{}
+                        .with_padding(button_padding)
+                        .with_label("quit"))) {
+      exit_game();
+    }
+  }
+
+  return GameStateManager::get().next_screen.value_or(
+      GameStateManager::get().active_screen);
 }

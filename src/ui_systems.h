@@ -53,6 +53,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   Screen main_screen(Entity &entity, UIContext<InputAction> &context);
   Screen settings_screen(Entity &entity, UIContext<InputAction> &context);
   Screen about_screen(Entity &entity, UIContext<InputAction> &context);
+  Screen round_end_screen(Entity &entity, UIContext<InputAction> &context);
 
   void exit_game() { running = false; }
 
