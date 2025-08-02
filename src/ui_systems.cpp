@@ -8,6 +8,188 @@
 #include "preload.h" // FontID
 #include "round_settings.h"
 
+// Reusable UI component functions
+namespace ui_helpers {
+
+// Reusable player card component
+ElementResult create_player_card(
+    UIContext<InputAction> &context, Entity &parent, const std::string &label,
+    raylib::Color bg_color, bool is_ai = false,
+    std::optional<int> ranking = std::nullopt,
+    std::optional<std::string> stats_text = std::nullopt,
+    std::function<void()> on_next_color = nullptr,
+    std::function<void()> on_remove = nullptr, bool show_add_ai = false,
+    std::function<void()> on_add_ai = nullptr) {
+
+  auto card = imm::div(context, mk(parent),
+                       ComponentConfig{}
+                           .with_size(ComponentSize{percent(1.f), percent(1.f)})
+                           .with_margin(Margin{.top = percent(0.05f),
+                                               .bottom = percent(0.05f),
+                                               .left = percent(0.05f),
+                                               .right = percent(0.05f)})
+                           .with_color_usage(Theme::Usage::Custom)
+                           .with_custom_color(bg_color)
+                           .disable_rounded_corners());
+
+  // Player label
+  std::string player_label = label;
+  if (is_ai) {
+    player_label += " (AI)";
+  }
+
+  imm::div(context, mk(card.ent()),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+               .with_label(player_label)
+               .with_color_usage(Theme::Usage::Custom)
+               .with_custom_color(bg_color)
+               .disable_rounded_corners()
+               .with_debug_name("player_card_label"));
+
+  // Stats text (if provided)
+  if (stats_text.has_value()) {
+    imm::div(context, mk(card.ent(), 1),
+             ComponentConfig{}
+                 .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+                 .with_label(stats_text.value())
+                 .with_color_usage(Theme::Usage::Custom)
+                 .with_custom_color(bg_color)
+                 .disable_rounded_corners());
+  }
+
+  // Ranking (for top 3)
+  if (ranking.has_value() && ranking.value() <= 3) {
+    std::string ranking_label = std::format("#{}", ranking.value());
+
+    imm::div(context, mk(card.ent(), 2),
+             ComponentConfig{}
+                 .with_size(ComponentSize{percent(1.f), percent(0.3f, 0.4f)})
+                 .with_label(ranking_label)
+                 .with_font(get_font_name(FontID::EQPro), 120.f)
+                 .with_color_usage(Theme::Usage::Custom)
+                 .with_custom_color(bg_color)
+                 .disable_rounded_corners()
+                 .with_debug_name("player_card_ranking"));
+  }
+
+  // Next color button
+  if (on_next_color) {
+    if (imm::button(
+            context, mk(card.ent()),
+            ComponentConfig{}
+                .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+                .with_label("Next Color")
+                .disable_rounded_corners()
+                .with_skip_tabbing(true)
+                .with_debug_name("next_color_button"))) {
+      on_next_color();
+    }
+  }
+
+  // Remove AI button
+  if (is_ai && on_remove) {
+    if (imm::button(context, mk(card.ent()),
+                    ComponentConfig{}
+                        .with_size(ComponentSize{percent(1.f), pixels(50.f)})
+                        .with_padding(Padding{.top = percent(0.25f)})
+                        .with_label("Remove AI")
+                        .disable_rounded_corners()
+                        .with_debug_name("remove_ai_button"))) {
+      on_remove();
+    }
+  }
+
+  // Add AI button
+  if (show_add_ai && on_add_ai) {
+    if (imm::button(context, mk(card.ent()),
+                    ComponentConfig{}
+                        .with_size(ComponentSize{percent(1.f), pixels(50.f)})
+                        .with_padding(Padding{.top = percent(0.25f)})
+                        .with_label("Add AI")
+                        .disable_rounded_corners()
+                        .with_debug_name("add_ai_button"))) {
+      on_add_ai();
+    }
+  }
+
+  return {true, card.ent()};
+}
+
+// Reusable styled button component
+ElementResult create_styled_button(UIContext<InputAction> &context,
+                                   Entity &parent, const std::string &label,
+                                   std::function<void()> on_click,
+                                   int index = 0) {
+
+  if (imm::button(context, mk(parent, index),
+                  ComponentConfig{}
+                      .with_padding(Padding{.top = pixels(5.f),
+                                            .left = pixels(0.f),
+                                            .bottom = pixels(5.f),
+                                            .right = pixels(0.f)})
+                      .with_label(label))) {
+    on_click();
+    return {true, parent};
+  }
+
+  return {false, parent};
+}
+
+// Reusable volume slider component
+ElementResult create_volume_slider(UIContext<InputAction> &context,
+                                   Entity &parent, const std::string &label,
+                                   float &volume,
+                                   std::function<void(float)> on_change) {
+
+  auto volume_label = fmt::format("{}\n {:2.0f}", label, volume * 100.f);
+
+  if (auto result =
+          slider(context, mk(parent), volume,
+                 ComponentConfig{}
+                     .with_size(ComponentSize{pixels(300.f), pixels(50.f)})
+                     .with_label(std::move(volume_label)))) {
+    volume = result.as<float>();
+    on_change(volume);
+    return {true, parent};
+  }
+
+  return {false, parent};
+}
+
+// Reusable screen container component
+ElementResult create_screen_container(UIContext<InputAction> &context,
+                                      Entity &parent,
+                                      const std::string &debug_name) {
+
+  return imm::div(
+      context, mk(parent),
+      ComponentConfig{}
+          .with_font(get_font_name(FontID::EQPro), 75.f)
+          .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+          .with_absolute_position()
+          .with_debug_name(debug_name));
+}
+
+// Reusable control group component
+ElementResult create_control_group(UIContext<InputAction> &context,
+                                   Entity &parent,
+                                   const std::string &debug_name) {
+
+  return imm::div(
+      context, mk(parent),
+      ComponentConfig{}
+          .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+          .with_padding(Padding{.top = screen_pct(0.4f),
+                                .left = screen_pct(0.4f),
+                                .bottom = pixels(0.f),
+                                .right = pixels(0.f)})
+          .with_absolute_position()
+          .with_debug_name(debug_name));
+}
+
+} // namespace ui_helpers
+
 // TODO the top left buttons should be have some top/left padding
 
 using Screen = GameStateManager::Screen;
@@ -172,19 +354,9 @@ void ScheduleMainMenuUI::character_selector_column(
                    .with_custom_color(bg_color)
                    .disable_rounded_corners());
 
-  if (car.has_value()) {
-    // Note: we arent using mk() here...
-    imm::div(
-        context, mk(column.ent()),
-        ComponentConfig{}
-            .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-            .with_label(std::format("{} {}", index, car->id))
-            .with_color_usage(Theme::Usage::Custom)
-            .with_custom_color(bg_color)
-            .disable_rounded_corners()
-            .with_debug_name(std::format("player_car {} {} {} {}", index,
-                                         car->id, players.size(), ais.size())));
-  }
+  // Create player card using helper function
+  std::string label = car.has_value() ? std::format("{} {}", index, car->id)
+                                      : std::format("{} Empty", index);
 
   bool player_right = false;
   if (index < players.size()) {
@@ -209,49 +381,31 @@ void ScheduleMainMenuUI::character_selector_column(
       (is_last_slot && !is_last_slot_ai) ||
       (!is_last_slot && colorManager.any_available_colors());
 
-  if (show_next_color_button) {
-    if (auto elem = imm::button(
-            context, mk(column.ent()),
-            ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-                .with_label("Next Color")
-                .disable_rounded_corners()
-                .with_skip_tabbing(true)
-                .with_debug_name(std::format("next_color button {} ", index)));
-        elem || player_right) {
+  std::function<void()> on_next_color = nullptr;
+  if (show_next_color_button && car.has_value()) {
+    on_next_color = [&colorManager, &car]() {
       colorManager.release_and_get_next(car->id);
-    }
+    };
   }
 
-  // we are the last boi
-  if (num_slots <= input::MAX_GAMEPAD_ID && is_last_slot) {
-    // TODO make it more obvious this button is to add
-    // - maybe maybe the color more see through?
-    // - add just a dotted line or just outline?
-    if (imm::button(context, mk(column.ent()),
-                    ComponentConfig{}
-                        .with_size(ComponentSize{percent(1.f), pixels(50.f)})
-                        .with_padding(Padding{.top = percent(0.25f)})
-                        .with_label("Add AI")
-                        .disable_rounded_corners()
-                        .with_debug_name("add_ai_button"))) {
-      make_ai();
-    }
-  }
-
+  std::function<void()> on_remove = nullptr;
   if (is_slot_ai && car.has_value()) {
-    if (imm::button(context, mk(column.ent()),
-                    ComponentConfig{}
-                        .with_size(ComponentSize{percent(1.f), pixels(50.f)})
-                        .with_padding(Padding{.top = percent(0.25f)})
-                        .with_label("Remove AI")
-                        .disable_rounded_corners()
-                        .with_debug_name("remove_ai_button"))) {
-
+    on_remove = [&colorManager, &car]() {
       colorManager.release_only(car->id);
       car->cleanup = true;
-    }
+    };
   }
+
+  std::function<void()> on_add_ai = nullptr;
+  bool show_add_ai = false;
+  if (num_slots <= input::MAX_GAMEPAD_ID && is_last_slot) {
+    show_add_ai = true;
+    on_add_ai = []() { make_ai(); };
+  }
+
+  ui_helpers::create_player_card(
+      context, column.ent(), label, bg_color, is_slot_ai, std::nullopt,
+      std::nullopt, on_next_color, on_remove, show_add_ai, on_add_ai);
 }
 
 void ScheduleMainMenuUI::round_end_player_column(
@@ -289,43 +443,43 @@ void ScheduleMainMenuUI::round_end_player_column(
                    .with_custom_color(bg_color)
                    .disable_rounded_corners());
 
-  {
-    std::string player_label = std::format("{} {}", index, car->id);
-    if (is_slot_ai) {
-      player_label += " (AI)";
+  // Create player label
+  std::string player_label = std::format("{} {}", index, car->id);
+  if (is_slot_ai) {
+    player_label += " (AI)";
+  }
+
+  // Get stats text based on round type
+  std::optional<std::string> stats_text;
+  switch (RoundManager::get().active_round_type) {
+  case RoundType::Lives:
+    if (car->has<HasMultipleLives>()) {
+      stats_text = std::format(
+          "Lives: {}", car->get<HasMultipleLives>().num_lives_remaining);
     }
-
-    imm::div(context, mk(column.ent(), 0),
-             ComponentConfig{}
-                 .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-                 .with_label(player_label)
-                 .with_color_usage(Theme::Usage::Custom)
-                 .with_custom_color(bg_color)
-                 .disable_rounded_corners()
-                 .with_debug_name(
-                     std::format("round_end_player {} {} {} {}", index, car->id,
-                                 round_players.size(), round_ais.size())));
+    break;
+  case RoundType::Kills:
+    if (car->has<HasKillCountTracker>()) {
+      stats_text =
+          std::format("Kills: {}", car->get<HasKillCountTracker>().kills);
+    }
+    break;
+  case RoundType::Score:
+    stats_text = "Score: N/A";
+    break;
+  case RoundType::CatAndMouse:
+    if (car->has<HasCatMouseTracking>()) {
+      stats_text = std::format("Mouse: {:.1f}s",
+                               car->get<HasCatMouseTracking>().time_as_mouse);
+    }
+    break;
+  default:
+    stats_text = "Unknown";
+    break;
   }
 
-  // Round-specific stats
-  render_round_end_stats(context, column.ent(), car, bg_color);
-
-  // Ranking (for top 3 in cat and mouse rounds)
-  if (ranking.has_value() && ranking.value() <= 3) {
-    std::string ranking_label = std::format("#{}", ranking.value());
-
-    imm::div(context, mk(column.ent(), 2),
-             ComponentConfig{}
-                 .with_size(ComponentSize{percent(1.f), percent(0.3f, 0.4f)})
-                 .with_label(ranking_label)
-                 .with_font(get_font_name(FontID::EQPro), 120.f)
-                 .with_color_usage(Theme::Usage::Custom)
-                 .with_custom_color(bg_color)
-                 .disable_rounded_corners()
-                 .with_debug_name(std::format("ranking {} {} {} {}", index,
-                                              car->id, round_players.size(),
-                                              round_ais.size())));
-  }
+  ui_helpers::create_player_card(context, column.ent(), player_label, bg_color,
+                                 is_slot_ai, ranking, stats_text);
 }
 
 void ScheduleMainMenuUI::render_round_end_stats(UIContext<InputAction> &context,
@@ -936,56 +1090,31 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
 Screen ScheduleMainMenuUI::main_screen(Entity &entity,
                                        UIContext<InputAction> &context) {
   auto elem =
-      imm::div(context, mk(entity),
-               ComponentConfig{}
-                   .with_font(get_font_name(FontID::EQPro), 75.f)
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute_position()
-                   .with_debug_name("main_screen"));
-
+      ui_helpers::create_screen_container(context, entity, "main_screen");
   auto btn_group =
-      imm::div(context, mk(elem.ent()),
-               ComponentConfig{}
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_padding(button_group_padding)
-                   .with_absolute_position()
-                   .with_debug_name("btn_group"));
+      ui_helpers::create_control_group(context, elem.ent(), "btn_group");
 
-  {
-    if (imm::button(context, mk(btn_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("play"))) {
-      navigate_to_screen(GameStateManager::Screen::CharacterCreation);
-    }
-  }
+  // Play button
+  ui_helpers::create_styled_button(
+      context, btn_group.ent(), "play",
+      [this]() {
+        navigate_to_screen(GameStateManager::Screen::CharacterCreation);
+      },
+      0);
 
-  {
-    if (imm::button(context, mk(btn_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("about"))) {
-      navigate_to_screen(GameStateManager::Screen::About);
-    }
-  }
+  // About button
+  ui_helpers::create_styled_button(
+      context, btn_group.ent(), "about",
+      [this]() { navigate_to_screen(GameStateManager::Screen::About); }, 1);
 
-  {
-    if (imm::button(context, mk(btn_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("settings"))) {
-      navigate_to_screen(GameStateManager::Screen::Settings);
-    }
-  }
+  // Settings button
+  ui_helpers::create_styled_button(
+      context, btn_group.ent(), "settings",
+      [this]() { navigate_to_screen(GameStateManager::Screen::Settings); }, 2);
 
-  {
-    if (imm::button(context, mk(btn_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("exit"))) {
-      exit_game();
-    }
-  }
+  // Exit button
+  ui_helpers::create_styled_button(
+      context, btn_group.ent(), "exit", [this]() { exit_game(); }, 3);
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
@@ -994,89 +1123,60 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
 Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                                            UIContext<InputAction> &context) {
   auto elem =
-      imm::div(context, mk(entity),
-               ComponentConfig{}
-                   .with_font(get_font_name(FontID::EQPro), 75.f)
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute_position()
-                   .with_debug_name("settings_screen"));
-
+      ui_helpers::create_screen_container(context, entity, "settings_screen");
   auto control_group =
-      imm::div(context, mk(elem.ent()),
-               ComponentConfig{}
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_padding(button_group_padding)
-                   .with_absolute_position()
-                   .with_debug_name("control_group"));
+      ui_helpers::create_control_group(context, elem.ent(), "control_group");
 
+  // Master volume slider
   {
     float master_volume = Settings::get().get_master_volume();
-    auto label = fmt::format("Master Volume\n {:2.0f}", master_volume * 100.f);
-
-    if (auto result =
-            slider(context, mk(control_group.ent()), master_volume,
-                   ComponentConfig{}
-                       .with_size(ComponentSize{pixels(300.f), pixels(50.f)})
-                       .with_label(std::move(label)));
-        result) {
-      master_volume = result.as<float>();
-      Settings::get().update_master_volume(master_volume);
-    }
+    ui_helpers::create_volume_slider(
+        context, control_group.ent(), "Master Volume", master_volume,
+        [](float volume) { Settings::get().update_master_volume(volume); });
   }
 
+  // Music volume slider
   {
     float music_volume = Settings::get().get_music_volume();
-    auto label = fmt::format("Music Volume\n {:2.0f}", music_volume * 100.f);
-
-    if (auto result =
-            slider(context, mk(control_group.ent()), music_volume,
-                   ComponentConfig{}
-                       .with_size(ComponentSize{pixels(300.f), pixels(50.f)})
-                       .with_label(std::move(label)));
-        result) {
-      music_volume = result.as<float>();
-      Settings::get().update_music_volume(music_volume);
-    }
+    ui_helpers::create_volume_slider(
+        context, control_group.ent(), "Music Volume", music_volume,
+        [](float volume) { Settings::get().update_music_volume(volume); });
   }
 
+  // SFX volume slider
   {
     float sfx_volume = Settings::get().get_sfx_volume();
-    auto label = fmt::format("SFX Volume\n {:2.0f}", sfx_volume * 100.f);
-
-    if (auto result =
-            slider(context, mk(control_group.ent()), sfx_volume,
-                   ComponentConfig{}
-                       .with_size(ComponentSize{pixels(300.f), pixels(50.f)})
-                       .with_label(std::move(label)));
-        result) {
-      sfx_volume = result.as<float>();
-      Settings::get().update_sfx_volume(sfx_volume);
-    }
+    ui_helpers::create_volume_slider(
+        context, control_group.ent(), "SFX Volume", sfx_volume,
+        [](float volume) { Settings::get().update_sfx_volume(volume); });
   }
 
+  // Resolution dropdown
   {
-    if (imm::dropdown(context, mk(control_group.ent()), resolution_strs,
+    if (imm::dropdown(context, mk(control_group.ent(), 3), resolution_strs,
                       resolution_index,
                       ComponentConfig{}.with_label("Resolution"))) {
       resolution_provider->on_data_changed(resolution_index);
     }
   }
 
-  if (imm::checkbox(context, mk(control_group.ent()),
+  // Fullscreen checkbox
+  if (imm::checkbox(context, mk(control_group.ent(), 4),
                     Settings::get().get_fullscreen_enabled(),
                     ComponentConfig{}.with_label("Fullscreen"))) {
     Settings::get().toggle_fullscreen();
   }
 
-  if (imm::button(
-          context, mk(control_group.ent()),
-          ComponentConfig{}.with_padding(button_padding).with_label("back"))) {
-    Settings::get().update_resolution(
-        current_resolution_provider->current_resolution);
-    // TODO do we want to write the settings, or should we have a save button?
+  // Back button
+  ui_helpers::create_styled_button(
+      context, control_group.ent(), "back",
+      [this]() {
+        Settings::get().update_resolution(
+            current_resolution_provider->current_resolution);
+        navigate_back();
+      },
+      5);
 
-    navigate_back();
-  }
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
 }
