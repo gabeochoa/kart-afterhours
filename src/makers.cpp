@@ -221,6 +221,26 @@ Entity &make_obstacle(raylib::Rectangle rect, const raylib::Color color,
   return entity;
 }
 
+Entity &make_preview_obstacle(raylib::Rectangle rect, const raylib::Color color,
+                              const CollisionConfig &collision_config, vec2 offset) {
+  auto &entity = EntityHelper::createEntity();
+
+  // Apply offset to the rectangle position
+  rect.x += offset.x;
+  rect.y += offset.y;
+
+  auto &transform = entity.addComponent<Transform>(std::move(rect));
+  transform.collision_config = collision_config;
+
+  entity.addComponent<CanWrapAround>();
+  entity.addComponent<HasColor>(color);
+  entity.addComponent<CollisionAbsorber>(
+      CollisionAbsorber::AbsorberType::Absorber);
+  entity.addComponent<MapPreviewGenerated>(); // Use preview component instead
+  
+  return entity;
+}
+
 void make_player(input::GamepadID id) {
   auto &entity = make_car(id);
   entity.addComponent<PlayerID>(id);

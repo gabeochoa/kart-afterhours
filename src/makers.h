@@ -17,8 +17,11 @@ Entity &make_car(size_t id);
 /// @param rect is the location and placement of the obstacle.
 /// @param color is the obstacle's rendered color.
 /// @param collision_config configures the physics of the obstacle.
-Entity &make_obstacle(raylib::Rectangle rect, raylib::Color color,
+Entity &make_obstacle(raylib::Rectangle rect, const raylib::Color color,
                       const CollisionConfig &collision_config);
+
+Entity &make_preview_obstacle(raylib::Rectangle rect, const raylib::Color color,
+                              const CollisionConfig &collision_config, vec2 offset);
 
 void make_player(input::GamepadID id);
 void make_ai();
