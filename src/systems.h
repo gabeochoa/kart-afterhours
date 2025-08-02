@@ -132,8 +132,6 @@ struct RenderEntities : System<Transform> {
     if (entity.has<afterhours::texture_manager::HasSpritesheet>()) return;
     if (entity.has<afterhours::texture_manager::HasAnimation>()) return;
 
-    if (!entity.has<HasColor>()) return;
-
     auto entitiy_color = entity.has_child_of<HasColor>()
                              ? entity.get_with_child<HasColor>().color()
                              : raylib::RAYWHITE;

@@ -70,15 +70,12 @@ void MapManager::initialize_preview_textures() {
 }
 
 void MapManager::generate_map_preview(int map_index) {
-  if (!preview_textures_initialized || map_index < 0 || map_index >= 5) return;
+  if (!preview_textures_initialized || map_index < 0 || map_index >= MAP_COUNT) return;
   
   cleanup_preview_area(map_index);
   available_maps[map_index].create_map_func();
   
-  vec2 preview_offset = {
-    100000.0f + (map_index * 10000.0f), 
-    100000.0f + (map_index * 10000.0f)
-  };
+  vec2 preview_offset = get_preview_offset(map_index);
   
   auto map_entities = EntityQuery({.force_merge = true})
                           .whereHasComponent<MapGenerated>()
@@ -93,12 +90,13 @@ void MapManager::generate_map_preview(int map_index) {
   }
   
   raylib::Camera2D camera = {};
-  float zoom_x = 300.0f / 800.0f;
-  float zoom_y = 300.0f / 600.0f;
-  camera.zoom = std::min(zoom_x, zoom_y) * 0.8f;
-  camera.offset = {150.0f, 150.0f};
+  float zoom_x = PREVIEW_TEXTURE_SIZE / PREVIEW_WORLD_WIDTH;
+  float zoom_y = PREVIEW_TEXTURE_SIZE / PREVIEW_WORLD_HEIGHT;
+  camera.zoom = std::min(zoom_x, zoom_y) * PREVIEW_ZOOM_MARGIN;
+  camera.offset = {PREVIEW_TEXTURE_SIZE / 2.0f, PREVIEW_TEXTURE_SIZE / 2.0f};
   
-  vec2 preview_center = {preview_offset.x + 400.0f, preview_offset.y + 300.0f};
+  vec2 preview_center = {preview_offset.x + PREVIEW_WORLD_WIDTH / 2.0f, 
+                         preview_offset.y + PREVIEW_WORLD_HEIGHT / 2.0f};
   camera.target = preview_center;
   
   raylib::BeginTextureMode(preview_textures[map_index]);
@@ -115,9 +113,9 @@ void MapManager::generate_map_preview(int map_index) {
     auto &color = entity.get().get<HasColor>();
     
     if (transform.position.x >= preview_offset.x && 
-        transform.position.x < preview_offset.x + 800.0f &&
+        transform.position.x < preview_offset.x + PREVIEW_WORLD_WIDTH &&
         transform.position.y >= preview_offset.y && 
-        transform.position.y < preview_offset.y + 600.0f) {
+        transform.position.y < preview_offset.y + PREVIEW_WORLD_HEIGHT) {
       
       raylib::DrawRectangle(
           static_cast<int>(transform.position.x),
@@ -153,10 +151,7 @@ void MapManager::cleanup_preview_textures() {
 }
 
 void MapManager::cleanup_preview_area(int map_index) {
-  vec2 preview_offset = {
-    100000.0f + (map_index * 10000.0f), 
-    100000.0f + (map_index * 10000.0f)
-  };
+  vec2 preview_offset = get_preview_offset(map_index);
   
   auto entities_in_area = EntityQuery({.force_merge = true})
                               .whereHasComponent<Transform>()
@@ -167,9 +162,9 @@ void MapManager::cleanup_preview_area(int map_index) {
       auto &transform = entity.get().get<Transform>();
       
       if (transform.position.x >= preview_offset.x && 
-          transform.position.x < preview_offset.x + 800.0f &&
+          transform.position.x < preview_offset.x + PREVIEW_WORLD_WIDTH &&
           transform.position.y >= preview_offset.y && 
-          transform.position.y < preview_offset.y + 600.0f) {
+          transform.position.y < preview_offset.y + PREVIEW_WORLD_HEIGHT) {
         entity.get().cleanup = true;
       }
     }
