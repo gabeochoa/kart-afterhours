@@ -19,11 +19,11 @@ SINGLETON_FWD(MapManager)
 struct MapManager {
   SINGLETON(MapManager)
 
-  static const std::array<MapConfig, 5> available_maps;
+  static constexpr int MAP_COUNT = 5;
+  static const std::array<MapConfig, MAP_COUNT> available_maps;
   int selected_map_index = 0;
   
-  // Map preview render textures
-  std::array<raylib::RenderTexture2D, 5> preview_textures;
+  std::array<raylib::RenderTexture2D, MAP_COUNT> preview_textures;
   bool preview_textures_initialized = false;
 
   MapManager() = default;

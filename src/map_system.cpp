@@ -4,7 +4,38 @@
 #include "rl.h"
 #include "round_settings.h"
 
-const std::array<MapConfig, 5> MapManager::available_maps = {
+// Map preview constants
+namespace {
+  // Preview texture dimensions (square for UI consistency)
+  // Range: 200-500px works well for most screen resolutions
+  constexpr int PREVIEW_TEXTURE_SIZE = 300;
+  
+  // Preview world area dimensions (standard game view)
+  // These match typical game camera view: 800x600px
+  constexpr float PREVIEW_WORLD_WIDTH = 800.0f;
+  constexpr float PREVIEW_WORLD_HEIGHT = 600.0f;
+  
+  // Preview isolation offset (keeps preview entities far from main game)
+  // Range: 50000+ to avoid any collision with main game area
+  // Should be >> largest possible screen resolution + wrap padding
+  constexpr float PREVIEW_BASE_OFFSET = 100000.0f;
+  
+  // Spacing between different map previews 
+  // Range: 20000+ to ensure complete separation between map preview areas
+  constexpr float PREVIEW_MAP_SPACING = 10000.0f;
+  
+  // Camera zoom margin (prevents edge clipping in preview)
+  // Range: 0.7-0.9, lower = more margin, higher = tighter crop
+  constexpr float PREVIEW_ZOOM_MARGIN = 0.8f;
+  
+  // Helper function to calculate preview offset for a given map index
+  vec2 get_preview_offset(int map_index) {
+    float offset = PREVIEW_BASE_OFFSET + (map_index * PREVIEW_MAP_SPACING);
+    return {offset, offset};
+  }
+}
+
+const std::array<MapConfig, MapManager::MAP_COUNT> MapManager::available_maps = {
     {{.display_name = "Arena",
       .description = "Classic open arena with strategic obstacles",
       .create_map_func = create_arena_map,
@@ -106,7 +137,7 @@ void MapManager::generate_map_preview(int map_index) {
 }
 
 void MapManager::generate_all_previews() {
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < MAP_COUNT; i++) {
     generate_map_preview(i);
   }
 }
