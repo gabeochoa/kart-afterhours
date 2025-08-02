@@ -257,7 +257,7 @@ void ScheduleMainMenuUI::character_selector_column(
 void ScheduleMainMenuUI::round_end_player_column(
     Entity &parent, UIContext<InputAction> &context, const size_t index,
     const std::vector<OptEntity> &round_players,
-    const std::vector<OptEntity> &round_ais) {
+    const std::vector<OptEntity> &round_ais, std::optional<int> ranking) {
 
   bool is_slot_ai = index >= round_players.size();
 
@@ -289,7 +289,6 @@ void ScheduleMainMenuUI::round_end_player_column(
                    .with_custom_color(bg_color)
                    .disable_rounded_corners());
 
-  // Player info
   {
     std::string player_label = std::format("{} {}", index, car->id);
     if (is_slot_ai) {
@@ -310,6 +309,23 @@ void ScheduleMainMenuUI::round_end_player_column(
 
   // Round-specific stats
   render_round_end_stats(context, column.ent(), car, bg_color);
+
+  // Ranking (for top 3 in cat and mouse rounds)
+  if (ranking.has_value() && ranking.value() <= 3) {
+    std::string ranking_label = std::format("#{}", ranking.value());
+
+    imm::div(context, mk(column.ent(), 2),
+             ComponentConfig{}
+                 .with_size(ComponentSize{percent(1.f), percent(0.3f, 0.4f)})
+                 .with_label(ranking_label)
+                 .with_font(get_font_name(FontID::EQPro), 120.f)
+                 .with_color_usage(Theme::Usage::Custom)
+                 .with_custom_color(bg_color)
+                 .disable_rounded_corners()
+                 .with_debug_name(std::format("ranking {} {} {} {}", index,
+                                              car->id, round_players.size(),
+                                              round_ais.size())));
+  }
 }
 
 void ScheduleMainMenuUI::render_round_end_stats(UIContext<InputAction> &context,
@@ -399,13 +415,8 @@ void ScheduleMainMenuUI::render_cat_mouse_stats(UIContext<InputAction> &context,
   }
 
   const auto &tracking = car->get<HasCatMouseTracking>();
-  std::string stats_text;
-
-  if (tracking.is_cat) {
-    stats_text = "Cat";
-  } else {
-    stats_text = std::format("Mouse: {:.1f}s", tracking.time_as_mouse);
-  }
+  std::string stats_text =
+      std::format("Mouse: {:.1f}s", tracking.time_as_mouse);
 
   imm::div(context, mk(parent, 1),
            ComponentConfig{}
@@ -428,6 +439,40 @@ void ScheduleMainMenuUI::render_unknown_stats(UIContext<InputAction> &context,
                .with_color_usage(Theme::Usage::Custom)
                .with_custom_color(bg_color)
                .disable_rounded_corners());
+}
+
+std::map<EntityID, int> ScheduleMainMenuUI::get_cat_mouse_rankings(
+    const std::vector<OptEntity> &round_players,
+    const std::vector<OptEntity> &round_ais) {
+  std::map<EntityID, int> rankings;
+
+  // Combine all players and AIs
+  std::vector<std::pair<EntityID, float>> player_times;
+
+  for (const auto &player : round_players) {
+    if (player->has<HasCatMouseTracking>()) {
+      player_times.emplace_back(
+          player->id, player->get<HasCatMouseTracking>().time_as_mouse);
+    }
+  }
+
+  for (const auto &ai : round_ais) {
+    if (ai->has<HasCatMouseTracking>()) {
+      player_times.emplace_back(ai->id,
+                                ai->get<HasCatMouseTracking>().time_as_mouse);
+    }
+  }
+
+  // Sort by mouse time (highest first for cat and mouse - most mouse time wins)
+  std::sort(player_times.begin(), player_times.end(),
+            [](const auto &a, const auto &b) { return a.second > b.second; });
+
+  // Assign rankings (1-based)
+  for (size_t i = 0; i < player_times.size(); ++i) {
+    rankings[player_times[i].first] = static_cast<int>(i + 1);
+  }
+
+  return rankings;
 }
 
 Screen ScheduleMainMenuUI::character_creation(Entity &entity,
@@ -1465,6 +1510,11 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
                  .with_margin(Margin{.top = screen_pct(0.05f)}));
   }
 
+  std::map<EntityID, int> rankings;
+  if (RoundManager::get().active_round_type == RoundType::CatAndMouse) {
+    rankings = get_cat_mouse_rankings(round_players, round_ais);
+  }
+
   // Render players in a grid layout similar to character creation
   size_t num_slots = round_players.size() + round_ais.size();
   if (num_slots > 0) {
@@ -1490,8 +1540,24 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
               .with_debug_name("row"));
       size_t start = row_id * 4;
       for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
-        round_end_player_column(row.ent(), context, i, round_players,
-                                round_ais);
+        OptEntity car;
+        if (i < round_players.size()) {
+          car = round_players[i];
+        } else {
+          car = round_ais[i - round_players.size()];
+        }
+
+        std::optional<int> ranking;
+        if (car.has_value() &&
+            RoundManager::get().active_round_type == RoundType::CatAndMouse) {
+          auto it = rankings.find(car->id);
+          if (it != rankings.end() && it->second <= 3) {
+            ranking = it->second;
+          }
+        }
+
+        round_end_player_column(row.ent(), context, i, round_players, round_ais,
+                                ranking);
       }
     }
   }

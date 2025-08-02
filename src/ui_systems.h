@@ -47,7 +47,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   void round_end_player_column(Entity &parent, UIContext<InputAction> &context,
                                const size_t index,
                                const std::vector<OptEntity> &round_players,
-                               const std::vector<OptEntity> &round_ais);
+                               const std::vector<OptEntity> &round_ais,
+                               std::optional<int> ranking = std::nullopt);
+  std::map<EntityID, int>
+  get_cat_mouse_rankings(const std::vector<OptEntity> &round_players,
+                         const std::vector<OptEntity> &round_ais);
   void render_round_end_stats(UIContext<InputAction> &context, Entity &parent,
                               const OptEntity &car, raylib::Color bg_color);
   void render_lives_stats(UIContext<InputAction> &context, Entity &parent,
