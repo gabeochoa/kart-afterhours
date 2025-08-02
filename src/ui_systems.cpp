@@ -1042,12 +1042,11 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_size(ComponentSize{percent(1.f), percent(0.2f)})
                    .with_debug_name("map_title"));
 
-      // Map preview placeholder area
+      // Map preview area (image will be rendered by RenderMapPreviewOnScreen system)
       auto preview_area = imm::div(context, mk(preview_box.ent()),
                                    ComponentConfig{}
                                        .with_size(ComponentSize{percent(1.f), percent(0.6f)})
                                        .with_margin(Margin{.top = percent(0.2f)})
-                                       .with_label("Map Preview")
                                        .with_debug_name("map_preview"));
 
       // Map description

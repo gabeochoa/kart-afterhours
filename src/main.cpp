@@ -135,6 +135,7 @@ void game() {
       systems.register_render_system(std::make_unique<RenderLabels>());
       systems.register_render_system(std::make_unique<CarRumble>());
       systems.register_render_system(std::make_unique<RenderCatMouseTimer>());
+      systems.register_render_system(std::make_unique<RenderMapPreviewOnScreen>());
     }
     systems.register_render_system([&](float) { raylib::EndTextureMode(); });
     systems.register_render_system([&](float) { raylib::BeginDrawing(); });

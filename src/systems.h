@@ -5,6 +5,7 @@
 #include "components.h"
 #include "game_state_manager.h"
 #include "makers.h"
+#include "map_system.h"
 #include "query.h"
 #include "round_settings.h"
 
@@ -86,6 +87,46 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
                                -1.f * static_cast<float>(resolution.height),
                            },
                            {0, 0}, raylib::WHITE);
+  }
+};
+
+struct RenderMapPreviewOnScreen : System<window_manager::ProvidesCurrentResolution> {
+  virtual ~RenderMapPreviewOnScreen() {}
+  virtual void for_each_with(
+      const Entity &,
+      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
+      float) const override {
+    
+    // Only render on map selection screen
+    if (GameStateManager::get().active_screen != GameStateManager::Screen::MapSelection) {
+      return;
+    }
+    
+    // Only render if previews are initialized
+    if (!MapManager::get().preview_textures_initialized) {
+      return;
+    }
+    
+    auto resolution = pCurrentResolution.current_resolution;
+    int selected_map = MapManager::get().get_selected_map();
+    
+    // Draw the preview texture in the center-left area of the screen
+    const auto& preview_texture = MapManager::get().get_preview_texture(selected_map);
+    
+    // Calculate position and size for the preview (in the preview box area)
+    float preview_x = resolution.width * 0.1f;   // 10% from left
+    float preview_y = resolution.height * 0.3f;  // 30% from top
+    float preview_w = resolution.width * 0.8f;   // 80% width
+    float preview_h = resolution.height * 0.2f;  // 20% height
+    
+    // Draw the preview texture scaled to fit
+    Rectangle source = {0, 0, 
+                       static_cast<float>(preview_texture.texture.width),
+                       -static_cast<float>(preview_texture.texture.height)};
+    Rectangle dest = {preview_x, preview_y, preview_w, preview_h};
+    
+    raylib::DrawTexturePro(preview_texture.texture, source, dest, 
+                          {0, 0}, 0.0f, raylib::WHITE);
   }
 };
 
