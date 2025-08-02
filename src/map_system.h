@@ -64,24 +64,14 @@ struct MapManager {
     }
   }
   
-  // Initialize preview render textures
   void initialize_preview_textures();
-  
-  // Generate preview for a specific map
   void generate_map_preview(int map_index);
-  
-  // Generate all map previews
   void generate_all_previews();
-  
-  // Get preview texture for a map
   [[nodiscard]] const raylib::RenderTexture2D& get_preview_texture(int map_index) const;
-  
-  // Cleanup preview textures
   void cleanup_preview_textures();
   void cleanup_preview_area(int map_index);
 
 private:
-  void create_selected_map();
   static void create_arena_map();
   static void create_maze_map();
   static void create_race_map();

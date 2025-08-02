@@ -97,32 +97,26 @@ struct RenderMapPreviewOnScreen : System<window_manager::ProvidesCurrentResoluti
       const window_manager::ProvidesCurrentResolution &pCurrentResolution,
       float) const override {
     
-    // Only render on map selection screen
     if (GameStateManager::get().active_screen != GameStateManager::Screen::MapSelection) {
       return;
     }
     
-    // Only render if previews are initialized
     if (!MapManager::get().preview_textures_initialized) {
       return;
     }
     
     auto resolution = pCurrentResolution.current_resolution;
     int selected_map = MapManager::get().get_selected_map();
-    
-    // Draw the preview texture in the center-left area of the screen
     const auto& preview_texture = MapManager::get().get_preview_texture(selected_map);
     
-    // Calculate position and size for the square preview (in the preview box area)
-    float preview_x = resolution.width * 0.1f;   // 10% from left
-    float preview_y = resolution.height * 0.3f;  // 30% from top
-    float preview_size = std::min(resolution.width * 0.8f, resolution.height * 0.4f); // Square size based on available space
+    float preview_x = resolution.width * 0.1f;
+    float preview_y = resolution.height * 0.3f;
+    float preview_size = std::min(resolution.width * 0.8f, resolution.height * 0.4f);
     
-    // Draw the square preview texture
     Rectangle source = {0, 0, 
                        static_cast<float>(preview_texture.texture.width),
                        -static_cast<float>(preview_texture.texture.height)};
-    Rectangle dest = {preview_x, preview_y, preview_size, preview_size}; // Square destination
+    Rectangle dest = {preview_x, preview_y, preview_size, preview_size};
     
     raylib::DrawTexturePro(preview_texture.texture, source, dest, 
                           {0, 0}, 0.0f, raylib::WHITE);

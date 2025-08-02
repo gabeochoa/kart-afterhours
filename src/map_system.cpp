@@ -27,12 +27,11 @@ const std::array<MapConfig, 5> MapManager::available_maps = {
       .create_map_func = create_catmouse_map,
       .compatible_round_types = std::bitset<4>(0b1000)}}}; // CatAndMouse only
 
-// Preview texture management
 void MapManager::initialize_preview_textures() {
   if (preview_textures_initialized) return;
   
   const int preview_width = 300;
-  const int preview_height = 300; // Changed from 200 to 300 for square preview
+  const int preview_height = 300;
   
   for (size_t i = 0; i < preview_textures.size(); i++) {
     preview_textures[i] = raylib::LoadRenderTexture(preview_width, preview_height);
@@ -45,19 +44,14 @@ void MapManager::initialize_preview_textures() {
 void MapManager::generate_map_preview(int map_index) {
   if (!preview_textures_initialized || map_index < 0 || map_index >= 5) return;
   
-  // Clean up any existing preview entities in the preview area first
   cleanup_preview_area(map_index);
-  
-  // Create the actual map using the real map function
   available_maps[map_index].create_map_func();
   
-  // Get all newly created map entities and move them to the preview offset location
   vec2 preview_offset = {
     100000.0f + (map_index * 10000.0f), 
     100000.0f + (map_index * 10000.0f)
   };
   
-  // Find all MapGenerated entities (the ones we just created) and move them to preview location
   auto map_entities = EntityQuery({.force_merge = true})
                           .whereHasComponent<MapGenerated>()
                           .gen();
@@ -70,26 +64,19 @@ void MapManager::generate_map_preview(int map_index) {
     }
   }
   
-  // Calculate proper camera setup for 300x300 square texture showing 800x600 preview area
   raylib::Camera2D camera = {};
+  float zoom_x = 300.0f / 800.0f;
+  float zoom_y = 300.0f / 600.0f;
+  camera.zoom = std::min(zoom_x, zoom_y) * 0.8f;
+  camera.offset = {150.0f, 150.0f};
   
-  // Calculate zoom to fit 800x600 area into 300x300 square texture
-  float zoom_x = 300.0f / 800.0f; // 0.375
-  float zoom_y = 300.0f / 600.0f; // 0.5
-  camera.zoom = std::min(zoom_x, zoom_y) * 0.8f; // Use smaller zoom with margin, about 0.3
-  
-  camera.offset = {150.0f, 150.0f}; // Center of 300x300 square preview texture
-  
-  // Target the center of the preview map area
   vec2 preview_center = {preview_offset.x + 400.0f, preview_offset.y + 300.0f};
   camera.target = preview_center;
   
   raylib::BeginTextureMode(preview_textures[map_index]);
   raylib::ClearBackground(raylib::DARKGRAY);
-  
   raylib::BeginMode2D(camera);
   
-  // Render all entities in the preview area using the same rendering logic as the main game
   auto preview_entities = EntityQuery({.force_merge = true})
                               .whereHasComponent<Transform>()
                               .whereHasComponent<HasColor>()
@@ -99,13 +86,11 @@ void MapManager::generate_map_preview(int map_index) {
     auto &transform = entity.get().get<Transform>();
     auto &color = entity.get().get<HasColor>();
     
-    // Only render entities that are in this map's preview area
     if (transform.position.x >= preview_offset.x && 
         transform.position.x < preview_offset.x + 800.0f &&
         transform.position.y >= preview_offset.y && 
         transform.position.y < preview_offset.y + 600.0f) {
       
-      // Draw rectangles using position directly (not centered)
       raylib::DrawRectangle(
           static_cast<int>(transform.position.x),
           static_cast<int>(transform.position.y),
@@ -117,8 +102,6 @@ void MapManager::generate_map_preview(int map_index) {
   
   raylib::EndMode2D();
   raylib::EndTextureMode();
-  
-  // Clean up the preview entities immediately after rendering
   cleanup_preview_area(map_index);
 }
 
@@ -142,13 +125,11 @@ void MapManager::cleanup_preview_textures() {
 }
 
 void MapManager::cleanup_preview_area(int map_index) {
-  // Calculate the preview area bounds for this map
   vec2 preview_offset = {
     100000.0f + (map_index * 10000.0f), 
     100000.0f + (map_index * 10000.0f)
   };
   
-  // Find all entities in this preview area and mark them for cleanup
   auto entities_in_area = EntityQuery({.force_merge = true})
                               .whereHasComponent<Transform>()
                               .gen();
@@ -157,7 +138,6 @@ void MapManager::cleanup_preview_area(int map_index) {
     if (entity.get().has<Transform>()) {
       auto &transform = entity.get().get<Transform>();
       
-      // If entity is in this map's preview area, mark for cleanup
       if (transform.position.x >= preview_offset.x && 
           transform.position.x < preview_offset.x + 800.0f &&
           transform.position.y >= preview_offset.y && 
