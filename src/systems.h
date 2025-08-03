@@ -867,6 +867,13 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
                        Config::get().max_speed.data);
     }
 
+    // Apply speed multiplier for cat and mouse mode
+    if (RoundManager::get().active_round_type == RoundType::CatAndMouse) {
+      auto &cat_mouse_settings =
+          RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+      mvt *= cat_mouse_settings.speed_multiplier;
+    }
+
     if (!transform.is_reversing()) {
       transform.velocity += vec2{
           std::sin(transform.as_rad()) * mvt * dt,
@@ -1063,6 +1070,13 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
     float mvt =
         std::max(-max_movement_limit,
                  std::min(max_movement_limit, transform.speed() + accel));
+
+    // Apply speed multiplier for cat and mouse mode
+    if (RoundManager::get().active_round_type == RoundType::CatAndMouse) {
+      auto &cat_mouse_settings =
+          RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+      mvt *= cat_mouse_settings.speed_multiplier;
+    }
 
     transform.angle += steer * dt * rad;
 

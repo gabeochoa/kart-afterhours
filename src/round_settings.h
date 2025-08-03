@@ -94,6 +94,8 @@ struct RoundCatAndMouseSettings : RoundSettings {
   // TODO: Add tag cooldown setting to settings UI
   float tag_cooldown_time = 2.0f;
 
+  float speed_multiplier = 0.7f;
+
 private:
   static float get_time_from_option(TimeOptions option) {
     switch (option) {
