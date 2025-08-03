@@ -46,8 +46,7 @@ struct UpdateAnimationTransform
 
 // System to add SkipTextureManagerRendering to entities with shaders
 struct MarkEntitiesWithShaders : System<HasShader> {
-  virtual void for_each_with(Entity &entity, HasShader &hasShader,
-                             float) override {
+  virtual void for_each_with(Entity &entity, HasShader &, float) override {
     if (!entity.has<SkipTextureManagerRendering>()) {
       entity.addComponent<SkipTextureManagerRendering>();
       log_info("Marked entity {} to skip texture_manager rendering", entity.id);
@@ -59,11 +58,10 @@ struct MarkEntitiesWithShaders : System<HasShader> {
 struct RenderSpritesWithShaders
     : System<Transform, afterhours::texture_manager::HasSprite, HasShader,
              HasColor> {
-  virtual void
-  for_each_with(const Entity &entity, const Transform &transform,
-                const afterhours::texture_manager::HasSprite &hasSprite,
-                const HasShader &hasShader, const HasColor &hasColor,
-                float) const override {
+  virtual void for_each_with(const Entity &, const Transform &transform,
+                             const afterhours::texture_manager::HasSprite &,
+                             const HasShader &hasShader,
+                             const HasColor &hasColor, float) const override {
     if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
       log_warn("Shader not found: {}", hasShader.shader_name);
       return;
@@ -117,10 +115,10 @@ struct RenderSpritesWithShaders
     float offset_x = SPRITE_OFFSET_X;
     float offset_y = SPRITE_OFFSET_Y;
 
-    float rotated_x = offset_x * cos(transform.angle * M_PI / 180.f) -
-                      offset_y * sin(transform.angle * M_PI / 180.f);
-    float rotated_y = offset_x * sin(transform.angle * M_PI / 180.f) +
-                      offset_y * cos(transform.angle * M_PI / 180.f);
+    float rotated_x = offset_x * cosf(transform.angle * M_PI / 180.f) -
+                      offset_y * sinf(transform.angle * M_PI / 180.f);
+    float rotated_y = offset_x * sinf(transform.angle * M_PI / 180.f) +
+                      offset_y * cosf(transform.angle * M_PI / 180.f);
 
     raylib::DrawTexturePro(
         sheet, source_frame,
@@ -140,10 +138,9 @@ struct RenderSpritesWithShaders
 // System to render animations with per-entity shaders
 struct RenderAnimationsWithShaders
     : System<Transform, afterhours::texture_manager::HasAnimation, HasShader> {
-  virtual void
-  for_each_with(const Entity &entity, const Transform &transform,
-                const afterhours::texture_manager::HasAnimation &hasAnimation,
-                const HasShader &hasShader, float) const override {
+  virtual void for_each_with(const Entity &, const Transform &transform,
+                             const afterhours::texture_manager::HasAnimation &,
+                             const HasShader &hasShader, float) const override {
     if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
       log_warn("Shader not found: {}", hasShader.shader_name);
       return;

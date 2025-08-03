@@ -23,7 +23,7 @@ add_cxxflags([[
 add_cxxflags([[
     -Wno-deprecated-volatile -Wno-missing-field-initializers
     -Wno-c99-extensions -Wno-unused-function -Wno-sign-conversion 
-    -Wno-implicit-int-float-conversion 
+    -Wno-implicit-int-float-conversion -Wno-implicit-float-conversion
 ]]
 )
 
