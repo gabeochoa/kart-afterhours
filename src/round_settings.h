@@ -79,7 +79,7 @@ struct RoundCatAndMouseSettings : RoundSettings {
     Seconds_10,
     Seconds_30,
     Minutes_1,
-  } time_option = TimeOptions::Seconds_10;
+  } time_option = TimeOptions::Minutes_1;
 
   // Countdown before game starts (players can drive around)
   float countdown_before_start = 3.0f; // 3 seconds to get ready
@@ -144,7 +144,7 @@ struct RoundManager {
     settings[2]->enabled_weapons.reset().set(2);
   }
 
-  RoundType active_round_type = RoundType::Lives;
+  RoundType active_round_type = RoundType::CatAndMouse;
 
   RoundSettings &get_active_settings() {
     return *(settings[enum_to_index(active_round_type)]);
