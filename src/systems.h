@@ -63,6 +63,54 @@ struct RenderSpritesWithShaders
                 const afterhours::texture_manager::HasSprite &hasSprite,
                 const HasShader &hasShader, const HasColor &hasColor,
                 float) const override {
+    // TODO shaders have issues on Windows - disable for now
+    #ifdef _WIN32
+    // On Windows, render without shader for now
+    auto *spritesheet_component = EntityHelper::get_singleton_cmp<
+        afterhours::texture_manager::HasSpritesheet>();
+    if (!spritesheet_component) {
+      log_warn(
+          "No spritesheet component found! Drawing BLUE rectangle as fallback");
+      raylib::DrawRectanglePro(
+          Rectangle{transform.center().x, transform.center().y,
+                    transform.size.x, transform.size.y},
+          vec2{transform.size.x / 2.f, transform.size.y / 2.f}, transform.angle,
+          raylib::BLUE);
+      return;
+    }
+
+    raylib::Texture2D sheet = spritesheet_component->texture;
+    Rectangle source_frame =
+        afterhours::texture_manager::idx_to_sprite_frame(0, 1);
+
+    // Use the sprite's scale for rendering size
+    float dest_width = source_frame.width * hasSprite.scale;
+    float dest_height = source_frame.height * hasSprite.scale;
+
+    // Fine-tuned offset for perfect sprite alignment
+    constexpr float SPRITE_OFFSET_X = 9.f;
+    constexpr float SPRITE_OFFSET_Y = 4.f;
+
+    float offset_x = SPRITE_OFFSET_X;
+    float offset_y = SPRITE_OFFSET_Y;
+
+    float rotated_x = offset_x * cosf(transform.angle * M_PI / 180.f) -
+                      offset_y * sinf(transform.angle * M_PI / 180.f);
+    float rotated_y = offset_x * sinf(transform.angle * M_PI / 180.f) +
+                      offset_y * cosf(transform.angle * M_PI / 180.f);
+
+    raylib::DrawTexturePro(
+        sheet, source_frame,
+        Rectangle{
+            transform.position.x + transform.size.x / 2.f + rotated_x,
+            transform.position.y + transform.size.y / 2.f + rotated_y,
+            dest_width,
+            dest_height,
+        },
+        vec2{dest_width / 2.f, dest_height / 2.f}, transform.angle,
+        hasColor.color());
+    #else
+    // Original shader rendering for non-Windows platforms
     if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
       log_warn("Shader not found: {}", hasShader.shader_name);
       return;
@@ -134,6 +182,7 @@ struct RenderSpritesWithShaders
         raylib::WHITE);
 
     raylib::EndShaderMode();
+    #endif
   }
 };
 
