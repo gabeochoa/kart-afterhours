@@ -8,5 +8,28 @@
     "resolution": {
         "height": 720,
         "width": 1280
+    },
+    "round_settings": {
+        "active_round_type": 2,
+        "settings": {
+            "CatAndMouse": {
+                "enabled_weapons": 1,
+                "show_countdown_timer": true,
+                "speed_multiplier": 0.699999988079071,
+                "time_option": 3
+            },
+            "Kills": {
+                "enabled_weapons": 2,
+                "time_option": 0
+            },
+            "Lives": {
+                "enabled_weapons": 1,
+                "num_starting_lives": 1
+            },
+            "Score": {
+                "enabled_weapons": 4,
+                "score_needed_to_win": 3
+            }
+        }
     }
 }

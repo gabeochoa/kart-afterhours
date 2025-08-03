@@ -8,6 +8,7 @@
 #include "rl.h"
 
 #include "music_library.h"
+#include "round_settings.h"
 #include "sound_library.h"
 
 template <typename T> struct ValueHolder {
@@ -40,6 +41,9 @@ struct S_Data {
 
   bool fullscreen_enabled = false;
 
+  // Round settings
+  nlohmann::json round_settings;
+
   // not serialized
   fs::path loaded_from;
 };
@@ -70,6 +74,8 @@ void to_json(nlohmann::json &j, const S_Data &data) {
   j["audio"] = audio_j;
   //
   j["fullscreen_enabled"] = data.fullscreen_enabled;
+  //
+  j["round_settings"] = data.round_settings;
 }
 
 void from_json(const nlohmann::json &j, S_Data &data) {
@@ -81,6 +87,10 @@ void from_json(const nlohmann::json &j, S_Data &data) {
   data.sfx_volume.set(audio_j.at("sfx_volume"));
 
   data.fullscreen_enabled = j.at("fullscreen_enabled");
+
+  if (j.contains("round_settings")) {
+    data.round_settings = j.at("round_settings");
+  }
 }
 
 // TODO load last used settings
@@ -185,6 +195,7 @@ bool Settings::load_save_file(int width, int height) {
     (*this->data) = settingsJSON;
     this->data->loaded_from = settings_places[file_loc];
     refresh_settings();
+    load_round_settings();
     return true;
 
   } catch (const std::exception &e) {
@@ -196,6 +207,8 @@ bool Settings::load_save_file(int width, int height) {
 }
 
 void Settings::write_save_file() {
+  save_round_settings();
+
   std::ofstream ofs(data->loaded_from);
   if (!ofs.good()) {
     std::cerr << "write_json_config_file error: Couldn't open file "
@@ -210,4 +223,14 @@ void Settings::write_save_file() {
 
   ofs << settingsJSON.dump(4);
   ofs.close();
+}
+
+void Settings::save_round_settings() {
+  data->round_settings = RoundManager::get().to_json();
+}
+
+void Settings::load_round_settings() {
+  if (!data->round_settings.is_null()) {
+    RoundManager::get().from_json(data->round_settings);
+  }
 }

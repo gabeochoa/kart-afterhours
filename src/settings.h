@@ -43,4 +43,7 @@ struct Settings {
 
   bool &get_fullscreen_enabled();
   void toggle_fullscreen();
+
+  void save_round_settings();
+  void load_round_settings();
 };

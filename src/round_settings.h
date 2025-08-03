@@ -3,7 +3,10 @@
 
 #include "library.h"
 #include "rl.h"
+#include <bitset>
+#include <nlohmann/json.hpp>
 #include <optional>
+#include <string>
 
 #include "weapons.h"
 
@@ -57,7 +60,7 @@ private:
 
 public:
   float current_round_time = -1;
-  void set_time_option(const int index) {
+  void set_time_option(const size_t index) {
     time_option = magic_enum::enum_value<TimeOptions>(index);
     reset_round_time();
   }
@@ -121,7 +124,7 @@ private:
 
 public:
   float current_round_time = 30.f; // Default to 30 seconds
-  void set_time_option(const int index) {
+  void set_time_option(const size_t index) {
     time_option = magic_enum::enum_value<TimeOptions>(index);
     reset_round_time();
   }
@@ -193,5 +196,127 @@ struct RoundManager {
       return lives_settings.num_starting_lives;
     }
     return 3; // default fallback for non-Lives round types
+  }
+
+  nlohmann::json to_json() const {
+    nlohmann::json j;
+
+    j["active_round_type"] = static_cast<size_t>(active_round_type);
+
+    nlohmann::json settings_j;
+    for (size_t i = 0; i < num_round_types; ++i) {
+      auto round_type = static_cast<RoundType>(i);
+      auto round_name = std::string(RoundType_NAMES[i]);
+
+      nlohmann::json round_j;
+      round_j["enabled_weapons"] = settings[i]->enabled_weapons.to_ulong();
+
+      switch (round_type) {
+      case RoundType::Lives: {
+        auto &lives_settings =
+            static_cast<const RoundLivesSettings &>(*settings[i]);
+        round_j["num_starting_lives"] = lives_settings.num_starting_lives;
+        break;
+      }
+      case RoundType::Kills: {
+        auto &kills_settings =
+            static_cast<const RoundKillsSettings &>(*settings[i]);
+        round_j["time_option"] =
+            static_cast<size_t>(kills_settings.time_option);
+        break;
+      }
+      case RoundType::Score: {
+        auto &score_settings =
+            static_cast<const RoundScoreSettings &>(*settings[i]);
+        round_j["score_needed_to_win"] = score_settings.score_needed_to_win;
+        break;
+      }
+      case RoundType::CatAndMouse: {
+        auto &cat_settings =
+            static_cast<const RoundCatAndMouseSettings &>(*settings[i]);
+        round_j["time_option"] = static_cast<size_t>(cat_settings.time_option);
+        round_j["show_countdown_timer"] = cat_settings.show_countdown_timer;
+        round_j["speed_multiplier"] = cat_settings.speed_multiplier;
+        break;
+      }
+      }
+
+      settings_j[round_name] = round_j;
+    }
+
+    j["settings"] = settings_j;
+    return j;
+  }
+
+  void from_json(const nlohmann::json &j) {
+    if (j.contains("active_round_type")) {
+      active_round_type =
+          static_cast<RoundType>(j["active_round_type"].get<size_t>());
+    }
+
+    if (j.contains("settings")) {
+      auto settings_j = j["settings"];
+
+      for (size_t i = 0; i < num_round_types; ++i) {
+        auto round_type = static_cast<RoundType>(i);
+        auto round_name = std::string(RoundType_NAMES[i]);
+
+        if (settings_j.contains(round_name)) {
+          auto round_j = settings_j[round_name];
+
+          if (round_j.contains("enabled_weapons")) {
+            settings[i]->enabled_weapons =
+                WeaponSet(round_j["enabled_weapons"].get<unsigned long>());
+          }
+
+          switch (round_type) {
+          case RoundType::Lives: {
+            auto &lives_settings =
+                static_cast<RoundLivesSettings &>(*settings[i]);
+            if (round_j.contains("num_starting_lives")) {
+              lives_settings.num_starting_lives =
+                  round_j["num_starting_lives"].get<int>();
+            }
+            break;
+          }
+          case RoundType::Kills: {
+            auto &kills_settings =
+                static_cast<RoundKillsSettings &>(*settings[i]);
+            if (round_j.contains("time_option")) {
+              kills_settings.set_time_option(
+                  round_j["time_option"].get<size_t>());
+            }
+            break;
+          }
+          case RoundType::Score: {
+            auto &score_settings =
+                static_cast<RoundScoreSettings &>(*settings[i]);
+            if (round_j.contains("score_needed_to_win")) {
+              score_settings.score_needed_to_win =
+                  round_j["score_needed_to_win"].get<int>();
+            }
+            break;
+          }
+          case RoundType::CatAndMouse: {
+            auto &cat_settings =
+                static_cast<RoundCatAndMouseSettings &>(*settings[i]);
+            if (round_j.contains("time_option")) {
+              cat_settings.set_time_option(
+                  round_j["time_option"].get<size_t>());
+            }
+            if (round_j.contains("show_countdown_timer")) {
+              cat_settings.show_countdown_timer =
+                  round_j["show_countdown_timer"].get<bool>();
+            }
+            if (round_j.contains("speed_multiplier")) {
+              cat_settings.speed_multiplier =
+                  round_j["speed_multiplier"].get<float>();
+            }
+            break;
+          }
+          }
+        }
+      }
+    }
   }
 };
