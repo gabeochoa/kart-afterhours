@@ -135,6 +135,7 @@ void game() {
           std::make_unique<RenderAnimationsWithShaders>());
       //
       systems.register_render_system(std::make_unique<RenderCatMouseTimer>());
+      systems.register_render_system(std::make_unique<RenderKillsTimer>());
       systems.register_render_system(std::make_unique<RenderPlayerHUD>());
       systems.register_render_system(std::make_unique<RenderLabels>());
       systems.register_render_system(std::make_unique<RenderWeaponCooldown>());

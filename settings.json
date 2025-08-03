@@ -10,7 +10,7 @@
         "width": 1280
     },
     "round_settings": {
-        "active_round_type": 2,
+        "active_round_type": 1,
         "settings": {
             "CatAndMouse": {
                 "enabled_weapons": 1,
@@ -20,7 +20,7 @@
             },
             "Kills": {
                 "enabled_weapons": 2,
-                "time_option": 0
+                "time_option": 2
             },
             "Lives": {
                 "enabled_weapons": 1,

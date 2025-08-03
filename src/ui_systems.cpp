@@ -7,7 +7,7 @@ using namespace afterhours;
 
 #include "game_state_manager.h"
 #include "input_mapping.h"
-#include "makers.h" // make_ai()
+#include "makers.h"  // make_ai()
 #include "preload.h" // FontID
 #include "round_settings.h"
 
@@ -688,9 +688,22 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
       auto &rl_settings =
           RoundManager::get().get_active_rt<RoundKillsSettings>();
 
+      std::string time_display;
+      switch (rl_settings.time_option) {
+      case RoundKillsSettings::TimeOptions::Unlimited:
+        time_display = "Unlimited";
+        break;
+      case RoundKillsSettings::TimeOptions::Seconds_30:
+        time_display = "30s";
+        break;
+      case RoundKillsSettings::TimeOptions::Minutes_1:
+        time_display = "1m";
+        break;
+      }
+
       imm::div(context, mk(entity),
-               ComponentConfig{}.with_label(std::format(
-                   "Round Length: {}", rl_settings.current_round_time)));
+               ComponentConfig{}.with_label(
+                   std::format("Round Length: {}", time_display)));
     };
 
     auto round_score_preview = [](Entity &entity,
@@ -1034,7 +1047,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     // Display selected map info in preview box
     if (selected_map_it != compatible_maps.end()) {
       const auto &selected_map = selected_map_it->second;
-      
+
       // Map title
       imm::div(context, mk(preview_box.ent()),
                ComponentConfig{}
@@ -1042,7 +1055,8 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_size(ComponentSize{percent(1.f), percent(0.2f)})
                    .with_debug_name("map_title"));
 
-      // Map preview area (image will be rendered by RenderMapPreviewOnScreen system)
+      // Map preview area (image will be rendered by RenderMapPreviewOnScreen
+      // system)
       imm::div(context, mk(preview_box.ent()),
                ComponentConfig{}
                    .with_size(ComponentSize{percent(1.f), percent(0.6f)})

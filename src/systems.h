@@ -63,8 +63,8 @@ struct RenderSpritesWithShaders
                 const afterhours::texture_manager::HasSprite &hasSprite,
                 const HasShader &hasShader, const HasColor &hasColor,
                 float) const override {
-    // TODO shaders have issues on Windows - disable for now
-    #ifdef _WIN32
+// TODO shaders have issues on Windows - disable for now
+#ifdef _WIN32
     // On Windows, render without shader for now
     auto *spritesheet_component = EntityHelper::get_singleton_cmp<
         afterhours::texture_manager::HasSpritesheet>();
@@ -109,7 +109,7 @@ struct RenderSpritesWithShaders
         },
         vec2{dest_width / 2.f, dest_height / 2.f}, transform.angle,
         hasColor.color());
-    #else
+#else
     // Original shader rendering for non-Windows platforms
     if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
       log_warn("Shader not found: {}", hasShader.shader_name);
@@ -182,7 +182,7 @@ struct RenderSpritesWithShaders
         raylib::WHITE);
 
     raylib::EndShaderMode();
-    #endif
+#endif
   }
 };
 
@@ -1877,6 +1877,47 @@ struct RenderCatMouseTimer : System<window_manager::ProvidesCurrentResolution> {
                        static_cast<int>(timer_x - countdown_text_width / 2.0f),
                        static_cast<int>(timer_y + screen_height * 0.056f),
                        static_cast<int>(text_size), raylib::YELLOW);
+    }
+  }
+};
+
+struct RenderKillsTimer : System<window_manager::ProvidesCurrentResolution> {
+  virtual void for_each_with(const Entity &,
+                             const window_manager::ProvidesCurrentResolution &,
+                             float) const override {
+
+    if (RoundManager::get().active_round_type != RoundType::Kills) {
+      return;
+    }
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+
+    auto &kills_settings =
+        RoundManager::get().get_active_rt<RoundKillsSettings>();
+
+    const int screen_width = raylib::GetScreenWidth();
+    const int screen_height = raylib::GetScreenHeight();
+
+    const float timer_x = screen_width * 0.5f;
+    const float timer_y = screen_height * 0.07f;
+    const float text_size = screen_height * 0.033f;
+    const raylib::Color timer_color = raylib::WHITE;
+
+    if (kills_settings.current_round_time > 0) {
+      std::string timer_text;
+      if (kills_settings.current_round_time >= 60.0f) {
+        int minutes = truncate_to_minutes(kills_settings.current_round_time);
+        int seconds = truncate_to_seconds(kills_settings.current_round_time);
+        timer_text = std::format("{}:{:02d}", minutes, seconds);
+      } else {
+        timer_text = std::format("{:.1f}s", kills_settings.current_round_time);
+      }
+      const float text_width =
+          raylib::MeasureText(timer_text.c_str(), static_cast<int>(text_size));
+      raylib::DrawText(
+          timer_text.c_str(), static_cast<int>(timer_x - text_width / 2.0f),
+          static_cast<int>(timer_y), static_cast<int>(text_size), timer_color);
     }
   }
 };
