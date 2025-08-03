@@ -2,8 +2,8 @@
 
 #include "afterhours/src/singleton.h"
 #include "library.h"
+
 #include "rl.h"
-#include "std_include.h"
 
 SINGLETON_FWD(ShaderLibrary)
 struct ShaderLibrary {
@@ -16,6 +16,11 @@ struct ShaderLibrary {
   [[nodiscard]] raylib::Shader &get(const std::string &name) {
     return impl.get(name);
   }
+  
+  [[nodiscard]] bool contains(const std::string &name) const {
+    return impl.contains(name);
+  }
+  
   void load(const char *const filename, const char *const name) {
     impl.load(filename, name);
   }
@@ -23,21 +28,18 @@ struct ShaderLibrary {
   void unload_all() { impl.unload_all(); }
 
   void update_values(const vec2 *rez, const float *time) {
-    for (auto &kv : impl.storage) {
-      auto &shader = kv.second;
-      int time_loc = raylib::GetShaderLocation(shader, "time");
-      int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
-
-      // Only set uniforms if they exist in the shader
-      if (resolution_loc != -1) {
-        raylib::SetShaderValue(shader, resolution_loc, rez,
-                               raylib::SHADER_UNIFORM_VEC2);
-      }
-      if (time_loc != -1) {
-        raylib::SetShaderValue(shader, time_loc, time,
-                               raylib::SHADER_UNIFORM_FLOAT);
-      }
-    }
+    (void)rez;
+    (void)time;
+    // for (auto &kv : impl.storage) {
+    // auto &shader = kv.second;
+    // TODO this doesnt seem to work on my personal laptop?
+    // int time_loc = raylib::GetShaderLocation(shader, "time");
+    // int resolution_loc = raylib::GetShaderLocation(shader, "resolution");
+    // raylib::SetShaderValue(shader, resolution_loc, rez,
+    // raylib::SHADER_UNIFORM_VEC2);
+    // raylib::SetShaderValue(shader, time_loc, time,
+    // raylib::SHADER_UNIFORM_FLOAT);
+    // }
   }
 
 private:

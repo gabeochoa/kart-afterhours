@@ -7,6 +7,7 @@
 #include "makers.h"
 #include "query.h"
 #include "round_settings.h"
+#include "shader_library.h"
 
 template <typename... Components>
 struct PausableSystem : afterhours::System<Components...> {
@@ -39,6 +40,121 @@ struct UpdateAnimationTransform
                 float) override {
     hasAnimation.update_transform(transform.position, transform.size,
                                   transform.angle);
+  }
+};
+
+// System to add SkipTextureManagerRendering to entities with shaders
+struct MarkEntitiesWithShaders : System<HasShader> {
+  virtual void for_each_with(Entity &entity, HasShader &hasShader,
+                             float) override {
+    if (!entity.has<SkipTextureManagerRendering>()) {
+      entity.addComponent<SkipTextureManagerRendering>();
+      log_info("Marked entity {} to skip texture_manager rendering", entity.id);
+    }
+  }
+};
+
+// System to render sprites with per-entity shaders
+struct RenderSpritesWithShaders
+    : System<Transform, afterhours::texture_manager::HasSprite, HasShader,
+             HasColor> {
+  virtual void
+  for_each_with(const Entity &entity, const Transform &transform,
+                const afterhours::texture_manager::HasSprite &hasSprite,
+                const HasShader &hasShader, const HasColor &hasColor,
+                float) const override {
+    if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
+      log_warn("Shader not found: {}", hasShader.shader_name);
+      return;
+    }
+
+    // Get the spritesheet texture from singleton
+    auto *spritesheet_component = EntityHelper::get_singleton_cmp<
+        afterhours::texture_manager::HasSpritesheet>();
+    if (!spritesheet_component) {
+      log_warn(
+          "No spritesheet component found! Drawing BLUE rectangle as fallback");
+      raylib::DrawRectanglePro(
+          Rectangle{transform.center().x, transform.center().y,
+                    transform.size.x, transform.size.y},
+          vec2{transform.size.x / 2.f, transform.size.y / 2.f}, transform.angle,
+          raylib::BLUE);
+      return;
+    }
+
+    raylib::Texture2D sheet = spritesheet_component->texture;
+    Rectangle source_frame =
+        afterhours::texture_manager::idx_to_sprite_frame(0, 1);
+
+    float dest_width = source_frame.width;
+    float dest_height = source_frame.height;
+
+    // Apply shader and render
+    const auto &shader = ShaderLibrary::get().get(hasShader.shader_name);
+    raylib::BeginShaderMode(shader);
+
+    // Pass the entity's color to the shader
+    raylib::Color entityColor = hasColor.color();
+    raylib::SetShaderValue(shader,
+                           raylib::GetShaderLocation(shader, "entityColor"),
+                           &entityColor, raylib::SHADER_UNIFORM_VEC4);
+
+    // Fine-tuned offset for perfect sprite alignment
+    constexpr float SPRITE_OFFSET_X = 9.f;
+    constexpr float SPRITE_OFFSET_Y = 4.f;
+
+    float offset_x = SPRITE_OFFSET_X;
+    float offset_y = SPRITE_OFFSET_Y;
+
+    float rotated_x = offset_x * cos(transform.angle * M_PI / 180.f) -
+                      offset_y * sin(transform.angle * M_PI / 180.f);
+    float rotated_y = offset_x * sin(transform.angle * M_PI / 180.f) +
+                      offset_y * cos(transform.angle * M_PI / 180.f);
+
+    raylib::DrawTexturePro(
+        sheet, source_frame,
+        Rectangle{
+            transform.position.x + transform.size.x / 2.f + rotated_x,
+            transform.position.y + transform.size.y / 2.f + rotated_y,
+            dest_width,
+            dest_height,
+        },
+        vec2{dest_width / 2.f, dest_height / 2.f}, transform.angle,
+        raylib::WHITE);
+
+    raylib::EndShaderMode();
+  }
+};
+
+// System to render animations with per-entity shaders
+struct RenderAnimationsWithShaders
+    : System<Transform, afterhours::texture_manager::HasAnimation, HasShader> {
+  virtual void
+  for_each_with(const Entity &entity, const Transform &transform,
+                const afterhours::texture_manager::HasAnimation &hasAnimation,
+                const HasShader &hasShader, float) const override {
+    if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
+      log_warn("Shader not found: {}", hasShader.shader_name);
+      return;
+    }
+
+    // Apply shader
+    const auto &shader = ShaderLibrary::get().get(hasShader.shader_name);
+    raylib::BeginShaderMode(shader);
+
+    // Render animation entities as SKYBLUE for visual distinction
+    raylib::DrawRectanglePro(
+        Rectangle{
+            transform.center().x,
+            transform.center().y,
+            transform.size.x,
+            transform.size.y,
+        },
+        vec2{transform.size.x / 2.f, transform.size.y / 2.f}, transform.angle,
+        raylib::SKYBLUE);
+
+    // End shader
+    raylib::EndShaderMode();
   }
 };
 
@@ -98,9 +214,32 @@ struct RenderEntities : System<Transform> {
     if (entity.has<afterhours::texture_manager::HasAnimation>())
       return;
 
-    auto entitiy_color = entity.has_child_of<HasColor>()
-                             ? entity.get_with_child<HasColor>().color()
-                             : raylib::RAYWHITE;
+    // Check if entity has a shader and apply it
+    bool has_shader = entity.has<HasShader>();
+    raylib::Color render_color;
+
+    if (has_shader) {
+      const auto &shader_component = entity.get<HasShader>();
+
+      if (ShaderLibrary::get().contains(shader_component.shader_name)) {
+
+        const auto &shader =
+            ShaderLibrary::get().get(shader_component.shader_name);
+        raylib::BeginShaderMode(shader);
+        render_color = raylib::MAGENTA;
+      } else {
+        log_warn("Shader not found in library: {}",
+                 shader_component.shader_name);
+        has_shader = false;
+        render_color = entity.has_child_of<HasColor>()
+                           ? entity.get_with_child<HasColor>().color()
+                           : raylib::RAYWHITE;
+      }
+    } else {
+      render_color = entity.has_child_of<HasColor>()
+                         ? entity.get_with_child<HasColor>().color()
+                         : raylib::RAYWHITE;
+    }
 
     raylib::DrawRectanglePro(
         Rectangle{
@@ -109,9 +248,13 @@ struct RenderEntities : System<Transform> {
             transform.size.x,
             transform.size.y,
         },
-        vec2{transform.size.x / 2.f,
-             transform.size.y / 2.f}, // transform.center(),
-        transform.angle, entitiy_color);
+        vec2{transform.size.x / 2.f, transform.size.y / 2.f}, transform.angle,
+        render_color);
+
+    // End shader mode if we started it
+    if (has_shader) {
+      raylib::EndShaderMode();
+    }
   }
 };
 
