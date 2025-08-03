@@ -58,10 +58,11 @@ struct MarkEntitiesWithShaders : System<HasShader> {
 struct RenderSpritesWithShaders
     : System<Transform, afterhours::texture_manager::HasSprite, HasShader,
              HasColor> {
-  virtual void for_each_with(const Entity &, const Transform &transform,
-                             const afterhours::texture_manager::HasSprite &,
-                             const HasShader &hasShader,
-                             const HasColor &hasColor, float) const override {
+  virtual void
+  for_each_with(const Entity &, const Transform &transform,
+                const afterhours::texture_manager::HasSprite &hasSprite,
+                const HasShader &hasShader, const HasColor &hasColor,
+                float) const override {
     if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
       log_warn("Shader not found: {}", hasShader.shader_name);
       return;
@@ -85,8 +86,9 @@ struct RenderSpritesWithShaders
     Rectangle source_frame =
         afterhours::texture_manager::idx_to_sprite_frame(0, 1);
 
-    float dest_width = source_frame.width;
-    float dest_height = source_frame.height;
+    // Use the sprite's scale for rendering size
+    float dest_width = source_frame.width * hasSprite.scale;
+    float dest_height = source_frame.height * hasSprite.scale;
 
     // Apply shader and render
     const auto &shader = ShaderLibrary::get().get(hasShader.shader_name);
@@ -1826,6 +1828,38 @@ struct RenderCatMouseTimer : System<window_manager::ProvidesCurrentResolution> {
                        static_cast<int>(timer_x - countdown_text_width / 2.0f),
                        static_cast<int>(timer_y + screen_height * 0.056f),
                        static_cast<int>(text_size), raylib::YELLOW);
+    }
+  }
+};
+
+struct ScaleCatSize : System<Transform, HasCatMouseTracking> {
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             HasCatMouseTracking &catMouseTracking,
+                             float) override {
+
+    // Only apply scaling in cat and mouse mode
+    if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
+      // Reset to normal size if not in cat and mouse mode
+      transform.size = CarSizes::NORMAL_CAR_SIZE;
+      return;
+    }
+
+    // Scale based on whether this entity is the cat
+    if (catMouseTracking.is_cat) {
+      transform.size = CarSizes::NORMAL_CAR_SIZE *
+                       CarSizes::CAT_SIZE_MULTIPLIER; // 2x the normal car size
+    } else {
+      transform.size = CarSizes::NORMAL_CAR_SIZE; // Normal car size
+    }
+
+    // Also update sprite scale if entity has a sprite
+    if (entity.has<afterhours::texture_manager::HasSprite>()) {
+      auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
+      if (catMouseTracking.is_cat) {
+        sprite.scale = CarSizes::CAT_SPRITE_SCALE; // 2x scale for cat
+      } else {
+        sprite.scale = CarSizes::NORMAL_SPRITE_SCALE; // Normal scale for mice
+      }
     }
   }
 };

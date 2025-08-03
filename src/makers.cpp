@@ -145,7 +145,7 @@ Entity &make_car(size_t id) {
   entity.addComponent<HasCatMouseTracking>();
 
   auto &transform = entity.addComponent<Transform>(
-      get_spawn_position((size_t)id), vec2{15.f, 25.f});
+      get_spawn_position((size_t)id), CarSizes::NORMAL_CAR_SIZE);
 
   transform.collision_config =
       CollisionConfig{.mass = 1000.f, .friction = .75f, .restitution = .1f};
