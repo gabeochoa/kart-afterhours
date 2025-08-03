@@ -35,30 +35,30 @@ vec2 get_preview_offset(int map_index) {
 const std::array<MapConfig, MapManager::MAP_COUNT> MapManager::available_maps =
     {{{.display_name = "Arena",
        .description = "Classic open arena with strategic obstacles",
-       .create_map_func = create_arena_map,
        .compatible_round_types = std::bitset<4>(
-           0b1111)}, // All round types (Lives, Kills, Score, CatAndMouse)
+           0b1111), // All round types (Lives, Kills, Score, CatAndMouse)
+       .create_map_func = create_arena_map},
       {.display_name = "Maze",
        .description = "Complex maze layout for tactical gameplay",
-       .create_map_func = create_maze_map,
-       .compatible_round_types = std::bitset<4>(0b0011)}, // Lives, Kills
+       .compatible_round_types = std::bitset<4>(0b0011), // Lives, Kills
+       .create_map_func = create_maze_map},
       {.display_name = "Race Track",
        .description = "Race track layout with speed-focused gameplay",
-       .create_map_func = create_race_map,
-       .compatible_round_types = std::bitset<4>(0b1100)}, // Score, CatAndMouse
+       .compatible_round_types = std::bitset<4>(0b1100), // Score, CatAndMouse
+       .create_map_func = create_race_map},
       {.display_name = "Battle Arena",
        .description = "Combat-focused layout with cover points",
-       .create_map_func = create_battle_map,
-       .compatible_round_types = std::bitset<4>(0b0011)}, // Lives, Kills
+       .compatible_round_types = std::bitset<4>(0b0011), // Lives, Kills
+       .create_map_func = create_battle_map},
       {.display_name = "Cat & Mouse",
        .description = "Special layout optimized for tag gameplay",
-       .create_map_func = create_catmouse_map,
-       .compatible_round_types = std::bitset<4>(0b1000)}, // CatAndMouse only
+       .compatible_round_types = std::bitset<4>(0b1000), // CatAndMouse only
+       .create_map_func = create_catmouse_map},
       {.display_name = "Test Map",
        .description = "Test map with green walls and big X for preview testing",
-       .create_map_func = create_test_map,
        .compatible_round_types = std::bitset<4>(
-           0b1111)}}}; // All round types (Lives, Kills, Score, CatAndMouse)
+           0b1111), // All round types (Lives, Kills, Score, CatAndMouse)
+       .create_map_func = create_test_map}}};
 
 void MapManager::initialize_preview_textures() {
   if (preview_textures_initialized)

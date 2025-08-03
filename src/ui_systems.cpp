@@ -1010,8 +1010,8 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_size(ComponentSize{percent(1.0f), percent(0.4f)})
                    .with_margin(Margin{
                        .top = percent(0.1f),
-                       .left = percent(0.1f),
                        .bottom = percent(0.1f),
+                       .left = percent(0.1f),
                        .right = percent(0.1f),
                    })
                    .with_debug_name("preview_box")
@@ -1066,8 +1066,8 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_size(ComponentSize{percent(1.f), percent(0.5f)})
                    .with_margin(Margin{
                        .top = percent(0.1f),
-                       .left = percent(0.1f),
                        .bottom = percent(0.1f),
+                       .left = percent(0.1f),
                        .right = percent(0.1f),
                    })
                    .with_flex_direction(FlexDirection::Row)
@@ -1091,8 +1091,8 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                         .with_size(ComponentSize{percent(1.f), percent(1.f)})
                         .with_margin(Margin{
                             .top = percent(0.1f),
-                            .left = percent(0.1f),
                             .bottom = percent(0.1f),
+                            .left = percent(0.1f),
                             .right = percent(0.1f),
                         }))) {
       MapManager::get().set_selected_map(map_index);
