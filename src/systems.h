@@ -100,6 +100,16 @@ struct RenderSpritesWithShaders
                            raylib::GetShaderLocation(shader, "entityColor"),
                            &entityColor, raylib::SHADER_UNIFORM_VEC4);
 
+    // Pass speed percentage uniform for car shader
+    if (hasShader.shader_name == "car") {
+      float speedPercent = transform.speed() / Config::get().max_speed.data;
+      int speedLocation = raylib::GetShaderLocation(shader, "speed");
+      if (speedLocation != -1) {
+        raylib::SetShaderValue(shader, speedLocation, &speedPercent,
+                               raylib::SHADER_UNIFORM_FLOAT);
+      }
+    }
+
     // Fine-tuned offset for perfect sprite alignment
     constexpr float SPRITE_OFFSET_X = 9.f;
     constexpr float SPRITE_OFFSET_Y = 4.f;
@@ -180,7 +190,6 @@ struct UpdateRenderTexture : System<> {
         EntityHelper::get_singleton_cmp<
             window_manager::ProvidesCurrentResolution>();
     if (pcr->current_resolution != resolution) {
-      log_info("Regenerating render texture");
       resolution = pcr->current_resolution;
       raylib::UnloadRenderTexture(mainRT);
       mainRT = raylib::LoadRenderTexture(resolution.width, resolution.height);
@@ -206,38 +215,42 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
-// TODO: Generalize this system to allow any UI component to be rendered from a texture
-// This could become RenderTextureOnUIComponent or similar, allowing reusable texture-based UI elements
-struct RenderMapPreviewOnScreen : System<window_manager::ProvidesCurrentResolution> {
+// TODO: Generalize this system to allow any UI component to be rendered from a
+// texture This could become RenderTextureOnUIComponent or similar, allowing
+// reusable texture-based UI elements
+struct RenderMapPreviewOnScreen
+    : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderMapPreviewOnScreen() {}
   virtual void for_each_with(
       const Entity & /* entity */,
       const window_manager::ProvidesCurrentResolution &pCurrentResolution,
       float) const override {
-    
-    if (GameStateManager::get().active_screen != GameStateManager::Screen::MapSelection) {
+
+    if (GameStateManager::get().active_screen !=
+        GameStateManager::Screen::MapSelection) {
       return;
     }
-    
+
     if (!MapManager::get().preview_textures_initialized) {
       return;
     }
-    
+
     auto resolution = pCurrentResolution.current_resolution;
     int selected_map = MapManager::get().get_selected_map();
-    const auto& preview_texture = MapManager::get().get_preview_texture(selected_map);
-    
+    const auto &preview_texture =
+        MapManager::get().get_preview_texture(selected_map);
+
     float preview_x = resolution.width * 0.1f;
     float preview_y = resolution.height * 0.3f;
-    float preview_size = std::min(resolution.width * 0.8f, resolution.height * 0.4f);
-    
-    Rectangle source = {0, 0, 
-                       static_cast<float>(preview_texture.texture.width),
-                       -static_cast<float>(preview_texture.texture.height)};
+    float preview_size =
+        std::min(resolution.width * 0.8f, resolution.height * 0.4f);
+
+    Rectangle source = {0, 0, static_cast<float>(preview_texture.texture.width),
+                        -static_cast<float>(preview_texture.texture.height)};
     Rectangle dest = {preview_x, preview_y, preview_size, preview_size};
-    
-    raylib::DrawTexturePro(preview_texture.texture, source, dest, 
-                          {0, 0}, 0.0f, raylib::WHITE);
+
+    raylib::DrawTexturePro(preview_texture.texture, source, dest, {0, 0}, 0.0f,
+                           raylib::WHITE);
   }
 };
 
@@ -245,8 +258,10 @@ struct RenderEntities : System<Transform> {
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,
                              float) const override {
-    if (entity.has<afterhours::texture_manager::HasSpritesheet>()) return;
-    if (entity.has<afterhours::texture_manager::HasAnimation>()) return;
+    if (entity.has<afterhours::texture_manager::HasSpritesheet>())
+      return;
+    if (entity.has<afterhours::texture_manager::HasAnimation>())
+      return;
 
     // Check if entity has a shader and apply it
     bool has_shader = entity.has<HasShader>();

@@ -11,10 +11,8 @@ uniform vec2 resolution;
 uniform sampler2D texture0;
 uniform vec4 colDiffuse;
 
-
 // Output fragment color
 out vec4 finalColor;
-
 
 void main()
 {

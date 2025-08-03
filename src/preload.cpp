@@ -64,13 +64,22 @@ Preload &Preload::init(const char *title) {
   load_gamepad_mappings();
   load_sounds();
 
+  // TODO add load folder for shaders
+
   ShaderLibrary::get().load(
       Files::get().fetch_resource_path("shaders", "post_processing.fs").c_str(),
       "post_processing");
-  
+
   ShaderLibrary::get().load(
       Files::get().fetch_resource_path("shaders", "entity_test.fs").c_str(),
       "entity_test");
+
+  ShaderLibrary::get().load(
+      Files::get().fetch_resource_path("shaders", "car.fs").c_str(), "car");
+
+  ShaderLibrary::get().load(
+      Files::get().fetch_resource_path("shaders", "entity_enhanced.fs").c_str(),
+      "entity_enhanced");
 
   // TODO how safe is the path combination here esp for mac vs windows
   Files::get().for_resources_in_folder(

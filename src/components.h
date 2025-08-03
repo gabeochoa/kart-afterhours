@@ -65,7 +65,6 @@ struct ManagesAvailableColors : BaseComponent {
       users.erase(id);
       // turn off the one we were previously using
       used[bit_index] = false;
-      log_info("released color id{} bi{} {}", id, bit_index, used);
     }
   }
 
@@ -335,11 +334,12 @@ struct MapGenerated : BaseComponent {
 
 struct HasShader : BaseComponent {
   std::string shader_name;
-  
-  HasShader(const std::string& name) : shader_name(name) {}
-  HasShader(const char* name) : shader_name(name) {}
+
+  HasShader(const std::string &name) : shader_name(name) {}
+  HasShader(const char *name) : shader_name(name) {}
 };
 
 struct SkipTextureManagerRendering : BaseComponent {
-  // Marker component to prevent texture_manager from rendering entities with shaders
+  // Marker component to prevent texture_manager from rendering entities with
+  // shaders
 };

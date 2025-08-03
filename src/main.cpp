@@ -114,6 +114,7 @@ void game() {
     }
     ui::register_after_ui_updates<InputAction>(systems);
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
+    systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
   }
 
   // renders
