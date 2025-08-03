@@ -1558,7 +1558,7 @@ struct CheckLivesWinCondition : System<> {
   }
 };
 
-struct UpdateCatMouseTimers : System<HasCatMouseTracking> {
+struct UpdateCatMouseTimers : PausableSystem<HasCatMouseTracking> {
   virtual void for_each_with(Entity &, HasCatMouseTracking &catMouseTracking,
                              float dt) override {
     if (!GameStateManager::get().is_game_active()) {
@@ -1701,7 +1701,7 @@ struct InitializeCatMouseGame : System<> {
   }
 };
 
-struct CheckCatMouseWinCondition : System<> {
+struct CheckCatMouseWinCondition : PausableSystem<> {
   virtual void once(float) override {
     // Only check win conditions for Cat & Mouse round type and when game is
     // active
@@ -1766,7 +1766,7 @@ struct CheckCatMouseWinCondition : System<> {
   }
 };
 
-struct CheckKillsWinCondition : System<> {
+struct CheckKillsWinCondition : PausableSystem<> {
   virtual void once(float) override {
     // Only check win conditions for Kills round type and when game is active
     if (RoundManager::get().active_round_type != RoundType::Kills) {
@@ -1821,7 +1821,7 @@ struct CheckKillsWinCondition : System<> {
   }
 };
 
-struct UpdateRoundCountdown : System<> {
+struct UpdateRoundCountdown : PausableSystem<> {
   virtual void once(float dt) override {
     auto round_type = RoundManager::get().active_round_type;
 
@@ -1838,11 +1838,7 @@ struct UpdateRoundCountdown : System<> {
     auto &settings = RoundManager::get().get_active_settings();
 
     if (settings.state == RoundSettings::GameState::Countdown) {
-      log_info("Countdown before decrement: {:.1f}s",
-               settings.countdown_before_start);
       settings.countdown_before_start -= dt;
-      log_info("Countdown after decrement: {:.1f}s",
-               settings.countdown_before_start);
       if (settings.countdown_before_start <= 0) {
         settings.countdown_before_start = 0;
         settings.state = RoundSettings::GameState::InGame;
