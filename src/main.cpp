@@ -92,6 +92,7 @@ void game() {
     systems.register_update_system(std::make_unique<UpdateShaderValues>());
     systems.register_update_system(
         std::make_unique<UpdateAnimationTransform>());
+    systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
     texture_manager::register_update_systems(systems);
 
     // Initialize map previews
@@ -115,8 +116,6 @@ void game() {
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
   }
 
-  // TODO add support for entity level shaders
-
   // renders
   {
     systems.register_render_system([&](float) {
@@ -124,9 +123,17 @@ void game() {
       raylib::ClearBackground(raylib::DARKGRAY);
     });
     {
+      ui::register_render_systems<InputAction>(
+          systems, InputAction::ToggleUILayoutDebug);
+      //
       systems.register_render_system(std::make_unique<RenderSkid>());
       systems.register_render_system(std::make_unique<RenderEntities>());
       texture_manager::register_render_systems(systems);
+      // Render sprites/animations with entity-level shaders
+      systems.register_render_system(
+          std::make_unique<RenderSpritesWithShaders>());
+      systems.register_render_system(
+          std::make_unique<RenderAnimationsWithShaders>());
       //
       systems.register_render_system(std::make_unique<RenderCatMouseTimer>());
       systems.register_render_system(std::make_unique<RenderPlayerHUD>());
@@ -136,9 +143,6 @@ void game() {
       systems.register_render_system(std::make_unique<CarRumble>());
       systems.register_render_system(std::make_unique<RenderCatMouseTimer>());
       systems.register_render_system(std::make_unique<RenderMapPreviewOnScreen>());
-      //
-      ui::register_render_systems<InputAction>(
-          systems, InputAction::ToggleUILayoutDebug);
       //
     }
     systems.register_render_system([&](float) { raylib::EndTextureMode(); });

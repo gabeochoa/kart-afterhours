@@ -67,6 +67,10 @@ Preload &Preload::init(const char *title) {
   ShaderLibrary::get().load(
       Files::get().fetch_resource_path("shaders", "post_processing.fs").c_str(),
       "post_processing");
+  
+  ShaderLibrary::get().load(
+      Files::get().fetch_resource_path("shaders", "entity_test.fs").c_str(),
+      "entity_test");
 
   // TODO how safe is the path combination here esp for mac vs windows
   Files::get().for_resources_in_folder(

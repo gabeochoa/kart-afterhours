@@ -119,6 +119,9 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
   bullet.addComponent<HasEntityIDBasedColor>(
       parent.id, parent.get<HasColor>().color(), raylib::RED);
 
+  // Add shader for testing (can be made configurable later)
+  bullet.addComponent<HasShader>("entity_test");
+
   const auto rad = transform.as_rad() + to_radians(angle + angle_offset);
   auto &bullet_transform = bullet.get<Transform>();
 
@@ -162,6 +165,9 @@ Entity &make_car(size_t id) {
   entity.addComponent<afterhours::texture_manager::HasSprite>(
       transform.position, transform.size, transform.angle,
       idx_to_sprite_frame(0, 1), 1.f, entity.get<HasColor>().color());
+
+  // Add shader for testing (can be made configurable later)
+  entity.addComponent<HasShader>("entity_test");
 
   auto &enabled_weapons = RoundManager::get().get_enabled_weapons();
   auto &can_shoot = entity.addComponent<CanShoot>();
