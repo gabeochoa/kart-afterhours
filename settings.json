@@ -20,15 +20,20 @@
             },
             "Kills": {
                 "enabled_weapons": 2,
+                "show_countdown_timer": true,
                 "time_option": 2
             },
             "Lives": {
                 "enabled_weapons": 1,
-                "num_starting_lives": 1
+                "num_starting_lives": 1,
+                "show_countdown_timer": true,
+                "time_option": 0
             },
             "Score": {
                 "enabled_weapons": 4,
-                "score_needed_to_win": 3
+                "score_needed_to_win": 3,
+                "show_countdown_timer": true,
+                "time_option": 0
             }
         }
     }

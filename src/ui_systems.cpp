@@ -690,13 +690,16 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
       std::string time_display;
       switch (rl_settings.time_option) {
-      case RoundKillsSettings::TimeOptions::Unlimited:
+      case RoundSettings::TimeOptions::Unlimited:
         time_display = "Unlimited";
         break;
-      case RoundKillsSettings::TimeOptions::Seconds_30:
+      case RoundSettings::TimeOptions::Seconds_10:
+        time_display = "10s";
+        break;
+      case RoundSettings::TimeOptions::Seconds_30:
         time_display = "30s";
         break;
-      case RoundKillsSettings::TimeOptions::Minutes_1:
+      case RoundSettings::TimeOptions::Minutes_1:
         time_display = "1m";
         break;
       }
@@ -723,16 +726,16 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
       std::string time_display;
       switch (rl_settings.time_option) {
-      case RoundCatAndMouseSettings::TimeOptions::Unlimited:
+      case RoundSettings::TimeOptions::Unlimited:
         time_display = "Unlimited";
         break;
-      case RoundCatAndMouseSettings::TimeOptions::Seconds_10:
+      case RoundSettings::TimeOptions::Seconds_10:
         time_display = "10s";
         break;
-      case RoundCatAndMouseSettings::TimeOptions::Seconds_30:
+      case RoundSettings::TimeOptions::Seconds_30:
         time_display = "30s";
         break;
-      case RoundCatAndMouseSettings::TimeOptions::Minutes_1:
+      case RoundSettings::TimeOptions::Minutes_1:
         time_display = "1m";
         break;
       }
@@ -863,7 +866,7 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
 
   {
     // TODO replace with actual strings
-    auto options = magic_enum::enum_names<RoundKillsSettings::TimeOptions>();
+    auto options = magic_enum::enum_names<RoundSettings::TimeOptions>();
     auto option_index = magic_enum::enum_index(rl_settings.time_option).value();
 
     if (auto result =
@@ -888,8 +891,7 @@ void round_cat_mouse_settings(Entity &entity, UIContext<InputAction> &context) {
       RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
 
   {
-    auto options =
-        magic_enum::enum_names<RoundCatAndMouseSettings::TimeOptions>();
+    auto options = magic_enum::enum_names<RoundSettings::TimeOptions>();
     auto option_index = magic_enum::enum_index(cm_settings.time_option).value();
 
     if (auto result =

@@ -32,52 +32,13 @@ constexpr static auto RoundType_NAMES = magic_enum::enum_names<RoundType>();
 
 struct RoundSettings {
   WeaponSet enabled_weapons = WeaponSet().set(0);
-};
 
-struct RoundLivesSettings : RoundSettings {
-  int num_starting_lives = 1;
-};
-
-struct RoundKillsSettings : RoundSettings {
   enum struct TimeOptions : size_t {
     Unlimited,
+    Seconds_10,
     Seconds_30,
     Minutes_1,
   } time_option = TimeOptions::Unlimited;
-
-private:
-  static float get_time_from_option(TimeOptions option) {
-    switch (option) {
-    case TimeOptions::Unlimited:
-      return -1.0f;
-    case TimeOptions::Seconds_30:
-      return 30.0f;
-    case TimeOptions::Minutes_1:
-      return 60.0f;
-    }
-    return -1.0f; // Default fallback for kills
-  }
-
-public:
-  float current_round_time = -1;
-  void set_time_option(const size_t index) {
-    time_option = magic_enum::enum_value<TimeOptions>(index);
-    reset_round_time();
-  }
-
-  void reset_round_time() {
-    current_round_time = get_time_from_option(time_option);
-  }
-};
-
-struct RoundScoreSettings : RoundSettings {
-  int score_needed_to_win = 3;
-};
-
-struct RoundCatAndMouseSettings : RoundSettings {
-  // TODO: audit cooldown time setting
-  // TODO: Add "tag back" rule option (allow/disallow tag backs)
-  // TODO: Add UI announcement of who is the current cat on game start
 
   enum struct GameState : size_t {
     Countdown,
@@ -85,27 +46,11 @@ struct RoundCatAndMouseSettings : RoundSettings {
     GameOver,
   } state = GameState::Countdown;
 
-  enum struct TimeOptions : size_t {
-    Unlimited,
-    Seconds_10,
-    Seconds_30,
-    Minutes_1,
-  } time_option = TimeOptions::Minutes_1;
-
   // Countdown before game starts (players can drive around)
   float countdown_before_start = 3.0f; // 3 seconds to get ready
 
-  // Whether to announce the cat in UI
-  bool announce_cat_in_ui = true;
-
   // Whether to show countdown timer in UI
   bool show_countdown_timer = true;
-
-  // how long a player is safe after being tagged
-  // TODO: Add tag cooldown setting to settings UI
-  float tag_cooldown_time = 2.0f;
-
-  float speed_multiplier = 0.7f;
 
 private:
   static float get_time_from_option(TimeOptions option) {
@@ -119,11 +64,11 @@ private:
     case TimeOptions::Minutes_1:
       return 60.0f;
     }
-    return 30.0f; // Default fallback
+    return -1.0f; // Default fallback
   }
 
 public:
-  float current_round_time = 30.f; // Default to 30 seconds
+  float current_round_time = -1;
   void set_time_option(const size_t index) {
     time_option = magic_enum::enum_value<TimeOptions>(index);
     reset_round_time();
@@ -131,6 +76,44 @@ public:
 
   void reset_round_time() {
     current_round_time = get_time_from_option(time_option);
+  }
+
+  void reset_countdown() {
+    countdown_before_start = 3.0f;
+    state = GameState::Countdown;
+  }
+};
+
+struct RoundLivesSettings : RoundSettings {
+  int num_starting_lives = 1;
+};
+
+struct RoundKillsSettings : RoundSettings {
+  // Time settings inherited from base class
+};
+
+struct RoundScoreSettings : RoundSettings {
+  int score_needed_to_win = 3;
+};
+
+struct RoundCatAndMouseSettings : RoundSettings {
+  // TODO: audit cooldown time setting
+  // TODO: Add "tag back" rule option (allow/disallow tag backs)
+  // TODO: Add UI announcement of who is the current cat on game start
+
+  // Whether to announce the cat in UI
+  bool announce_cat_in_ui = true;
+
+  // how long a player is safe after being tagged
+  // TODO: Add tag cooldown setting to settings UI
+  float tag_cooldown_time = 2.0f;
+
+  float speed_multiplier = 0.7f;
+
+  // Override default time option for cat and mouse
+  RoundCatAndMouseSettings() {
+    time_option = TimeOptions::Minutes_1;
+    reset_round_time();
   }
 };
 
@@ -211,6 +194,12 @@ struct RoundManager {
       nlohmann::json round_j;
       round_j["enabled_weapons"] = settings[i]->enabled_weapons.to_ulong();
 
+      // Time settings are now in base class, so add to all round types
+      round_j["time_option"] = static_cast<size_t>(settings[i]->time_option);
+
+      // Countdown settings are now in base class, so add to all round types
+      round_j["show_countdown_timer"] = settings[i]->show_countdown_timer;
+
       switch (round_type) {
       case RoundType::Lives: {
         auto &lives_settings =
@@ -219,10 +208,7 @@ struct RoundManager {
         break;
       }
       case RoundType::Kills: {
-        auto &kills_settings =
-            static_cast<const RoundKillsSettings &>(*settings[i]);
-        round_j["time_option"] =
-            static_cast<size_t>(kills_settings.time_option);
+        // Time and countdown settings handled above
         break;
       }
       case RoundType::Score: {
@@ -234,8 +220,6 @@ struct RoundManager {
       case RoundType::CatAndMouse: {
         auto &cat_settings =
             static_cast<const RoundCatAndMouseSettings &>(*settings[i]);
-        round_j["time_option"] = static_cast<size_t>(cat_settings.time_option);
-        round_j["show_countdown_timer"] = cat_settings.show_countdown_timer;
         round_j["speed_multiplier"] = cat_settings.speed_multiplier;
         break;
       }
@@ -269,6 +253,18 @@ struct RoundManager {
                 WeaponSet(round_j["enabled_weapons"].get<unsigned long>());
           }
 
+          // Time settings are now in base class, so handle for all round types
+          if (round_j.contains("time_option")) {
+            settings[i]->set_time_option(round_j["time_option"].get<size_t>());
+          }
+
+          // Countdown settings are now in base class, so handle for all round
+          // types
+          if (round_j.contains("show_countdown_timer")) {
+            settings[i]->show_countdown_timer =
+                round_j["show_countdown_timer"].get<bool>();
+          }
+
           switch (round_type) {
           case RoundType::Lives: {
             auto &lives_settings =
@@ -280,12 +276,7 @@ struct RoundManager {
             break;
           }
           case RoundType::Kills: {
-            auto &kills_settings =
-                static_cast<RoundKillsSettings &>(*settings[i]);
-            if (round_j.contains("time_option")) {
-              kills_settings.set_time_option(
-                  round_j["time_option"].get<size_t>());
-            }
+            // Time and countdown settings handled above
             break;
           }
           case RoundType::Score: {
@@ -300,14 +291,6 @@ struct RoundManager {
           case RoundType::CatAndMouse: {
             auto &cat_settings =
                 static_cast<RoundCatAndMouseSettings &>(*settings[i]);
-            if (round_j.contains("time_option")) {
-              cat_settings.set_time_option(
-                  round_j["time_option"].get<size_t>());
-            }
-            if (round_j.contains("show_countdown_timer")) {
-              cat_settings.show_countdown_timer =
-                  round_j["show_countdown_timer"].get<bool>();
-            }
             if (round_j.contains("speed_multiplier")) {
               cat_settings.speed_multiplier =
                   round_j["speed_multiplier"].get<float>();
