@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "afterhours/ah.h"
@@ -9,6 +8,14 @@
 #include "query.h"
 #include "round_settings.h"
 #include "shader_library.h"
+
+// Hippo game constants
+constexpr float HIPPO_SPAWN_INTERVAL = 0.8f;
+constexpr int MAX_HIPPO_ITEMS_ON_SCREEN = 20;
+
+// Sprite rendering constants
+constexpr float SPRITE_OFFSET_X = 9.f;
+constexpr float SPRITE_OFFSET_Y = 4.f;
 
 template <typename... Components>
 struct PausableSystem : afterhours::System<Components...> {
@@ -88,9 +95,6 @@ struct RenderSpritesWithShaders
     float dest_height = source_frame.height * hasSprite.scale;
 
     // Fine-tuned offset for perfect sprite alignment
-    constexpr float SPRITE_OFFSET_X = 9.f;
-    constexpr float SPRITE_OFFSET_Y = 4.f;
-
     float offset_x = SPRITE_OFFSET_X;
     float offset_y = SPRITE_OFFSET_Y;
 
@@ -159,9 +163,6 @@ struct RenderSpritesWithShaders
     }
 
     // Fine-tuned offset for perfect sprite alignment
-    constexpr float SPRITE_OFFSET_X = 9.f;
-    constexpr float SPRITE_OFFSET_Y = 4.f;
-
     float offset_x = SPRITE_OFFSET_X;
     float offset_y = SPRITE_OFFSET_Y;
 
@@ -736,7 +737,7 @@ struct UpdateCollidingEntities : PausableSystem<Transform> {
     float overlapY =
         std::min(a.y + a.height, b.y + b.height) - std::max(a.y, b.y);
 
-    // If there’s no overlap, return 0
+    // If there's no overlap, return 0
     if (overlapX <= 0.0f || overlapY <= 0.0f)
       return 0.0f;
 
@@ -956,11 +957,16 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
     switch (round_type) {
     case RoundType::Lives:
     case RoundType::Kills:
-    case RoundType::Score:
+    case RoundType::Hippo:
       default_ai_target(ai, transform);
       break;
     case RoundType::CatAndMouse:
       cat_mouse_ai_target(entity, ai, transform);
+      break;
+    default:
+      log_error("Invalid round type in AITargetSelection: {}",
+                static_cast<size_t>(round_type));
+      default_ai_target(ai, transform);
       break;
     }
   }
@@ -1224,6 +1230,103 @@ struct ProcessCollisionAbsorption : System<Transform, CollisionAbsorber> {
 
     if (!collided_with_absorber.empty()) {
       entity.cleanup = true;
+    }
+  }
+};
+
+struct ProcessHippoCollection : System<Transform, HasHippoCollection> {
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             HasHippoCollection &hippo_collection,
+                             float) override {
+    // Only process hippo collection in hippo round type
+    if (RoundManager::get().active_round_type != RoundType::Hippo) {
+      return;
+    }
+
+    // Find hippo items that this player can collect
+    auto hippo_items = EQ().whereHasComponent<HippoItem>()
+                           .whereOverlaps(transform.rect())
+                           .gen();
+
+    for (const auto &item_ref : hippo_items) {
+      Entity &item = item_ref.get();
+      HippoItem &hippo_item = item.get<HippoItem>();
+
+      if (!hippo_item.collected) {
+        hippo_item.collected = true;
+        hippo_collection.collect_hippo();
+        item.cleanup = true; // Remove the collected item
+      }
+    }
+  }
+};
+
+struct SpawnHippoItems : PausableSystem<> {
+  bool spawn_counter_reset = false;
+
+  virtual void once(float dt) override {
+    // Only spawn hippo items in hippo round type
+    if (RoundManager::get().active_round_type != RoundType::Hippo) {
+      return;
+    }
+
+    // Reset spawn counter when game becomes active (not during countdown)
+    if (!spawn_counter_reset && GameStateManager::get().is_game_active()) {
+      auto &hippo_settings =
+          RoundManager::get().get_active_rt<RoundHippoSettings>();
+      hippo_settings.reset_spawn_counter();
+      spawn_counter_reset = true;
+      log_info("SpawnHippoItems: reset spawn counter");
+    }
+
+    // Only spawn when game is active (not during countdown)
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+
+    // Get total hippos setting
+    auto &hippo_settings =
+        RoundManager::get().get_active_rt<RoundHippoSettings>();
+    int total_hippos = hippo_settings.total_hippos;
+
+    // Check if we've spawned all hippos
+    if (hippo_settings.hippos_spawned_total >= total_hippos) {
+      return;
+    }
+
+    // Check if we need to spawn more hippo items
+    auto existing_items = EQ().whereHasComponent<HippoItem>().gen();
+    if (existing_items.size() >= MAX_HIPPO_ITEMS_ON_SCREEN) {
+      return;
+    }
+
+    // Spawn new hippo items randomly
+    static float spawn_timer = 0.0f;
+    spawn_timer += dt;
+
+    if (spawn_timer >= HIPPO_SPAWN_INTERVAL) {
+      spawn_timer = 0.0f;
+
+      // Get screen dimensions
+      auto *resolution_provider = EntityHelper::get_singleton_cmp<
+          window_manager::ProvidesCurrentResolution>();
+      if (!resolution_provider) {
+        log_error("SpawnHippoItems: No resolution provider found");
+        return;
+      }
+      float screen_width = resolution_provider->width();
+      float screen_height = resolution_provider->height();
+
+      // Spawn hippo item at random position
+      // TODO avoid spawning on top of other hippos or players or obstacles
+      vec2 spawn_pos = vec_rand_in_box(
+          Rectangle{50, 50, screen_width - 100, screen_height - 100});
+
+      make_hippo_item(spawn_pos);
+      hippo_settings.hippos_spawned_total++;
+
+      log_info("SpawnHippoItems: spawned {}/{} hippos",
+               hippo_settings.hippos_spawned_total, total_hippos);
     }
   }
 };
@@ -1524,7 +1627,7 @@ private:
   }
 };
 
-struct CheckLivesWinCondition : System<> {
+struct CheckLivesWinCondition : PausableSystem<> {
   virtual void once(float) override {
     // Only check win conditions for Lives round type and when game is active
     if (RoundManager::get().active_round_type != RoundType::Lives) {
@@ -1649,7 +1752,7 @@ struct HandleCatMouseTagTransfer : System<Transform, HasCatMouseTracking> {
   }
 };
 
-struct InitializeCatMouseGame : System<> {
+struct InitializeCatMouseGame : PausableSystem<> {
   bool initialized = false;
   // TODO: Add option to start with random cat vs. player with most kills from
   // previous round
@@ -1792,27 +1895,39 @@ struct CheckKillsWinCondition : PausableSystem<> {
       kills_settings.current_round_time -= raylib::GetFrameTime();
       if (kills_settings.current_round_time <= 0) {
         // Time's up! Find the player with the most kills
-        auto players_with_kills = EntityQuery()
-                                      .whereHasComponent<PlayerID>()
-                                      .whereHasComponent<HasKillCountTracker>()
-                                      .gen();
+        auto entities_with_kills =
+            EntityQuery().whereHasComponent<HasKillCountTracker>().gen();
 
-        if (players_with_kills.empty()) {
-          log_info("No players with kills - round is a tie!");
+        if (entities_with_kills.empty()) {
+          log_info("No entities with kills - round is a tie!");
           GameStateManager::get().end_game();
           return;
         }
 
-        // Find the player with the most kills
+        // Find the entity with the most kills
         auto winner = std::max_element(
-            players_with_kills.begin(), players_with_kills.end(),
+            entities_with_kills.begin(), entities_with_kills.end(),
             [](const auto &a, const auto &b) {
               return a.get().template get<HasKillCountTracker>().kills <
                      b.get().template get<HasKillCountTracker>().kills;
             });
 
-        log_info("Player {} wins the Kills round with {} kills!",
-                 winner->get().get<PlayerID>().id,
+        if (winner == entities_with_kills.end()) {
+          log_error("Failed to find winner in kills game");
+          GameStateManager::get().end_game();
+          return;
+        }
+
+        // Get winner identifier for logging
+        std::string winner_id;
+        if (winner->get().has<PlayerID>()) {
+          winner_id =
+              "Player " + std::to_string(winner->get().get<PlayerID>().id);
+        } else {
+          winner_id = "AI " + std::to_string(winner->get().id);
+        }
+
+        log_info("{} wins the Kills round with {} kills!", winner_id,
                  winner->get().get<HasKillCountTracker>().kills);
         kills_settings.current_round_time = 0;
         GameStateManager::get().end_game();
@@ -1821,13 +1936,95 @@ struct CheckKillsWinCondition : PausableSystem<> {
   }
 };
 
+struct CheckHippoWinCondition : PausableSystem<> {
+  virtual void once(float) override {
+    // Only check win conditions for Hippo round type and when game is active
+    if (RoundManager::get().active_round_type != RoundType::Hippo) {
+      return;
+    }
+
+    // Only run when game is active
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+
+    auto &settings = RoundManager::get().get_active_settings();
+
+    // Only run timer when game state is InGame (not during countdown)
+    if (settings.state != RoundSettings::GameState::InGame) {
+      return;
+    }
+
+    auto &hippo_settings =
+        RoundManager::get().get_active_rt<RoundHippoSettings>();
+
+    // Check if time limit has been reached
+    if (hippo_settings.current_round_time > 0) {
+      hippo_settings.current_round_time -= raylib::GetFrameTime();
+      if (hippo_settings.current_round_time <= 0) {
+        end_hippo_game("Time's up!");
+        return;
+      }
+    }
+
+    // Check if all hippos have been collected
+    auto remaining_hippos = EQ().whereHasComponent<HippoItem>().gen();
+    if (remaining_hippos.empty()) {
+      end_hippo_game("All hippos collected!");
+      return;
+    }
+  }
+
+private:
+  void end_hippo_game(const std::string &reason) {
+    // Find the player with the most hippos
+    auto players_with_hippos =
+        EntityQuery().whereHasComponent<HasHippoCollection>().gen();
+
+    if (players_with_hippos.empty()) {
+      log_info("No players with hippos - round is a tie!");
+      GameStateManager::get().end_game();
+      return;
+    }
+
+    // Find the player with the most hippos
+    auto winner = std::max_element(
+        players_with_hippos.begin(), players_with_hippos.end(),
+        [](const auto &a, const auto &b) {
+          return a.get().template get<HasHippoCollection>().get_hippo_count() <
+                 b.get().template get<HasHippoCollection>().get_hippo_count();
+        });
+
+    if (winner == players_with_hippos.end()) {
+      log_error("Failed to find winner in hippo game");
+      GameStateManager::get().end_game();
+      return;
+    }
+
+    // Get winner identifier for logging
+    std::string winner_id;
+    if (winner->get().has<PlayerID>()) {
+      winner_id = "Player " + std::to_string(winner->get().get<PlayerID>().id);
+    } else {
+      winner_id = "AI " + std::to_string(winner->get().id);
+    }
+
+    log_info("{} {} wins the Hippo round with {} hippos!", reason, winner_id,
+             winner->get().get<HasHippoCollection>().get_hippo_count());
+
+    auto &hippo_settings =
+        RoundManager::get().get_active_rt<RoundHippoSettings>();
+    hippo_settings.current_round_time = 0;
+    GameStateManager::get().end_game();
+  }
+};
+
 struct UpdateRoundCountdown : PausableSystem<> {
   virtual void once(float dt) override {
     auto round_type = RoundManager::get().active_round_type;
 
     // Only update countdown for round types that use time
-    if (round_type != RoundType::Kills &&
-        round_type != RoundType::CatAndMouse) {
+    if (!RoundManager::get().uses_timer()) {
       return;
     }
 
@@ -1844,10 +2041,23 @@ struct UpdateRoundCountdown : PausableSystem<> {
         settings.state = RoundSettings::GameState::InGame;
 
         // Log appropriate message based on round type
-        if (round_type == RoundType::CatAndMouse) {
+        switch (round_type) {
+        case RoundType::CatAndMouse:
           log_info("Cat & Mouse game starting!");
-        } else if (round_type == RoundType::Kills) {
+          break;
+        case RoundType::Kills:
           log_info("Kills round starting!");
+          break;
+        case RoundType::Hippo:
+          log_info("Hippo collection game starting!");
+          break;
+        case RoundType::Lives:
+          // Lives mode doesn't have a countdown, so no message needed
+          break;
+        default:
+          log_error("Unknown round type in countdown: {}",
+                    static_cast<size_t>(round_type));
+          break;
         }
       }
     }
@@ -1862,8 +2072,7 @@ struct RenderRoundTimer : System<window_manager::ProvidesCurrentResolution> {
     auto round_type = RoundManager::get().active_round_type;
 
     // Only render timer for round types that use time
-    if (round_type != RoundType::Kills &&
-        round_type != RoundType::CatAndMouse) {
+    if (!RoundManager::get().uses_timer()) {
       return;
     }
     if (!GameStateManager::get().is_game_active()) {
@@ -1879,19 +2088,9 @@ struct RenderRoundTimer : System<window_manager::ProvidesCurrentResolution> {
     const raylib::Color timer_color = raylib::WHITE;
 
     // Handle main timer display
-    float current_time = -1.0f;
-    if (round_type == RoundType::Kills) {
-      auto &kills_settings =
-          RoundManager::get().get_active_rt<RoundKillsSettings>();
-      current_time = kills_settings.current_round_time;
-    } else if (round_type == RoundType::CatAndMouse) {
-      auto &cat_mouse_settings =
-          RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
-      if (cat_mouse_settings.state == RoundSettings::GameState::InGame) {
-        current_time = cat_mouse_settings.current_round_time;
-      }
-    }
+    float current_time = RoundManager::get().get_current_round_time();
 
+    // TODO is this similar to the other timer systems renderers?
     if (current_time > 0) {
       std::string timer_text;
       if (current_time >= 60.0f) {

@@ -104,6 +104,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                           const OptEntity &car, raylib::Color bg_color);
   void render_score_stats(UIContext<InputAction> &context, Entity &parent,
                           const OptEntity &car, raylib::Color bg_color);
+  void render_hippo_stats(UIContext<InputAction> &context, Entity &parent,
+                          const OptEntity &car, raylib::Color bg_color);
   void render_cat_mouse_stats(UIContext<InputAction> &context, Entity &parent,
                               const OptEntity &car, raylib::Color bg_color);
   void render_unknown_stats(UIContext<InputAction> &context, Entity &parent,

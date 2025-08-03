@@ -272,6 +272,22 @@ struct HasCatMouseTracking : BaseComponent {
   HasCatMouseTracking() = default;
 };
 
+struct HasHippoCollection : BaseComponent {
+  int hippos_collected = 0;
+
+  void collect_hippo() { hippos_collected++; }
+
+  int get_hippo_count() const { return hippos_collected; }
+};
+
+struct HippoItem : BaseComponent {
+  bool collected = false;
+  float spawn_time = 0.0f;
+
+  HippoItem() = default;
+  HippoItem(float spawn_t) : spawn_time(spawn_t) {}
+};
+
 /// @brief Used to make a component whose transform
 /// can move during the game loop to wrap around the screen.
 /// e.g. if you go passed the width of the screen (right-side),

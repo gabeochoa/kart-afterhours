@@ -10,7 +10,7 @@
         "width": 1280
     },
     "round_settings": {
-        "active_round_type": 1,
+        "active_round_type": 3,
         "settings": {
             "CatAndMouse": {
                 "enabled_weapons": 1,
@@ -18,20 +18,20 @@
                 "speed_multiplier": 0.699999988079071,
                 "time_option": 3
             },
+            "Hippo": {
+                "enabled_weapons": 4,
+                "show_countdown_timer": true,
+                "time_option": 3,
+                "total_hippos": 50
+            },
             "Kills": {
                 "enabled_weapons": 2,
                 "show_countdown_timer": true,
-                "time_option": 2
+                "time_option": 3
             },
             "Lives": {
                 "enabled_weapons": 1,
                 "num_starting_lives": 1,
-                "show_countdown_timer": true,
-                "time_option": 0
-            },
-            "Score": {
-                "enabled_weapons": 4,
-                "score_needed_to_win": 3,
                 "show_countdown_timer": true,
                 "time_option": 0
             }

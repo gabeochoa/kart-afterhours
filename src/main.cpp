@@ -80,6 +80,9 @@ void game() {
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
     systems.register_update_system(std::make_unique<CheckLivesWinCondition>());
     systems.register_update_system(std::make_unique<CheckKillsWinCondition>());
+    systems.register_update_system(std::make_unique<ProcessHippoCollection>());
+    systems.register_update_system(std::make_unique<SpawnHippoItems>());
+    systems.register_update_system(std::make_unique<CheckHippoWinCondition>());
     systems.register_update_system(std::make_unique<InitializeCatMouseGame>());
     systems.register_update_system(std::make_unique<UpdateCatMouseTimers>());
     systems.register_update_system(std::make_unique<UpdateRoundCountdown>());

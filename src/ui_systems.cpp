@@ -468,8 +468,13 @@ void ScheduleMainMenuUI::round_end_player_column(
           std::format("Kills: {}", car->get<HasKillCountTracker>().kills);
     }
     break;
-  case RoundType::Score:
-    stats_text = "Score: N/A";
+  case RoundType::Hippo:
+    if (car->has<HasHippoCollection>()) {
+      stats_text = std::format(
+          "Hippos: {}", car->get<HasHippoCollection>().get_hippo_count());
+    } else {
+      stats_text = "Hippos: 0";
+    }
     break;
   case RoundType::CatAndMouse:
     if (car->has<HasCatMouseTracking>()) {
@@ -497,8 +502,8 @@ void ScheduleMainMenuUI::render_round_end_stats(UIContext<InputAction> &context,
   case RoundType::Kills:
     render_kills_stats(context, parent, car, bg_color);
     break;
-  case RoundType::Score:
-    render_score_stats(context, parent, car, bg_color);
+  case RoundType::Hippo:
+    render_hippo_stats(context, parent, car, bg_color);
     break;
   case RoundType::CatAndMouse:
     render_cat_mouse_stats(context, parent, car, bg_color);
@@ -549,11 +554,16 @@ void ScheduleMainMenuUI::render_kills_stats(UIContext<InputAction> &context,
                .disable_rounded_corners());
 }
 
-void ScheduleMainMenuUI::render_score_stats(UIContext<InputAction> &context,
-                                            Entity &parent, const OptEntity &,
+void ScheduleMainMenuUI::render_hippo_stats(UIContext<InputAction> &context,
+                                            Entity &parent,
+                                            const OptEntity &car,
                                             raylib::Color bg_color) {
-  // TODO: Add score tracking component
-  std::string stats_text = "Score: N/A";
+  if (!car->has<HasHippoCollection>()) {
+    return;
+  }
+
+  std::string stats_text = std::format(
+      "Hippos: {}", car->get<HasHippoCollection>().get_hippo_count());
 
   imm::div(context, mk(parent, 1),
            ComponentConfig{}
@@ -709,14 +719,14 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                    std::format("Round Length: {}", time_display)));
     };
 
-    auto round_score_preview = [](Entity &entity,
+    auto round_hippo_preview = [](Entity &entity,
                                   UIContext<InputAction> &context) {
       auto &rl_settings =
-          RoundManager::get().get_active_rt<RoundScoreSettings>();
+          RoundManager::get().get_active_rt<RoundHippoSettings>();
 
       imm::div(context, mk(entity),
-               ComponentConfig{}.with_label(std::format(
-                   "Score Needed: {}", rl_settings.score_needed_to_win)));
+               ComponentConfig{}.with_label(
+                   std::format("Total Hippos: {}", rl_settings.total_hippos)));
     };
 
     auto round_cat_mouse_preview = [](Entity &entity,
@@ -773,8 +783,8 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
     case RoundType::Kills:
       round_kills_preview(elem.ent(), context);
       break;
-    case RoundType::Score:
-      round_score_preview(elem.ent(), context);
+    case RoundType::Hippo:
+      round_hippo_preview(elem.ent(), context);
       break;
     case RoundType::CatAndMouse:
       round_cat_mouse_preview(elem.ent(), context);
@@ -878,12 +888,12 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
   }
 }
 
-void round_score_settings(Entity &entity, UIContext<InputAction> &context) {
-  auto &rl_settings = RoundManager::get().get_active_rt<RoundScoreSettings>();
+void round_hippo_settings(Entity &entity, UIContext<InputAction> &context) {
+  auto &rl_settings = RoundManager::get().get_active_rt<RoundHippoSettings>();
 
   imm::div(context, mk(entity),
-           ComponentConfig{}.with_label(std::format(
-               "Score Needed: {}", rl_settings.score_needed_to_win)));
+           ComponentConfig{}.with_label(
+               std::format("Total Hippos: {}", rl_settings.total_hippos)));
 }
 
 void round_cat_mouse_settings(Entity &entity, UIContext<InputAction> &context) {
@@ -960,8 +970,8 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
   case RoundType::Kills:
     round_kills_settings(settings_group.ent(), context);
     break;
-  case RoundType::Score:
-    round_score_settings(settings_group.ent(), context);
+  case RoundType::Hippo:
+    round_hippo_settings(settings_group.ent(), context);
     break;
   case RoundType::CatAndMouse:
     round_cat_mouse_settings(settings_group.ent(), context);

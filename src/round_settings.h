@@ -21,7 +21,7 @@ constexpr float CAT_SIZE_MULTIPLIER = 2.0f;
 enum struct RoundType : size_t {
   Lives,
   Kills,
-  Score,
+  Hippo,
   CatAndMouse,
 };
 constexpr static size_t num_round_types = magic_enum::enum_count<RoundType>();
@@ -84,16 +84,45 @@ public:
   }
 };
 
+// Default time option for timer-using game modes
+constexpr auto DEFAULT_TIMER_TIME_OPTION =
+    RoundSettings::TimeOptions::Minutes_1;
+
 struct RoundLivesSettings : RoundSettings {
   int num_starting_lives = 1;
 };
 
 struct RoundKillsSettings : RoundSettings {
-  // Time settings inherited from base class
+  RoundKillsSettings() {
+    time_option = DEFAULT_TIMER_TIME_OPTION;
+    reset_round_time();
+  }
 };
 
-struct RoundScoreSettings : RoundSettings {
-  int score_needed_to_win = 3;
+struct RoundHippoSettings : RoundSettings {
+  int total_hippos = 50;
+  int hippos_spawned_total = 0;
+
+  // TODO why do we need this?
+  // Override default time option for hippo game
+  RoundHippoSettings() {
+    time_option = DEFAULT_TIMER_TIME_OPTION;
+    reset_round_time();
+  }
+
+  void set_total_hippos(int count) {
+    if (count < 1) {
+      log_error("Invalid total_hippos: {} (must be >= 1)", count);
+      total_hippos = 1;
+    } else if (count > 1000) {
+      log_error("Invalid total_hippos: {} (must be <= 1000)", count);
+      total_hippos = 1000;
+    } else {
+      total_hippos = count;
+    }
+  }
+
+  void reset_spawn_counter() { hippos_spawned_total = 0; }
 };
 
 struct RoundCatAndMouseSettings : RoundSettings {
@@ -112,7 +141,7 @@ struct RoundCatAndMouseSettings : RoundSettings {
 
   // Override default time option for cat and mouse
   RoundCatAndMouseSettings() {
-    time_option = TimeOptions::Minutes_1;
+    time_option = DEFAULT_TIMER_TIME_OPTION;
     reset_round_time();
   }
 };
@@ -130,8 +159,8 @@ struct RoundManager {
         std::make_unique<RoundLivesSettings>();
     settings[enum_to_index(RoundType::Kills)] =
         std::make_unique<RoundKillsSettings>();
-    settings[enum_to_index(RoundType::Score)] =
-        std::make_unique<RoundScoreSettings>();
+    settings[enum_to_index(RoundType::Hippo)] =
+        std::make_unique<RoundHippoSettings>();
     settings[enum_to_index(RoundType::CatAndMouse)] =
         std::make_unique<RoundCatAndMouseSettings>();
 
@@ -146,6 +175,10 @@ struct RoundManager {
     return *(settings[enum_to_index(active_round_type)]);
   };
 
+  const RoundSettings &get_active_settings() const {
+    return *(settings[enum_to_index(active_round_type)]);
+  };
+
   template <typename T> T &get_active_rt() {
     auto &rt_settings = get_active_settings();
     switch (active_round_type) {
@@ -153,16 +186,68 @@ struct RoundManager {
       return static_cast<T &>(rt_settings);
     case RoundType::Kills:
       return static_cast<T &>(rt_settings);
-    case RoundType::Score:
+    case RoundType::Hippo:
       return static_cast<T &>(rt_settings);
     case RoundType::CatAndMouse:
       return static_cast<T &>(rt_settings);
+    default:
+      // This should never happen, but provides a clear error
+      log_error("Invalid round type in get_active_rt: {}",
+                static_cast<size_t>(active_round_type));
+      return static_cast<T &>(rt_settings);
+    }
+  }
+
+  template <typename T> const T &get_active_rt() const {
+    const auto &rt_settings = get_active_settings();
+    switch (active_round_type) {
+    case RoundType::Lives:
+      return static_cast<const T &>(rt_settings);
+    case RoundType::Kills:
+      return static_cast<const T &>(rt_settings);
+    case RoundType::Hippo:
+      return static_cast<const T &>(rt_settings);
+    case RoundType::CatAndMouse:
+      return static_cast<const T &>(rt_settings);
+    default:
+      // This should never happen, but provides a clear error
+      log_error("Invalid round type in get_active_rt const: {}",
+                static_cast<size_t>(active_round_type));
+      return static_cast<const T &>(rt_settings);
     }
   }
 
   void set_active_round_type(const int index) {
     active_round_type =
         magic_enum::enum_cast<RoundType>(index).value_or(RoundType::Lives);
+
+    switch (active_round_type) {
+    case RoundType::Hippo: {
+      auto &hippo_settings = get_active_rt<RoundHippoSettings>();
+      hippo_settings.time_option = DEFAULT_TIMER_TIME_OPTION;
+      hippo_settings.reset_round_time();
+      break;
+    }
+    case RoundType::CatAndMouse: {
+      auto &cat_mouse_settings = get_active_rt<RoundCatAndMouseSettings>();
+      cat_mouse_settings.time_option = DEFAULT_TIMER_TIME_OPTION;
+      cat_mouse_settings.reset_round_time();
+      break;
+    }
+    case RoundType::Kills: {
+      auto &kills_settings = get_active_rt<RoundKillsSettings>();
+      kills_settings.time_option = DEFAULT_TIMER_TIME_OPTION;
+      kills_settings.reset_round_time();
+      break;
+    }
+    case RoundType::Lives:
+      // Lives mode doesn't use timers, so no initialization needed
+      break;
+    default:
+      log_error("Unknown round type in set_active_round_type: {}",
+                static_cast<size_t>(active_round_type));
+      break;
+    }
   }
 
   WeaponSet &get_enabled_weapons() {
@@ -179,6 +264,57 @@ struct RoundManager {
       return lives_settings.num_starting_lives;
     }
     return 3; // default fallback for non-Lives round types
+  }
+
+  bool uses_countdown() const {
+    switch (active_round_type) {
+    case RoundType::Lives:
+      return false;
+    case RoundType::Kills:
+      return true;
+    case RoundType::Hippo:
+      return true;
+    case RoundType::CatAndMouse:
+      return true;
+    default:
+      log_error("Invalid round type in uses_countdown: {}",
+                static_cast<size_t>(active_round_type));
+      return false;
+    }
+  }
+
+  bool uses_timer() const {
+    switch (active_round_type) {
+    case RoundType::Lives:
+      return false;
+    case RoundType::Kills:
+      return true;
+    case RoundType::Hippo:
+      return true;
+    case RoundType::CatAndMouse:
+      return true;
+    default:
+      log_error("Invalid round type in uses_timer: {}",
+                static_cast<size_t>(active_round_type));
+      return false;
+    }
+  }
+
+  float get_current_round_time() const {
+    switch (active_round_type) {
+    case RoundType::Lives:
+      return -1.0f; // Lives mode doesn't use timer
+    case RoundType::Kills:
+      return get_active_rt<RoundKillsSettings>().current_round_time;
+    case RoundType::Hippo:
+      return get_active_rt<RoundHippoSettings>().current_round_time;
+    case RoundType::CatAndMouse:
+      return get_active_rt<RoundCatAndMouseSettings>().current_round_time;
+    default:
+      log_error("Invalid round type in get_current_round_time: {}",
+                static_cast<size_t>(active_round_type));
+      return -1.0f;
+    }
   }
 
   nlohmann::json to_json() const {
@@ -211,10 +347,10 @@ struct RoundManager {
         // Time and countdown settings handled above
         break;
       }
-      case RoundType::Score: {
-        auto &score_settings =
-            static_cast<const RoundScoreSettings &>(*settings[i]);
-        round_j["score_needed_to_win"] = score_settings.score_needed_to_win;
+      case RoundType::Hippo: {
+        auto &hippo_settings =
+            static_cast<const RoundHippoSettings &>(*settings[i]);
+        round_j["total_hippos"] = hippo_settings.total_hippos;
         break;
       }
       case RoundType::CatAndMouse: {
@@ -279,12 +415,11 @@ struct RoundManager {
             // Time and countdown settings handled above
             break;
           }
-          case RoundType::Score: {
-            auto &score_settings =
-                static_cast<RoundScoreSettings &>(*settings[i]);
-            if (round_j.contains("score_needed_to_win")) {
-              score_settings.score_needed_to_win =
-                  round_j["score_needed_to_win"].get<int>();
+          case RoundType::Hippo: {
+            auto &hippo_settings =
+                static_cast<RoundHippoSettings &>(*settings[i]);
+            if (round_j.contains("total_hippos")) {
+              hippo_settings.total_hippos = round_j["total_hippos"].get<int>();
             }
             break;
           }

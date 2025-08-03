@@ -263,3 +263,15 @@ void make_ai() {
   auto &entity = make_car(num_players + num_ais);
   entity.addComponent<AIControlled>();
 }
+
+Entity &make_hippo_item(vec2 position) {
+  auto &entity = EntityHelper::createEntity();
+
+  entity.addComponent<Transform>(position, vec2{30, 30});
+  entity.addComponent<HippoItem>(0.0f);
+  entity.addComponent<HasColor>(raylib::GOLD);
+  entity.addComponent<CollisionAbsorber>(
+      CollisionAbsorber::AbsorberType::Absorbed);
+
+  return entity;
+}

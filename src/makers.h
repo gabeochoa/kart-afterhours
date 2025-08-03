@@ -23,3 +23,7 @@ Entity &make_obstacle(raylib::Rectangle rect, const raylib::Color color,
 
 void make_player(input::GamepadID id);
 void make_ai();
+
+/// Creates a hippo item at the specified position.
+/// @param position is the location where the hippo item will be spawned.
+Entity &make_hippo_item(vec2 position);
