@@ -10,7 +10,7 @@
         "width": 1280
     },
     "round_settings": {
-        "active_round_type": 3,
+        "active_round_type": 2,
         "settings": {
             "CatAndMouse": {
                 "enabled_weapons": 1,

@@ -1297,6 +1297,7 @@ struct ProcessHippoCollection : System<Transform, HasHippoCollection> {
 
 struct SpawnHippoItems : PausableSystem<> {
   bool spawn_counter_reset = false;
+  float game_start_time = 0.0f;
 
   virtual void once(float dt) override {
     // Only spawn hippo items in hippo round type
@@ -1304,17 +1305,21 @@ struct SpawnHippoItems : PausableSystem<> {
       return;
     }
 
-    // Reset spawn counter when game becomes active (not during countdown)
-    if (!spawn_counter_reset && GameStateManager::get().is_game_active()) {
+    auto &settings = RoundManager::get().get_active_settings();
+
+    // Reset spawn counter when game state becomes InGame (after countdown)
+    if (!spawn_counter_reset &&
+        settings.state == RoundSettings::GameState::InGame) {
       auto &hippo_settings =
           RoundManager::get().get_active_rt<RoundHippoSettings>();
       hippo_settings.reset_spawn_counter();
       spawn_counter_reset = true;
+      game_start_time = hippo_settings.current_round_time;
       log_info("SpawnHippoItems: reset spawn counter");
     }
 
-    // Only spawn when game is active (not during countdown)
-    if (!GameStateManager::get().is_game_active()) {
+    // Only spawn when game state is InGame (not during countdown)
+    if (settings.state != RoundSettings::GameState::InGame) {
       return;
     }
 
@@ -1334,13 +1339,14 @@ struct SpawnHippoItems : PausableSystem<> {
       return;
     }
 
-    // Spawn new hippo items randomly
-    static float spawn_timer = 0.0f;
-    spawn_timer += dt;
+    // Calculate when this hippo should spawn based on even distribution
+    float elapsed_time = game_start_time - hippo_settings.current_round_time;
+    float time_per_hippo = game_start_time / total_hippos;
+    int hippo_index = hippo_settings.hippos_spawned_total;
+    float target_spawn_time = hippo_index * time_per_hippo;
 
-    if (spawn_timer >= HIPPO_SPAWN_INTERVAL) {
-      spawn_timer = 0.0f;
-
+    // Spawn hippo if it's time
+    if (elapsed_time >= target_spawn_time) {
       // Get screen dimensions
       auto *resolution_provider = EntityHelper::get_singleton_cmp<
           window_manager::ProvidesCurrentResolution>();
@@ -1359,8 +1365,8 @@ struct SpawnHippoItems : PausableSystem<> {
       make_hippo_item(spawn_pos);
       hippo_settings.hippos_spawned_total++;
 
-      log_info("SpawnHippoItems: spawned {}/{} hippos",
-               hippo_settings.hippos_spawned_total, total_hippos);
+      log_info("SpawnHippoItems: spawned {}/{} hippos at {:.1f}s",
+               hippo_settings.hippos_spawned_total, total_hippos, elapsed_time);
     }
   }
 };
@@ -1839,7 +1845,7 @@ struct InitializeCatMouseGame : PausableSystem<> {
 };
 
 struct CheckCatMouseWinCondition : PausableSystem<> {
-  virtual void once(float) override {
+  virtual void once(float dt) override {
     // Only check win conditions for Cat & Mouse round type and when game is
     // active
     if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
@@ -1862,7 +1868,7 @@ struct CheckCatMouseWinCondition : PausableSystem<> {
 
     // Check if time limit has been reached
     if (cat_mouse_settings.current_round_time > 0) {
-      cat_mouse_settings.current_round_time -= raylib::GetFrameTime();
+      cat_mouse_settings.current_round_time -= dt;
       if (cat_mouse_settings.current_round_time <= 0) {
         // Time's up! Find the player with the most mouse time (least cat time)
         auto players_with_tracking =
@@ -1904,7 +1910,7 @@ struct CheckCatMouseWinCondition : PausableSystem<> {
 };
 
 struct CheckKillsWinCondition : PausableSystem<> {
-  virtual void once(float) override {
+  virtual void once(float dt) override {
     // Only check win conditions for Kills round type and when game is active
     if (RoundManager::get().active_round_type != RoundType::Kills) {
       return;
@@ -1926,7 +1932,7 @@ struct CheckKillsWinCondition : PausableSystem<> {
 
     // Check if time limit has been reached
     if (kills_settings.current_round_time > 0) {
-      kills_settings.current_round_time -= raylib::GetFrameTime();
+      kills_settings.current_round_time -= dt;
       if (kills_settings.current_round_time <= 0) {
         // Time's up! Find the player with the most kills
         auto entities_with_kills =
@@ -1971,7 +1977,7 @@ struct CheckKillsWinCondition : PausableSystem<> {
 };
 
 struct CheckHippoWinCondition : PausableSystem<> {
-  virtual void once(float) override {
+  virtual void once(float dt) override {
     // Only check win conditions for Hippo round type and when game is active
     if (RoundManager::get().active_round_type != RoundType::Hippo) {
       return;
@@ -1994,23 +2000,22 @@ struct CheckHippoWinCondition : PausableSystem<> {
 
     // Check if time limit has been reached
     if (hippo_settings.current_round_time > 0) {
-      hippo_settings.current_round_time -= raylib::GetFrameTime();
+      hippo_settings.current_round_time -= dt;
       if (hippo_settings.current_round_time <= 0) {
         end_hippo_game("Time's up!");
         return;
       }
     }
-
-    // Check if all hippos have been collected
-    auto remaining_hippos = EQ().whereHasComponent<HippoItem>().gen();
-    if (remaining_hippos.empty()) {
-      end_hippo_game("All hippos collected!");
-      return;
-    }
   }
 
 private:
   void end_hippo_game(const std::string &reason) {
+    // Clean up all remaining uncollected hippo items
+    auto remaining_hippos = EQ().whereHasComponent<HippoItem>().gen();
+    for (const auto &hippo_ref : remaining_hippos) {
+      hippo_ref.get().cleanup = true;
+    }
+
     // Find the player with the most hippos
     auto players_with_hippos =
         EntityQuery().whereHasComponent<HasHippoCollection>().gen();
