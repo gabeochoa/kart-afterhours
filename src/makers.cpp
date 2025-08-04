@@ -31,7 +31,6 @@ void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
   float angle = 0;
   switch (wp.firing_direction) {
   case Weapon::FiringDirection::Forward:
-    // TODO
     off = {0.f, 0.f};
     angle = 0.f;
     break;
@@ -50,7 +49,6 @@ void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
     angle = 90.f;
     break;
   case Weapon::FiringDirection::Back:
-    // TODO
     off = {0.f, 0.f};
     angle = 180.f;
     break;

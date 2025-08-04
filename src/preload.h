@@ -4,8 +4,8 @@
 
 #include <memory>
 
-#include "afterhours/src/singleton.h"
 #include "library.h"
+#include <afterhours/src/singleton.h>
 
 enum FontID {
   EQPro,

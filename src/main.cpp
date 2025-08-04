@@ -12,7 +12,7 @@ backward::SignalHandling sh;
 #include "intro.h"
 #include "map_system.h"
 #include "preload.h"
-#include "shader_library.h"
+#include "settings.h"
 #include "sound_systems.h"
 #include "systems.h"
 #include "ui_systems.h"

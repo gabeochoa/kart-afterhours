@@ -5,8 +5,8 @@
 #include <map>
 #include <utility>
 
-#include "afterhours/src/type_name.h"
 #include "log.h"
+#include <afterhours/src/type_name.h>
 
 template <typename T> struct Library {
   enum struct Error {

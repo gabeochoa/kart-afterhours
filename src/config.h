@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "afterhours/src/singleton.h"
+#include <afterhours/src/singleton.h>
 
 SINGLETON_FWD(Config)
 struct Config {

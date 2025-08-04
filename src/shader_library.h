@@ -1,7 +1,7 @@
 #pragma once
 
-#include "afterhours/src/singleton.h"
 #include "library.h"
+#include <afterhours/src/singleton.h>
 
 #include "rl.h"
 
@@ -16,11 +16,11 @@ struct ShaderLibrary {
   [[nodiscard]] raylib::Shader &get(const std::string &name) {
     return impl.get(name);
   }
-  
+
   [[nodiscard]] bool contains(const std::string &name) const {
     return impl.contains(name);
   }
-  
+
   void load(const char *const filename, const char *const name) {
     impl.load(filename, name);
   }

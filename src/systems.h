@@ -1,6 +1,5 @@
 #pragma once
 
-#include "afterhours/ah.h"
 #include "components.h"
 #include "game_state_manager.h"
 #include "makers.h"
@@ -8,6 +7,7 @@
 #include "query.h"
 #include "round_settings.h"
 #include "shader_library.h"
+#include <afterhours/ah.h>
 
 // Hippo game constants
 constexpr float HIPPO_SPAWN_INTERVAL = 0.8f;

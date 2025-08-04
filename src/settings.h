@@ -3,10 +3,10 @@
 
 #include <memory>
 
-#include "afterhours/src/plugins/window_manager.h"
+#include <afterhours/src/plugins/window_manager.h>
 
-#include "afterhours/src/singleton.h"
 #include "library.h"
+#include <afterhours/src/singleton.h>
 
 struct S_Data;
 

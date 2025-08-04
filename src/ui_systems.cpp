@@ -1,6 +1,7 @@
 
 #include "ui_systems.h"
 
+#include "config.h"
 #include "map_system.h"
 
 using namespace afterhours;

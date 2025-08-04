@@ -5,7 +5,7 @@
 #include <functional>
 #include <string>
 
-#include "afterhours/src/singleton.h"
+#include <afterhours/src/singleton.h>
 
 namespace fs = std::filesystem;
 
