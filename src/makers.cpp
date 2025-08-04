@@ -143,6 +143,7 @@ Entity &make_car(size_t id) {
   entity.addComponent<HasMultipleLives>(starting_lives);
   entity.addComponent<HasKillCountTracker>();
   entity.addComponent<HasCatMouseTracking>();
+  entity.addComponent<HasHippoCollection>();
 
   auto &transform = entity.addComponent<Transform>(
       get_spawn_position((size_t)id), CarSizes::NORMAL_CAR_SIZE);

@@ -957,8 +957,10 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
     switch (round_type) {
     case RoundType::Lives:
     case RoundType::Kills:
-    case RoundType::Hippo:
       default_ai_target(ai, transform);
+      break;
+    case RoundType::Hippo:
+      hippo_ai_target(ai, transform);
       break;
     case RoundType::CatAndMouse:
       cat_mouse_ai_target(entity, ai, transform);
@@ -987,6 +989,38 @@ private:
       float screen_height = raylib::GetScreenHeight();
       ai.target = vec_rand_in_box(Rectangle{0, 0, screen_width, screen_height});
     }
+  }
+
+  void hippo_ai_target(AIControlled &ai, Transform &transform) {
+    // Find all hippo items that haven't been collected
+    auto hippo_items = EQ().whereHasComponent<HippoItem>()
+                           .whereLambda([](const Entity &e) {
+                             return !e.get<HippoItem>().collected;
+                           })
+                           .gen();
+
+    if (hippo_items.empty()) {
+      // No hippos available, use default targeting
+      default_ai_target(ai, transform);
+      return;
+    }
+
+    // Find the closest hippo item
+    vec2 closest_hippo_pos = hippo_items[0].get().get<Transform>().pos();
+    float closest_distance = distance_sq(transform.pos(), closest_hippo_pos);
+
+    for (const auto &hippo_ref : hippo_items) {
+      const auto &hippo = hippo_ref.get();
+      vec2 hippo_pos = hippo.get<Transform>().pos();
+      float distance = distance_sq(transform.pos(), hippo_pos);
+
+      if (distance < closest_distance) {
+        closest_distance = distance;
+        closest_hippo_pos = hippo_pos;
+      }
+    }
+
+    ai.target = closest_hippo_pos;
   }
 
   void cat_mouse_ai_target(Entity &entity, AIControlled &ai,
