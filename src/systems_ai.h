@@ -71,12 +71,13 @@ private:
     }
 
     // Find the closest hippo item
-    vec2 closest_hippo_pos = hippo_items[0].get().get<Transform>().pos();
+    vec2 closest_hippo_pos =
+        hippo_items[0].get().template get<Transform>().pos();
     float closest_distance = distance_sq(transform.pos(), closest_hippo_pos);
 
     for (const auto &hippo_ref : hippo_items) {
       const auto &hippo = hippo_ref.get();
-      vec2 hippo_pos = hippo.get<Transform>().pos();
+      vec2 hippo_pos = hippo.template get<Transform>().pos();
       float distance = distance_sq(transform.pos(), hippo_pos);
 
       if (distance < closest_distance) {
@@ -85,7 +86,62 @@ private:
       }
     }
 
-    ai.target = closest_hippo_pos;
+    // Get AI difficulty and add random offset based on difficulty
+    auto ai_entity = EQ().whereHasComponent<AIControlled>()
+                         .whereLambda([&ai](const Entity &e) {
+                           return &e.get<AIControlled>() == &ai;
+                         })
+                         .gen_first();
+
+    AIDifficulty::Difficulty difficulty = AIDifficulty::Difficulty::Medium;
+    if (ai_entity.valid() && ai_entity->has<AIDifficulty>()) {
+      difficulty = ai_entity->get<AIDifficulty>().difficulty;
+    }
+
+    float distance_to_hippo =
+        sqrt(distance_sq(transform.pos(), closest_hippo_pos));
+
+    float offset_range = 0.0f;
+    switch (difficulty) {
+    case AIDifficulty::Difficulty::Easy:
+      offset_range = 200.0f;
+      break;
+    case AIDifficulty::Difficulty::Medium:
+      offset_range = 100.0f;
+      break;
+    case AIDifficulty::Difficulty::Hard:
+      offset_range = 50.0f;
+      break;
+    case AIDifficulty::Difficulty::Expert:
+      offset_range = 0.0f;
+      break;
+    default:
+      offset_range = 100.0f;
+      break;
+    }
+
+    float distance_factor = std::min(1.0f, distance_to_hippo / 300.0f);
+    float actual_offset_range = offset_range * distance_factor;
+
+    vec2 target_pos = closest_hippo_pos;
+    if (actual_offset_range > 0.0f) {
+      unsigned int seed =
+          ai_entity->id +
+          static_cast<unsigned int>(closest_hippo_pos.x * 1000) +
+          static_cast<unsigned int>(closest_hippo_pos.y * 1000);
+
+      seed = seed * 1103515245 + 12345;
+      float rand_x = (static_cast<float>(seed & 0x7FFF) / 32767.0f - 0.5f) *
+                     actual_offset_range;
+
+      seed = seed * 1103515245 + 12345;
+      float rand_y = (static_cast<float>(seed & 0x7FFF) / 32767.0f - 0.5f) *
+                     actual_offset_range;
+
+      target_pos += vec2{rand_x, rand_y};
+    }
+
+    ai.target = target_pos;
   }
 
   void cat_mouse_ai_target(Entity &entity, AIControlled &ai,
@@ -193,31 +249,46 @@ private:
 
 struct AIVelocity : PausableSystem<AIControlled, Transform> {
 
-  virtual void for_each_with(Entity &, AIControlled &ai, Transform &transform,
-                             float dt) override {
+  virtual void for_each_with(Entity &entity, AIControlled &ai,
+                             Transform &transform, float dt) override {
 
     if (ai.target.x == 0 && ai.target.y == 0) {
       return;
     }
 
     vec2 dir = vec_norm(transform.pos() - ai.target);
-    float ang = to_degrees(atan2(dir.y, dir.x)) - 90;
+    float target_ang = to_degrees(atan2(dir.y, dir.x)) - 90;
 
     float steer = 0.f;
     float accel = 5.f;
 
-    if (ang < transform.angle) {
+    // Calculate angle difference and determine steering direction
+    float angle_diff = target_ang - transform.angle;
+
+    // Normalize angle difference to [-180, 180]
+    while (angle_diff > 180.0f)
+      angle_diff -= 360.0f;
+    while (angle_diff < -180.0f)
+      angle_diff += 360.0f;
+
+    if (angle_diff < -1.0f) {
       steer = -1.f;
-    } else if (ang > transform.angle) {
+    } else if (angle_diff > 1.0f) {
       steer = 1.f;
     }
 
-    float minRadius = 10.0f;
-    float maxRadius = 300.0f;
-    float rad = std::lerp(minRadius, maxRadius,
-                          transform.speed() / Config::get().max_speed.data);
+    if (transform.speed() > 0.01) {
+      const auto minRadius = Config::get().minimum_steering_radius.data;
+      const auto maxRadius = Config::get().maximum_steering_radius.data;
+      const auto speed_percentage =
+          transform.speed() / Config::get().max_speed.data;
 
-    transform.angle = ang;
+      const auto rad = std::lerp(minRadius, maxRadius, speed_percentage);
+
+      transform.angle +=
+          steer * Config::get().steering_sensitivity.data * dt * rad;
+      transform.angle = std::fmod(transform.angle + 360.f, 360.f);
+    }
 
     auto max_movement_limit = (transform.accel_mult > 1.f)
                                   ? (Config::get().max_speed.data * 2.f)
@@ -227,14 +298,31 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
         std::max(-max_movement_limit,
                  std::min(max_movement_limit, transform.speed() + accel));
 
+    // Apply difficulty-based speed multiplier
+    float difficulty_multiplier = 1.0f;
+    if (entity.has<AIDifficulty>()) {
+      auto difficulty = entity.get<AIDifficulty>().difficulty;
+      switch (difficulty) {
+      case AIDifficulty::Difficulty::Easy:
+        difficulty_multiplier = 0.7f; // Slower for easy AI
+        break;
+      case AIDifficulty::Difficulty::Medium:
+        difficulty_multiplier = 0.85f; // Slightly slower for medium AI
+        break;
+      case AIDifficulty::Difficulty::Hard:
+      case AIDifficulty::Difficulty::Expert:
+        difficulty_multiplier = 1.0f;
+        break;
+      }
+    }
+    mvt *= difficulty_multiplier;
+
     // Apply speed multiplier for cat and mouse mode
     if (RoundManager::get().active_round_type == RoundType::CatAndMouse) {
       auto &cat_mouse_settings =
           RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
       mvt *= cat_mouse_settings.speed_multiplier;
     }
-
-    transform.angle += steer * dt * rad;
 
     transform.velocity += vec2{
         std::sin(transform.as_rad()) * mvt * dt,
