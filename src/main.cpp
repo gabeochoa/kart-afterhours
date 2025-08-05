@@ -15,6 +15,7 @@ backward::SignalHandling sh;
 #include "settings.h"
 #include "sound_systems.h"
 #include "systems.h"
+#include "systems_ai.h"
 #include "ui_systems.h"
 
 bool running = true;
