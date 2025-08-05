@@ -261,6 +261,7 @@ void make_ai() {
                        .gen_count();
   auto &entity = make_car(num_players + num_ais);
   entity.addComponent<AIControlled>();
+  entity.addComponent<AIIDifficulty>();
 }
 
 Entity &make_hippo_item(vec2 position) {

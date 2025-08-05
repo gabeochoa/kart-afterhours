@@ -23,7 +23,10 @@ ElementResult create_player_card(
     std::optional<std::string> stats_text = std::nullopt,
     std::function<void()> on_next_color = nullptr,
     std::function<void()> on_remove = nullptr, bool show_add_ai = false,
-    std::function<void()> on_add_ai = nullptr) {
+    std::function<void()> on_add_ai = nullptr,
+    std::optional<AIDifficulty::Difficulty> ai_difficulty = std::nullopt,
+    std::function<void(AIDifficulty::Difficulty)> on_difficulty_change =
+        nullptr) {
 
   auto card = imm::div(context, mk(parent),
                        ComponentConfig{}
@@ -91,28 +94,46 @@ ElementResult create_player_card(
     }
   }
 
+  // AI Difficulty dropdown
+  if (is_ai && ai_difficulty.has_value() && on_difficulty_change) {
+    auto difficulty_options =
+        std::vector<std::string>{"Easy", "Medium", "Hard", "Expert"};
+    auto current_difficulty = static_cast<size_t>(ai_difficulty.value());
+
+    if (auto result = imm::dropdown(
+            context, mk(card.ent()), difficulty_options, current_difficulty,
+            ComponentConfig{}
+                .with_size(ComponentSize{pixels(121.0f), pixels(25.f, 0.4f)})
+                .disable_rounded_corners()
+                .with_debug_name("ai_difficulty_dropdown"))) {
+      on_difficulty_change(
+          static_cast<AIDifficulty::Difficulty>(result.as<int>()));
+    }
+  }
+
   // Remove AI button
   if (is_ai && on_remove) {
-    if (imm::button(context, mk(card.ent()),
-                    ComponentConfig{}
-                        .with_size(ComponentSize{percent(1.f), pixels(50.f)})
-                        .with_padding(Padding{.top = percent(0.25f)})
-                        .with_label("Remove AI")
-                        .disable_rounded_corners()
-                        .with_debug_name("remove_ai_button"))) {
+    if (imm::button(
+            context, mk(card.ent()),
+            ComponentConfig{}
+                .with_size(ComponentSize{percent(1.f), pixels(50.f, 0.4f)})
+                .with_label("Remove AI")
+                .disable_rounded_corners()
+                .with_debug_name("remove_ai_button"))) {
       on_remove();
     }
   }
 
   // Add AI button
   if (show_add_ai && on_add_ai) {
-    if (imm::button(context, mk(card.ent()),
-                    ComponentConfig{}
-                        .with_size(ComponentSize{percent(1.f), pixels(50.f)})
-                        .with_padding(Padding{.top = percent(0.25f)})
-                        .with_label("Add AI")
-                        .disable_rounded_corners()
-                        .with_debug_name("add_ai_button"))) {
+    if (imm::button(
+            context, mk(card.ent()),
+            ComponentConfig{}
+                .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+                .with_padding(Padding{.top = percent(0.25f)})
+                .with_label("Add AI")
+                .disable_rounded_corners()
+                .with_debug_name("add_ai_button"))) {
       on_add_ai();
     }
   }
@@ -408,9 +429,33 @@ void ScheduleMainMenuUI::character_selector_column(
     on_add_ai = []() { make_ai(); };
   }
 
+  // AI Difficulty handling
+  std::optional<AIDifficulty::Difficulty> ai_difficulty = std::nullopt;
+  std::function<void(AIDifficulty::Difficulty)> on_difficulty_change = nullptr;
+
+  if (is_slot_ai && car.has_value()) {
+    if (car->has<AIDifficulty>()) {
+      ai_difficulty = car->get<AIDifficulty>().difficulty;
+    } else {
+      // Default to Medium if no difficulty component exists
+      ai_difficulty = AIDifficulty::Difficulty::Medium;
+    }
+
+    on_difficulty_change = [&car](AIDifficulty::Difficulty new_difficulty) {
+      if (car.has_value()) {
+        if (car->has<AIDifficulty>()) {
+          car->get<AIDifficulty>().difficulty = new_difficulty;
+        } else {
+          car->addComponent<AIDifficulty>(new_difficulty);
+        }
+      }
+    };
+  }
+
   ui_helpers::create_player_card(
       context, column.ent(), label, bg_color, is_slot_ai, std::nullopt,
-      std::nullopt, on_next_color, on_remove, show_add_ai, on_add_ai);
+      std::nullopt, on_next_color, on_remove, show_add_ai, on_add_ai,
+      ai_difficulty, on_difficulty_change);
 }
 
 void ScheduleMainMenuUI::round_end_player_column(

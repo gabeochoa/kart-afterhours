@@ -119,6 +119,14 @@ struct AIControlled : BaseComponent {
   vec2 target{0.f, 0.f};
 };
 
+struct AIDifficulty : BaseComponent {
+  enum class Difficulty { Easy, Medium, Hard, Expert };
+
+  Difficulty difficulty{Difficulty::Medium};
+
+  AIDifficulty(Difficulty diff = Difficulty::Medium) : difficulty(diff) {}
+};
+
 struct HasEntityIDBasedColor : HasColor {
   EntityID id{-1};
   raylib::Color default_{raylib::RAYWHITE};
