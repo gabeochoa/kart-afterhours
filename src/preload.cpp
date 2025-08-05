@@ -81,6 +81,10 @@ Preload &Preload::init(const char *title) {
       Files::get().fetch_resource_path("shaders", "entity_enhanced.fs").c_str(),
       "entity_enhanced");
 
+  ShaderLibrary::get().load(
+      Files::get().fetch_resource_path("shaders", "text_mask.fs").c_str(),
+      "text_mask");
+
   // TODO how safe is the path combination here esp for mac vs windows
   Files::get().for_resources_in_folder(
       "images", "controls/keyboard_default",

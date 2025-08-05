@@ -5,6 +5,7 @@
 
 #include "config.h"
 #include "preload.h"
+#include "shader_library.h"
 
 using namespace afterhours;
 
@@ -13,26 +14,40 @@ struct IntroScreens
 
   enum struct State {
     None,
-    Us,
+    Chase,
     Raylib,
     Delay,
     Complete,
   } state = State::None;
 
-  // Animation constants
+  // Animation timing constants
   static constexpr float INITIAL_DELAY = 0.15f;
-  static constexpr float US_ANIMATION_DURATION = 0.80f;
+  static constexpr float CHASE_STATE_FULL_TIME = 15.0f;
   static constexpr float RAYLIB_ANIMATION_DURATION = 0.90f;
   static constexpr float DELAY_DURATION = 0.5f;
   static constexpr float COMPLETION_DELAY = 0.2f;
+
+  // Car animation configuration
+  static constexpr float CHASE_CAR_SIZE = 120.f;
+  static constexpr float CHASE_SPEED = 1200.f;
+  static constexpr float CHASE_SINE_AMPLITUDE = 60.f;
+  static constexpr float CHASE_SINE_FREQUENCY = 2.0f;
+  static constexpr float CHASE_CAR_SPACING = 0.6f;
+  static constexpr float CHASE_CAR_START_DELAY = 0.2f;
+
+  // Text timing configuration
+  static constexpr float TEXT_FADE_IN_DURATION_DIVISOR = 20.f;
+  static constexpr float TEXT_FADE_OUT_START_DIVISOR = 9.f;
+  static constexpr float TEXT_FADE_OUT_DURATION_DIVISOR = 10.f;
+
+  // UI constants
   static constexpr float BOX_LINE_THICKNESS = 5.f;
   static constexpr float FONT_SIZE_DIVISOR = 15.f;
-  static constexpr float TITLE_FONT_SIZE_DIVISOR = 3.5f;
 
   // Text constants
   static constexpr const char *POWERED_BY_TEXT = "POWERED BY";
   static constexpr const char *RAYLIB_TEXT = "raylib";
-  static constexpr const char *TITLE_TEXT = "Cart Chaos";
+  static constexpr const char *TITLE_TEXT = "kart chaos";
 
   window_manager::Resolution resolution;
   float timeInState = 0.f;
@@ -57,6 +72,162 @@ struct IntroScreens
 
   bool is_animation_complete(float start_time, float duration) {
     return timeInState > (start_time + duration);
+  }
+
+  void render_title_text(float alpha = 255.f) {
+    raylib::Font title_font =
+        EntityHelper::get_singleton_cmp<ui::FontManager>()->get_font(
+            get_font_name(FontID::EQPro));
+    float title_font_size = ((float)resolution.height / 3.f);
+    float title_width =
+        (float)raylib::MeasureText(TITLE_TEXT, (int)title_font_size);
+
+    vec2 title_position = {(float)resolution.width / 2.f - title_width / 2.5f,
+                           (float)resolution.height / 2.f -
+                               title_font_size / 2.f};
+
+    raylib::DrawTextEx(title_font, TITLE_TEXT, title_position, title_font_size,
+                       1.f, {255, 255, 255, (unsigned char)alpha});
+  }
+
+  vec2 calculate_car_position(float car_offset, int car_index) {
+    float total_distance = (float)resolution.width + CHASE_CAR_SIZE;
+    float x_pos = car_offset * total_distance - CHASE_CAR_SIZE;
+
+    // Add randomization to Y position
+    float base_y = (float)resolution.height / 2.f;
+    float sine_offset =
+        std::sin(car_offset * CHASE_SINE_FREQUENCY * 2.f * M_PI) *
+        CHASE_SINE_AMPLITUDE;
+
+    if (car_index == 1) {
+      sine_offset = 0.f;
+    }
+
+    if (car_index == 2) {
+      sine_offset = -(sine_offset / 4.f);
+    }
+
+    float random_offset =
+        std::sin((car_offset + car_index * 1.5f) * 3.14f) * 20.f;
+    // 0.5f = phase offset per car, 3.14f = frequency, 20.f = amplitude
+    float y_pos = base_y + sine_offset + random_offset;
+
+    return {x_pos, y_pos};
+  }
+
+  State render_chase() {
+    // Get the spritesheet texture
+    auto *spritesheet_component = EntityHelper::get_singleton_cmp<
+        afterhours::texture_manager::HasSpritesheet>();
+    if (!spritesheet_component) {
+      return State::Raylib;
+    }
+
+    raylib::Texture2D sheet = spritesheet_component->texture;
+    Rectangle source_frame =
+        afterhours::texture_manager::idx_to_sprite_frame(0, 1);
+
+    // Calculate car movement using CHASE_SPEED
+    float car_distance = (timeInState - CHASE_CAR_START_DELAY) * CHASE_SPEED;
+    float total_distance = (float)resolution.width + CHASE_CAR_SIZE;
+    float car_progress = car_distance / total_distance;
+
+    // Calculate text fade progress
+    float text_fade_in_duration =
+        CHASE_STATE_FULL_TIME / TEXT_FADE_IN_DURATION_DIVISOR;
+    float text_fade_out_start =
+        CHASE_STATE_FULL_TIME / TEXT_FADE_OUT_START_DIVISOR;
+    float text_fade_out_duration =
+        CHASE_STATE_FULL_TIME / TEXT_FADE_OUT_DURATION_DIVISOR;
+
+    float text_alpha = 255.f;
+    if (timeInState < text_fade_in_duration) {
+      // Fade in
+      text_alpha = (timeInState / text_fade_in_duration) * 255.f;
+    } else if (timeInState > text_fade_out_start) {
+      // Fade out
+      float fade_out_progress =
+          (timeInState - text_fade_out_start) / text_fade_out_duration;
+      text_alpha = (1.f - std::min(1.f, fade_out_progress)) * 255.f;
+    }
+
+    // Create mask texture with text
+    static raylib::RenderTexture2D textMaskTexture;
+    static bool maskTextureCreated = false;
+    if (!maskTextureCreated) {
+      textMaskTexture =
+          raylib::LoadRenderTexture(resolution.width, resolution.height);
+      maskTextureCreated = true;
+    }
+
+    // Render text to mask texture
+    raylib::BeginTextureMode(textMaskTexture);
+    raylib::ClearBackground({0, 0, 0, 0});
+    render_title_text(text_alpha);
+    raylib::EndTextureMode();
+
+    // Render text to screen
+    render_title_text(text_alpha);
+
+    // Render cars to separate texture with masking
+    if (car_progress > 0.f) {
+      static raylib::RenderTexture2D carTexture;
+      static bool carTextureCreated = false;
+      if (!carTextureCreated) {
+        carTexture =
+            raylib::LoadRenderTexture(resolution.width, resolution.height);
+        carTextureCreated = true;
+      }
+
+      raylib::BeginTextureMode(carTexture);
+      raylib::ClearBackground({0, 0, 0, 0});
+
+      raylib::Color car_colors[] = {raylib::RED, raylib::BLUE, raylib::GREEN};
+
+      for (int i = 0; i < 3; i++) {
+        float car_offset = car_progress - (i * CHASE_CAR_SPACING);
+        if (car_offset < 0.f || car_offset > 1.f)
+          continue;
+
+        vec2 car_pos = calculate_car_position(car_offset, i);
+        vec2 next_car_pos = calculate_car_position(car_offset + 0.01f, i);
+        float angle =
+            std::atan2(next_car_pos.y - car_pos.y, next_car_pos.x - car_pos.x) *
+                180.f / M_PI +
+            90.f;
+
+        raylib::DrawTexturePro(
+            sheet, source_frame,
+            Rectangle{car_pos.x, car_pos.y, CHASE_CAR_SIZE, CHASE_CAR_SIZE},
+            vec2{CHASE_CAR_SIZE / 2.f, CHASE_CAR_SIZE / 2.f}, angle,
+            car_colors[i]);
+      }
+
+      raylib::EndTextureMode();
+
+      // Apply mask shader
+      raylib::Shader maskShader = ShaderLibrary::get().get("text_mask");
+      int maskTextureLoc = raylib::GetShaderLocation(maskShader, "maskTexture");
+
+      raylib::BeginShaderMode(maskShader);
+      raylib::SetShaderValueTexture(maskShader, maskTextureLoc,
+                                    textMaskTexture.texture);
+
+      raylib::DrawTextureRec(
+          carTexture.texture,
+          Rectangle{0, 0, (float)resolution.width, -(float)resolution.height},
+          vec2{0, 0}, raylib::WHITE);
+
+      raylib::EndShaderMode();
+    }
+
+    // End chase state when the 3rd car (green car) has completed its journey
+    float third_car_progress = car_progress - (2 * CHASE_CAR_SPACING);
+    if (third_car_progress >= 1.0f) {
+      return State::Raylib;
+    }
+    return State::Chase;
   }
 
   State render_raylib(ui::FontManager &fm) {
@@ -183,53 +354,6 @@ struct IntroScreens
     }
   }
 
-  State render_us(ui::FontManager &fm) {
-    raylib::Font font = fm.get_font(get_font_name(FontID::EQPro));
-
-    float font_size = ((float)resolution.height / TITLE_FONT_SIZE_DIVISOR);
-    float width = (float)raylib::MeasureText(TITLE_TEXT, (int)font_size);
-
-    vec2 position = {((float)resolution.width - width) * 2.f,
-                     ((float)resolution.height / 2.f) - (font_size / 2.f)};
-
-    float fade_start_time = US_ANIMATION_DURATION * 1.5f;
-    float fade_duration = US_ANIMATION_DURATION * 0.5f;
-
-    unsigned char alpha =
-        calculate_title_alpha_with_fade(fade_start_time, fade_duration);
-    raylib::DrawTextEx(font, TITLE_TEXT, position, font_size, 1.f,
-                       {255, 255, 255, alpha});
-
-    if (timeInState > (US_ANIMATION_DURATION * 2.0f)) {
-      return State::Raylib;
-    }
-    return State::Us;
-  }
-
-  unsigned char calculate_title_alpha() {
-    if (timeInState < (US_ANIMATION_DURATION * 1.0f)) {
-      return 255;
-    } else if (timeInState < (US_ANIMATION_DURATION * 2.0f)) {
-      return 255 - (unsigned char)(255 * (timeInState /
-                                          (US_ANIMATION_DURATION * 2.f)));
-    } else {
-      return 0;
-    }
-  }
-
-  unsigned char calculate_title_alpha_with_fade(float fade_start_time,
-                                                float fade_duration) {
-    unsigned char base_alpha = calculate_title_alpha();
-
-    if (fade_duration > 0.f && timeInState > fade_start_time) {
-      float fade_progress =
-          get_animation_progress(fade_start_time, fade_duration);
-      return (unsigned char)(base_alpha * (1.f - fade_progress));
-    }
-
-    return base_alpha;
-  }
-
   virtual void
   for_each_with(Entity &,
                 window_manager::ProvidesCurrentResolution &pCurrentResolution,
@@ -257,9 +381,9 @@ struct IntroScreens
   State determine_next_state(ui::FontManager &fm) {
     switch (state) {
     case State::None:
-      return timeInState < INITIAL_DELAY ? State::None : State::Us;
-    case State::Us:
-      return render_us(fm);
+      return timeInState < INITIAL_DELAY ? State::None : State::Chase;
+    case State::Chase:
+      return render_chase();
     case State::Raylib:
       return render_raylib(fm);
     case State::Delay:
