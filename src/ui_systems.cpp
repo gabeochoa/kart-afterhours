@@ -938,9 +938,11 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
 void round_hippo_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundHippoSettings>();
 
-  imm::div(context, mk(entity),
-           ComponentConfig{}.with_label(
-               std::format("Total Hippos: {}", rl_settings.total_hippos)));
+  imm::div(
+      context, mk(entity),
+      ComponentConfig{}
+          .with_label(std::format("Total Hippos: {}", rl_settings.total_hippos))
+          .with_size(ComponentSize{percent(1.f), percent(0.2f)}));
 }
 
 void round_cat_mouse_settings(Entity &entity, UIContext<InputAction> &context) {
@@ -951,9 +953,11 @@ void round_cat_mouse_settings(Entity &entity, UIContext<InputAction> &context) {
     auto options = magic_enum::enum_names<RoundSettings::TimeOptions>();
     auto option_index = magic_enum::enum_index(cm_settings.time_option).value();
 
-    if (auto result =
-            imm::dropdown(context, mk(entity), options, option_index,
-                          ComponentConfig{}.with_label("Round Length"));
+    if (auto result = imm::dropdown(
+            context, mk(entity), options, option_index,
+            ComponentConfig{}
+                .with_label("Round Length")
+                .with_size(ComponentSize{percent(1.f), percent(0.2f)}));
         result) {
       cm_settings.set_time_option(result.as<int>());
     }
@@ -974,16 +978,20 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}
                    .with_debug_name("settings_group")
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_padding(button_group_padding)
-                   .with_absolute_position());
+                   .with_size(ComponentSize{percent(1.f), percent(1.f)})
+                   .with_margin(Margin{
+                       .top = percent(0.2f),
+                       .bottom = percent(0.2f),
+                       .left = percent(0.4f),
+                       .right = percent(0.4f),
+                   }));
 
   {
     auto win_condition_div =
         imm::div(context, mk(settings_group.ent()),
                  ComponentConfig{}
-                     .with_debug_name("win_condition_div")
-                     .with_padding(Padding{.right = screen_pct(0.2f)}));
+                     .with_size(ComponentSize{percent(1.f), percent(0.2f)})
+                     .with_debug_name("win_condition_div"));
 
     static size_t selected_round_type =
         static_cast<size_t>(RoundManager::get().active_round_type);
@@ -991,8 +999,8 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     if (auto result =
             imm::navigation_bar(context, mk(win_condition_div.ent()),
                                 RoundType_NAMES, selected_round_type,
-                                ComponentConfig{}.with_size(ComponentSize{
-                                    percent(1.f), percent(0.2f)}));
+                                ComponentConfig{}.with_size(
+                                    ComponentSize{percent(1.f), percent(1.f)}));
         result) {
       RoundManager::get().set_active_round_type(
           static_cast<int>(selected_round_type));
@@ -1036,6 +1044,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
       navigate_back();
     }
   }
+
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
 }
