@@ -31,10 +31,10 @@ ElementResult create_player_card(
   auto card = imm::div(context, mk(parent),
                        ComponentConfig{}
                            .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                           .with_margin(Margin{.top = percent(0.05f),
-                                               .bottom = percent(0.05f),
-                                               .left = percent(0.05f),
-                                               .right = percent(0.05f)})
+                           .with_margin(Margin{.top = percent(0.1f),
+                                               .bottom = percent(0.1f),
+                                               .left = percent(0.1f),
+                                               .right = percent(0.1f)})
                            .with_color_usage(Theme::Usage::Custom)
                            .with_custom_color(bg_color)
                            .disable_rounded_corners());
@@ -94,21 +94,20 @@ ElementResult create_player_card(
     }
   }
 
-  // AI Difficulty dropdown
+  // AI Difficulty navigation bar
   if (is_ai && ai_difficulty.has_value() && on_difficulty_change) {
     auto difficulty_options =
         std::vector<std::string>{"Easy", "Medium", "Hard", "Expert"};
     auto current_difficulty = static_cast<size_t>(ai_difficulty.value());
 
-    if (auto result = imm::dropdown(
+    if (auto result = imm::navigation_bar(
             context, mk(card.ent()), difficulty_options, current_difficulty,
             ComponentConfig{}
                 .with_size(ComponentSize{percent(1.f), pixels(50.f)})
-                // .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
                 .disable_rounded_corners()
-                .with_debug_name("ai_difficulty_dropdown"))) {
+                .with_debug_name("ai_difficulty_navigation_bar"))) {
       on_difficulty_change(
-          static_cast<AIDifficulty::Difficulty>(result.as<int>()));
+          static_cast<AIDifficulty::Difficulty>(current_difficulty));
     }
   }
 
@@ -373,10 +372,12 @@ void ScheduleMainMenuUI::character_selector_column(
                ComponentConfig{}
                    .with_size(ComponentSize{percent(1.f / num_cols, 0.1f),
                                             percent(1.f, 0.4f)})
-                   .with_margin(Margin{.top = percent(0.05f),
-                                       .bottom = percent(0.05f),
-                                       .left = percent(0.05f),
-                                       .right = percent(0.05f)})
+                   .with_margin(Margin{
+                       .top = percent(0.02f),
+                       .bottom = percent(0.02f),
+                       .left = percent(0.02f),
+                       .right = percent(0.02f),
+                   })
                    .with_color_usage(Theme::Usage::Custom)
                    .with_custom_color(bg_color)
                    .disable_rounded_corners());
