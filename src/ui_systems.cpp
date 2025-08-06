@@ -103,7 +103,8 @@ ElementResult create_player_card(
     if (auto result = imm::dropdown(
             context, mk(card.ent()), difficulty_options, current_difficulty,
             ComponentConfig{}
-                .with_size(ComponentSize{pixels(121.0f), pixels(25.f, 0.4f)})
+                .with_size(ComponentSize{percent(1.f), pixels(50.f)})
+                // .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
                 .disable_rounded_corners()
                 .with_debug_name("ai_difficulty_dropdown"))) {
       on_difficulty_change(
@@ -116,7 +117,7 @@ ElementResult create_player_card(
     if (imm::button(
             context, mk(card.ent()),
             ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), pixels(50.f, 0.4f)})
+                .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
                 .with_label("Remove AI")
                 .disable_rounded_corners()
                 .with_debug_name("remove_ai_button"))) {
@@ -987,12 +988,11 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     static size_t selected_round_type =
         static_cast<size_t>(RoundManager::get().active_round_type);
 
-    if (auto result = imm::navigation_bar(
-            context, mk(win_condition_div.ent()), RoundType_NAMES,
-            selected_round_type,
-            ComponentConfig{}
-                .with_label("Win Condition")
-                .with_size(ComponentSize{pixels(300), pixels(50)}));
+    if (auto result =
+            imm::navigation_bar(context, mk(win_condition_div.ent()),
+                                RoundType_NAMES, selected_round_type,
+                                ComponentConfig{}.with_size(ComponentSize{
+                                    percent(1.f), percent(0.2f)}));
         result) {
       RoundManager::get().set_active_round_type(
           static_cast<int>(selected_round_type));
