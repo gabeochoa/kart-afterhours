@@ -9,8 +9,8 @@ struct Weapon {
 
   enum struct Type {
     Cannon,
-    Sniper,
     Shotgun,
+    Sniper,
     MachineGun,
   } type;
 
@@ -213,3 +213,18 @@ constexpr static auto WEAPON_STRING_LIST =
     magic_enum::enum_names<Weapon::Type>();
 constexpr static size_t WEAPON_COUNT = magic_enum::enum_count<Weapon::Type>();
 using WeaponSet = std::bitset<WEAPON_COUNT>;
+
+constexpr static std::array<std::pair<int, int>, WEAPON_COUNT>
+    WEAPON_ICON_COORDS = {
+        /* Cannon      */ std::pair{0, 5},
+        /* Shotgun     */ std::pair{1, 5},
+        /* Sniper      */ std::pair{2, 5},
+        /* MachineGun  */ std::pair{3, 5},
+};
+
+inline afterhours::texture_manager::Rectangle
+weapon_icon_frame(Weapon::Type t) {
+  auto idx = static_cast<size_t>(t);
+  auto [col, row] = WEAPON_ICON_COORDS[idx];
+  return afterhours::texture_manager::idx_to_sprite_frame(col, row);
+}

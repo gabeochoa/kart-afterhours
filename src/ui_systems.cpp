@@ -811,18 +811,42 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
               magic_enum::enum_name(RoundManager::get().active_round_type))));
     }
 
-    /*
-     * TODO how to visualize this smaller? icons?
-    // shared across all round types
-    auto enabled_weapons = RoundManager::get().get_enabled_weapons();
+    {
+      auto *spritesheet_component = EntityHelper::get_singleton_cmp<
+          afterhours::texture_manager::HasSpritesheet>();
+      if (spritesheet_component) {
+        raylib::Texture2D sheet = spritesheet_component->texture;
+        const auto &weps = RoundManager::get().get_enabled_weapons();
+        const size_t num_enabled = weps.count();
+        if (num_enabled > 0) {
+          auto icon_row = imm::div(
+              context, mk(elem.ent()),
+              ComponentConfig{}
+                  .with_size(ComponentSize{percent(1.f), percent(0.12f)})
+                  .with_flex_direction(FlexDirection::Row)
+                  .with_skip_tabbing(true)
+                  .with_debug_name("weapon_icon_row"));
 
-    if (auto result =
-            imm::checkbox_group(context, mk(settings_group.ent()),
-                                enabled_weapons, WEAPON_STRING_LIST, {1, 3});
-        result) {
-      RoundManager::get().set_enabled_weapons(result.as<unsigned long>());
+          int col = 0;
+          for (size_t i = 0; i < WEAPON_COUNT; ++i) {
+            if (!weps.test(i))
+              continue;
+
+            auto icon = imm::div(
+                context, mk(icon_row.ent(), col),
+                ComponentConfig{}
+                    .with_size(ComponentSize{pixels(64.f), pixels(64.f)})
+                    .disable_rounded_corners()
+                    .with_debug_name(std::format("weapon_icon_{}", i)));
+
+            auto frame = weapon_icon_frame(static_cast<Weapon::Type>(i));
+            icon.ent().addComponentIfMissing<ui::HasImage>(
+                sheet, frame, texture_manager::HasTexture::Alignment::Center);
+            ++col;
+          }
+        }
+      }
     }
-    */
 
     switch (RoundManager::get().active_round_type) {
     case RoundType::Lives:
