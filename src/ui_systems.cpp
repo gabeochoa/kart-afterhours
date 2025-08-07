@@ -497,9 +497,6 @@ void ScheduleMainMenuUI::round_end_player_column(
 
   // Create player label
   std::string player_label = std::format("{} {}", index, car->id);
-  if (is_slot_ai) {
-    player_label += " (AI)";
-  }
 
   // Get stats text based on round type
   std::optional<std::string> stats_text;
