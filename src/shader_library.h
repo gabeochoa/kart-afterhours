@@ -4,6 +4,7 @@
 #include <afterhours/src/singleton.h>
 
 #include "rl.h"
+#include <string>
 
 SINGLETON_FWD(ShaderLibrary)
 struct ShaderLibrary {
@@ -46,7 +47,15 @@ private:
   struct ShaderLibraryImpl : Library<raylib::Shader> {
     virtual raylib::Shader
     convert_filename_to_object(const char *, const char *filename) override {
-      return raylib::LoadShader(0, filename);
+      // Use a generic vertex shader that contains all attributes Raylib
+      // expects.
+      std::string fragPath(filename);
+      // Determine directory of fragment shader file.
+      auto pos = fragPath.find_last_of('/');
+      std::string dir = (pos == std::string::npos) ? std::string(".")
+                                                   : fragPath.substr(0, pos);
+      std::string vertPath = dir + "/base.vs";
+      return raylib::LoadShader(vertPath.c_str(), filename);
     }
 
     virtual void unload(raylib::Shader) override {}
