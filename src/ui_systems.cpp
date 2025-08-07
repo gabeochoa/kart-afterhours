@@ -819,15 +819,22 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
         const auto &weps = RoundManager::get().get_enabled_weapons();
         const size_t num_enabled = weps.count();
         if (num_enabled > 0) {
+          float icon_px =
+              current_resolution_provider
+                  ? (current_resolution_provider->current_resolution.height /
+                     720.f) *
+                        32.f
+                  : 32.f;
           auto icon_row = imm::div(
               context, mk(elem.ent()),
               ComponentConfig{}
-                  .with_size(ComponentSize{percent(1.f), percent(0.12f)})
+                  .with_size(ComponentSize{percent(1.f), pixels(icon_px)})
                   .with_flex_direction(FlexDirection::Row)
                   .with_skip_tabbing(true)
                   .with_debug_name("weapon_icon_row"));
 
           int col = 0;
+          float icon_pct = 1.f / static_cast<float>(num_enabled);
           for (size_t i = 0; i < WEAPON_COUNT; ++i) {
             if (!weps.test(i))
               continue;
@@ -835,9 +842,8 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
             auto icon = imm::div(
                 context, mk(icon_row.ent(), col),
                 ComponentConfig{}
-                    .with_size(ComponentSize{pixels(64.f), pixels(64.f)})
-                    .disable_rounded_corners()
-                    .with_debug_name(std::format("weapon_icon_{}", i)));
+                    .with_size(ComponentSize{pixels(icon_px), pixels(icon_px)})
+                    .disable_rounded_corners());
 
             auto frame = weapon_icon_frame(static_cast<Weapon::Type>(i));
             icon.ent().addComponentIfMissing<ui::HasImage>(
