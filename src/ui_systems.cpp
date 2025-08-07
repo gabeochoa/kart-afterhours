@@ -984,11 +984,9 @@ void round_cat_mouse_settings(Entity &entity, UIContext<InputAction> &context) {
     auto options = magic_enum::enum_names<RoundSettings::TimeOptions>();
     auto option_index = magic_enum::enum_index(cm_settings.time_option).value();
 
-    if (auto result = imm::dropdown(
-            context, mk(entity), options, option_index,
-            ComponentConfig{}
-                .with_label("Round Length")
-                .with_size(ComponentSize{percent(1.f), percent(0.2f)}));
+    if (auto result =
+            imm::dropdown(context, mk(entity), options, option_index,
+                          ComponentConfig{}.with_label("Round Length"));
         result) {
       cm_settings.set_time_option(result.as<int>());
     }
