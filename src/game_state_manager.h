@@ -28,6 +28,7 @@ struct GameStateManager {
   std::optional<Screen> next_screen = std::nullopt;
 
   void start_game() {
+    RoundManager::get().reset_for_new_round();
     current_state = GameState::Playing;
     active_screen = Screen::None;
     log_info("Game started!");

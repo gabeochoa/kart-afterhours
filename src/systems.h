@@ -1035,7 +1035,7 @@ struct ProcessCollisionAbsorption : System<Transform, CollisionAbsorber> {
 };
 
 struct ProcessHippoCollection : System<Transform, HasHippoCollection> {
-  virtual void for_each_with(Entity &entity, Transform &transform,
+  virtual void for_each_with(Entity &, Transform &transform,
                              HasHippoCollection &hippo_collection,
                              float) override {
     // Only process hippo collection in hippo round type
@@ -1065,7 +1065,7 @@ struct SpawnHippoItems : PausableSystem<> {
   bool spawn_counter_reset = false;
   float game_start_time = 0.0f;
 
-  virtual void once(float dt) override {
+  virtual void once(float) override {
     // Only spawn hippo items in hippo round type
     if (RoundManager::get().active_round_type != RoundType::Hippo) {
       return;
@@ -1095,7 +1095,7 @@ struct SpawnHippoItems : PausableSystem<> {
     int total_hippos = hippo_settings.total_hippos;
 
     // Check if we've spawned all hippos
-    if (hippo_settings.hippos_spawned_total >= total_hippos) {
+    if (hippo_settings.data.hippos_spawned_total >= total_hippos) {
       return;
     }
 
@@ -1108,7 +1108,7 @@ struct SpawnHippoItems : PausableSystem<> {
     // Calculate when this hippo should spawn based on even distribution
     float elapsed_time = game_start_time - hippo_settings.current_round_time;
     float time_per_hippo = game_start_time / total_hippos;
-    int hippo_index = hippo_settings.hippos_spawned_total;
+    int hippo_index = hippo_settings.data.hippos_spawned_total;
     float target_spawn_time = hippo_index * time_per_hippo;
 
     // Spawn hippo if it's time
@@ -1129,10 +1129,11 @@ struct SpawnHippoItems : PausableSystem<> {
           Rectangle{50, 50, screen_width - 100, screen_height - 100});
 
       make_hippo_item(spawn_pos);
-      hippo_settings.hippos_spawned_total++;
+      hippo_settings.data.hippos_spawned_total++;
 
       log_info("SpawnHippoItems: spawned {}/{} hippos at {:.1f}s",
-               hippo_settings.hippos_spawned_total, total_hippos, elapsed_time);
+               hippo_settings.data.hippos_spawned_total, total_hippos,
+               elapsed_time);
     }
   }
 };
@@ -1574,6 +1575,7 @@ struct InitializeCatMouseGame : PausableSystem<> {
 
     // Only run when game is active
     if (!GameStateManager::get().is_game_active()) {
+      initialized = false;
       return;
     }
 
@@ -1826,8 +1828,6 @@ private:
 
 struct UpdateRoundCountdown : PausableSystem<> {
   virtual void once(float dt) override {
-    auto round_type = RoundManager::get().active_round_type;
-
     // Only update countdown for round types that use time
     if (!RoundManager::get().uses_timer()) {
       return;
@@ -1846,6 +1846,7 @@ struct UpdateRoundCountdown : PausableSystem<> {
         settings.state = RoundSettings::GameState::InGame;
 
         // Log appropriate message based on round type
+        auto round_type = RoundManager::get().active_round_type;
         switch (round_type) {
         case RoundType::CatAndMouse:
           log_info("Cat & Mouse game starting!");
@@ -1873,9 +1874,6 @@ struct RenderRoundTimer : System<window_manager::ProvidesCurrentResolution> {
   virtual void for_each_with(const Entity &,
                              const window_manager::ProvidesCurrentResolution &,
                              float) const override {
-
-    auto round_type = RoundManager::get().active_round_type;
-
     // Only render timer for round types that use time
     if (!RoundManager::get().uses_timer()) {
       return;
@@ -1937,6 +1935,10 @@ struct ScaleCatSize : System<Transform, HasCatMouseTracking> {
     if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
       // Reset to normal size if not in cat and mouse mode
       transform.size = CarSizes::NORMAL_CAR_SIZE;
+      if (entity.has<afterhours::texture_manager::HasSprite>()) {
+        auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
+        sprite.scale = CarSizes::NORMAL_SPRITE_SCALE;
+      }
       return;
     }
 

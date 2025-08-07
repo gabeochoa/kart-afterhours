@@ -831,7 +831,6 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                   .with_debug_name("weapon_icon_row"));
 
           int col = 0;
-          float icon_pct = 1.f / static_cast<float>(num_enabled);
           for (size_t i = 0; i < WEAPON_COUNT; ++i) {
             if (!weps.test(i))
               continue;

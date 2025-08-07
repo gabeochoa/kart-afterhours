@@ -82,6 +82,11 @@ public:
     countdown_before_start = 3.0f;
     state = GameState::Countdown;
   }
+
+  // Override in derived classes to clear per-round runtime values
+  virtual void reset_temp_data() {}
+
+  virtual ~RoundSettings() = default;
 };
 
 // Default time option for timer-using game modes
@@ -101,7 +106,14 @@ struct RoundKillsSettings : RoundSettings {
 
 struct RoundHippoSettings : RoundSettings {
   int total_hippos = 50;
-  int hippos_spawned_total = 0;
+
+  struct TempData {
+    int hippos_spawned_total = 0;
+  } data;
+
+  void reset_temp_data() override { data = TempData{}; }
+
+  void reset_spawn_counter() { data.hippos_spawned_total = 0; }
 
   // TODO why do we need this?
   // Override default time option for hippo game
@@ -121,8 +133,6 @@ struct RoundHippoSettings : RoundSettings {
       total_hippos = count;
     }
   }
-
-  void reset_spawn_counter() { hippos_spawned_total = 0; }
 };
 
 struct RoundCatAndMouseSettings : RoundSettings {
@@ -300,7 +310,15 @@ struct RoundManager {
     }
   }
 
+  void reset_for_new_round() {
+    auto &active_settings = get_active_settings();
+    active_settings.reset_countdown();
+    active_settings.reset_round_time();
+    active_settings.reset_temp_data();
+  }
+
   float get_current_round_time() const {
+
     switch (active_round_type) {
     case RoundType::Lives:
       return -1.0f; // Lives mode doesn't use timer
