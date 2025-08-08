@@ -616,77 +616,91 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
 };
 
 struct SkidMarks : System<Transform, TireMarkComponent> {
-  virtual void for_each_with(Entity &, Transform &transform,
+  virtual void for_each_with(Entity &entity, Transform &transform,
                              TireMarkComponent &tire, float dt) override {
-
     tire.pass_time(dt);
-
-    const auto should_skid = [&]() -> bool {
-      if (transform.accel_mult > 2.f) {
-        return true;
-      }
-
-      if (transform.speed() == 0.f) {
-        return false;
-      }
-
-      // Normalize the velocity vector
-      const auto velocity_normalized = transform.velocity / transform.speed();
-
-      // Forward direction based on car's angle
-      const auto angle_rads = to_radians(transform.angle - 90.f);
-      ;
-      const vec2 car_forward = {(float)std::cos(angle_rads),
-                                (float)std::sin(angle_rads)};
-
-      // Calculate the dot product
-      const auto dot = vec_dot(velocity_normalized, car_forward);
-
-      // The closer the dot product is close to 0,
-      // the more the car is moving sideways.
-      // (perpendicular to its heading)
-      const auto is_moving_sideways =
-          std::fabs(dot) < (Config::get().skid_threshold.data / 100.f);
-
-      return is_moving_sideways;
-    };
-
-    if (should_skid()) {
-
-      const auto pos = transform.center();
-
-      tire.add_mark(pos, !tire.added_last_frame);
-      tire.added_last_frame = true;
-    } else {
+    if (!should_render_skid(transform)) {
       tire.added_last_frame = false;
+      return;
     }
+    const vec2 markPosition = transform.center();
+    const bool useWinnerColors =
+        entity.has<HasShader>() &&
+        (entity.get<HasShader>().shader_name == std::string("car_winner"));
+    const float markHue = useWinnerColors ? tire.rolling_hue : 0.0f;
+    tire.add_mark(markPosition, !tire.added_last_frame, markHue);
+    tire.added_last_frame = true;
+    if (useWinnerColors) {
+      tire.rolling_hue += 0.10f;
+      if (tire.rolling_hue > 6.28318f) {
+        tire.rolling_hue -= 6.28318f;
+      }
+    }
+  }
+
+private:
+  bool should_render_skid(const Transform &transform) const {
+    if (transform.accel_mult > 2.f) {
+      return true;
+    }
+    if (transform.speed() == 0.f) {
+      return false;
+    }
+    const vec2 velocityNormalized = transform.velocity / transform.speed();
+    const float angleRadians = to_radians(transform.angle - 90.f);
+    const vec2 carForward = {static_cast<float>(std::cos(angleRadians)),
+                             static_cast<float>(std::sin(angleRadians))};
+    const float velocityForwardDot = vec_dot(velocityNormalized, carForward);
+    const bool movingSideways = std::fabs(velocityForwardDot) <
+                                (Config::get().skid_threshold.data / 100.f);
+    return movingSideways;
   }
 };
 
 struct RenderSkid : System<Transform, TireMarkComponent> {
-  virtual void for_each_with(const Entity &, const Transform &,
+  virtual void for_each_with(const Entity &entity, const Transform &,
                              const TireMarkComponent &tire,
                              float) const override {
+    const bool useWinnerColors =
+        entity.has<HasShader>() &&
+        (entity.get<HasShader>().shader_name == std::string("car_winner"));
+    const float offsetX = 7.f;
+    const float offsetY = 4.f;
+    render_single_tire(tire, vec2{offsetX, offsetY}, useWinnerColors);
+    render_single_tire(tire, vec2{-offsetX, -offsetY}, useWinnerColors);
+  }
 
-    const auto single_tire = [&](vec2 off) {
-      for (size_t i = 1; i < tire.points.size(); i++) {
-        auto mp0 = tire.points[i - 1];
-        auto mp1 = tire.points[i];
-        if (distance_sq(mp0.position, mp1.position) > 100.f) {
-          continue;
-        }
-        float pct = mp0.time / mp0.lifetime;
-        raylib::DrawSplineSegmentLinear(
-            mp0.position + off, mp1.position + off, 5.f,
-            raylib::Color(20, 20, 20, (unsigned char)(255 * pct)));
+  static raylib::Color rainbow_from_hue(float hue, unsigned char alpha) {
+    const float red = sinf(hue + 0.0f) * 0.5f + 0.5f;
+    const float green = sinf(hue + 2.094f) * 0.5f + 0.5f;
+    const float blue = sinf(hue + 4.188f) * 0.5f + 0.5f;
+    return raylib::Color(static_cast<unsigned char>(red * 255.0f),
+                         static_cast<unsigned char>(green * 255.0f),
+                         static_cast<unsigned char>(blue * 255.0f), alpha);
+  }
+
+  void render_single_tire(const TireMarkComponent &tire, vec2 offset,
+                          bool useWinnerColors) const {
+    for (size_t i = 1; i < tire.points.size(); i++) {
+      auto mp0 = tire.points[i - 1];
+      auto mp1 = tire.points[i];
+      if (mp0.gap || mp1.gap) {
+        continue;
       }
-    };
-
-    float x = 7.f;
-    float y = 4.f;
-    // i tried 4 tires but it was kinda too crowded
-    single_tire(vec2{x, y});
-    single_tire(vec2{-x, -y});
+      if (distance_sq(mp0.position, mp1.position) > 100.f) {
+        continue;
+      }
+      float fade = mp0.time / mp0.lifetime;
+      fade = fmaxf(0.0f, fminf(1.0f, fade));
+      if (fade <= 0.0f) {
+        continue;
+      }
+      const unsigned char a = static_cast<unsigned char>(255.0f * fade);
+      raylib::Color col = useWinnerColors ? rainbow_from_hue(mp0.hue, a)
+                                          : raylib::Color(20, 20, 20, a);
+      raylib::DrawSplineSegmentLinear(mp0.position + offset,
+                                      mp1.position + offset, 5.f, col);
+    }
   }
 };
 
@@ -2074,7 +2088,5 @@ struct ApplyWinnerShader : System<WasWinnerLastRound, HasShader> {
 
     // Remove the winner marker component since we've applied the shader
     entity.removeComponent<WasWinnerLastRound>();
-
-    log_info("Applied car_winner shader to entity {}", entity.id);
   }
 };

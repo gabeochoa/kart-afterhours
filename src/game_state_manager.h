@@ -37,15 +37,33 @@ struct GameStateManager {
   }
 
   void end_game(const afterhours::RefEntities &winners = {}) {
-    // Remove any existing WasWinnerLastRound components from all entities
-    for (auto &existing_winner_ref :
-         EntityQuery().whereHasComponent<WasWinnerLastRound>().gen()) {
-      existing_winner_ref.get().removeComponentIfExists<WasWinnerLastRound>();
+    for (Entity &existing_winner : EntityQuery({.ignore_temp_warning = true})
+                                       .whereHasComponent<WasWinnerLastRound>()
+                                       .gen()) {
+      existing_winner.removeComponentIfExists<WasWinnerLastRound>();
     }
 
-    // Add the component to all winners
     for (auto &winner : winners) {
       winner.get().addComponentIfMissing<WasWinnerLastRound>();
+    }
+
+    for (Entity &e : EntityQuery({.ignore_temp_warning = true})
+                         .whereHasComponent<HasShader>()
+                         .gen()) {
+      auto &shader = e.get<HasShader>();
+      if (shader.shader_name != std::string("car_winner")) {
+        continue;
+      }
+      bool is_new_winner = false;
+      for (const auto &wref : winners) {
+        if (wref.get().id == e.id) {
+          is_new_winner = true;
+          break;
+        }
+      }
+      if (!is_new_winner) {
+        shader.shader_name = "car";
+      }
     }
 
     current_state = GameState::Menu;

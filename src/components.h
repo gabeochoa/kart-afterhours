@@ -201,14 +201,19 @@ struct TireMarkComponent : BaseComponent {
     float time;
     float lifetime;
     bool gap;
+    float hue;
   };
 
   bool added_last_frame = false;
   std::vector<MarkPoint> points;
+  float rolling_hue = 0.0f;
 
-  void add_mark(vec2 pos, bool gap = false) {
-    points.push_back(
-        MarkPoint{.position = pos, .time = 10.f, .lifetime = 10.f, .gap = gap});
+  void add_mark(vec2 pos, bool gap = false, float hue = 0.f) {
+    points.push_back(MarkPoint{.position = pos,
+                               .time = 10.f,
+                               .lifetime = 10.f,
+                               .gap = gap,
+                               .hue = hue});
   }
 
   void pass_time(float dt) {
