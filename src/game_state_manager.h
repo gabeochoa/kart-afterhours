@@ -1,7 +1,9 @@
 #pragma once
 
+#include "components.h"
 #include "library.h"
 #include "round_settings.h"
+#include <afterhours/ah.h>
 #include <optional>
 
 SINGLETON_FWD(GameStateManager)
@@ -34,7 +36,18 @@ struct GameStateManager {
     log_info("Game started!");
   }
 
-  void end_game() {
+  void end_game(const afterhours::RefEntities &winners = {}) {
+    // Remove any existing WasWinnerLastRound components from all entities
+    for (auto &existing_winner_ref :
+         EntityQuery().whereHasComponent<WasWinnerLastRound>().gen()) {
+      existing_winner_ref.get().removeComponentIfExists<WasWinnerLastRound>();
+    }
+
+    // Add the component to all winners
+    for (auto &winner : winners) {
+      winner.get().addComponentIfMissing<WasWinnerLastRound>();
+    }
+
     current_state = GameState::Menu;
     active_screen = Screen::RoundEnd;
   }

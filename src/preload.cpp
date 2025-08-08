@@ -82,6 +82,10 @@ Preload &Preload::init(const char *title) {
       "entity_enhanced");
 
   ShaderLibrary::get().load(
+      Files::get().fetch_resource_path("shaders", "car_winner.fs").c_str(),
+      "car_winner");
+
+  ShaderLibrary::get().load(
       Files::get().fetch_resource_path("shaders", "text_mask.fs").c_str(),
       "text_mask");
 

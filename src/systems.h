@@ -148,9 +148,52 @@ struct RenderSpritesWithShaders
 
     // Pass the entity's color to the shader
     raylib::Color entityColor = hasColor.color();
+    float entityColorF[4] = {
+        entityColor.r / 255.0f,
+        entityColor.g / 255.0f,
+        entityColor.b / 255.0f,
+        entityColor.a / 255.0f,
+    };
     raylib::SetShaderValue(shader,
                            raylib::GetShaderLocation(shader, "entityColor"),
-                           &entityColor, raylib::SHADER_UNIFORM_VEC4);
+                           entityColorF, raylib::SHADER_UNIFORM_VEC4);
+
+    // Update common uniforms if present
+    float shaderTime = static_cast<float>(raylib::GetTime());
+    int timeLoc = raylib::GetShaderLocation(shader, "time");
+    if (timeLoc != -1) {
+      raylib::SetShaderValue(shader, timeLoc, &shaderTime,
+                             raylib::SHADER_UNIFORM_FLOAT);
+    }
+    auto rezCmp = EntityHelper::get_singleton_cmp<
+        window_manager::ProvidesCurrentResolution>();
+    if (rezCmp) {
+      vec2 rez = {static_cast<float>(rezCmp->current_resolution.width),
+                  static_cast<float>(rezCmp->current_resolution.height)};
+      int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+      if (rezLoc != -1) {
+        raylib::SetShaderValue(shader, rezLoc, &rez,
+                               raylib::SHADER_UNIFORM_VEC2);
+      }
+    }
+
+    // Provide source frame UV bounds so shaders can clamp sampling
+    float uvMin[2] = {source_frame.x / static_cast<float>(sheet.width),
+                      source_frame.y / static_cast<float>(sheet.height)};
+    float uvMax[2] = {(source_frame.x + source_frame.width) /
+                          static_cast<float>(sheet.width),
+                      (source_frame.y + source_frame.height) /
+                          static_cast<float>(sheet.height)};
+    int uvMinLoc = raylib::GetShaderLocation(shader, "uvMin");
+    if (uvMinLoc != -1) {
+      raylib::SetShaderValue(shader, uvMinLoc, uvMin,
+                             raylib::SHADER_UNIFORM_VEC2);
+    }
+    int uvMaxLoc = raylib::GetShaderLocation(shader, "uvMax");
+    if (uvMaxLoc != -1) {
+      raylib::SetShaderValue(shader, uvMaxLoc, uvMax,
+                             raylib::SHADER_UNIFORM_VEC2);
+    }
 
     // Pass speed percentage uniform for car shader
     if (hasShader.shader_name == "car") {
@@ -1458,7 +1501,7 @@ struct CheckLivesWinCondition : PausableSystem<> {
       Entity &winner =
           players_with_lives[0].get(); // Fixed from players_with_lives[0]
       log_info("Player {} wins the Lives round!", winner.get<PlayerID>().id);
-      GameStateManager::get().end_game();
+      GameStateManager::get().end_game({winner});
     }
     // If no players have lives, it's a tie
     else if (players_with_lives.empty()) {
@@ -1671,7 +1714,7 @@ struct CheckCatMouseWinCondition : PausableSystem<> {
 
         // TODO: Add victory screen showing final mouse times for all players
         // TODO: Add option to continue playing (best of 3, etc.)
-        GameStateManager::get().end_game();
+        GameStateManager::get().end_game({winner->get()});
       }
     }
   }
@@ -1712,33 +1755,47 @@ struct CheckKillsWinCondition : PausableSystem<> {
           return;
         }
 
-        // Find the entity with the most kills
-        auto winner = std::max_element(
-            entities_with_kills.begin(), entities_with_kills.end(),
-            [](const auto &a, const auto &b) {
-              return a.get().template get<HasKillCountTracker>().kills <
-                     b.get().template get<HasKillCountTracker>().kills;
-            });
+        // Find the maximum kill count
+        int max_kills = 0;
+        for (const auto &entity_ref : entities_with_kills) {
+          int kills = entity_ref.get().get<HasKillCountTracker>().kills;
+          if (kills > max_kills) {
+            max_kills = kills;
+          }
+        }
 
-        if (winner == entities_with_kills.end()) {
-          log_error("Failed to find winner in kills game");
+        // Find all entities with the maximum kill count (handles ties)
+        afterhours::RefEntities winners;
+        for (auto &entity_ref : entities_with_kills) {
+          if (entity_ref.get().get<HasKillCountTracker>().kills == max_kills) {
+            winners.push_back(entity_ref.get());
+          }
+        }
+
+        if (winners.empty()) {
+          log_error("Failed to find winners in kills game");
           GameStateManager::get().end_game();
           return;
         }
 
-        // Get winner identifier for logging
-        std::string winner_id;
-        if (winner->get().has<PlayerID>()) {
-          winner_id =
-              "Player " + std::to_string(winner->get().get<PlayerID>().id);
+        // Log the result
+        if (winners.size() == 1) {
+          std::string winner_id;
+          if (winners[0].get().has<PlayerID>()) {
+            winner_id =
+                "Player " + std::to_string(winners[0].get().get<PlayerID>().id);
+          } else {
+            winner_id = "AI " + std::to_string(winners[0].get().id);
+          }
+          log_info("{} wins the Kills round with {} kills!", winner_id,
+                   max_kills);
         } else {
-          winner_id = "AI " + std::to_string(winner->get().id);
+          log_info("Tie! {} players win the Kills round with {} kills each!",
+                   winners.size(), max_kills);
         }
 
-        log_info("{} wins the Kills round with {} kills!", winner_id,
-                 winner->get().get<HasKillCountTracker>().kills);
         kills_settings.current_round_time = 0;
-        GameStateManager::get().end_game();
+        GameStateManager::get().end_game(winners);
       }
     }
   }
@@ -1794,35 +1851,50 @@ private:
       return;
     }
 
-    // Find the player with the most hippos
-    auto winner = std::max_element(
-        players_with_hippos.begin(), players_with_hippos.end(),
-        [](const auto &a, const auto &b) {
-          return a.get().template get<HasHippoCollection>().get_hippo_count() <
-                 b.get().template get<HasHippoCollection>().get_hippo_count();
-        });
+    // Find the maximum hippo count
+    int max_hippos = 0;
+    for (const auto &entity_ref : players_with_hippos) {
+      int hippos = entity_ref.get().get<HasHippoCollection>().get_hippo_count();
+      if (hippos > max_hippos) {
+        max_hippos = hippos;
+      }
+    }
 
-    if (winner == players_with_hippos.end()) {
-      log_error("Failed to find winner in hippo game");
+    // Find all players with the maximum hippo count (handles ties)
+    afterhours::RefEntities winners;
+    for (auto &entity_ref : players_with_hippos) {
+      if (entity_ref.get().get<HasHippoCollection>().get_hippo_count() ==
+          max_hippos) {
+        winners.push_back(entity_ref.get());
+      }
+    }
+
+    if (winners.empty()) {
+      log_error("Failed to find winners in hippo game");
       GameStateManager::get().end_game();
       return;
     }
 
-    // Get winner identifier for logging
-    std::string winner_id;
-    if (winner->get().has<PlayerID>()) {
-      winner_id = "Player " + std::to_string(winner->get().get<PlayerID>().id);
+    // Log the result
+    if (winners.size() == 1) {
+      std::string winner_id;
+      if (winners[0].get().has<PlayerID>()) {
+        winner_id =
+            "Player " + std::to_string(winners[0].get().get<PlayerID>().id);
+      } else {
+        winner_id = "AI " + std::to_string(winners[0].get().id);
+      }
+      log_info("{} {} wins the Hippo round with {} hippos!", reason, winner_id,
+               max_hippos);
     } else {
-      winner_id = "AI " + std::to_string(winner->get().id);
+      log_info("{} Tie! {} players win the Hippo round with {} hippos each!",
+               reason, winners.size(), max_hippos);
     }
-
-    log_info("{} {} wins the Hippo round with {} hippos!", reason, winner_id,
-             winner->get().get<HasHippoCollection>().get_hippo_count());
 
     auto &hippo_settings =
         RoundManager::get().get_active_rt<RoundHippoSettings>();
     hippo_settings.current_round_time = 0;
-    GameStateManager::get().end_game();
+    GameStateManager::get().end_game(winners);
   }
 };
 
@@ -1959,5 +2031,18 @@ struct ScaleCatSize : System<Transform, HasCatMouseTracking> {
         sprite.scale = CarSizes::NORMAL_SPRITE_SCALE; // Normal scale for mice
       }
     }
+  }
+};
+
+struct ApplyWinnerShader : System<WasWinnerLastRound, HasShader> {
+  virtual void for_each_with(Entity &entity, WasWinnerLastRound &,
+                             HasShader &hasShader, float) override {
+    // Apply the car_winner shader to the winner
+    hasShader.shader_name = "car_winner";
+
+    // Remove the winner marker component since we've applied the shader
+    entity.removeComponent<WasWinnerLastRound>();
+
+    log_info("Applied car_winner shader to entity {}", entity.id);
   }
 };

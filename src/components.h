@@ -367,3 +367,8 @@ struct SkipTextureManagerRendering : BaseComponent {
   // Marker component to prevent texture_manager from rendering entities with
   // shaders
 };
+
+struct WasWinnerLastRound : BaseComponent {
+  // Marker component to indicate this entity was the winner of the previous
+  // round
+};

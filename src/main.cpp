@@ -98,6 +98,7 @@ void game() {
     systems.register_update_system(
         std::make_unique<UpdateAnimationTransform>());
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
+    systems.register_update_system(std::make_unique<ApplyWinnerShader>());
     texture_manager::register_update_systems(systems);
 
     // Initialize map previews
