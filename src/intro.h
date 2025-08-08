@@ -209,6 +209,21 @@ struct IntroScreens
       // Apply mask shader
       raylib::Shader maskShader = ShaderLibrary::get().get("text_mask");
       int maskTextureLoc = raylib::GetShaderLocation(maskShader, "maskTexture");
+      int timeLoc = raylib::GetShaderLocation(maskShader, "time");
+      int resolutionLoc = raylib::GetShaderLocation(maskShader, "resolution");
+
+      float timeValue = static_cast<float>(raylib::GetTime());
+      vec2 resolutionValue = {static_cast<float>(resolution.width),
+                              static_cast<float>(resolution.height)};
+
+      if (timeLoc >= 0) {
+        raylib::SetShaderValue(maskShader, timeLoc, &timeValue,
+                               raylib::SHADER_UNIFORM_FLOAT);
+      }
+      if (resolutionLoc >= 0) {
+        raylib::SetShaderValue(maskShader, resolutionLoc, &resolutionValue,
+                               raylib::SHADER_UNIFORM_VEC2);
+      }
 
       raylib::BeginShaderMode(maskShader);
       raylib::SetShaderValueTexture(maskShader, maskTextureLoc,
