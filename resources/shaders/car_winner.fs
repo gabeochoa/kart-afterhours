@@ -9,6 +9,8 @@ uniform vec4 colDiffuse;
 uniform vec4 entityColor;
 uniform vec2 uvMin;
 uniform vec2 uvMax;
+uniform vec2 contentUvMin;
+uniform vec2 contentUvMax;
 
 uniform sampler2D texture1;
 uniform sampler2D texture2;
@@ -44,26 +46,50 @@ void main()
     vec4 _d = texture(texture1, uv) + texture(texture2, uv);
     _d *= 0.0;
 
-    // If fully outside source frame or fully transparent, output as-is
-    if (!inSource(uv) || tex.a < 0.01) {
-        finalColor = tex * colDiffuse;
+    // If outside the source frame, output transparent
+    if (!inSource(uv)) {
+        finalColor = vec4(0.0, 0.0, 0.0, 0.0);
         return;
+    }
+
+    // Cull padded solid-black regions while preserving black outlines on the car
+    float luma = max(tex.r, max(tex.g, tex.b));
+    if (luma < 0.02) {
+        // Use texel size of spritesheet
+        vec2 texel = 1.0 / vec2(textureSize(texture0, 0));
+        float neighborMax = 0.0;
+        for (int i = -1; i <= 1; i++) {
+            for (int j = -1; j <= 1; j++) {
+                if (i == 0 && j == 0) continue;
+                vec2 nUv = uv + vec2(float(i), float(j)) * texel;
+                if (!inSource(nUv)) continue;
+                vec3 n = texture(texture0, nUv).rgb;
+                neighborMax = max(neighborMax, max(n.r, max(n.g, n.b)));
+            }
+        }
+        // If all neighbors are also near-black, treat as transparent padding
+        if (neighborMax < 0.02) {
+            finalColor = vec4(0.0, 0.0, 0.0, 0.0);
+            return;
+        }
     }
 
     float pulse = sin(time * 6.0) * 0.5 + 0.5;
     vec3 rainbow = rainbowColor(time * 2.0);
 
-    // Use texel size from the actual bound texture (spritesheet)
+    // Texel size from the actual bound texture (spritesheet)
     vec2 texel = 1.0 / vec2(textureSize(texture0, 0));
 
-    // Edge detection on alpha by checking neighbors, treat out-of-frame as transparent
+    // Edge detection on alpha or brightness change; treat out-of-frame as transparent
     float edge = 0.0;
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
             if (i == 0 && j == 0) continue;
             vec2 offsetUv = uv + vec2(float(i), float(j)) * texel;
             float a = inSource(offsetUv) ? texture(texture0, offsetUv).a : 0.0;
-            if (a < 0.1) { edge = 1.0; }
+            float l = inSource(offsetUv) ? max(texture(texture0, offsetUv).r,
+                               max(texture(texture0, offsetUv).g, texture(texture0, offsetUv).b)) : 0.0;
+            if (a < 0.1 || abs(l - luma) > 0.2) { edge = 1.0; }
         }
     }
 

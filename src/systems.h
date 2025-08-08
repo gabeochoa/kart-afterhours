@@ -146,6 +146,15 @@ struct RenderSpritesWithShaders
     const auto &shader = ShaderLibrary::get().get(hasShader.shader_name);
     raylib::BeginShaderMode(shader);
 
+    // winnerRainbow toggle: on for car_winner, off otherwise
+    int rainbowLoc = raylib::GetShaderLocation(shader, "winnerRainbow");
+    if (rainbowLoc != -1) {
+      float rainbowOn =
+          (hasShader.shader_name == std::string("car_winner")) ? 1.0f : 0.0f;
+      raylib::SetShaderValue(shader, rainbowLoc, &rainbowOn,
+                             raylib::SHADER_UNIFORM_FLOAT);
+    }
+
     // Pass the entity's color to the shader
     raylib::Color entityColor = hasColor.color();
     float entityColorF[4] = {
@@ -192,6 +201,29 @@ struct RenderSpritesWithShaders
     int uvMaxLoc = raylib::GetShaderLocation(shader, "uvMax");
     if (uvMaxLoc != -1) {
       raylib::SetShaderValue(shader, uvMaxLoc, uvMax,
+                             raylib::SHADER_UNIFORM_VEC2);
+    }
+
+    // Provide content (tight) UV bounds assuming visible width ~15px centered
+    // in 32px frame
+    float frameW = source_frame.width;
+    float frameH = source_frame.height;
+    float visibleW = 15.0f;
+    float padX = fmaxf(0.0f, (frameW - visibleW) * 0.5f);
+    float contentMinX =
+        (source_frame.x + padX) / static_cast<float>(sheet.width);
+    float contentMaxX =
+        (source_frame.x + frameW - padX) / static_cast<float>(sheet.width);
+    float contentUvMin[2] = {contentMinX, uvMin[1]};
+    float contentUvMax[2] = {contentMaxX, uvMax[1]};
+    int cMinLoc = raylib::GetShaderLocation(shader, "contentUvMin");
+    if (cMinLoc != -1) {
+      raylib::SetShaderValue(shader, cMinLoc, contentUvMin,
+                             raylib::SHADER_UNIFORM_VEC2);
+    }
+    int cMaxLoc = raylib::GetShaderLocation(shader, "contentUvMax");
+    if (cMaxLoc != -1) {
+      raylib::SetShaderValue(shader, cMaxLoc, contentUvMax,
                              raylib::SHADER_UNIFORM_VEC2);
     }
 

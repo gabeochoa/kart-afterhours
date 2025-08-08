@@ -78,12 +78,12 @@ Preload &Preload::init(const char *title) {
       Files::get().fetch_resource_path("shaders", "car.fs").c_str(), "car");
 
   ShaderLibrary::get().load(
-      Files::get().fetch_resource_path("shaders", "entity_enhanced.fs").c_str(),
-      "entity_enhanced");
+      Files::get().fetch_resource_path("shaders", "car.fs").c_str(),
+      "car_winner");
 
   ShaderLibrary::get().load(
-      Files::get().fetch_resource_path("shaders", "car_winner.fs").c_str(),
-      "car_winner");
+      Files::get().fetch_resource_path("shaders", "entity_enhanced.fs").c_str(),
+      "entity_enhanced");
 
   ShaderLibrary::get().load(
       Files::get().fetch_resource_path("shaders", "text_mask.fs").c_str(),
