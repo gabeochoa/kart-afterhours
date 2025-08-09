@@ -1030,8 +1030,9 @@ struct Move : PausableSystem<Transform> {
 
   virtual void for_each_with(Entity &, Transform &transform, float) override {
     transform.position += transform.velocity;
+    float damp = transform.accel != 0 ? 0.99f : 0.98f;
     float speed_mult = affector_speed_multiplier(transform);
-    transform.velocity = transform.velocity * speed_mult;
+    transform.velocity = transform.velocity * (damp * speed_mult);
   }
 };
 
