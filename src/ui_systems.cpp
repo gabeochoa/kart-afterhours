@@ -1106,13 +1106,11 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
   auto preview_box =
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}
-                   .with_size(ComponentSize{percent(1.0f), percent(0.4f)})
-                   .with_margin(Margin{
-                       .top = percent(0.1f),
-                       .bottom = percent(0.1f),
-                       .left = percent(0.1f),
-                       .right = percent(0.1f),
-                   })
+                   .with_size(ComponentSize{percent(1.0f), percent(0.4f, 0.6f)})
+                   .with_margin(Margin{.top = percent(0.1f),
+                                       .bottom = percent(0.1f),
+                                       .left = percent(0.1f),
+                                       .right = percent(0.1f)})
                    .with_debug_name("preview_box")
                    .with_skip_tabbing(true));
 
@@ -1138,16 +1136,20 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
       imm::div(context, mk(preview_box.ent()),
                ComponentConfig{}
                    .with_label(selected_map.display_name)
-                   .with_size(ComponentSize{percent(1.f), percent(0.2f)})
+                   .with_size(ComponentSize{percent(1.f), percent(0.3f)})
                    .with_debug_name("map_title"));
 
-      // Map preview area (image will be rendered by RenderMapPreviewOnScreen
-      // system)
-      imm::div(context, mk(preview_box.ent()),
-               ComponentConfig{}
-                   .with_size(ComponentSize{percent(1.f), percent(0.6f)})
-                   .with_margin(Margin{.top = percent(0.2f)})
-                   .with_debug_name("map_preview"));
+      if (MapManager::get().preview_textures_initialized) {
+        int idx = MapManager::get().get_selected_map();
+        const auto &rt = MapManager::get().get_preview_texture(idx);
+        imm::image(context, mk(preview_box.ent()),
+                   ComponentConfig{}
+                       .with_size(ComponentSize{percent(1.f), percent(1.0f)})
+                       .with_debug_name("map_preview")
+                       .with_texture(rt.texture,
+                                     afterhours::texture_manager::HasTexture::
+                                         Alignment::Center));
+      }
 
       // Map description
       imm::div(context, mk(preview_box.ent()),

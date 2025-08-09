@@ -319,65 +319,6 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
-// TODO: Generalize this system to allow any UI component to be rendered from a
-// texture This could become RenderTextureOnUIComponent or similar, allowing
-// reusable texture-based UI elements
-struct RenderMapPreviewOnScreen
-    : System<window_manager::ProvidesCurrentResolution> {
-  virtual ~RenderMapPreviewOnScreen() {}
-  virtual void for_each_with(
-      const Entity & /* entity */,
-      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
-      float) const override {
-
-    if (GameStateManager::get().active_screen !=
-        GameStateManager::Screen::MapSelection) {
-      return;
-    }
-
-    if (!MapManager::get().preview_textures_initialized) {
-      return;
-    }
-
-    auto resolution = pCurrentResolution.current_resolution;
-    int selected_map = MapManager::get().get_selected_map();
-    const auto &preview_texture =
-        MapManager::get().get_preview_texture(selected_map);
-
-    // Calculate 16:9 aspect ratio preview
-    float max_width = resolution.width * 0.8f;
-    float max_height = resolution.height * 0.3f;
-    float preview_width = max_width;
-    float preview_height = preview_width * (9.0f / 16.0f); // 16:9 aspect ratio
-
-    // If height is too tall, scale down
-    if (preview_height > max_height) {
-      preview_height = max_height;
-      preview_width = preview_height * (16.0f / 9.0f);
-    }
-
-    // Center the preview horizontally
-    float preview_x = (resolution.width - preview_width) / 2.0f;
-    float preview_y = resolution.height * 0.1f;
-
-    const float border_thickness = 2.0f;
-    const raylib::Color border_color = raylib::WHITE;
-
-    Rectangle source = {0, 0, static_cast<float>(preview_texture.texture.width),
-                        static_cast<float>(preview_texture.texture.height)};
-    Rectangle dest = {preview_x, preview_y, preview_width, preview_height};
-
-    raylib::DrawRectangleLinesEx(
-        Rectangle{preview_x - border_thickness, preview_y - border_thickness,
-                  preview_width + border_thickness * 2,
-                  preview_height + border_thickness * 2},
-        border_thickness, border_color);
-
-    raylib::DrawTexturePro(preview_texture.texture, source, dest, {0, 0}, 0.0f,
-                           raylib::WHITE);
-  }
-};
-
 struct RenderEntities : System<Transform> {
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,

@@ -145,8 +145,6 @@ void game() {
       systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
       systems.register_render_system(std::make_unique<RenderOOB>());
       systems.register_render_system(std::make_unique<CarRumble>());
-      systems.register_render_system(
-          std::make_unique<RenderMapPreviewOnScreen>());
       //
       ui::register_render_systems<InputAction>(
           systems, InputAction::ToggleUILayoutDebug);
