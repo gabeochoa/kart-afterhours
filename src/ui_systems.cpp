@@ -1323,27 +1323,29 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
   raylib::Texture2D sheet = EntityHelper::get_singleton_cmp<
                                 afterhours::texture_manager::HasSpritesheet>()
                                 ->texture;
-  window_manager::Resolution rez =
-      current_resolution_provider->current_resolution;
-  const auto width = static_cast<float>(rez.width);
-  const auto height = static_cast<float>(rez.height);
   const auto scale = 5.f;
-  auto x_pos = width * 0.2f;
-  const auto num_icon = 3;
-  const auto x_spacing = (width - x_pos * 2.f) / static_cast<float>(num_icon);
 
+  auto icons_row =
+      imm::div(context, mk(control_group.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(1.f), percent(0.4f)})
+                   .with_margin(Margin{.top = percent(0.1f)})
+                   .with_flex_direction(FlexDirection::Row)
+                   .with_debug_name("about_icons"));
+
+  const int num_icon = 3;
   for (int i = 0; i < num_icon; i++) {
-    Rectangle frame = afterhours::texture_manager::idx_to_sprite_frame(i, 4);
-    raylib::DrawTexturePro(sheet, frame,
-                           Rectangle{
-                               x_pos,
-                               height * 0.2f,
-                               frame.width * scale,
-                               frame.height * scale,
-                           },
-                           vec2{frame.width / 2.f, frame.height / 2.f}, 0,
-                           raylib::RAYWHITE);
-    x_pos += x_spacing;
+    auto frame = afterhours::texture_manager::idx_to_sprite_frame(i, 4);
+    auto icon_width = pixels(frame.width * scale);
+    auto icon_height = pixels(frame.height * scale);
+
+    imm::sprite(
+        context, mk(icons_row.ent(), i), sheet, frame,
+        afterhours::texture_manager::HasTexture::Alignment::Center,
+        ComponentConfig{}
+            .with_size(ComponentSize{icon_width, icon_height})
+            .with_margin(Margin{.left = percent(i == 0 ? 0.2f : 0.1f)})
+            .with_debug_name(std::string("about_icon_") + std::to_string(i)));
   }
 
   {
