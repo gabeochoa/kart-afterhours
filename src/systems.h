@@ -1059,7 +1059,17 @@ struct Move : PausableSystem<Transform> {
     if (on_overlay) {
       damp = transform.accel != 0 ? 0.998f : 0.996f;
     }
-    transform.velocity = transform.velocity * damp;
+
+    float speed_mult = 1.f;
+    {
+      auto speed_affs = EQ().whereHasComponent<SpeedAffector>()
+                            .whereOverlaps(transform.rect())
+                            .gen();
+      for (Entity &e : speed_affs) {
+        speed_mult *= e.get<SpeedAffector>().multiplier;
+      }
+    }
+    transform.velocity = transform.velocity * (damp * speed_mult);
   }
 };
 

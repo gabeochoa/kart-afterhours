@@ -34,3 +34,6 @@ Entity &make_oil_slick(raylib::Rectangle rect, float steering_multiplier,
                        float steering_sensitivity_target);
 
 Entity &make_default_oil_slick(raylib::Rectangle rect);
+
+/// Creates a sticky goo area that heavily slows and reduces steering.
+Entity &make_sticky_goo(raylib::Rectangle rect);

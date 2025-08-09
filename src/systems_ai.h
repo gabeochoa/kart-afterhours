@@ -351,5 +351,16 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
         std::sin(transform.as_rad()) * mvt * dt,
         -std::cos(transform.as_rad()) * mvt * dt,
     };
+
+    float speed_mult = 1.f;
+    {
+      auto speed_affs = EQ().whereHasComponent<SpeedAffector>()
+                            .whereOverlaps(transform.rect())
+                            .gen();
+      for (Entity &e : speed_affs) {
+        speed_mult *= e.get<SpeedAffector>().multiplier;
+      }
+    }
+    transform.velocity = transform.velocity * speed_mult;
   }
 };

@@ -302,3 +302,22 @@ Entity &make_oil_slick(raylib::Rectangle rect, float steering_multiplier,
 Entity &make_default_oil_slick(raylib::Rectangle rect) {
   return make_oil_slick(rect, 1.1f, 0.1f, 2.0f);
 }
+
+Entity &make_sticky_goo(raylib::Rectangle rect) {
+  raylib::Color goo{57, 255, 20, 255};
+  auto &entity = EntityHelper::createEntity();
+
+  auto &transform = entity.addComponent<Transform>(std::move(rect));
+  transform.collision_config =
+      CollisionConfig{.mass = std::numeric_limits<float>::max(),
+                      .friction = 0.f,
+                      .restitution = 0.f};
+
+  entity.addComponent<CanWrapAround>();
+  entity.addComponent<MapGenerated>();
+  entity.addComponent<HasColor>(goo);
+  entity.addComponent<IsFloorOverlay>();
+  entity.addComponent<SpeedAffector>(0.95f);
+
+  return entity;
+}

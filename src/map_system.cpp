@@ -393,48 +393,8 @@ void MapManager::create_test_map() {
       .restitution = 0.f,
   };
 
-  // Create green walls along the edges
-  // Top wall
-  for (int i = 0; i < 10; i++) {
-    float x = 0.05f + i * 0.09f;
-    make_obstacle(screen_pct(x, 0.05f, 30, 30), raylib::GREEN, wall_config);
-  }
-
-  // Bottom wall
-  for (int i = 0; i < 10; i++) {
-    float x = 0.05f + i * 0.09f;
-    make_obstacle(screen_pct(x, 0.95f, 30, 30), raylib::GREEN, wall_config);
-  }
-
-  // Left wall
-  for (int i = 0; i < 8; i++) {
-    float y = 0.15f + i * 0.1f;
-    make_obstacle(screen_pct(0.05f, y, 30, 30), raylib::GREEN, wall_config);
-  }
-
-  // Right wall
-  for (int i = 0; i < 8; i++) {
-    float y = 0.15f + i * 0.1f;
-    make_obstacle(screen_pct(0.95f, y, 30, 30), raylib::GREEN, wall_config);
-  }
-
-  // Create a big X in the center using red obstacles
-  const CollisionConfig x_config{
-      .mass = std::numeric_limits<float>::max(),
-      .friction = 1.f,
-      .restitution = 0.f,
-  };
-
-  // Diagonal from top-left to bottom-right
-  for (int i = 0; i < 6; i++) {
-    float offset = 0.1f + i * 0.15f;
-    make_obstacle(screen_pct(offset, offset, 25, 25), raylib::RED, x_config);
-  }
-
-  // Diagonal from top-right to bottom-left
-  for (int i = 0; i < 6; i++) {
-    float offset = 0.1f + i * 0.15f;
-    make_obstacle(screen_pct(0.9f - offset, offset, 25, 25), raylib::RED,
-                  x_config);
-  }
+  make_obstacle(screen_pct(0.15f, 0.2f, 60, 60), raylib::LIGHTGRAY,
+                wall_config);
+  make_default_oil_slick(screen_pct(0.4f, 0.5f, 120, 120));
+  make_sticky_goo(screen_pct(0.65f, 0.5f, 120, 120));
 }

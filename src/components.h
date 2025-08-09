@@ -378,6 +378,11 @@ struct SteeringIncrementor : CarAffector {
   SteeringIncrementor(float sensitivity) : target_sensitivity(sensitivity) {}
 };
 
+struct SpeedAffector : CarAffector {
+  float multiplier{1.f};
+  SpeedAffector(float mult) : multiplier(mult) {}
+};
+
 struct HasShader : BaseComponent {
   std::string shader_name;
 
