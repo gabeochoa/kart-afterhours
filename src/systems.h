@@ -204,29 +204,6 @@ struct RenderSpritesWithShaders
                              raylib::SHADER_UNIFORM_VEC2);
     }
 
-    // Provide content (tight) UV bounds assuming visible width ~15px centered
-    // in 32px frame
-    float frameW = source_frame.width;
-    float frameH = source_frame.height;
-    float visibleW = 15.0f;
-    float padX = fmaxf(0.0f, (frameW - visibleW) * 0.5f);
-    float contentMinX =
-        (source_frame.x + padX) / static_cast<float>(sheet.width);
-    float contentMaxX =
-        (source_frame.x + frameW - padX) / static_cast<float>(sheet.width);
-    float contentUvMin[2] = {contentMinX, uvMin[1]};
-    float contentUvMax[2] = {contentMaxX, uvMax[1]};
-    int cMinLoc = raylib::GetShaderLocation(shader, "contentUvMin");
-    if (cMinLoc != -1) {
-      raylib::SetShaderValue(shader, cMinLoc, contentUvMin,
-                             raylib::SHADER_UNIFORM_VEC2);
-    }
-    int cMaxLoc = raylib::GetShaderLocation(shader, "contentUvMax");
-    if (cMaxLoc != -1) {
-      raylib::SetShaderValue(shader, cMaxLoc, contentUvMax,
-                             raylib::SHADER_UNIFORM_VEC2);
-    }
-
     // Pass speed percentage uniform for car shader
     if (hasShader.shader_name == "car") {
       float speedPercent = transform.speed() / Config::get().max_speed.data;
