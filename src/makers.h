@@ -27,3 +27,8 @@ void make_ai();
 /// Creates a hippo item at the specified position.
 /// @param position is the location where the hippo item will be spawned.
 Entity &make_hippo_item(vec2 position);
+
+/// Creates an oil slick area that affects car steering and acceleration.
+Entity &make_oil_slick(raylib::Rectangle rect, const raylib::Color color,
+                       float steering_multiplier, float acceleration_multiplier,
+                       float steering_sensitivity_target);

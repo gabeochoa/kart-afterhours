@@ -864,7 +864,12 @@ struct UpdateCollidingEntities : PausableSystem<Transform> {
       return;
     }
 
+    if (entity.has<IsFloorOverlay>()) {
+      return;
+    }
+
     auto can_collide = EQ().whereHasComponent<Transform>()
+                           .whereMissingComponent<IsFloorOverlay>()
                            .whereNotID(entity.id)
                            .whereOverlaps(transform.rect())
                            .gen();
@@ -957,6 +962,26 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
       }
     }
 
+    float steering_multiplier = 1.f;
+    float steering_sensitivity = Config::get().steering_sensitivity.data;
+    {
+      auto affectors = EQ().whereHasComponent<SteeringAffector>()
+                           .whereOverlaps(transform.rect())
+                           .gen();
+      for (Entity &e : affectors) {
+        steering_multiplier *= e.get<SteeringAffector>().multiplier;
+      }
+    }
+
+    {
+      auto incs = EQ().whereHasComponent<SteeringIncrementor>()
+                      .whereOverlaps(transform.rect())
+                      .gen();
+      for (Entity &e : incs) {
+        steering_sensitivity += e.get<SteeringIncrementor>().target_sensitivity;
+      }
+    }
+
     if (transform.speed() > 0.01) {
       const auto minRadius = Config::get().minimum_steering_radius.data;
       const auto maxRadius = Config::get().maximum_steering_radius.data;
@@ -966,7 +991,7 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
       const auto rad = std::lerp(minRadius, maxRadius, speed_percentage);
 
       transform.angle +=
-          steer * Config::get().steering_sensitivity.data * dt * rad;
+          steer * steering_sensitivity * dt * rad * steering_multiplier;
       transform.angle = std::fmod(transform.angle + 360.f, 360.f);
     }
 
@@ -975,10 +1000,22 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
         (transform.accel_mult * Config::get().boost_decay_percent.data * dt);
     transform.accel_mult = std::max(1.f, decayed_accel_mult);
 
+    float accel_multiplier = 1.f;
+    {
+      auto affectors = EQ() //
+                           .whereHasComponent<AccelerationAffector>()
+                           .whereOverlaps(transform.rect())
+                           .gen();
+      for (Entity &e : affectors) {
+        accel_multiplier *= e.get<AccelerationAffector>().multiplier;
+      }
+    }
+
     float mvt{0.f};
     if (transform.accel != 0.f) {
       mvt = std::clamp(
-          transform.speed() + (transform.accel * transform.accel_mult),
+          transform.speed() +
+              (transform.accel * transform.accel_mult * accel_multiplier),
           -Config::get().max_speed.data, Config::get().max_speed.data);
     } else {
       mvt = std::clamp(transform.speed(), -Config::get().max_speed.data,
@@ -1014,8 +1051,15 @@ struct Move : PausableSystem<Transform> {
 
   virtual void for_each_with(Entity &, Transform &transform, float) override {
     transform.position += transform.velocity;
-    transform.velocity =
-        transform.velocity * (transform.accel != 0 ? 0.99f : 0.98f);
+    bool on_overlay = !EQ().whereHasComponent<IsFloorOverlay>()
+                           .whereOverlaps(transform.rect())
+                           .gen()
+                           .empty();
+    float damp = transform.accel != 0 ? 0.99f : 0.98f;
+    if (on_overlay) {
+      damp = transform.accel != 0 ? 0.998f : 0.996f;
+    }
+    transform.velocity = transform.velocity * damp;
   }
 };
 

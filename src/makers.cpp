@@ -275,3 +275,25 @@ Entity &make_hippo_item(vec2 position) {
 
   return entity;
 }
+
+Entity &make_oil_slick(raylib::Rectangle rect, const raylib::Color color,
+                       float steering_multiplier, float acceleration_multiplier,
+                       float steering_sensitivity_increment) {
+  auto &entity = EntityHelper::createEntity();
+
+  auto &transform = entity.addComponent<Transform>(std::move(rect));
+  transform.collision_config =
+      CollisionConfig{.mass = std::numeric_limits<float>::max(),
+                      .friction = 0.f,
+                      .restitution = 0.f};
+
+  entity.addComponent<CanWrapAround>();
+  entity.addComponent<MapGenerated>();
+  entity.addComponent<HasColor>(color);
+  entity.addComponent<IsFloorOverlay>();
+  entity.addComponent<SteeringAffector>(steering_multiplier);
+  entity.addComponent<AccelerationAffector>(acceleration_multiplier);
+  entity.addComponent<SteeringIncrementor>(steering_sensitivity_increment);
+
+  return entity;
+}

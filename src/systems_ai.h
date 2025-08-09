@@ -277,6 +277,17 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
       steer = 1.f;
     }
 
+    float steering_multiplier = 1.f;
+    {
+      auto affectors = EQ() //
+                           .whereHasComponent<SteeringAffector>()
+                           .whereOverlaps(transform.rect())
+                           .gen();
+      for (Entity &e : affectors) {
+        steering_multiplier *= e.get<SteeringAffector>().multiplier;
+      }
+    }
+
     if (transform.speed() > 0.01) {
       const auto minRadius = Config::get().minimum_steering_radius.data;
       const auto maxRadius = Config::get().maximum_steering_radius.data;
@@ -285,8 +296,8 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
 
       const auto rad = std::lerp(minRadius, maxRadius, speed_percentage);
 
-      transform.angle +=
-          steer * Config::get().steering_sensitivity.data * dt * rad;
+      transform.angle += steer * Config::get().steering_sensitivity.data * dt *
+                         rad * steering_multiplier;
       transform.angle = std::fmod(transform.angle + 360.f, 360.f);
     }
 
@@ -294,9 +305,21 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
                                   ? (Config::get().max_speed.data * 2.f)
                                   : Config::get().max_speed.data;
 
+    float accel_multiplier = 1.f;
+    {
+      auto affectors = EQ() //
+                           .whereHasComponent<AccelerationAffector>()
+                           .whereOverlaps(transform.rect())
+                           .gen();
+      for (Entity &e : affectors) {
+        accel_multiplier *= e.get<AccelerationAffector>().multiplier;
+      }
+    }
+
     float mvt =
         std::max(-max_movement_limit,
-                 std::min(max_movement_limit, transform.speed() + accel));
+                 std::min(max_movement_limit,
+                          transform.speed() + accel * accel_multiplier));
 
     // Apply difficulty-based speed multiplier
     float difficulty_multiplier = 1.0f;

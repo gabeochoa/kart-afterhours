@@ -10,8 +10,6 @@ namespace {
 // Range: 200-500px works well for most screen resolutions
 constexpr int PREVIEW_TEXTURE_SIZE = 300;
 
-
-
 // Preview isolation offset (keeps preview entities far from main game)
 // Range: 50000+ to avoid any collision with main game area
 // Should be >> largest possible screen resolution + wrap padding

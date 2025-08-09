@@ -361,6 +361,23 @@ struct MapGenerated : BaseComponent {
   // and should be cleaned up when a new map is created
 };
 
+struct IsFloorOverlay : BaseComponent {};
+
+struct CarAffector : BaseComponent {};
+struct SteeringAffector : CarAffector {
+  float multiplier{1.f};
+  SteeringAffector(float mult) : multiplier(mult) {}
+};
+struct AccelerationAffector : CarAffector {
+  float multiplier{1.f};
+  AccelerationAffector(float mult) : multiplier(mult) {}
+};
+
+struct SteeringIncrementor : CarAffector {
+  float target_sensitivity{0.f};
+  SteeringIncrementor(float sensitivity) : target_sensitivity(sensitivity) {}
+};
+
 struct HasShader : BaseComponent {
   std::string shader_name;
 
