@@ -134,7 +134,6 @@ void game() {
       systems.register_render_system(std::make_unique<RenderSkid>());
       systems.register_render_system(std::make_unique<RenderEntities>());
       texture_manager::register_render_systems(systems);
-      // Render sprites/animations with entity-level shaders
       systems.register_render_system(
           std::make_unique<RenderSpritesWithShaders>());
       systems.register_render_system(
