@@ -816,30 +816,22 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                      720.f) *
                         32.f
                   : 32.f;
-          auto icon_row = imm::div(
-              context, mk(elem.ent()),
-              ComponentConfig{}
-                  .with_size(ComponentSize{percent(1.f), pixels(icon_px)})
-                  .with_flex_direction(FlexDirection::Row)
-                  .with_skip_tabbing(true)
-                  .with_debug_name("weapon_icon_row"));
 
-          int col = 0;
+          std::vector<afterhours::texture_manager::Rectangle> frames;
+          frames.reserve(num_enabled);
           for (size_t i = 0; i < WEAPON_COUNT; ++i) {
             if (!weps.test(i))
               continue;
-
-            auto icon = imm::div(
-                context, mk(icon_row.ent(), col),
-                ComponentConfig{}
-                    .with_size(ComponentSize{pixels(icon_px), pixels(icon_px)})
-                    .disable_rounded_corners());
-
-            auto frame = weapon_icon_frame(static_cast<Weapon::Type>(i));
-            icon.ent().addComponentIfMissing<ui::HasImage>(
-                sheet, frame, texture_manager::HasTexture::Alignment::Center);
-            ++col;
+            frames.push_back(weapon_icon_frame(static_cast<Weapon::Type>(i)));
           }
+
+          imm::icon_row(
+              context, mk(elem.ent()), sheet, frames, icon_px / 32.f, 0.02f,
+              0.01f,
+              ComponentConfig{}
+                  .with_size(ComponentSize{percent(1.f), pixels(icon_px)})
+                  .with_skip_tabbing(true)
+                  .with_debug_name("weapon_icon_row"));
         }
       }
     }
@@ -1325,28 +1317,18 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
                                 ->texture;
   const auto scale = 5.f;
 
-  auto icons_row =
-      imm::div(context, mk(control_group.ent()),
-               ComponentConfig{}
-                   .with_size(ComponentSize{percent(1.f), percent(0.4f)})
-                   .with_margin(Margin{.top = percent(0.1f)})
-                   .with_flex_direction(FlexDirection::Row)
-                   .with_debug_name("about_icons"));
+  const std::array<afterhours::texture_manager::Rectangle, 3> about_frames{
+      afterhours::texture_manager::idx_to_sprite_frame(0, 4),
+      afterhours::texture_manager::idx_to_sprite_frame(1, 4),
+      afterhours::texture_manager::idx_to_sprite_frame(2, 4),
+  };
 
-  const int num_icon = 3;
-  for (int i = 0; i < num_icon; i++) {
-    auto frame = afterhours::texture_manager::idx_to_sprite_frame(i, 4);
-    auto icon_width = pixels(frame.width * scale);
-    auto icon_height = pixels(frame.height * scale);
-
-    imm::sprite(
-        context, mk(icons_row.ent(), i), sheet, frame,
-        afterhours::texture_manager::HasTexture::Alignment::Center,
-        ComponentConfig{}
-            .with_size(ComponentSize{icon_width, icon_height})
-            .with_margin(Margin{.left = percent(i == 0 ? 0.2f : 0.1f)})
-            .with_debug_name(std::string("about_icon_") + std::to_string(i)));
-  }
+  imm::icon_row(context, mk(control_group.ent()), sheet, about_frames, scale,
+                0.2f, 0.1f,
+                ComponentConfig{}
+                    .with_size(ComponentSize{percent(1.f), percent(0.4f)})
+                    .with_margin(Margin{.top = percent(0.1f)})
+                    .with_debug_name("about_icons"));
 
   {
     if (imm::button(context, mk(control_group.ent()),

@@ -13,7 +13,7 @@
         "active_round_type": 3,
         "settings": {
             "CatAndMouse": {
-                "enabled_weapons": 1,
+                "enabled_weapons": 7,
                 "show_countdown_timer": true,
                 "speed_multiplier": 0.699999988079071,
                 "time_option": 3
