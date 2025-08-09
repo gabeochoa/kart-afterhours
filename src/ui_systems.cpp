@@ -826,8 +826,7 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
           }
 
           imm::icon_row(
-              context, mk(elem.ent()), sheet, frames, icon_px / 32.f, 0.02f,
-              0.01f,
+              context, mk(elem.ent()), sheet, frames, icon_px / 32.f,
               ComponentConfig{}
                   .with_size(ComponentSize{percent(1.f), pixels(icon_px)})
                   .with_skip_tabbing(true)
@@ -1324,7 +1323,6 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
   };
 
   imm::icon_row(context, mk(control_group.ent()), sheet, about_frames, scale,
-                0.2f, 0.1f,
                 ComponentConfig{}
                     .with_size(ComponentSize{percent(1.f), percent(0.4f)})
                     .with_margin(Margin{.top = percent(0.1f)})
