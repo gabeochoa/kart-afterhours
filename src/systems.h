@@ -1,5 +1,6 @@
 #pragma once
 
+#include "car_affectors.h"
 #include "components.h"
 #include "game_state_manager.h"
 #include "makers.h"
@@ -962,25 +963,10 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
       }
     }
 
-    float steering_multiplier = 1.f;
-    float steering_sensitivity = Config::get().steering_sensitivity.data;
-    {
-      auto affectors = EQ().whereHasComponent<SteeringAffector>()
-                           .whereOverlaps(transform.rect())
-                           .gen();
-      for (Entity &e : affectors) {
-        steering_multiplier *= e.get<SteeringAffector>().multiplier;
-      }
-    }
-
-    {
-      auto incs = EQ().whereHasComponent<SteeringIncrementor>()
-                      .whereOverlaps(transform.rect())
-                      .gen();
-      for (Entity &e : incs) {
-        steering_sensitivity += e.get<SteeringIncrementor>().target_sensitivity;
-      }
-    }
+    float steering_multiplier = affector_steering_multiplier(transform);
+    float steering_sensitivity =
+        Config::get().steering_sensitivity.data +
+        affector_steering_sensitivity_additive(transform);
 
     if (transform.speed() > 0.01) {
       const auto minRadius = Config::get().minimum_steering_radius.data;
@@ -1000,16 +986,7 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
         (transform.accel_mult * Config::get().boost_decay_percent.data * dt);
     transform.accel_mult = std::max(1.f, decayed_accel_mult);
 
-    float accel_multiplier = 1.f;
-    {
-      auto affectors = EQ() //
-                           .whereHasComponent<AccelerationAffector>()
-                           .whereOverlaps(transform.rect())
-                           .gen();
-      for (Entity &e : affectors) {
-        accel_multiplier *= e.get<AccelerationAffector>().multiplier;
-      }
-    }
+    float accel_multiplier = affector_acceleration_multiplier(transform);
 
     float mvt{0.f};
     if (transform.accel != 0.f) {
@@ -1051,25 +1028,8 @@ struct Move : PausableSystem<Transform> {
 
   virtual void for_each_with(Entity &, Transform &transform, float) override {
     transform.position += transform.velocity;
-    bool on_overlay = !EQ().whereHasComponent<IsFloorOverlay>()
-                           .whereOverlaps(transform.rect())
-                           .gen()
-                           .empty();
-    float damp = transform.accel != 0 ? 0.99f : 0.98f;
-    if (on_overlay) {
-      damp = transform.accel != 0 ? 0.998f : 0.996f;
-    }
-
-    float speed_mult = 1.f;
-    {
-      auto speed_affs = EQ().whereHasComponent<SpeedAffector>()
-                            .whereOverlaps(transform.rect())
-                            .gen();
-      for (Entity &e : speed_affs) {
-        speed_mult *= e.get<SpeedAffector>().multiplier;
-      }
-    }
-    transform.velocity = transform.velocity * (damp * speed_mult);
+    float speed_mult = affector_speed_multiplier(transform);
+    transform.velocity = transform.velocity * speed_mult;
   }
 };
 

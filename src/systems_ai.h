@@ -1,5 +1,6 @@
 #pragma once
 
+#include "car_affectors.h"
 #include "components.h"
 #include "game_state_manager.h"
 #include "makers.h"
@@ -277,16 +278,7 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
       steer = 1.f;
     }
 
-    float steering_multiplier = 1.f;
-    {
-      auto affectors = EQ() //
-                           .whereHasComponent<SteeringAffector>()
-                           .whereOverlaps(transform.rect())
-                           .gen();
-      for (Entity &e : affectors) {
-        steering_multiplier *= e.get<SteeringAffector>().multiplier;
-      }
-    }
+    float steering_multiplier = affector_steering_multiplier(transform);
 
     if (transform.speed() > 0.01) {
       const auto minRadius = Config::get().minimum_steering_radius.data;
@@ -305,16 +297,7 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
                                   ? (Config::get().max_speed.data * 2.f)
                                   : Config::get().max_speed.data;
 
-    float accel_multiplier = 1.f;
-    {
-      auto affectors = EQ() //
-                           .whereHasComponent<AccelerationAffector>()
-                           .whereOverlaps(transform.rect())
-                           .gen();
-      for (Entity &e : affectors) {
-        accel_multiplier *= e.get<AccelerationAffector>().multiplier;
-      }
-    }
+    float accel_multiplier = affector_acceleration_multiplier(transform);
 
     float mvt =
         std::max(-max_movement_limit,
@@ -352,15 +335,7 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
         -std::cos(transform.as_rad()) * mvt * dt,
     };
 
-    float speed_mult = 1.f;
-    {
-      auto speed_affs = EQ().whereHasComponent<SpeedAffector>()
-                            .whereOverlaps(transform.rect())
-                            .gen();
-      for (Entity &e : speed_affs) {
-        speed_mult *= e.get<SpeedAffector>().multiplier;
-      }
-    }
-    transform.velocity = transform.velocity * speed_mult;
+    transform.velocity =
+        transform.velocity * affector_speed_multiplier(transform);
   }
 };
