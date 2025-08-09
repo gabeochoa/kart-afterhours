@@ -700,9 +700,7 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
   {
     if (imm::button(context, mk(elem.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("select map"))) {
+                    ComponentConfig{}.with_label("select map"))) {
       GameStateManager::get().set_next_screen(
           GameStateManager::Screen::MapSelection);
     }
@@ -710,18 +708,14 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
   {
     if (imm::button(context, mk(elem.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("back"))) {
+                    ComponentConfig{}.with_label("back"))) {
       GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
     }
   }
 
   {
     if (imm::button(context, mk(elem.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("round settings"))) {
+                    ComponentConfig{}.with_label("round settings"))) {
       navigate_to_screen(GameStateManager::Screen::RoundSettings);
     }
   }
@@ -1035,11 +1029,14 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
   // shared across all round types
   auto enabled_weapons = RoundManager::get().get_enabled_weapons();
 
-  if (auto result =
-          imm::checkbox_group(context, mk(settings_group.ent()),
-                              enabled_weapons, WEAPON_STRING_LIST, {1, 3});
+  if (auto result = imm::checkbox_group(
+          context, mk(settings_group.ent()), enabled_weapons,
+          WEAPON_STRING_LIST, {1, 3},
+          ComponentConfig{}.with_flex_direction(FlexDirection::Column));
       result) {
-    RoundManager::get().set_enabled_weapons(result.as<unsigned long>());
+    auto mask = result.as<unsigned long>();
+    log_info("weapon checkbox_group changed; mask={}", mask);
+    RoundManager::get().set_enabled_weapons(mask);
   }
 
   switch (RoundManager::get().active_round_type) {
@@ -1093,17 +1090,14 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                      .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                      .with_absolute_position()
                      .with_debug_name("map_selection"));
-    if (imm::button(
-            context, mk(button_group.ent()),
-            ComponentConfig{}.with_padding(button_padding).with_label("go"))) {
+    if (imm::button(context, mk(button_group.ent()),
+                    ComponentConfig{}.with_label("go"))) {
       MapManager::get().create_map();
       GameStateManager::get().start_game();
     }
 
     if (imm::button(context, mk(button_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("back"))) {
+                    ComponentConfig{}.with_label("back"))) {
       GameStateManager::get().set_next_screen(
           GameStateManager::Screen::CharacterCreation);
     }
@@ -1352,9 +1346,7 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
 
   {
     if (imm::button(context, mk(control_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("back"))) {
+                    ComponentConfig{}.with_label("back"))) {
       navigate_back();
     }
   }
@@ -1652,27 +1644,21 @@ void SchedulePauseUI::for_each_with(Entity &entity,
   // Resume button
   {
     if (imm::button(context, mk(control_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("resume"))) {
+                    ComponentConfig{}.with_label("resume"))) {
       GameStateManager::get().unpause_game();
     }
   }
 
   {
     if (imm::button(context, mk(control_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("back to setup"))) {
+                    ComponentConfig{}.with_label("back to setup"))) {
       GameStateManager::get().end_game();
     }
   }
 
   {
     if (imm::button(context, mk(control_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("exit game"))) {
+                    ComponentConfig{}.with_label("exit game"))) {
       exit_game();
     }
   }
@@ -1795,18 +1781,14 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
 
   {
     if (imm::button(context, mk(button_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("continue"))) {
+                    ComponentConfig{}.with_label("continue"))) {
       navigate_to_screen(GameStateManager::Screen::CharacterCreation);
     }
   }
 
   {
     if (imm::button(context, mk(button_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("quit"))) {
+                    ComponentConfig{}.with_label("quit"))) {
       exit_game();
     }
   }

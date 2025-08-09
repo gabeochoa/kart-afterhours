@@ -20,41 +20,44 @@ struct SetupGameStylingDefaults
   virtual void once(float) override {
     auto &styling_defaults = UIStylingDefaults::get();
 
-    auto default_size = ComponentSize{pixels(200.f), pixels(50.f)};
+    styling_defaults.set_component_config(
+        ComponentType::Button,
+        ComponentConfig{}
+            .with_padding(Padding{.top = screen_pct(5.f / 720.f),
+                                  .left = pixels(0.f),
+                                  .bottom = screen_pct(5.f / 720.f),
+                                  .right = pixels(0.f)})
+            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
+                                     screen_pct(50.f / 720.f)})
+            .with_color_usage(Theme::Usage::Primary));
 
-    // Button defaults - based on create_styled_button patterns
-    auto button_defaults = ComponentConfig{}
-                               .with_padding(Padding{.top = pixels(5.f),
-                                                     .left = pixels(0.f),
-                                                     .bottom = pixels(5.f),
-                                                     .right = pixels(0.f)})
-                               .with_size(default_size)
-                               .with_color_usage(Theme::Usage::Primary);
+    styling_defaults.set_component_config(
+        ComponentType::Slider,
+        ComponentConfig{}
+            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
+                                     screen_pct(50.f / 720.f)})
+            .with_color_usage(Theme::Usage::Secondary));
 
-    // Slider defaults - based on volume slider patterns
-    auto slider_defaults = ComponentConfig{}
-                               .with_size(default_size)
-                               .with_color_usage(Theme::Usage::Secondary);
+    styling_defaults.set_component_config(
+        ComponentType::Checkbox,
+        ComponentConfig{}
+            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
+                                     screen_pct(50.f / 720.f)})
+            .with_color_usage(Theme::Usage::Primary));
 
-    // Checkbox defaults - for settings and options
-    auto checkbox_defaults = ComponentConfig{}
-                                 .with_size(default_size)
-                                 .with_color_usage(Theme::Usage::Primary);
+    styling_defaults.set_component_config(
+        ComponentType::CheckboxNoLabel,
+        ComponentConfig{}
+            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
+                                     screen_pct(50.f / 720.f)})
+            .with_color_usage(Theme::Usage::Primary));
 
-    // Dropdown defaults - for settings and selection
-    auto dropdown_defaults = ComponentConfig{}
-                                 .with_size(default_size)
-                                 .with_color_usage(Theme::Usage::Primary);
-
-    // Register all defaults
-    styling_defaults.set_component_config(ComponentType::Button,
-                                          button_defaults);
-    styling_defaults.set_component_config(ComponentType::Slider,
-                                          slider_defaults);
-    styling_defaults.set_component_config(ComponentType::Checkbox,
-                                          checkbox_defaults);
-    styling_defaults.set_component_config(ComponentType::Dropdown,
-                                          dropdown_defaults);
+    styling_defaults.set_component_config(
+        ComponentType::Dropdown,
+        ComponentConfig{}
+            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
+                                     screen_pct(50.f / 720.f)})
+            .with_color_usage(Theme::Usage::Primary));
   }
 };
 
