@@ -61,6 +61,7 @@ void game() {
         // MapManager::get().create_map();
         make_ai();
         make_ai();
+
         create_startup = false;
       }
     });

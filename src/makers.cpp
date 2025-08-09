@@ -276,9 +276,10 @@ Entity &make_hippo_item(vec2 position) {
   return entity;
 }
 
-Entity &make_oil_slick(raylib::Rectangle rect, const raylib::Color color,
-                       float steering_multiplier, float acceleration_multiplier,
+Entity &make_oil_slick(raylib::Rectangle rect, float steering_multiplier,
+                       float acceleration_multiplier,
                        float steering_sensitivity_increment) {
+  raylib::Color darker_oil{20, 12, 6, 255};
   auto &entity = EntityHelper::createEntity();
 
   auto &transform = entity.addComponent<Transform>(std::move(rect));
@@ -289,11 +290,15 @@ Entity &make_oil_slick(raylib::Rectangle rect, const raylib::Color color,
 
   entity.addComponent<CanWrapAround>();
   entity.addComponent<MapGenerated>();
-  entity.addComponent<HasColor>(color);
+  entity.addComponent<HasColor>(darker_oil);
   entity.addComponent<IsFloorOverlay>();
   entity.addComponent<SteeringAffector>(steering_multiplier);
   entity.addComponent<AccelerationAffector>(acceleration_multiplier);
   entity.addComponent<SteeringIncrementor>(steering_sensitivity_increment);
 
   return entity;
+}
+
+Entity &make_default_oil_slick(raylib::Rectangle rect) {
+  return make_oil_slick(rect, 1.1f, 0.1f, 2.0f);
 }

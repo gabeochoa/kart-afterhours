@@ -29,6 +29,8 @@ void make_ai();
 Entity &make_hippo_item(vec2 position);
 
 /// Creates an oil slick area that affects car steering and acceleration.
-Entity &make_oil_slick(raylib::Rectangle rect, const raylib::Color color,
-                       float steering_multiplier, float acceleration_multiplier,
+Entity &make_oil_slick(raylib::Rectangle rect, float steering_multiplier,
+                       float acceleration_multiplier,
                        float steering_sensitivity_target);
+
+Entity &make_default_oil_slick(raylib::Rectangle rect);

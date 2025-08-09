@@ -221,6 +221,8 @@ void MapManager::create_arena_map() {
   // Center obstacles
   make_obstacle(screen_pct(0.5f, 0.2f, 50, 50), raylib::WHITE, ball_config);
   make_obstacle(screen_pct(0.5f, 0.8f, 50, 50), raylib::WHITE, ball_config);
+
+  make_default_oil_slick(screen_pct(0.35f, 0.5f, 120, 120));
 }
 
 void MapManager::create_maze_map() {
