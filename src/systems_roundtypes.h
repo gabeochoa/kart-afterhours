@@ -21,11 +21,11 @@ struct ProcessHippoCollection : System<Transform, HasHippoCollection> {
     for (const auto &item_ref : hippo_items) {
       Entity &item = item_ref.get();
       HippoItem &hippo_item = item.get<HippoItem>();
-      if (!hippo_item.collected) {
-        hippo_item.collected = true;
-        hippo_collection.collect_hippo();
-        item.cleanup = true;
-      }
+      if (hippo_item.collected)
+        continue;
+      hippo_item.collected = true;
+      hippo_collection.collect_hippo();
+      item.cleanup = true;
     }
   }
 };
@@ -63,19 +63,20 @@ struct SpawnHippoItems : PausableSystem<> {
     float time_per_hippo = game_start_time / total_hippos;
     int hippo_index = hippo_settings.data.hippos_spawned_total;
     float target_spawn_time = hippo_index * time_per_hippo;
-    if (elapsed_time >= target_spawn_time) {
-      auto *resolution_provider = EntityHelper::get_singleton_cmp<
-          window_manager::ProvidesCurrentResolution>();
-      if (!resolution_provider) {
-        return;
-      }
-      float screen_width = resolution_provider->width();
-      float screen_height = resolution_provider->height();
-      vec2 spawn_pos = vec_rand_in_box(
-          Rectangle{50, 50, screen_width - 100, screen_height - 100});
-      make_hippo_item(spawn_pos);
-      hippo_settings.data.hippos_spawned_total++;
+    if (elapsed_time < target_spawn_time) {
+      return;
     }
+    auto *resolution_provider = EntityHelper::get_singleton_cmp<
+        window_manager::ProvidesCurrentResolution>();
+    if (!resolution_provider) {
+      return;
+    }
+    float screen_width = resolution_provider->width();
+    float screen_height = resolution_provider->height();
+    vec2 spawn_pos = vec_rand_in_box(
+        Rectangle{50, 50, screen_width - 100, screen_height - 100});
+    make_hippo_item(spawn_pos);
+    hippo_settings.data.hippos_spawned_total++;
   }
 };
 
@@ -98,8 +99,11 @@ struct CheckLivesWinCondition : PausableSystem<> {
     if (players_with_lives.size() == 1) {
       Entity &winner = players_with_lives[0].get();
       GameStateManager::get().end_game({winner});
-    } else if (players_with_lives.empty()) {
+      return;
+    }
+    if (players_with_lives.empty()) {
       GameStateManager::get().end_game();
+      return;
     }
   }
 };
@@ -137,25 +141,33 @@ struct HandleCatMouseTagTransfer : System<Transform, HasCatMouseTracking> {
                       return !e.get<HasCatMouseTracking>().is_cat;
                     })
                     .gen();
-    for (auto &mouse_ref : mice) {
-      Entity &mouse = mouse_ref.get();
-      Transform &mouseTransform = mouse.get<Transform>();
-      HasCatMouseTracking &mouseTracking = mouse.get<HasCatMouseTracking>();
-      if (raylib::CheckCollisionRecs(transform.rect(), mouseTransform.rect())) {
-        float current_time = static_cast<float>(raylib::GetTime());
-        auto &cat_mouse_settings =
-            RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
-        if (current_time - mouseTracking.last_tag_time <
-            cat_mouse_settings.tag_cooldown_time) {
-          return;
-        }
-        catMouseTracking.is_cat = false;
-        mouseTracking.is_cat = true;
-        catMouseTracking.last_tag_time = current_time;
-        mouseTracking.last_tag_time = current_time;
-        return;
-      }
+    auto &cat_mouse_settings =
+        RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+    float current_time = static_cast<float>(raylib::GetTime());
+    auto colliding_mouse_it =
+        std::ranges::find_if(mice, [&](const afterhours::RefEntity &mouse_ref) {
+          const Entity &mouse = mouse_ref.get();
+          const Transform &mouseTransform = mouse.get<Transform>();
+          const HasCatMouseTracking &mouseTracking =
+              mouse.get<HasCatMouseTracking>();
+          if (!raylib::CheckCollisionRecs(transform.rect(),
+                                          mouseTransform.rect()))
+            return false;
+          if (current_time - mouseTracking.last_tag_time <
+              cat_mouse_settings.tag_cooldown_time)
+            return false;
+          return true;
+        });
+    if (colliding_mouse_it == mice.end()) {
+      return;
     }
+    Entity &mouse = colliding_mouse_it->get();
+    HasCatMouseTracking &mouseTracking = mouse.get<HasCatMouseTracking>();
+    catMouseTracking.is_cat = false;
+    mouseTracking.is_cat = true;
+    catMouseTracking.last_tag_time = current_time;
+    mouseTracking.last_tag_time = current_time;
+    return;
   }
 };
 
@@ -201,26 +213,27 @@ struct CheckCatMouseWinCondition : PausableSystem<> {
     }
     auto &cat_mouse_settings =
         RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
-    if (cat_mouse_settings.current_round_time > 0) {
-      cat_mouse_settings.current_round_time -= dt;
-      if (cat_mouse_settings.current_round_time <= 0) {
-        auto players_with_tracking =
-            EntityQuery().whereHasComponent<HasCatMouseTracking>().gen();
-        if (players_with_tracking.empty()) {
-          GameStateManager::get().end_game();
-          return;
-        }
-        auto winner = std::max_element(
-            players_with_tracking.begin(), players_with_tracking.end(),
-            [](const auto &a, const auto &b) {
-              return a.get().template get<HasCatMouseTracking>().time_as_mouse <
-                     b.get().template get<HasCatMouseTracking>().time_as_mouse;
-            });
-        cat_mouse_settings.state = RoundSettings::GameState::GameOver;
-        cat_mouse_settings.current_round_time = 0;
-        GameStateManager::get().end_game({winner->get()});
-      }
+    if (cat_mouse_settings.current_round_time <= 0) {
+      return;
     }
+    cat_mouse_settings.current_round_time -= dt;
+    if (cat_mouse_settings.current_round_time > 0) {
+      return;
+    }
+    auto players_with_tracking =
+        EntityQuery().whereHasComponent<HasCatMouseTracking>().gen();
+    if (players_with_tracking.empty()) {
+      GameStateManager::get().end_game();
+      return;
+    }
+    auto winner_it = std::ranges::max_element(
+        players_with_tracking, std::less<>{},
+        [](const afterhours::RefEntity &entity_ref) {
+          return entity_ref.get().get<HasCatMouseTracking>().time_as_mouse;
+        });
+    cat_mouse_settings.state = RoundSettings::GameState::GameOver;
+    cat_mouse_settings.current_round_time = 0;
+    GameStateManager::get().end_game({winner_it->get()});
   }
 };
 
@@ -247,18 +260,22 @@ struct CheckKillsWinCondition : PausableSystem<> {
           GameStateManager::get().end_game();
           return;
         }
-        int max_kills = 0;
-        for (const auto &entity_ref : entities_with_kills) {
-          int kills = entity_ref.get().get<HasKillCountTracker>().kills;
-          if (kills > max_kills)
-            max_kills = kills;
-        }
+        auto max_kills_it = std::ranges::max_element(
+            entities_with_kills, std::less<>{},
+            [](const afterhours::RefEntity &entity_ref) {
+              return entity_ref.get().get<HasKillCountTracker>().kills;
+            });
+        int max_kills =
+            max_kills_it == entities_with_kills.end()
+                ? 0
+                : max_kills_it->get().get<HasKillCountTracker>().kills;
         afterhours::RefEntities winners;
-        for (auto &entity_ref : entities_with_kills) {
-          if (entity_ref.get().get<HasKillCountTracker>().kills == max_kills) {
-            winners.push_back(entity_ref.get());
-          }
-        }
+        std::ranges::copy_if(
+            entities_with_kills, std::back_inserter(winners),
+            [max_kills](const afterhours::RefEntity &entity_ref) {
+              return entity_ref.get().get<HasKillCountTracker>().kills ==
+                     max_kills;
+            });
         if (winners.empty()) {
           GameStateManager::get().end_game();
           return;
@@ -271,49 +288,69 @@ struct CheckKillsWinCondition : PausableSystem<> {
 };
 
 struct CheckHippoWinCondition : PausableSystem<> {
+
+  void cleanup_remaining_hippos(RoundHippoSettings &hippo_settings) {
+    auto remaining_hippos = EQ().whereHasComponent<HippoItem>().gen();
+    for (const auto &hippo_ref : remaining_hippos) {
+      hippo_ref.get().cleanup = true;
+    }
+  }
+
   virtual void once(float dt) override {
     if (RoundManager::get().active_round_type != RoundType::Hippo) {
       return;
     }
+
     if (!GameStateManager::get().is_game_active()) {
       return;
     }
+
     auto &settings = RoundManager::get().get_active_settings();
     if (settings.state != RoundSettings::GameState::InGame) {
       return;
     }
+
     auto &hippo_settings =
         RoundManager::get().get_active_rt<RoundHippoSettings>();
-    if (hippo_settings.current_round_time > 0) {
-      hippo_settings.current_round_time -= dt;
-      if (hippo_settings.current_round_time <= 0) {
-        auto remaining_hippos = EQ().whereHasComponent<HippoItem>().gen();
-        for (const auto &hippo_ref : remaining_hippos)
-          hippo_ref.get().cleanup = true;
-        auto players_with_hippos =
-            EntityQuery().whereHasComponent<HasHippoCollection>().gen();
-        if (players_with_hippos.empty()) {
-          GameStateManager::get().end_game();
-          return;
-        }
-        int max_hippos = 0;
-        for (const auto &entity_ref : players_with_hippos) {
-          int hippos =
-              entity_ref.get().get<HasHippoCollection>().get_hippo_count();
-          if (hippos > max_hippos)
-            max_hippos = hippos;
-        }
-        afterhours::RefEntities winners;
-        for (auto &entity_ref : players_with_hippos) {
-          if (entity_ref.get().get<HasHippoCollection>().get_hippo_count() ==
-              max_hippos) {
-            winners.push_back(entity_ref.get());
-          }
-        }
-        hippo_settings.current_round_time = 0;
-        GameStateManager::get().end_game(winners);
-      }
+    if (hippo_settings.current_round_time <= 0) {
+      return;
     }
+
+    hippo_settings.current_round_time -= dt;
+
+    if (hippo_settings.current_round_time > 0) {
+      return;
+    }
+
+    cleanup_remaining_hippos(hippo_settings);
+
+    auto players_with_hippos =
+        EntityQuery().whereHasComponent<HasHippoCollection>().gen();
+    if (players_with_hippos.empty()) {
+      GameStateManager::get().end_game();
+      return;
+    }
+
+    auto max_hippos_it = std::ranges::max_element(
+        players_with_hippos, std::less<>{},
+        [](const afterhours::RefEntity &entity_ref) {
+          return entity_ref.get().get<HasHippoCollection>().get_hippo_count();
+        });
+    int max_hippos =
+        max_hippos_it == players_with_hippos.end()
+            ? 0
+            : max_hippos_it->get().get<HasHippoCollection>().get_hippo_count();
+
+    afterhours::RefEntities winners;
+    std::ranges::copy_if(
+        players_with_hippos, std::back_inserter(winners),
+        [max_hippos](const afterhours::RefEntity &entity_ref) {
+          return entity_ref.get().get<HasHippoCollection>().get_hippo_count() ==
+                 max_hippos;
+        });
+
+    hippo_settings.current_round_time = 0;
+    GameStateManager::get().end_game(winners);
   }
 };
 
@@ -322,30 +359,23 @@ struct UpdateRoundCountdown : PausableSystem<> {
     if (!RoundManager::get().uses_timer()) {
       return;
     }
+
     if (!GameStateManager::get().is_game_active()) {
       return;
     }
+
     auto &settings = RoundManager::get().get_active_settings();
-    if (settings.state == RoundSettings::GameState::Countdown) {
-      settings.countdown_before_start -= dt;
-      if (settings.countdown_before_start <= 0) {
-        settings.countdown_before_start = 0;
-        settings.state = RoundSettings::GameState::InGame;
-        auto round_type = RoundManager::get().active_round_type;
-        switch (round_type) {
-        case RoundType::CatAndMouse:
-          break;
-        case RoundType::Kills:
-          break;
-        case RoundType::Hippo:
-          break;
-        case RoundType::Lives:
-          break;
-        default:
-          break;
-        }
-      }
+    if (settings.state != RoundSettings::GameState::Countdown) {
+      return;
     }
+
+    settings.countdown_before_start -= dt;
+    if (settings.countdown_before_start > 0) {
+      return;
+    }
+
+    settings.countdown_before_start = 0;
+    settings.state = RoundSettings::GameState::InGame;
   }
 };
 
@@ -365,40 +395,48 @@ struct RenderRoundTimer : System<window_manager::ProvidesCurrentResolution> {
     const float timer_y = screen_height * 0.07f;
     const float text_size = screen_height * 0.033f;
     float current_time = RoundManager::get().get_current_round_time();
-    if (current_time > 0) {
-      std::string timer_text = std::to_string(current_time);
-      const float text_width =
-          raylib::MeasureText(timer_text.c_str(), static_cast<int>(text_size));
-      raylib::DrawText(timer_text.c_str(),
-                       static_cast<int>(timer_x - text_width / 2.0f),
-                       static_cast<int>(timer_y), static_cast<int>(text_size),
-                       raylib::WHITE);
+    if (current_time <= 0) {
+      return;
     }
+    const int display_seconds = static_cast<int>(std::ceil(current_time));
+    std::string timer_text = std::to_string(display_seconds);
+    const float text_width =
+        raylib::MeasureText(timer_text.c_str(), static_cast<int>(text_size));
+    raylib::DrawText(
+        timer_text.c_str(), static_cast<int>(timer_x - text_width / 2.0f),
+        static_cast<int>(timer_y), static_cast<int>(text_size), raylib::WHITE);
   }
 };
 
 struct ScaleCatSize : System<Transform, HasCatMouseTracking> {
-  virtual void for_each_with(Entity &entity, Transform &transform,
-                             HasCatMouseTracking &catMouseTracking,
-                             float) override {
-    if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
-      transform.size = CarSizes::NORMAL_CAR_SIZE;
-      if (entity.has<afterhours::texture_manager::HasSprite>()) {
-        auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
-        sprite.scale = CarSizes::NORMAL_SPRITE_SCALE;
-      }
-      return;
+
+  void reset_to_normal_size(Entity &entity, Transform &transform) {
+    transform.size = CarSizes::NORMAL_CAR_SIZE;
+    if (entity.has<afterhours::texture_manager::HasSprite>()) {
+      auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
+      sprite.scale = CarSizes::NORMAL_SPRITE_SCALE;
     }
-    if (catMouseTracking.is_cat) {
-      transform.size =
-          CarSizes::NORMAL_CAR_SIZE * CarSizes::CAT_SIZE_MULTIPLIER;
-    } else {
-      transform.size = CarSizes::NORMAL_CAR_SIZE;
-    }
+  }
+
+  void update_size(Entity &entity, Transform &transform,
+                   HasCatMouseTracking &catMouseTracking) {
+    transform.size = catMouseTracking.is_cat ? CarSizes::NORMAL_CAR_SIZE *
+                                                   CarSizes::CAT_SIZE_MULTIPLIER
+                                             : CarSizes::NORMAL_CAR_SIZE;
     if (entity.has<afterhours::texture_manager::HasSprite>()) {
       auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
       sprite.scale = catMouseTracking.is_cat ? CarSizes::CAT_SPRITE_SCALE
                                              : CarSizes::NORMAL_SPRITE_SCALE;
     }
+  }
+
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             HasCatMouseTracking &catMouseTracking,
+                             float) override {
+    if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
+      reset_to_normal_size(entity, transform);
+      return;
+    }
+    update_size(entity, transform, catMouseTracking);
   }
 };
