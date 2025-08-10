@@ -98,7 +98,6 @@ void game() {
     systems.register_update_system(
         std::make_unique<CheckCatMouseWinCondition>());
     systems.register_update_system(std::make_unique<ScaleCatSize>());
-    systems.register_update_system(std::make_unique<UISounds>());
 
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
     systems.register_update_system(std::make_unique<UpdateShaderValues>());
@@ -131,6 +130,9 @@ void game() {
       systems.register_update_system(std::make_unique<SchedulePauseUI>());
     }
     ui::register_after_ui_updates<InputAction>(systems);
+
+    systems.register_update_system(std::make_unique<UIClickSounds>());
+    systems.register_update_system(std::make_unique<UIMoveSounds>());
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
   }

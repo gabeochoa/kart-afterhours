@@ -6,6 +6,10 @@
 #include "input_mapping.h"
 #include "sound_library.h"
 #include "weapons.h"
+// afterhours UI
+#include <afterhours/src/plugins/ui/components.h>
+#include <afterhours/src/plugins/ui/context.h>
+#include <afterhours/src/plugins/ui/systems.h>
 
 // TODO this needs to be converted into a component with SoundAlias's
 // in raylib a Sound can only be played once and hitting play again
@@ -19,7 +23,7 @@ struct CarRumble : System<Transform, CanShoot> {
   }
 };
 
-struct UISounds : System<> {
+struct UIMoveSounds : System<> {
   input::PossibleInputCollector<InputAction> inpc;
 
   virtual bool should_run(float) override {
@@ -47,11 +51,35 @@ struct UISounds : System<> {
     }
 
     for (const auto &act : inpc.inputs_pressed()) {
-      if (act.action == InputAction::WidgetPress) {
-        SoundLibrary::get().play(SoundFile::UI_Select);
-        continue;
-      }
       play_move_if_any(act);
+    }
+  }
+};
+
+struct UIClickSounds
+    : afterhours::ui::SystemWithUIContext<afterhours::ui::HasClickListener> {
+  afterhours::ui::UIContext<InputAction> *context = nullptr;
+
+  virtual void once(float) override {
+    context = afterhours::EntityHelper::get_singleton_cmp<
+        afterhours::ui::UIContext<InputAction>>();
+    this->include_derived_children = true;
+  }
+
+  virtual void
+  for_each_with_derived(Entity &entity, afterhours::ui::UIComponent &component,
+                        afterhours::ui::HasClickListener &hasClickListener,
+                        float) {
+    if (!GameStateManager::get().is_menu_active()) {
+      return;
+    }
+    if (!component.was_rendered_to_screen) {
+      return;
+    }
+
+    // If this element registered a click this frame, play the UI_Select sound
+    if (hasClickListener.down) {
+      SoundLibrary::get().play(SoundFile::UI_Select);
     }
   }
 };
