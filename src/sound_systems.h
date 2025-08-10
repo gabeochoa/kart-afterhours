@@ -13,6 +13,6 @@
 struct CarRumble : System<Transform, CanShoot> {
   virtual void for_each_with(const Entity &, const Transform &,
                              const CanShoot &, float) const override {
-    SoundLibrary::get().play(SoundFile::Rumble);
+    SoundLibrary::get().play(SoundFile::Engine_Idle_Short);
   }
 };

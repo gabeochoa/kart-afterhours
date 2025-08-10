@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "library.h"
 #include <afterhours/src/singleton.h>
 //
@@ -9,23 +8,36 @@
 #include "rl.h"
 
 enum struct SoundFile {
-  Rumble,
-  Skrt_Start,
-  Skrt_Mid,
-  Skrt_End,
+  UI_Select,
+  UI_Move,
+  Engine_Idle_Short,
+  Round_Start,
+  Tiny_Gears_Sequence_045,
+  Weapon_Sniper_Shot,
+  Weapon_Canon_Shot,
+  Weapon_Shotgun_Shot,
+  // Car_Boost,
+  // Weapon_Machinegun_Shot,
 };
 
 constexpr static const char *sound_file_to_str(SoundFile sf) {
   switch (sf) {
-  case SoundFile::Rumble:
-    return "Rumble";
-  case SoundFile::Skrt_Start:
-    return "SkrtStart";
-  case SoundFile::Skrt_Mid:
-    return "SkrtMid";
-  case SoundFile::Skrt_End:
-    return "SkrtEnd";
-    break;
+  case SoundFile::UI_Select:
+    return "UISelect";
+  case SoundFile::UI_Move:
+    return "WaterDripSingle";
+  case SoundFile::Engine_Idle_Short:
+    return "EngineIdleShort";
+  case SoundFile::Round_Start:
+    return "RoundStart";
+  case SoundFile::Tiny_Gears_Sequence_045:
+    return "TinyGearsSequence045";
+  case SoundFile::Weapon_Sniper_Shot:
+    return "WeaponSniperShot";
+  case SoundFile::Weapon_Canon_Shot:
+    return "WeaponCanonShot";
+  case SoundFile::Weapon_Shotgun_Shot:
+    return "WeaponShotgunShot";
   }
   return "";
 }
@@ -85,21 +97,60 @@ constexpr static void load_sounds() {
     constexpr SoundFile file = val;
     std::string filename;
     switch (file) {
-    case SoundFile::Rumble:
-      filename = "rumble.wav";
+    case SoundFile::UI_Select:
+      filename = "gdc/doex_qantum_ui_ui_select_plastic_05_03.wav";
       break;
-    case SoundFile::Skrt_Start:
-      filename = "skrt_start.wav";
+    case SoundFile::UI_Move:
+      filename = "gdc/"
+                 "inmotionaudio_cave_design_WATRDrip_SingleDrip03_"
+                 "InMotionAudio_CaveDesign.wav";
       break;
-    case SoundFile::Skrt_Mid:
-      filename = "skrt_mid.wav";
+    case SoundFile::Engine_Idle_Short:
+      filename = "gdc/"
+                 "cactuzz_sound_1993_Suzuki_VS_800_GL_Intruder_Onboard,_idle_"
+                 "Mix_Loop_Short.wav";
       break;
-    case SoundFile::Skrt_End:
-      filename = "skrt_end.wav";
+    case SoundFile::Round_Start:
+      filename = "gdc/METLImpt_Metal_Impact-03_MWSFX_TM.wav";
+      break;
+    case SoundFile::Weapon_Canon_Shot:
+      filename = "gdc/Bluezone_BC0302_industrial_lever_switch_039.wav";
+      break;
+    case SoundFile::Weapon_Shotgun_Shot:
+      filename =
+          "gdc/Bluezone_BC0296_steampunk_weapon_flare_shot_explosion_003.wav";
+      break;
+    case SoundFile::Weapon_Sniper_Shot:
+      filename = "gdc/CREAMisc_Heavy_Mechanical_Footsteps_03_DDUMAIS_MCSFX.wav";
+      break;
+      //
+
+    case SoundFile::Tiny_Gears_Sequence_045:
+      filename =
+          "gdc/Bluezone_BC0301_tiny_gears_small_mechanism_sequence_045.wav";
       break;
     }
     SoundLibrary::get().load(
         Files::get().fetch_resource_path("sounds", filename).c_str(),
         sound_file_to_str(file));
   });
+
+  // Preload machinegun variations for random selection by prefix
+  const char *mg_prefix =
+      "SPAS-12_-_FIRING_-_Pump_Action_-_Take_1_-_20m_In_Front_-_AB_-_MKH8020_";
+  for (int i = 1; i <= 5; ++i) {
+    std::string stem = std::string(mg_prefix) + std::to_string(i);
+    std::string path = std::string("gdc/") + stem + ".wav";
+    SoundLibrary::get().load(
+        Files::get().fetch_resource_path("sounds", path).c_str(), stem.c_str());
+  }
+
+  // Preload boost variations for random selection by prefix
+  const char *boost_prefix = "AIRBrst_Steam_Release_Short_03_JSE_SG_Mono_";
+  for (int i = 1; i <= 6; ++i) {
+    std::string stem = std::string(boost_prefix) + std::to_string(i);
+    std::string path = std::string("gdc/") + stem + ".wav";
+    SoundLibrary::get().load(
+        Files::get().fetch_resource_path("sounds", path).c_str(), stem.c_str());
+  }
 }
