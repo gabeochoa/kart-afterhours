@@ -98,6 +98,7 @@ void game() {
     systems.register_update_system(
         std::make_unique<CheckCatMouseWinCondition>());
     systems.register_update_system(std::make_unique<ScaleCatSize>());
+    systems.register_update_system(std::make_unique<UISounds>());
 
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
     systems.register_update_system(std::make_unique<UpdateShaderValues>());
