@@ -5,4 +5,6 @@
 enum struct UIKey : size_t {
   MapShuffle,
   MapCard,
+  MapCardPulse,
+  MapPreviewFade,
 };

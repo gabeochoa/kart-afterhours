@@ -1117,6 +1117,17 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
   auto compatible_maps =
       MapManager::get().get_maps_for_round_type(current_round_type);
   auto selected_map_index = MapManager::get().get_selected_map();
+  // preview crossfade and selection pulse tracking
+  static int last_selected_map_index_for_preview = -2;
+  static int prev_preview_index = -2;
+  if (selected_map_index >= 0 && last_selected_map_index_for_preview >= 0 &&
+      last_selected_map_index_for_preview != selected_map_index) {
+    prev_preview_index = last_selected_map_index_for_preview;
+    afterhours::animation::anim(UIKey::MapPreviewFade)
+        .from(0.0f)
+        .to(1.0f, 0.12f, afterhours::animation::EasingType::EaseOutQuad);
+  }
+  last_selected_map_index_for_preview = selected_map_index;
   {
 
     // Find the currently selected map in the compatible maps list
@@ -1189,15 +1200,46 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_debug_name("map_title"));
 
       if (MapManager::get().preview_textures_initialized) {
-        int idx = MapManager::get().get_selected_map();
-        const auto &rt = MapManager::get().get_preview_texture(idx);
-        imm::image(context, mk(preview_box.ent()),
-                   ComponentConfig{}
-                       .with_size(ComponentSize{percent(1.f), percent(1.0f)})
-                       .with_debug_name("map_preview")
-                       .with_texture(rt.texture,
-                                     afterhours::texture_manager::HasTexture::
-                                         Alignment::Center));
+        int cur_idx = MapManager::get().get_selected_map();
+        float fade_v = afterhours::animation::manager<UIKey>()
+                           .get_value(UIKey::MapPreviewFade)
+                           .value_or(1.0f);
+        fade_v = std::clamp(fade_v, 0.0f, 1.0f);
+
+        if (prev_preview_index >= 0 && prev_preview_index != cur_idx &&
+            fade_v < 1.0f) {
+          const auto &rt_prev =
+              MapManager::get().get_preview_texture(prev_preview_index);
+          afterhours::texture_manager::Rectangle full_src_prev{
+              .x = 0,
+              .y = 0,
+              .width = (float)rt_prev.texture.width,
+              .height = (float)rt_prev.texture.height,
+          };
+          imm::sprite(context, mk(preview_box.ent()), rt_prev.texture,
+                      full_src_prev,
+                      ComponentConfig{}
+                          .with_size(ComponentSize{percent(1.f), percent(1.0f)})
+                          .with_debug_name("map_preview_prev")
+                          .with_opacity(1.0f - fade_v)
+                          .with_render_layer(0));
+        }
+
+        const auto &rt_cur = MapManager::get().get_preview_texture(cur_idx);
+        afterhours::texture_manager::Rectangle full_src_cur{
+            .x = 0,
+            .y = 0,
+            .width = (float)rt_cur.texture.width,
+            .height = (float)rt_cur.texture.height,
+        };
+        imm::sprite(
+            context, mk(preview_box.ent()), rt_cur.texture, full_src_cur,
+            ComponentConfig{}
+                .with_size(ComponentSize{percent(1.f), percent(1.0f)})
+                .with_debug_name("map_preview_cur")
+                .with_opacity(prev_preview_index >= 0 && fade_v < 1.0f ? fade_v
+                                                                       : 1.0f)
+                .with_render_layer(1));
       }
 
       // Map description
@@ -1284,17 +1326,41 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
             .with_margin(Margin{.top = pixels(slide_pixels)})
             .with_opacity(slide_v));
 
+    // selection pulse value for this card (0..1 anim value)
+    float pulse_v =
+        afterhours::animation::get_value(UIKey::MapCardPulse, i).value_or(0.0f);
+    float inner_margin_base = 0.10f;
+    float inner_margin_scale = 0.02f; // shrink margins by up to 2%
+    float inner_margin = inner_margin_base - (inner_margin_scale * pulse_v);
+
     if (imm::button(context, mk(map_card.ent(), map_card.ent().id),
                     ComponentConfig{}
                         .with_label(map_config.display_name)
                         .with_size(ComponentSize{percent(1.f), percent(1.f)})
                         .with_margin(Margin{
-                            .top = percent(0.1f),
-                            .bottom = percent(0.1f),
-                            .left = percent(0.1f),
-                            .right = percent(0.1f),
+                            .top = percent(inner_margin),
+                            .bottom = percent(inner_margin),
+                            .left = percent(inner_margin),
+                            .right = percent(inner_margin),
                         }))) {
-      MapManager::get().set_selected_map(map_index);
+      int current_selected = MapManager::get().get_selected_map();
+      if (current_selected != map_index) {
+        MapManager::get().set_selected_map(map_index);
+        // trigger preview crossfade and pulse on selection change only
+        afterhours::animation::anim(UIKey::MapPreviewFade)
+            .from(0.0f)
+            .to(1.0f, 0.12f, afterhours::animation::EasingType::EaseOutQuad);
+        afterhours::animation::anim(UIKey::MapCardPulse, i)
+            .from(0.0f)
+            .sequence({
+                {.to_value = 1.0f,
+                 .duration = 0.15f,
+                 .easing = afterhours::animation::EasingType::EaseOutQuad},
+                {.to_value = 0.0f,
+                 .duration = 0.20f,
+                 .easing = afterhours::animation::EasingType::EaseOutQuad},
+            });
+      }
     }
   }
 
