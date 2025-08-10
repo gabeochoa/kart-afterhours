@@ -32,7 +32,7 @@ struct Pct : ValueHolder<float> {
 struct S_Data {
   afterhours::window_manager::Resolution resolution = {
       .width = 1280,
-      .height = 1280,
+      .height = 720,
   };
 
   Pct master_volume = 0.1f;

@@ -44,11 +44,6 @@ Preload &Preload::init(const char *title) {
 
   // raylib::SetConfigFlags(raylib::FLAG_WINDOW_HIGHDPI);
   raylib::InitWindow(width, height, title);
-  auto scale = raylib::GetWindowScaleDPI();
-  if (scale.x != 1.f) {
-    width = static_cast<int>(width * scale.x);
-    height = static_cast<int>(height * scale.y);
-  }
   raylib::SetWindowSize(width, height);
   // Back to warnings
   raylib::TraceLogLevel logLevel = raylib::LOG_WARNING;
