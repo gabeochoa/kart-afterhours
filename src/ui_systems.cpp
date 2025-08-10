@@ -1295,31 +1295,17 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     int map_index = map_pair.first;
 
     // drive a quick staggered slide-in once per card
-    afterhours::animation::one_shot(UIKey::MapCard, i, [i](auto h) {
-      float delay = 0.05f * static_cast<float>(i);
-      h.from(0.0f).sequence({
-          {.to_value = 0.0f,
-           .duration = delay,
-           .easing = afterhours::animation::EasingType::Hold},
-          {.to_value = 1.0f,
-           .duration = 0.25f,
-           .easing = afterhours::animation::EasingType::EaseOutQuad},
-      });
-    });
-
-    float slide_v = 1.0f;
-    if (auto v = afterhours::animation::get_value(UIKey::MapCard, i)) {
-      slide_v = std::clamp(v.value(), 0.0f, 1.0f);
-    }
-    float slide_pixels = (1.0f - slide_v) * 30.0f;
+    afterhours::animation::one_shot(UIKey::MapCard, i,
+                                    ui_anims::make_map_card_slide(i));
 
     auto map_card = imm::div(
         context, mk(map_grid.ent(), static_cast<EntityID>(i)),
         ComponentConfig{}
             .with_debug_name("map_card")
             .with_size(ComponentSize{percent(card_width), percent(1.f)})
-            .with_margin(Margin{.top = pixels(slide_pixels)})
-            .with_opacity(slide_v));
+            .with_margin(Margin{.top = pixels((1.0f - slide_v) * 30.0f)})
+            .with_opacity(afterhours::animation::clamp_value(UIKey::MapCard, i,
+                                                             0.0f, 1.0f)));
 
     // selection pulse value for this card (0..1 anim value)
     float pulse_v =
