@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "map_system.h"
+#include "ui_animation.h"
 
 using namespace afterhours;
 
@@ -1083,8 +1084,13 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                      .with_debug_name("map_selection"));
     if (imm::button(context, mk(button_group.ent()),
                     ComponentConfig{}.with_label("go"))) {
-      MapManager::get().create_map();
-      GameStateManager::get().start_game();
+      if (MapManager::get().get_selected_map() ==
+          MapManager::RANDOM_MAP_INDEX) {
+        start_game_with_random_animation();
+      } else {
+        MapManager::get().create_map();
+        GameStateManager::get().start_game();
+      }
     }
 
     if (imm::button(context, mk(button_group.ent()),
@@ -1120,14 +1126,50 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                      });
 
     // Display selected map info in preview box
-    if (MapManager::get().get_selected_map() == MapManager::RANDOM_MAP_INDEX) {
+    auto maybe_shuffle = ui_anim::UIAnimationManager::get().get_value(
+        ui_anim::UIAnimKey::MapShuffle);
+    if (MapManager::get().get_selected_map() == MapManager::RANDOM_MAP_INDEX &&
+        maybe_shuffle.has_value() && !compatible_maps.empty()) {
+      int n = static_cast<int>(compatible_maps.size());
+      int animated_idx = std::clamp(
+          static_cast<int>(std::floor(maybe_shuffle.value())) % n, 0, n - 1);
+      const auto &animated_pair =
+          compatible_maps[static_cast<size_t>(animated_idx)];
+      const auto &animated_map = animated_pair.second;
+
+      // Map title
+      imm::div(context, mk(preview_box.ent()),
+               ComponentConfig{}
+                   .with_label(animated_map.display_name)
+                   .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                   .with_debug_name("map_title"));
+
+      if (MapManager::get().preview_textures_initialized) {
+        int abs_idx = animated_pair.first;
+        const auto &rt = MapManager::get().get_preview_texture(abs_idx);
+        imm::image(context, mk(preview_box.ent()),
+                   ComponentConfig{}
+                       .with_size(ComponentSize{percent(1.f), percent(1.0f)})
+                       .with_debug_name("map_preview")
+                       .with_texture(rt.texture,
+                                     afterhours::texture_manager::HasTexture::
+                                         Alignment::Center));
+      }
+
+      // Map description
+      imm::div(context, mk(preview_box.ent()),
+               ComponentConfig{}
+                   .with_label(animated_map.description)
+                   .with_size(ComponentSize{percent(1.f), percent(0.2f)})
+                   .with_margin(Margin{.top = percent(0.8f)})
+                   .with_debug_name("map_description"));
+    } else if (MapManager::get().get_selected_map() ==
+               MapManager::RANDOM_MAP_INDEX) {
       imm::div(context, mk(preview_box.ent()),
                ComponentConfig{}
                    .with_label("???")
                    .with_size(ComponentSize{percent(1.f), percent(0.3f)})
                    .with_debug_name("map_title"));
-
-      // No preview image for random selection
 
       imm::div(context, mk(preview_box.ent()),
                ComponentConfig{}
@@ -1231,6 +1273,34 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
+}
+
+void ScheduleMainMenuUI::start_game_with_random_animation() {
+  auto round_type = RoundManager::get().active_round_type;
+  auto maps = MapManager::get().get_maps_for_round_type(round_type);
+  if (maps.empty())
+    return;
+
+  int n = static_cast<int>(maps.size());
+  int chosen = raylib::GetRandomValue(0, n - 1);
+  int final_map_index = maps[static_cast<size_t>(chosen)].first;
+
+  ui_anim::anim(ui_anim::UIAnimKey::MapShuffle)
+      .from(0.0f)
+      .sequence({
+          {.to_value = static_cast<float>(n * 2),
+           .duration = 0.45f,
+           .easing = ui_anim::EasingType::Linear},
+          {.to_value = static_cast<float>(n + chosen),
+           .duration = 0.55f,
+           .easing = ui_anim::EasingType::EaseOutQuad},
+      })
+      .hold(0.5f)
+      .on_complete([final_map_index]() {
+        MapManager::get().set_selected_map(final_map_index);
+        MapManager::get().create_map();
+        GameStateManager::get().start_game();
+      });
 }
 
 Screen ScheduleMainMenuUI::main_screen(Entity &entity,

@@ -16,9 +16,10 @@ backward::SignalHandling sh;
 #include "sound_systems.h"
 #include "systems.h"
 #include "systems_ai.h"
+#include "ui_animation.h"
 #include "ui_systems.h"
 
-// TODO add honking 
+// TODO add honking
 
 bool running = true;
 // TODO move into library or somethign
@@ -115,6 +116,8 @@ void game() {
 
     ui::register_before_ui_updates<InputAction>(systems);
     {
+      systems.register_update_system(
+          [](float dt) { ui_anim::UIAnimationManager::get().update(dt); });
       systems.register_update_system(
           std::make_unique<SetupGameStylingDefaults>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());

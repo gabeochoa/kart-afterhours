@@ -115,6 +115,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                             const OptEntity &car, raylib::Color bg_color);
   void navigate_back();
   void navigate_to_screen(Screen screen);
+  void start_game_with_random_animation();
 
   Screen character_creation(Entity &entity, UIContext<InputAction> &context);
   Screen map_selection(Entity &entity, UIContext<InputAction> &context);
