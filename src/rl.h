@@ -22,16 +22,27 @@
 #endif
 
 namespace raylib {
+#if defined(__has_include)
+#if __has_include(<raylib.h>)
+#include <raylib.h>
+#include <raymath.h>
+#include <rlgl.h>
+#elif __has_include("raylib/raylib.h")
 #include "raylib/raylib.h"
 #include "raylib/raymath.h"
 #include "raylib/rlgl.h"
-//
-// #include "RaylibOpOverloads.h"
+#else
+#error "raylib headers not found"
+#endif
+#else
+#include <raylib.h>
+#include <raymath.h>
+#include <rlgl.h>
+#endif
 
-inline Vector2 &operator-(Vector2 &a) {
-  a = Vector2Negate(a);
-  return a;
-}
+// Only add missing scalar-left multiplication overloads
+inline Vector2 operator*(float s, Vector2 a) { return Vector2Scale(a, s); }
+inline Vector3 operator*(float s, Vector3 a) { return Vector3Scale(a, s); }
 
 inline void DrawSplineSegmentLinear(Vector2 p1, Vector2 p2, float thick,
                                     Color color) {
@@ -150,27 +161,6 @@ inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
     DrawTriangleStrip(strip, 4, color);
   }
 #endif
-}
-
-inline std::ostream &operator<<(std::ostream &os, Vector2 a) {
-  os << "(" << a.x << "," << a.y << ")";
-  return os;
-}
-
-inline std::ostream &operator<<(std::ostream &os, Vector3 a) {
-  os << "(" << a.x << "," << a.y << "," << a.z << ")";
-  return os;
-}
-
-inline std::ostream &operator<<(std::ostream &os, Vector4 a) {
-  os << "(" << a.x << "," << a.y << "," << a.z << "," << a.w << ")";
-  return os;
-}
-
-inline std::ostream &operator<<(std::ostream &os, Color c) {
-  os << "(" << (unsigned int)c.r << "," << (unsigned int)c.g << ","
-     << (unsigned int)c.b << "," << (unsigned int)c.a << ")";
-  return os;
 }
 
 } // namespace raylib
