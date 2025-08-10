@@ -98,16 +98,16 @@ inline auto get_mapping() {
       raylib::GAMEPAD_BUTTON_RIGHT_FACE_DOWN,
   };
 
-  mapping[InputAction::WidgetMod] = {raylib::KEY_LEFT_SHIFT,
-                                     raylib::GAMEPAD_BUTTON_MIDDLE_RIGHT};
+  mapping[InputAction::WidgetMod] = {
+      raylib::KEY_LEFT_SHIFT,
+  };
 
   mapping[InputAction::MenuBack] = {
       raylib::KEY_ESCAPE,
   };
 
-  mapping[InputAction::PauseButton] = {
-      raylib::KEY_ESCAPE,
-  };
+  mapping[InputAction::PauseButton] = {raylib::KEY_ESCAPE,
+                                       raylib::GAMEPAD_BUTTON_MIDDLE_RIGHT};
 
   mapping[InputAction::ToggleUIDebug] = {
       raylib::KEY_GRAVE,
