@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "map_system.h"
+#include "sound_library.h"
 #include "ui_key.h"
 #include <afterhours/src/plugins/animation.h>
 
@@ -1434,6 +1435,7 @@ void ScheduleMainMenuUI::start_game_with_random_animation() {
            .easing = afterhours::animation::animation::EasingType::EaseOutQuad},
       })
       .hold(0.5f)
+      .on_step(1.0f, [](int) { SoundLibrary::get().play(SoundFile::UI_Move); })
       .on_complete([final_map_index]() {
         MapManager::get().set_selected_map(final_map_index);
         MapManager::get().create_map();
