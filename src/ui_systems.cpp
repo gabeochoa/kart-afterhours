@@ -3,7 +3,8 @@
 
 #include "config.h"
 #include "map_system.h"
-#include "ui_animation.h"
+#include "ui_key.h"
+#include <afterhours/src/plugins/animation.h>
 
 using namespace afterhours;
 
@@ -1126,8 +1127,8 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                      });
 
     // Display selected map info in preview box
-    auto maybe_shuffle = ui_anim::UIAnimationManager::get().get_value(
-        ui_anim::UIAnimKey::MapShuffle);
+    auto maybe_shuffle =
+        afterhours::animation::manager<UIKey>().get_value(UIKey::MapShuffle);
     if (MapManager::get().get_selected_map() == MapManager::RANDOM_MAP_INDEX &&
         maybe_shuffle.has_value() && !compatible_maps.empty()) {
       int n = static_cast<int>(compatible_maps.size());
@@ -1285,15 +1286,15 @@ void ScheduleMainMenuUI::start_game_with_random_animation() {
   int chosen = raylib::GetRandomValue(0, n - 1);
   int final_map_index = maps[static_cast<size_t>(chosen)].first;
 
-  ui_anim::anim(ui_anim::UIAnimKey::MapShuffle)
+  afterhours::animation::anim(UIKey::MapShuffle)
       .from(0.0f)
       .sequence({
           {.to_value = static_cast<float>(n * 2),
            .duration = 0.45f,
-           .easing = ui_anim::EasingType::Linear},
+           .easing = afterhours::animation::animation::EasingType::Linear},
           {.to_value = static_cast<float>(n + chosen),
            .duration = 0.55f,
-           .easing = ui_anim::EasingType::EaseOutQuad},
+           .easing = afterhours::animation::animation::EasingType::EaseOutQuad},
       })
       .hold(0.5f)
       .on_complete([final_map_index]() {
