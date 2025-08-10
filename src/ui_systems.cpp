@@ -1028,6 +1028,11 @@ void round_cat_mouse_settings(Entity &entity, UIContext<InputAction> &context) {
       cm_settings.set_time_option(result.as<int>());
     }
   }
+
+  if (imm::checkbox(context, mk(entity), cm_settings.allow_tag_backs,
+                    ComponentConfig{}.with_label("Allow Tag Backs"))) {
+    // value already toggled by checkbox binding
+  }
 }
 
 Screen ScheduleMainMenuUI::round_settings(Entity &entity,

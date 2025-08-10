@@ -151,11 +151,11 @@ struct HandleCatMouseTagTransfer : System<Transform, HasCatMouseTracking> {
           const Transform &mouseTransform = mouse.get<Transform>();
           const HasCatMouseTracking &mouseTracking =
               mouse.get<HasCatMouseTracking>();
+          float effective_cooldown = cat_mouse_settings.get_tag_cooldown();
           if (!raylib::CheckCollisionRecs(transform.rect(),
                                           mouseTransform.rect()))
             return false;
-          if (current_time - mouseTracking.last_tag_time <
-              cat_mouse_settings.tag_cooldown_time)
+          if (current_time - mouseTracking.last_tag_time < effective_cooldown)
             return false;
           return true;
         });

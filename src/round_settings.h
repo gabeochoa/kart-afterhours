@@ -137,17 +137,23 @@ struct RoundHippoSettings : RoundSettings {
 
 struct RoundCatAndMouseSettings : RoundSettings {
   // TODO: audit cooldown time setting
-  // TODO: Add "tag back" rule option (allow/disallow tag backs)
   // TODO: Add UI announcement of who is the current cat on game start
 
   // Whether to announce the cat in UI
   bool announce_cat_in_ui = true;
+
+  // Whether to allow immediate tag backs after a tag
+  bool allow_tag_backs = false;
 
   // how long a player is safe after being tagged
   // TODO: Add tag cooldown setting to settings UI
   float tag_cooldown_time = 2.0f;
 
   float speed_multiplier = 0.7f;
+
+  float get_tag_cooldown() const {
+    return allow_tag_backs ? 0.25f : tag_cooldown_time;
+  }
 
   // Override default time option for cat and mouse
   RoundCatAndMouseSettings() {
@@ -375,6 +381,7 @@ struct RoundManager {
         auto &cat_settings =
             static_cast<const RoundCatAndMouseSettings &>(*settings[i]);
         round_j["speed_multiplier"] = cat_settings.speed_multiplier;
+        round_j["allow_tag_backs"] = cat_settings.allow_tag_backs;
         break;
       }
       }
@@ -447,6 +454,10 @@ struct RoundManager {
             if (round_j.contains("speed_multiplier")) {
               cat_settings.speed_multiplier =
                   round_j["speed_multiplier"].get<float>();
+            }
+            if (round_j.contains("allow_tag_backs")) {
+              cat_settings.allow_tag_backs =
+                  round_j["allow_tag_backs"].get<bool>();
             }
             break;
           }
