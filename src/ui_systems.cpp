@@ -757,9 +757,8 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
   {
     if (imm::button(context, mk(elem.ent()),
-                    ComponentConfig{}.with_label("select map"))) {
-      GameStateManager::get().set_next_screen(
-          GameStateManager::Screen::MapSelection);
+                    ComponentConfig{}.with_label("round settings"))) {
+      navigate_to_screen(GameStateManager::Screen::RoundSettings);
     }
   }
 
@@ -767,13 +766,6 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
     if (imm::button(context, mk(elem.ent()),
                     ComponentConfig{}.with_label("back"))) {
       GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
-    }
-  }
-
-  {
-    if (imm::button(context, mk(elem.ent()),
-                    ComponentConfig{}.with_label("round settings"))) {
-      navigate_to_screen(GameStateManager::Screen::RoundSettings);
     }
   }
 
@@ -1046,6 +1038,30 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_absolute_position());
 
+  // Top-left controls scheduled first so "select map" gets initial focus
+  {
+    auto top_left =
+        imm::div(context, mk(elem.ent()),
+                 ComponentConfig{}
+                     .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                     .with_padding(Padding{.top = screen_pct(0.02f),
+                                           .left = screen_pct(0.02f),
+                                           .bottom = pixels(0.f),
+                                           .right = pixels(0.f)})
+                     .with_absolute_position()
+                     .with_debug_name("round_settings_top_left"));
+
+    ui_helpers::create_styled_button(
+        context, top_left.ent(), "select map",
+        [this]() {
+          navigate_to_screen(GameStateManager::Screen::MapSelection);
+        },
+        0);
+
+    ui_helpers::create_styled_button(
+        context, top_left.ent(), "back", [this]() { navigate_back(); }, 1);
+  }
+
   auto settings_group =
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}
@@ -1109,15 +1125,6 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     log_error("You need to add a handler for UI settings for round type {}",
               (int)RoundManager::get().active_round_type);
     break;
-  }
-
-  {
-    if (imm::button(context, mk(settings_group.ent()),
-                    ComponentConfig{}
-                        .with_padding(button_padding)
-                        .with_label("back"))) {
-      navigate_back();
-    }
   }
 
   return GameStateManager::get().next_screen.value_or(
@@ -1269,21 +1276,21 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     }
   }
 
-  // schedule the back button after the grid so random gets initial focus
+  // top-left controls
   {
-    auto back_group =
+    auto top_left =
         imm::div(context, mk(elem.ent()),
                  ComponentConfig{}
-                     .with_font(get_font_name(FontID::EQPro), 75.f)
                      .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                     .with_padding(Padding{.top = screen_pct(0.02f),
+                                           .left = screen_pct(0.02f),
+                                           .bottom = pixels(0.f),
+                                           .right = pixels(0.f)})
                      .with_absolute_position()
-                     .with_debug_name("map_selection_back"));
+                     .with_debug_name("map_selection_top_left"));
 
-    if (imm::button(context, mk(back_group.ent()),
-                    ComponentConfig{}.with_label("back"))) {
-      GameStateManager::get().set_next_screen(
-          GameStateManager::Screen::CharacterCreation);
-    }
+    ui_helpers::create_styled_button(
+        context, top_left.ent(), "back", [this]() { navigate_back(); }, 0);
   }
 
   int effective_preview_index = selected_map_index;
