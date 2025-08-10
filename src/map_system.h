@@ -19,6 +19,7 @@ SINGLETON_FWD(MapManager)
 struct MapManager {
   SINGLETON(MapManager)
 
+  static constexpr int RANDOM_MAP_INDEX = -1;
   static constexpr int MAP_COUNT = 6;
   static const std::array<MapConfig, MAP_COUNT> available_maps;
   int selected_map_index = 0;
@@ -57,6 +58,16 @@ struct MapManager {
 
   void create_map() {
     cleanup_map_generated_entities();
+
+    if (selected_map_index == RANDOM_MAP_INDEX) {
+      auto maps =
+          get_maps_for_round_type(RoundManager::get().active_round_type);
+      if (!maps.empty()) {
+        int random_index =
+            raylib::GetRandomValue(0, static_cast<int>(maps.size()) - 1);
+        selected_map_index = maps[static_cast<size_t>(random_index)].first;
+      }
+    }
 
     if (selected_map_index >= 0 &&
         selected_map_index < static_cast<int>(available_maps.size())) {

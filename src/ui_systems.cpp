@@ -1120,7 +1120,22 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                      });
 
     // Display selected map info in preview box
-    if (selected_map_it != compatible_maps.end()) {
+    if (MapManager::get().get_selected_map() == MapManager::RANDOM_MAP_INDEX) {
+      imm::div(context, mk(preview_box.ent()),
+               ComponentConfig{}
+                   .with_label("???")
+                   .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                   .with_debug_name("map_title"));
+
+      // No preview image for random selection
+
+      imm::div(context, mk(preview_box.ent()),
+               ComponentConfig{}
+                   .with_label("???")
+                   .with_size(ComponentSize{percent(1.f), percent(0.2f)})
+                   .with_margin(Margin{.top = percent(0.8f)})
+                   .with_debug_name("map_description"));
+    } else if (selected_map_it != compatible_maps.end()) {
       const auto &selected_map = selected_map_it->second;
 
       // Map title
@@ -1166,17 +1181,39 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_flex_direction(FlexDirection::Row)
                    .with_debug_name("map_grid"));
 
+  size_t total_cards = compatible_maps.size() + 1;
+  float card_width = 1.f / static_cast<float>(total_cards);
+
+  {
+    auto random_card = imm::div(
+        context,
+        mk(map_grid.ent(), static_cast<EntityID>(compatible_maps.size())),
+        ComponentConfig{}
+            .with_debug_name("map_card_random")
+            .with_size(ComponentSize{percent(card_width), percent(1.f)}));
+
+    if (imm::button(context, mk(random_card.ent(), random_card.ent().id),
+                    ComponentConfig{}
+                        .with_label("?")
+                        .with_size(ComponentSize{percent(1.f), percent(1.f)})
+                        .with_margin(Margin{.top = percent(0.1f),
+                                            .bottom = percent(0.1f),
+                                            .left = percent(0.1f),
+                                            .right = percent(0.1f)}))) {
+      MapManager::get().set_selected_map(MapManager::RANDOM_MAP_INDEX);
+    }
+  }
+
   for (size_t i = 0; i < compatible_maps.size(); i++) {
     const auto &map_pair = compatible_maps[i];
     const auto &map_config = map_pair.second;
     int map_index = map_pair.first;
 
-    auto map_card =
-        imm::div(context, mk(map_grid.ent(), static_cast<EntityID>(i)),
-                 ComponentConfig{}
-                     .with_debug_name("map_card")
-                     .with_size(ComponentSize{
-                         percent(1.f / compatible_maps.size()), percent(1.f)}));
+    auto map_card = imm::div(
+        context, mk(map_grid.ent(), static_cast<EntityID>(i)),
+        ComponentConfig{}
+            .with_debug_name("map_card")
+            .with_size(ComponentSize{percent(card_width), percent(1.f)}));
 
     if (imm::button(context, mk(map_card.ent(), map_card.ent().id),
                     ComponentConfig{}
