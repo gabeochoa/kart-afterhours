@@ -1074,23 +1074,6 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_absolute_position()
                    .with_debug_name("map_selection"));
 
-  {
-
-    auto button_group =
-        imm::div(context, mk(entity),
-                 ComponentConfig{}
-                     .with_font(get_font_name(FontID::EQPro), 75.f)
-                     .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                     .with_absolute_position()
-                     .with_debug_name("map_selection"));
-
-    if (imm::button(context, mk(button_group.ent()),
-                    ComponentConfig{}.with_label("back"))) {
-      GameStateManager::get().set_next_screen(
-          GameStateManager::Screen::CharacterCreation);
-    }
-  }
-
   auto preview_box =
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}
@@ -1223,6 +1206,23 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     }
     if (context.has_focus(btn_id)) {
       focused_preview_index = map_index;
+    }
+  }
+
+  // schedule the back button after the grid so random gets initial focus
+  {
+    auto back_group =
+        imm::div(context, mk(elem.ent()),
+                 ComponentConfig{}
+                     .with_font(get_font_name(FontID::EQPro), 75.f)
+                     .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                     .with_absolute_position()
+                     .with_debug_name("map_selection_back"));
+
+    if (imm::button(context, mk(back_group.ent()),
+                    ComponentConfig{}.with_label("back"))) {
+      GameStateManager::get().set_next_screen(
+          GameStateManager::Screen::CharacterCreation);
     }
   }
 
