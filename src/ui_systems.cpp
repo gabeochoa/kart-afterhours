@@ -1297,6 +1297,8 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     // drive a quick staggered slide-in once per card
     afterhours::animation::one_shot(UIKey::MapCard, i,
                                     ui_anims::make_map_card_slide(i));
+    float slide_v =
+        afterhours::animation::clamp_value(UIKey::MapCard, i, 0.0f, 1.0f);
 
     auto map_card = imm::div(
         context, mk(map_grid.ent(), static_cast<EntityID>(i)),
