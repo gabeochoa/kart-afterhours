@@ -6,6 +6,7 @@
 #include "map_system.h"
 #include "query.h"
 #include "round_settings.h"
+#include "sound_library.h"
 #include <afterhours/ah.h>
 #include <fmt/format.h>
 
@@ -371,6 +372,13 @@ struct UpdateRoundCountdown : PausableSystem<> {
     }
 
     settings.countdown_before_start -= dt;
+
+    // play the sound a bit early so it feels more natural
+    if (settings.countdown_before_start < 0.05f &&
+        settings.countdown_before_start > 0.03f) {
+      SoundLibrary::get().play(SoundFile::Round_Start);
+    }
+
     if (settings.countdown_before_start > 0) {
       return;
     }
@@ -400,7 +408,7 @@ struct RenderRoundTimer : System<window_manager::ProvidesCurrentResolution> {
     if (settings.state == RoundSettings::GameState::Countdown &&
         settings.show_countdown_timer && settings.countdown_before_start > 0) {
       std::string countdown_text =
-          fmt::format("Get Ready! {:.0f}", settings.countdown_before_start - 1);
+          fmt::format("Get Ready! {:.0f}", settings.countdown_before_start);
       const float text_width = raylib::MeasureText(countdown_text.c_str(),
                                                    static_cast<int>(text_size));
       raylib::DrawText(countdown_text.c_str(),

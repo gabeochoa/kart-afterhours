@@ -8,6 +8,7 @@
 #include "query.h"
 #include "round_settings.h"
 #include "shader_library.h"
+#include "sound_library.h"
 #include <afterhours/ah.h>
 
 // Hippo game constants
@@ -894,6 +895,8 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
         break;
       case InputAction::Boost: {
         if (!transform.is_reversing() && transform.accel_mult <= 1.f) {
+          SoundLibrary::get().play_random_match(
+              "AIRBrst_Steam_Release_Short_03_JSE_SG_Mono_");
           transform.accel_mult = Config::get().boost_acceleration.data;
           const auto upfront_boost_speed = Config::get().max_speed.data * .2f;
           transform.velocity +=
