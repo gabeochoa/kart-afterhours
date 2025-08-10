@@ -484,6 +484,10 @@ void ScheduleMainMenuUI::round_end_player_column(
   const auto num_cols = std::min(
       4.f, static_cast<float>(round_players.size() + round_ais.size()));
 
+  afterhours::animation::one_shot(UIKey::RoundEndCard, index,
+                                  ui_anims::make_round_end_card_stagger(index));
+  float card_v = afterhours::animation::clamp_value(UIKey::RoundEndCard, index,
+                                                    0.0f, 1.0f);
   auto column =
       imm::div(context, mk(parent, (int)index),
                ComponentConfig{}
@@ -495,6 +499,8 @@ void ScheduleMainMenuUI::round_end_player_column(
                                        .right = percent(0.05f)})
                    .with_color_usage(Theme::Usage::Custom)
                    .with_custom_color(bg_color)
+                   .with_translate(0.0f, (1.0f - card_v) * 20.0f)
+                   .with_opacity(card_v)
                    .disable_rounded_corners());
 
   // Create player label
@@ -534,8 +540,56 @@ void ScheduleMainMenuUI::round_end_player_column(
     break;
   }
 
-  ui_helpers::create_player_card(context, column.ent(), player_label, bg_color,
-                                 is_slot_ai, ranking, stats_text);
+  // Score roll-up value (0..1). We keep it generic regardless of round type
+  afterhours::animation::one_shot(UIKey::RoundEndScore, index, [](auto h) {
+    h.from(0.0f).to(1.0f, 0.8f, afterhours::animation::EasingType::EaseOutQuad);
+  });
+  float score_t = afterhours::animation::clamp_value(UIKey::RoundEndScore,
+                                                     index, 0.0f, 1.0f);
+
+  // Compute animated stats text per-round
+  std::optional<std::string> animated_stats = std::nullopt;
+  switch (RoundManager::get().active_round_type) {
+  case RoundType::Lives: {
+    if (car->has<HasMultipleLives>()) {
+      int final_val = car->get<HasMultipleLives>().num_lives_remaining;
+      int shown = static_cast<int>(std::round(score_t * final_val));
+      animated_stats = std::format("Lives: {}", shown);
+    }
+    break;
+  }
+  case RoundType::Kills: {
+    if (car->has<HasKillCountTracker>()) {
+      int final_val = car->get<HasKillCountTracker>().kills;
+      int shown = static_cast<int>(std::round(score_t * final_val));
+      animated_stats = std::format("Kills: {}", shown);
+    }
+    break;
+  }
+  case RoundType::Hippo: {
+    int final_val = car->has<HasHippoCollection>()
+                        ? car->get<HasHippoCollection>().get_hippo_count()
+                        : 0;
+    int shown = static_cast<int>(std::round(score_t * final_val));
+    animated_stats = std::format("Hippos: {}", shown);
+    break;
+  }
+  case RoundType::CatAndMouse: {
+    if (car->has<HasCatMouseTracking>()) {
+      float final_val = car->get<HasCatMouseTracking>().time_as_mouse;
+      float shown = std::round(score_t * final_val * 10.0f) / 10.0f;
+      animated_stats = std::format("Mouse: {:.1f}s", shown);
+    }
+    break;
+  }
+  default: {
+    break;
+  }
+  }
+
+  ui_helpers::create_player_card(
+      context, column.ent(), player_label, bg_color, is_slot_ai, ranking,
+      animated_stats.has_value() ? animated_stats : stats_text);
 }
 
 void ScheduleMainMenuUI::render_round_end_stats(UIContext<InputAction> &context,
