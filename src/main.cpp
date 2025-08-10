@@ -118,6 +118,8 @@ void game() {
     ui::register_before_ui_updates<InputAction>(systems);
     {
       afterhours::animation::register_update_systems<UIKey>(systems);
+      afterhours::animation::register_update_systems<
+          afterhours::animation::CompositeKey>(systems);
       systems.register_update_system(
           std::make_unique<SetupGameStylingDefaults>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());

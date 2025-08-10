@@ -1247,16 +1247,42 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     }
   }
 
+  static bool map_card_stagger_started[6] = {false, false, false,
+                                             false, false, false};
+
   for (size_t i = 0; i < compatible_maps.size(); i++) {
     const auto &map_pair = compatible_maps[i];
     const auto &map_config = map_pair.second;
     int map_index = map_pair.first;
 
+    // drive a quick staggered slide-in once per card
+    if (!map_card_stagger_started[i]) {
+      float delay = 0.05f * static_cast<float>(i);
+      afterhours::animation::anim(UIKey::MapCard, i)
+          .from(0.0f)
+          .sequence(
+              {{.to_value = 0.0f,
+                .duration = delay,
+                .easing = afterhours::animation::EasingType::Hold},
+               {.to_value = 1.0f,
+                .duration = 0.25f,
+                .easing = afterhours::animation::EasingType::EaseOutQuad}});
+      map_card_stagger_started[i] = true;
+    }
+
+    float slide_v = 1.0f;
+    if (auto v = afterhours::animation::get_value(UIKey::MapCard, i)) {
+      slide_v = std::clamp(v.value(), 0.0f, 1.0f);
+    }
+    float slide_pixels = (1.0f - slide_v) * 30.0f;
+
     auto map_card = imm::div(
         context, mk(map_grid.ent(), static_cast<EntityID>(i)),
         ComponentConfig{}
             .with_debug_name("map_card")
-            .with_size(ComponentSize{percent(card_width), percent(1.f)}));
+            .with_size(ComponentSize{percent(card_width), percent(1.f)})
+            .with_margin(Margin{.top = pixels(slide_pixels)})
+            .with_opacity(slide_v));
 
     if (imm::button(context, mk(map_card.ent(), map_card.ent().id),
                     ComponentConfig{}
