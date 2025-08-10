@@ -153,4 +153,29 @@ constexpr static void load_sounds() {
     SoundLibrary::get().load(
         Files::get().fetch_resource_path("sounds", path).c_str(), stem.c_str());
   }
+
+  SoundLibrary::get().load(
+      Files::get()
+          .fetch_resource_path("sounds", "gdc/"
+                                         "1993_Suzuki_VS_800_GL_Intruder_pass-"
+                                         "by_back_to_front_asphalt_M-S_LR2.wav")
+          .c_str(),
+      "IntroPassBy_0");
+  SoundLibrary::get().load(
+      Files::get()
+          .fetch_resource_path(
+              "sounds", "gdc/"
+                        "VEHCar_1967_Corvette_EXT-Group_A_Approach_In_"
+                        "Accelerate_MEDIUM_Lead_car_then_Vette_Left_to_Right_"
+                        "02_M1_GoldSND_M1C_101419_aaOVPpPmTQSk_LR1.wav")
+          .c_str(),
+      "IntroPassBy_1");
+  SoundLibrary::get().load(
+      Files::get()
+          .fetch_resource_path("sounds",
+                               "gdc/"
+                               "VEHCar_Audi_Q7_EXTERIOR_Approach_Fast_Stop_"
+                               "Drive_Away_Fast_ORTF_DRCA_AUQ7_MK012_LR3.wav")
+          .c_str(),
+      "IntroPassBy_2");
 }

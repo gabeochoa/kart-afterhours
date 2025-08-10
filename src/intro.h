@@ -6,6 +6,7 @@
 #include "config.h"
 #include "preload.h"
 #include "shader_library.h"
+#include "sound_library.h"
 
 using namespace afterhours;
 
@@ -21,15 +22,18 @@ struct IntroScreens
   } state = State::None;
 
   // Animation timing constants
-  static constexpr float INITIAL_DELAY = 0.15f;
-  static constexpr float CHASE_STATE_FULL_TIME = 15.0f;
+  static constexpr float INITIAL_DELAY = 1.0f;
+  static constexpr float CHASE_STATE_FULL_TIME = 20.0f;
   static constexpr float RAYLIB_ANIMATION_DURATION = 0.90f;
   static constexpr float DELAY_DURATION = 0.5f;
   static constexpr float COMPLETION_DELAY = 0.2f;
+  static constexpr float PASSBY_FADE_TOTAL =
+      RAYLIB_ANIMATION_DURATION * 4.5f + DELAY_DURATION;
+  static constexpr float PASSBY_SKIP_FADE_TOTAL = 0.15f;
 
   // Car animation configuration
   static constexpr float CHASE_CAR_SIZE = 120.f;
-  static constexpr float CHASE_SPEED = 1200.f;
+  static constexpr float CHASE_SPEED = 800.f;
   static constexpr float CHASE_SINE_AMPLITUDE = 60.f;
   static constexpr float CHASE_SINE_FREQUENCY = 2.0f;
   static constexpr float CHASE_CAR_SPACING = 0.6f;
@@ -51,6 +55,30 @@ struct IntroScreens
 
   window_manager::Resolution resolution;
   float timeInState = 0.f;
+  bool passbyPlayed[3] = {false, false, false};
+  bool passbyStarted = false;
+  bool passbyFadeActive = false;
+  float passbyFadeElapsed = 0.f;
+  bool skipRequested = false;
+  float passbyFadeTotal = PASSBY_FADE_TOTAL;
+
+  void set_passby_volume(float v) {
+    auto &s0 = SoundLibrary::get().get("IntroPassBy_0");
+    auto &s1 = SoundLibrary::get().get("IntroPassBy_1");
+    auto &s2 = SoundLibrary::get().get("IntroPassBy_2");
+    raylib::SetSoundVolume(s0, v);
+    raylib::SetSoundVolume(s1, v);
+    raylib::SetSoundVolume(s2, v);
+  }
+
+  void stop_passby() {
+    auto &s0 = SoundLibrary::get().get("IntroPassBy_0");
+    auto &s1 = SoundLibrary::get().get("IntroPassBy_1");
+    auto &s2 = SoundLibrary::get().get("IntroPassBy_2");
+    raylib::StopSound(s0);
+    raylib::StopSound(s1);
+    raylib::StopSound(s2);
+  }
 
   IntroScreens() {}
 
@@ -197,6 +225,21 @@ struct IntroScreens
                 180.f / M_PI +
             90.f;
 
+        if (!passbyPlayed[i] && car_pos.x >= (float)resolution.width * 0.1f) {
+          switch (i) {
+          case 0:
+            SoundLibrary::get().play("IntroPassBy_0");
+            break;
+          case 1:
+            SoundLibrary::get().play("IntroPassBy_1");
+            break;
+          case 2:
+            SoundLibrary::get().play("IntroPassBy_2");
+            break;
+          }
+          passbyPlayed[i] = true;
+        }
+
         raylib::DrawTexturePro(
             sheet, source_frame,
             Rectangle{car_pos.x, car_pos.y, CHASE_CAR_SIZE, CHASE_CAR_SIZE},
@@ -240,6 +283,8 @@ struct IntroScreens
     // End chase state when the 3rd car (green car) has completed its journey
     float third_car_progress = car_progress - (2 * CHASE_CAR_SPACING);
     if (third_car_progress >= 1.0f) {
+      passbyPlayed[0] = passbyPlayed[1] = passbyPlayed[2] = false;
+      passbyStarted = false;
       return State::Raylib;
     }
     return State::Chase;
@@ -372,7 +417,7 @@ struct IntroScreens
   virtual void
   for_each_with(Entity &,
                 window_manager::ProvidesCurrentResolution &pCurrentResolution,
-                ui::FontManager &fm, float) override {
+                ui::FontManager &fm, float dt) override {
 
     raylib::ClearBackground(raylib::BLACK);
     resolution = pCurrentResolution.current_resolution;
@@ -380,9 +425,12 @@ struct IntroScreens
     // Check for any key or mouse click to skip intro
     if (raylib::GetKeyPressed() != 0 ||
         raylib::IsMouseButtonPressed(raylib::MOUSE_LEFT_BUTTON)) {
-      state = State::Complete;
-      running = false;
-      return;
+      skipRequested = true;
+      if (!passbyFadeActive) {
+        passbyFadeActive = true;
+        passbyFadeElapsed = 0.f;
+      }
+      passbyFadeTotal = PASSBY_SKIP_FADE_TOTAL;
     }
 
     auto previous_state = state;
@@ -390,6 +438,45 @@ struct IntroScreens
 
     if (previous_state != state) {
       timeInState = 0.f;
+    }
+
+    if (!passbyStarted && previous_state != State::Chase &&
+        state == State::Chase) {
+      set_passby_volume(1.f);
+      SoundLibrary::get().play("IntroPassBy_0");
+      SoundLibrary::get().play("IntroPassBy_1");
+      SoundLibrary::get().play("IntroPassBy_2");
+      passbyStarted = true;
+    }
+
+    if (!passbyFadeActive && previous_state != State::Raylib &&
+        state == State::Raylib) {
+      passbyFadeActive = true;
+      passbyFadeElapsed = 0.f;
+    }
+
+    if (passbyFadeActive) {
+      passbyFadeElapsed += dt;
+      float t = std::min(1.f, passbyFadeElapsed / passbyFadeTotal);
+      set_passby_volume(1.f - t);
+    }
+
+    if (skipRequested && passbyFadeActive &&
+        passbyFadeElapsed >= passbyFadeTotal) {
+      set_passby_volume(0.f);
+      stop_passby();
+      passbyFadeActive = false;
+      running = false;
+      state = State::Complete;
+      return;
+    }
+
+    if (state == State::Complete) {
+      set_passby_volume(0.f);
+      stop_passby();
+      passbyFadeActive = false;
+      skipRequested = false;
+      passbyFadeTotal = PASSBY_FADE_TOTAL;
     }
   }
 
