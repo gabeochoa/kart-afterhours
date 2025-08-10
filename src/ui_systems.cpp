@@ -1112,12 +1112,10 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_debug_name("preview_box")
                    .with_skip_tabbing(true));
 
-  // Get current round type and compatible maps
   auto current_round_type = RoundManager::get().active_round_type;
   auto compatible_maps =
       MapManager::get().get_maps_for_round_type(current_round_type);
   auto selected_map_index = MapManager::get().get_selected_map();
-  // preview crossfade and selection pulse tracking
   static int last_selected_map_index_for_preview = -2;
   static int prev_preview_index = -2;
   if (selected_map_index >= 0 && last_selected_map_index_for_preview >= 0 &&
@@ -1128,129 +1126,10 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
         .to(1.0f, 0.12f, afterhours::animation::EasingType::EaseOutQuad);
   }
   last_selected_map_index_for_preview = selected_map_index;
-  {
 
-    // Find the currently selected map in the compatible maps list
-    auto selected_map_it =
-        std::find_if(compatible_maps.begin(), compatible_maps.end(),
-                     [selected_map_index](const auto &pair) {
-                       return pair.first == selected_map_index;
-                     });
-
-    // Display selected map info in preview box
-    auto maybe_shuffle =
-        afterhours::animation::manager<UIKey>().get_value(UIKey::MapShuffle);
-    if (MapManager::get().get_selected_map() == MapManager::RANDOM_MAP_INDEX &&
-        maybe_shuffle.has_value() && !compatible_maps.empty()) {
-      int n = static_cast<int>(compatible_maps.size());
-      int animated_idx = std::clamp(
-          static_cast<int>(std::floor(maybe_shuffle.value())) % n, 0, n - 1);
-      const auto &animated_pair =
-          compatible_maps[static_cast<size_t>(animated_idx)];
-      const auto &animated_map = animated_pair.second;
-
-      // Map title
-      imm::div(context, mk(preview_box.ent()),
-               ComponentConfig{}
-                   .with_label(animated_map.display_name)
-                   .with_size(ComponentSize{percent(1.f), percent(0.3f)})
-                   .with_debug_name("map_title"));
-
-      if (MapManager::get().preview_textures_initialized) {
-        int abs_idx = animated_pair.first;
-        const auto &rt = MapManager::get().get_preview_texture(abs_idx);
-        imm::image(context, mk(preview_box.ent()),
-                   ComponentConfig{}
-                       .with_size(ComponentSize{percent(1.f), percent(1.0f)})
-                       .with_debug_name("map_preview")
-                       .with_texture(rt.texture,
-                                     afterhours::texture_manager::HasTexture::
-                                         Alignment::Center));
-      }
-
-      // Map description
-      imm::div(context, mk(preview_box.ent()),
-               ComponentConfig{}
-                   .with_label(animated_map.description)
-                   .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-                   .with_margin(Margin{.top = percent(0.8f)})
-                   .with_debug_name("map_description"));
-    } else if (MapManager::get().get_selected_map() ==
-               MapManager::RANDOM_MAP_INDEX) {
-      imm::div(context, mk(preview_box.ent()),
-               ComponentConfig{}
-                   .with_label("???")
-                   .with_size(ComponentSize{percent(1.f), percent(0.3f)})
-                   .with_debug_name("map_title"));
-
-      imm::div(context, mk(preview_box.ent()),
-               ComponentConfig{}
-                   .with_label("???")
-                   .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-                   .with_margin(Margin{.top = percent(0.8f)})
-                   .with_debug_name("map_description"));
-    } else if (selected_map_it != compatible_maps.end()) {
-      const auto &selected_map = selected_map_it->second;
-
-      // Map title
-      imm::div(context, mk(preview_box.ent()),
-               ComponentConfig{}
-                   .with_label(selected_map.display_name)
-                   .with_size(ComponentSize{percent(1.f), percent(0.3f)})
-                   .with_debug_name("map_title"));
-
-      if (MapManager::get().preview_textures_initialized) {
-        int cur_idx = MapManager::get().get_selected_map();
-        float fade_v = afterhours::animation::manager<UIKey>()
-                           .get_value(UIKey::MapPreviewFade)
-                           .value_or(1.0f);
-        fade_v = std::clamp(fade_v, 0.0f, 1.0f);
-
-        if (prev_preview_index >= 0 && prev_preview_index != cur_idx &&
-            fade_v < 1.0f) {
-          const auto &rt_prev =
-              MapManager::get().get_preview_texture(prev_preview_index);
-          afterhours::texture_manager::Rectangle full_src_prev{
-              .x = 0,
-              .y = 0,
-              .width = (float)rt_prev.texture.width,
-              .height = (float)rt_prev.texture.height,
-          };
-          imm::sprite(context, mk(preview_box.ent()), rt_prev.texture,
-                      full_src_prev,
-                      ComponentConfig{}
-                          .with_size(ComponentSize{percent(1.f), percent(1.0f)})
-                          .with_debug_name("map_preview_prev")
-                          .with_opacity(1.0f - fade_v)
-                          .with_render_layer(0));
-        }
-
-        const auto &rt_cur = MapManager::get().get_preview_texture(cur_idx);
-        afterhours::texture_manager::Rectangle full_src_cur{
-            .x = 0,
-            .y = 0,
-            .width = (float)rt_cur.texture.width,
-            .height = (float)rt_cur.texture.height,
-        };
-        imm::sprite(
-            context, mk(preview_box.ent()), rt_cur.texture, full_src_cur,
-            ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), percent(1.0f)})
-                .with_debug_name("map_preview_cur")
-                .with_opacity(prev_preview_index >= 0 && fade_v < 1.0f ? fade_v
-                                                                       : 1.0f)
-                .with_render_layer(1));
-      }
-
-      // Map description
-      imm::div(context, mk(preview_box.ent()),
-               ComponentConfig{}
-                   .with_label(selected_map.description)
-                   .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-                   .with_margin(Margin{.top = percent(0.8f)})
-                   .with_debug_name("map_description"));
-    }
-  }
+  constexpr int NO_PREVIEW_INDEX = -1000;
+  int hovered_preview_index = NO_PREVIEW_INDEX;
+  int focused_preview_index = NO_PREVIEW_INDEX;
 
   // Grid of map options (bottom)
   auto map_grid =
@@ -1277,15 +1156,24 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
             .with_debug_name("map_card_random")
             .with_size(ComponentSize{percent(card_width), percent(1.f)}));
 
-    if (imm::button(context, mk(random_card.ent(), random_card.ent().id),
+    auto random_btn =
+        imm::button(context, mk(random_card.ent(), random_card.ent().id),
                     ComponentConfig{}
                         .with_label("?")
                         .with_size(ComponentSize{percent(1.f), percent(1.f)})
                         .with_margin(Margin{.top = percent(0.1f),
                                             .bottom = percent(0.1f),
                                             .left = percent(0.1f),
-                                            .right = percent(0.1f)}))) {
+                                            .right = percent(0.1f)}));
+    if (random_btn) {
       MapManager::get().set_selected_map(MapManager::RANDOM_MAP_INDEX);
+    }
+    auto random_btn_id = random_btn.id();
+    if (context.is_hot(random_btn_id)) {
+      hovered_preview_index = MapManager::RANDOM_MAP_INDEX;
+    }
+    if (context.has_focus(random_btn_id)) {
+      focused_preview_index = MapManager::RANDOM_MAP_INDEX;
     }
   }
 
@@ -1316,7 +1204,8 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     float inner_margin_scale = 0.02f; // shrink margins by up to 2%
     float inner_margin = inner_margin_base - (inner_margin_scale * pulse_v);
 
-    if (imm::button(context, mk(map_card.ent(), map_card.ent().id),
+    auto map_btn =
+        imm::button(context, mk(map_card.ent(), map_card.ent().id),
                     ComponentConfig{}
                         .with_label(map_config.display_name)
                         .with_size(ComponentSize{percent(1.f), percent(1.f)})
@@ -1325,7 +1214,8 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                             .bottom = percent(inner_margin),
                             .left = percent(inner_margin),
                             .right = percent(inner_margin),
-                        }))) {
+                        }));
+    if (map_btn) {
       int current_selected = MapManager::get().get_selected_map();
       if (current_selected != map_index) {
         MapManager::get().set_selected_map(map_index);
@@ -1345,8 +1235,140 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
             });
       }
     }
+
+    auto btn_id = map_btn.id();
+    if (context.is_hot(btn_id)) {
+      hovered_preview_index = map_index;
+    }
+    if (context.has_focus(btn_id)) {
+      focused_preview_index = map_index;
+    }
   }
 
+  int effective_preview_index = selected_map_index;
+  if (hovered_preview_index != NO_PREVIEW_INDEX) {
+    effective_preview_index = hovered_preview_index;
+  } else if (focused_preview_index != NO_PREVIEW_INDEX) {
+    effective_preview_index = focused_preview_index;
+  }
+
+  auto selected_map_it =
+      std::find_if(compatible_maps.begin(), compatible_maps.end(),
+                   [effective_preview_index](const auto &pair) {
+                     return pair.first == effective_preview_index;
+                   });
+
+  auto maybe_shuffle =
+      afterhours::animation::manager<UIKey>().get_value(UIKey::MapShuffle);
+  bool overriding_preview = effective_preview_index != selected_map_index;
+
+  if (effective_preview_index == MapManager::RANDOM_MAP_INDEX &&
+      maybe_shuffle.has_value() && !compatible_maps.empty()) {
+    int n = static_cast<int>(compatible_maps.size());
+    int animated_idx = std::clamp(
+        static_cast<int>(std::floor(maybe_shuffle.value())) % n, 0, n - 1);
+    const auto &animated_pair =
+        compatible_maps[static_cast<size_t>(animated_idx)];
+    const auto &animated_map = animated_pair.second;
+
+    imm::div(context, mk(preview_box.ent()),
+             ComponentConfig{}
+                 .with_label(animated_map.display_name)
+                 .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                 .with_debug_name("map_title"));
+
+    if (MapManager::get().preview_textures_initialized) {
+      int abs_idx = animated_pair.first;
+      const auto &rt = MapManager::get().get_preview_texture(abs_idx);
+      imm::image(
+          context, mk(preview_box.ent()),
+          ComponentConfig{}
+              .with_size(ComponentSize{percent(1.f), percent(1.0f)})
+              .with_debug_name("map_preview")
+              .with_texture(
+                  rt.texture,
+                  afterhours::texture_manager::HasTexture::Alignment::Center));
+    }
+
+    imm::div(context, mk(preview_box.ent()),
+             ComponentConfig{}
+                 .with_label(animated_map.description)
+                 .with_size(ComponentSize{percent(1.f), percent(0.2f)})
+                 .with_margin(Margin{.top = percent(0.8f)})
+                 .with_debug_name("map_description"));
+  } else if (effective_preview_index == MapManager::RANDOM_MAP_INDEX) {
+    imm::div(context, mk(preview_box.ent()),
+             ComponentConfig{}
+                 .with_label("???")
+                 .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                 .with_debug_name("map_title"));
+
+    imm::div(context, mk(preview_box.ent()),
+             ComponentConfig{}
+                 .with_label("???")
+                 .with_size(ComponentSize{percent(1.f), percent(0.2f)})
+                 .with_margin(Margin{.top = percent(0.8f)})
+                 .with_debug_name("map_description"));
+  } else if (selected_map_it != compatible_maps.end()) {
+    const auto &preview_map = selected_map_it->second;
+
+    imm::div(context, mk(preview_box.ent()),
+             ComponentConfig{}
+                 .with_label(preview_map.display_name)
+                 .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                 .with_debug_name("map_title"));
+
+    if (MapManager::get().preview_textures_initialized) {
+      float fade_v = afterhours::animation::manager<UIKey>()
+                         .get_value(UIKey::MapPreviewFade)
+                         .value_or(1.0f);
+      fade_v = std::clamp(fade_v, 0.0f, 1.0f);
+
+      if (!overriding_preview && prev_preview_index >= 0 &&
+          prev_preview_index != selected_map_index && fade_v < 1.0f) {
+        const auto &rt_prev =
+            MapManager::get().get_preview_texture(prev_preview_index);
+        afterhours::texture_manager::Rectangle full_src_prev{
+            .x = 0,
+            .y = 0,
+            .width = (float)rt_prev.texture.width,
+            .height = (float)rt_prev.texture.height,
+        };
+        imm::sprite(context, mk(preview_box.ent()), rt_prev.texture,
+                    full_src_prev,
+                    ComponentConfig{}
+                        .with_size(ComponentSize{percent(1.f), percent(1.0f)})
+                        .with_debug_name("map_preview_prev")
+                        .with_opacity(1.0f - fade_v)
+                        .with_render_layer(0));
+      }
+
+      int cur_idx = effective_preview_index;
+      const auto &rt_cur = MapManager::get().get_preview_texture(cur_idx);
+      imm::sprite(context, mk(preview_box.ent()), rt_cur.texture,
+                  afterhours::texture_manager::Rectangle{
+                      .x = 0,
+                      .y = 0,
+                      .width = (float)rt_cur.texture.width,
+                      .height = (float)rt_cur.texture.height,
+                  },
+                  ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), percent(1.0f)})
+                      .with_debug_name("map_preview_cur")
+                      .with_opacity((!overriding_preview &&
+                                     prev_preview_index >= 0 && fade_v < 1.0f)
+                                        ? fade_v
+                                        : 1.0f)
+                      .with_render_layer(1));
+    }
+
+    imm::div(context, mk(preview_box.ent()),
+             ComponentConfig{}
+                 .with_label(preview_map.description)
+                 .with_size(ComponentSize{percent(1.f), percent(0.2f)})
+                 .with_margin(Margin{.top = percent(0.8f)})
+                 .with_debug_name("map_description"));
+  }
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
 }
