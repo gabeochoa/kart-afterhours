@@ -1083,16 +1083,6 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                      .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                      .with_absolute_position()
                      .with_debug_name("map_selection"));
-    if (imm::button(context, mk(button_group.ent()),
-                    ComponentConfig{}.with_label("go"))) {
-      if (MapManager::get().get_selected_map() ==
-          MapManager::RANDOM_MAP_INDEX) {
-        start_game_with_random_animation();
-      } else {
-        MapManager::get().create_map();
-        GameStateManager::get().start_game();
-      }
-    }
 
     if (imm::button(context, mk(button_group.ent()),
                     ComponentConfig{}.with_label("back"))) {
@@ -1166,9 +1156,12 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                                             .left = percent(0.1f),
                                             .right = percent(0.1f)}));
     if (random_btn) {
-      MapManager::get().set_selected_map(MapManager::RANDOM_MAP_INDEX);
+      start_game_with_random_animation();
     }
     auto random_btn_id = random_btn.id();
+    // TODO preview on hover via is_hot is delayed since hot is computed in
+    // afterhours ui HandleClicks after this UI is built; use rect checks or
+    // reorder systems if same-frame hover preview is needed
     if (context.is_hot(random_btn_id)) {
       hovered_preview_index = MapManager::RANDOM_MAP_INDEX;
     }
@@ -1216,27 +1209,15 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                             .right = percent(inner_margin),
                         }));
     if (map_btn) {
-      int current_selected = MapManager::get().get_selected_map();
-      if (current_selected != map_index) {
-        MapManager::get().set_selected_map(map_index);
-        // trigger preview crossfade and pulse on selection change only
-        afterhours::animation::anim(UIKey::MapPreviewFade)
-            .from(0.0f)
-            .to(1.0f, 0.12f, afterhours::animation::EasingType::EaseOutQuad);
-        afterhours::animation::anim(UIKey::MapCardPulse, i)
-            .from(0.0f)
-            .sequence({
-                {.to_value = 1.0f,
-                 .duration = 0.15f,
-                 .easing = afterhours::animation::EasingType::EaseOutQuad},
-                {.to_value = 0.0f,
-                 .duration = 0.20f,
-                 .easing = afterhours::animation::EasingType::EaseOutQuad},
-            });
-      }
+      MapManager::get().set_selected_map(map_index);
+      MapManager::get().create_map();
+      GameStateManager::get().start_game();
     }
 
     auto btn_id = map_btn.id();
+    // TODO preview on hover via is_hot is delayed since hot is computed in
+    // afterhours ui HandleClicks after this UI is built; use rect checks or
+    // reorder systems if same-frame hover preview is needed
     if (context.is_hot(btn_id)) {
       hovered_preview_index = map_index;
     }
