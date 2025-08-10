@@ -50,12 +50,18 @@ Preload &Preload::init(const char *title) {
     height = static_cast<int>(height * scale.y);
   }
   raylib::SetWindowSize(width, height);
-  // TODO this doesnt seem to do anything when in this file
+  // Back to warnings
   raylib::TraceLogLevel logLevel = raylib::LOG_WARNING;
   raylib::SetTraceLogLevel(logLevel);
   raylib::SetTargetFPS(200);
   raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
+
+  // Enlarge stream buffer to reduce dropouts on macOS/miniaudio
+  raylib::SetAudioStreamBufferSizeDefault(4096);
   raylib::InitAudioDevice();
+  if (!raylib::IsAudioDeviceReady()) {
+    log_warn("audio device not ready; continuing without audio");
+  }
   raylib::SetMasterVolume(1.f);
 
   // Disable default escape key exit behavior so we can handle it manually
@@ -142,6 +148,9 @@ Preload &Preload::make_singleton() {
 }
 
 Preload::~Preload() {
+  if (raylib::IsAudioDeviceReady()) {
+    // nothing to stop currently
+  }
   raylib::CloseAudioDevice();
   raylib::CloseWindow();
 }
