@@ -7,6 +7,7 @@
 #include "map_system.h"
 #include "query.h"
 #include "round_settings.h"
+#include "input_mapping.h"
 #include "shader_library.h"
 #include "sound_library.h"
 #include <afterhours/ah.h>
@@ -388,6 +389,26 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
 
 struct RenderDebugGridOverlay
     : System<window_manager::ProvidesCurrentResolution> {
+  input::PossibleInputCollector<InputAction> inpc;
+
+  virtual void once(float) override {
+    inpc = input::get_input_collector<InputAction>();
+  }
+
+  virtual bool should_run(float) override {
+    inpc = input::get_input_collector<InputAction>();
+    if (!inpc.has_value())
+      return false;
+    bool toggle_pressed =
+        std::ranges::any_of(inpc.inputs_pressed(), [](const auto &a) {
+          return a.action == InputAction::ToggleUIDebug;
+        });
+    static bool enabled = false;
+    if (toggle_pressed)
+      enabled = !enabled;
+    return enabled;
+  }
+
   virtual void for_each_with(
       const Entity &,
       const window_manager::ProvidesCurrentResolution &pCurrentResolution,
