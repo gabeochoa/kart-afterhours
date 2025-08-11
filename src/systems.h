@@ -305,6 +305,39 @@ struct UpdateRenderTexture : System<> {
   }
 };
 
+struct LetterboxLayout {
+  int bar_left = 0;
+  int bar_right = 0;
+  int bar_top = 0;
+  int bar_bottom = 0;
+  raylib::Rectangle dst{0.f, 0.f, 0.f, 0.f};
+};
+
+static inline LetterboxLayout
+compute_letterbox_layout(const int window_width, const int window_height,
+                         const int content_width, const int content_height) {
+  LetterboxLayout layout;
+  int dest_w = window_width;
+  int dest_h = static_cast<int>(
+      std::round(static_cast<double>(dest_w) * content_height / content_width));
+  if (dest_h > window_height) {
+    dest_h = window_height;
+    dest_w = static_cast<int>(std::round(static_cast<double>(dest_h) *
+                                         content_width / content_height));
+  }
+
+  const int bar_w_total = window_width - dest_w;
+  const int bar_h_total = window_height - dest_h;
+  layout.bar_left = bar_w_total / 2;
+  layout.bar_right = bar_w_total - layout.bar_left;
+  layout.bar_top = bar_h_total / 2;
+  layout.bar_bottom = bar_h_total - layout.bar_top;
+  layout.dst = raylib::Rectangle{
+      static_cast<float>(layout.bar_left), static_cast<float>(layout.bar_top),
+      static_cast<float>(dest_w), static_cast<float>(dest_h)};
+  return layout;
+}
+
 struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderRenderTexture() {}
   virtual void for_each_with(
@@ -313,29 +346,14 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
       float) const override {
     const int window_w = raylib::GetScreenWidth();
     const int window_h = raylib::GetScreenHeight();
-
     const int content_w = mainRT.texture.width;
     const int content_h = mainRT.texture.height;
-
-    int dest_w = window_w;
-    int dest_h =
-        static_cast<int>(std::round((double)dest_w * content_h / content_w));
-    if (dest_h > window_h) {
-      dest_h = window_h;
-      dest_w =
-          static_cast<int>(std::round((double)dest_h * content_w / content_h));
-    }
-
-    const int bar_w_total = window_w - dest_w;
-    const int bar_h_total = window_h - dest_h;
-    const int bar_left = bar_w_total / 2;
-    const int bar_top = bar_h_total / 2;
+    const LetterboxLayout layout =
+        compute_letterbox_layout(window_w, window_h, content_w, content_h);
 
     const raylib::Rectangle src{0.0f, 0.0f, (float)mainRT.texture.width,
                                 -(float)mainRT.texture.height};
-    const raylib::Rectangle dst{(float)bar_left, (float)bar_top, (float)dest_w,
-                                (float)dest_h};
-    raylib::DrawTexturePro(mainRT.texture, src, dst, {0.0f, 0.0f}, 0.0f,
+    raylib::DrawTexturePro(mainRT.texture, src, layout.dst, {0.0f, 0.0f}, 0.0f,
                            raylib::WHITE);
   }
 };
@@ -348,35 +366,20 @@ struct RenderLetterboxBars : System<window_manager::ProvidesCurrentResolution> {
       float) const override {
     const int window_w = raylib::GetScreenWidth();
     const int window_h = raylib::GetScreenHeight();
-
     const int content_w = mainRT.texture.width;
     const int content_h = mainRT.texture.height;
+    const LetterboxLayout layout =
+        compute_letterbox_layout(window_w, window_h, content_w, content_h);
 
-    int dest_w = window_w;
-    int dest_h =
-        static_cast<int>(std::round((double)dest_w * content_h / content_w));
-    if (dest_h > window_h) {
-      dest_h = window_h;
-      dest_w =
-          static_cast<int>(std::round((double)dest_h * content_w / content_h));
+    if (layout.bar_left > 0) {
+      raylib::DrawRectangle(0, 0, layout.bar_left, window_h, raylib::BLACK);
+      raylib::DrawRectangle(window_w - layout.bar_right, 0, layout.bar_right,
+                            window_h, raylib::BLACK);
     }
-
-    const int bar_w_total = window_w - dest_w;
-    const int bar_h_total = window_h - dest_h;
-    const int bar_left = bar_w_total / 2;
-    const int bar_right = bar_w_total - bar_left;
-    const int bar_top = bar_h_total / 2;
-    const int bar_bottom = bar_h_total - bar_top;
-
-    if (bar_left > 0) {
-      raylib::DrawRectangle(0, 0, bar_left, window_h, raylib::BLACK);
-      raylib::DrawRectangle(window_w - bar_right, 0, bar_right, window_h,
-                            raylib::BLACK);
-    }
-    if (bar_top > 0) {
-      raylib::DrawRectangle(0, 0, window_w, bar_top, raylib::BLACK);
-      raylib::DrawRectangle(0, window_h - bar_bottom, window_w, bar_bottom,
-                            raylib::BLACK);
+    if (layout.bar_top > 0) {
+      raylib::DrawRectangle(0, 0, window_w, layout.bar_top, raylib::BLACK);
+      raylib::DrawRectangle(0, window_h - layout.bar_bottom, window_w,
+                            layout.bar_bottom, raylib::BLACK);
     }
   }
 };

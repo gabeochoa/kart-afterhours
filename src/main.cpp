@@ -170,6 +170,8 @@ void game() {
     systems.register_render_system([&](float) { raylib::EndTextureMode(); });
     systems.register_render_system([&](float) { raylib::BeginDrawing(); });
     {
+      // Render order: apply post-processing to game content, then draw
+      // letterbox/pillar bars so they remain pure black on top.
       systems.register_render_system(
           std::make_unique<BeginShader>("post_processing"));
       systems.register_render_system(std::make_unique<RenderRenderTexture>());
