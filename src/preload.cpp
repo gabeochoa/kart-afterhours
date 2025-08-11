@@ -104,6 +104,14 @@ Preload &Preload::init(const char *title) {
         TextureLibrary::get().load(filename.c_str(), name.c_str());
       });
 
+  // TODO add to spritesheet
+  TextureLibrary::get().load(
+      Files::get().fetch_resource_path("images", "dollar_sign.png").c_str(),
+      "dollar_sign");
+  TextureLibrary::get().load(
+      Files::get().fetch_resource_path("images", "trashcan.png").c_str(),
+      "trashcan");
+
   return *this;
 }
 

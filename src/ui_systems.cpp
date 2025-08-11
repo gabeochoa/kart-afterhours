@@ -1494,12 +1494,12 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
                                        UIContext<InputAction> &context) {
   auto elem =
       ui_helpers::create_screen_container(context, entity, "main_screen");
-  auto btn_group =
-      ui_helpers::create_control_group(context, elem.ent(), "btn_group");
+  auto top_left = ui_helpers::create_top_left_container(
+      context, elem.ent(), "main_top_left", 0);
 
   // Play button
   ui_helpers::create_styled_button(
-      context, btn_group.ent(), "play",
+      context, top_left.ent(), "play",
       [this]() {
         navigate_to_screen(GameStateManager::Screen::CharacterCreation);
       },
@@ -1507,17 +1507,17 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
 
   // About button
   ui_helpers::create_styled_button(
-      context, btn_group.ent(), "about",
+      context, top_left.ent(), "about",
       [this]() { navigate_to_screen(GameStateManager::Screen::About); }, 1);
 
   // Settings button
   ui_helpers::create_styled_button(
-      context, btn_group.ent(), "settings",
+      context, top_left.ent(), "settings",
       [this]() { navigate_to_screen(GameStateManager::Screen::Settings); }, 2);
 
   // Exit button
   ui_helpers::create_styled_button(
-      context, btn_group.ent(), "exit", [this]() { exit_game(); }, 3);
+      context, top_left.ent(), "exit", [this]() { exit_game(); }, 3);
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
