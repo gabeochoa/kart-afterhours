@@ -217,9 +217,24 @@ ElementResult create_control_group(UIContext<InputAction> &context,
           .with_debug_name(debug_name));
 }
 
-} // namespace ui_helpers
+ElementResult create_top_left_container(UIContext<InputAction> &context,
+                                        Entity &parent,
+                                        const std::string &debug_name,
+                                        int index) {
 
-// TODO the top left buttons should be have some top/left padding
+  return imm::div(
+      context, mk(parent, index),
+      ComponentConfig{}
+          .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+          .with_padding(Padding{.top = screen_pct(0.02f),
+                                .left = screen_pct(0.02f),
+                                .bottom = pixels(0.f),
+                                .right = pixels(0.f)})
+          .with_absolute_position()
+          .with_debug_name(debug_name));
+}
+
+} // namespace ui_helpers
 
 using Screen = GameStateManager::Screen;
 //
@@ -755,22 +770,28 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                    .with_absolute_position()
                    .with_debug_name("character_creation"));
 
-  {
-    if (imm::button(context, mk(elem.ent()),
-                    ComponentConfig{}.with_label("round settings"))) {
-      navigate_to_screen(GameStateManager::Screen::RoundSettings);
-    }
-  }
+  auto top_left = ui_helpers::create_top_left_container(
+      context, elem.ent(), "character_top_left", 0);
+
+  ui_helpers::create_styled_button(
+      context, top_left.ent(), "round settings",
+      [this]() { navigate_to_screen(GameStateManager::Screen::RoundSettings); },
+      0);
+
+  ui_helpers::create_styled_button(
+      context, top_left.ent(), "back",
+      [this]() {
+        GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
+      },
+      1);
 
   {
-    if (imm::button(context, mk(elem.ent()),
-                    ComponentConfig{}.with_label("back"))) {
-      GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
-    }
-  }
-
-  // Settings Preview
-  {
+    auto preview_container =
+        imm::div(context, mk(top_left.ent(), 2),
+                 ComponentConfig{}
+                     .with_size(ComponentSize{percent(0.35f), percent(0.25f)})
+                     .with_margin(Margin{.top = screen_pct(0.08f)})
+                     .with_debug_name("round_preview_container"));
     auto round_lives_preview = [](Entity &entity,
                                   UIContext<InputAction> &context) {
       auto &rl_settings =
@@ -845,7 +866,7 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
     {
       imm::div(
-          context, mk(elem.ent()),
+          context, mk(preview_container.ent()),
           ComponentConfig{}.with_label(std::format(
               "Win Condition: {}",
               magic_enum::enum_name(RoundManager::get().active_round_type))));
@@ -875,7 +896,8 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
           }
 
           imm::icon_row(
-              context, mk(elem.ent()), sheet, frames, icon_px / 32.f,
+              context, mk(preview_container.ent()), sheet, frames,
+              icon_px / 32.f,
               ComponentConfig{}
                   .with_size(ComponentSize{percent(1.f), pixels(icon_px)})
                   .with_skip_tabbing(true)
@@ -886,16 +908,16 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
     switch (RoundManager::get().active_round_type) {
     case RoundType::Lives:
-      round_lives_preview(elem.ent(), context);
+      round_lives_preview(preview_container.ent(), context);
       break;
     case RoundType::Kills:
-      round_kills_preview(elem.ent(), context);
+      round_kills_preview(preview_container.ent(), context);
       break;
     case RoundType::Hippo:
-      round_hippo_preview(elem.ent(), context);
+      round_hippo_preview(preview_container.ent(), context);
       break;
     case RoundType::CatAndMouse:
-      round_cat_mouse_preview(elem.ent(), context);
+      round_cat_mouse_preview(preview_container.ent(), context);
       break;
     default:
       log_error("You need to add a handler for UI settings for round type {}",
@@ -1487,6 +1509,18 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                                            UIContext<InputAction> &context) {
   auto elem =
       ui_helpers::create_screen_container(context, entity, "settings_screen");
+  {
+    auto top_left = ui_helpers::create_top_left_container(
+        context, elem.ent(), "settings_top_left", 0);
+    ui_helpers::create_styled_button(
+        context, top_left.ent(), "back",
+        [this]() {
+          Settings::get().update_resolution(
+              current_resolution_provider->current_resolution);
+          navigate_back();
+        },
+        0);
+  }
   auto control_group =
       ui_helpers::create_control_group(context, elem.ent(), "control_group");
 
@@ -1530,15 +1564,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
     Settings::get().toggle_fullscreen();
   }
 
-  // Back button
-  ui_helpers::create_styled_button(
-      context, control_group.ent(), "back",
-      [this]() {
-        Settings::get().update_resolution(
-            current_resolution_provider->current_resolution);
-        navigate_back();
-      },
-      5);
+  // leave control group without the back button now that it's top-left
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
@@ -1556,6 +1582,13 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_absolute_position()
                    .with_debug_name("about_screen"));
+
+  {
+    auto top_left = ui_helpers::create_top_left_container(context, elem.ent(),
+                                                          "about_top_left", 0);
+    ui_helpers::create_styled_button(
+        context, top_left.ent(), "back", [this]() { navigate_back(); }, 0);
+  }
 
   auto control_group =
       imm::div(context, mk(elem.ent()),
@@ -1582,12 +1615,7 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
                     .with_margin(Margin{.top = percent(0.1f)})
                     .with_debug_name("about_icons"));
 
-  {
-    if (imm::button(context, mk(control_group.ent()),
-                    ComponentConfig{}.with_label("back"))) {
-      navigate_back();
-    }
-  }
+  // back button moved to top-left
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
 }
