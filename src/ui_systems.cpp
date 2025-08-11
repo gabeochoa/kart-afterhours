@@ -1110,7 +1110,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
 
   // Top-left controls scheduled first so "select map" gets initial focus
   {
-    auto top_left =
+    auto settings_group =
         imm::div(context, mk(elem.ent()),
                  ComponentConfig{}
                      .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
@@ -1122,76 +1122,68 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                      .with_debug_name("round_settings_top_left"));
 
     ui_helpers::create_styled_button(
-        context, top_left.ent(), "select map",
+        context, settings_group.ent(), "select map",
         [this]() {
           navigate_to_screen(GameStateManager::Screen::MapSelection);
         },
         0);
 
-    ui_helpers::create_styled_button(
-        context, top_left.ent(), "back", [this]() { navigate_back(); }, 1);
-  }
+    {
+      auto win_condition_div =
+          imm::div(context, mk(settings_group.ent()),
+                   ComponentConfig{}
+                       .with_size(ComponentSize{percent(1.f), percent(0.2f)})
+                       .with_debug_name("win_condition_div"));
 
-  auto settings_group =
-      imm::div(context, mk(elem.ent()),
-               ComponentConfig{}
-                   .with_debug_name("settings_group")
-                   .with_size(ComponentSize{percent(0.5f), percent(1.f)})
-                   .with_margin(Margin{.top = screen_pct(0.15f),
-                                       .left = screen_pct(0.2f),
-                                       .right = screen_pct(0.2f)}));
+      static size_t selected_round_type =
+          static_cast<size_t>(RoundManager::get().active_round_type);
 
-  {
-    auto win_condition_div =
-        imm::div(context, mk(settings_group.ent()),
-                 ComponentConfig{}
-                     .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-                     .with_debug_name("win_condition_div"));
-
-    static size_t selected_round_type =
-        static_cast<size_t>(RoundManager::get().active_round_type);
-
-    if (auto result = imm::navigation_bar(context, mk(win_condition_div.ent()),
-                                          RoundType_NAMES, selected_round_type,
-                                          ComponentConfig{});
-        result) {
-      RoundManager::get().set_active_round_type(
-          static_cast<int>(selected_round_type));
+      if (auto result = imm::navigation_bar(
+              context, mk(win_condition_div.ent()), RoundType_NAMES,
+              selected_round_type, ComponentConfig{});
+          result) {
+        RoundManager::get().set_active_round_type(
+            static_cast<int>(selected_round_type));
+      }
     }
-  }
 
-  // shared across all round types
-  auto enabled_weapons = RoundManager::get().get_enabled_weapons();
+    // shared across all round types
+    auto enabled_weapons = RoundManager::get().get_enabled_weapons();
 
-  if (auto result = imm::checkbox_group(
-          context, mk(settings_group.ent()), enabled_weapons,
-          WEAPON_STRING_LIST, {1, 3},
-          ComponentConfig{}
-              .with_flex_direction(FlexDirection::Column)
-              .with_margin(Margin{.top = screen_pct(0.01f)}));
-      result) {
-    auto mask = result.as<unsigned long>();
-    log_info("weapon checkbox_group changed; mask={}", mask);
-    RoundManager::get().set_enabled_weapons(mask);
-  }
+    if (auto result = imm::checkbox_group(
+            context, mk(settings_group.ent()), enabled_weapons,
+            WEAPON_STRING_LIST, {1, 3},
+            ComponentConfig{}
+                .with_flex_direction(FlexDirection::Column)
+                .with_margin(Margin{.top = screen_pct(0.01f)}));
+        result) {
+      auto mask = result.as<unsigned long>();
+      log_info("weapon checkbox_group changed; mask={}", mask);
+      RoundManager::get().set_enabled_weapons(mask);
+    }
 
-  switch (RoundManager::get().active_round_type) {
-  case RoundType::Lives:
-    round_lives_settings(settings_group.ent(), context);
-    break;
-  case RoundType::Kills:
-    round_kills_settings(settings_group.ent(), context);
-    break;
-  case RoundType::Hippo:
-    round_hippo_settings(settings_group.ent(), context);
-    break;
-  case RoundType::CatAndMouse:
-    round_cat_mouse_settings(settings_group.ent(), context);
-    break;
-  default:
-    log_error("You need to add a handler for UI settings for round type {}",
-              (int)RoundManager::get().active_round_type);
-    break;
+    switch (RoundManager::get().active_round_type) {
+    case RoundType::Lives:
+      round_lives_settings(settings_group.ent(), context);
+      break;
+    case RoundType::Kills:
+      round_kills_settings(settings_group.ent(), context);
+      break;
+    case RoundType::Hippo:
+      round_hippo_settings(settings_group.ent(), context);
+      break;
+    case RoundType::CatAndMouse:
+      round_cat_mouse_settings(settings_group.ent(), context);
+      break;
+    default:
+      log_error("You need to add a handler for UI settings for round type {}",
+                (int)RoundManager::get().active_round_type);
+      break;
+    }
+
+    ui_helpers::create_styled_button(
+        context, settings_group.ent(), "back", [this]() { navigate_back(); },
+        2);
   }
 
   return GameStateManager::get().next_screen.value_or(
