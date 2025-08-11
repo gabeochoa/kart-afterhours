@@ -8,6 +8,7 @@
 #include "query.h"
 #include "round_settings.h"
 #include "shader_library.h"
+#include "weapons.h"
 #include <afterhours/ah.h>
 
 // TODO feels like we will need pathfinding at some point
@@ -22,6 +23,8 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
     switch (round_type) {
     case RoundType::Lives:
     case RoundType::Kills:
+      kills_ai_target(ai, transform);
+      break;
       default_ai_target(ai, transform);
       break;
     case RoundType::Hippo:
@@ -54,6 +57,29 @@ private:
       float screen_height = raylib::GetScreenHeight();
       ai.target = vec_rand_in_box(Rectangle{0, 0, screen_width, screen_height});
     }
+  }
+
+  void kills_ai_target(AIControlled &ai, Transform &transform) {
+    auto players = EntityQuery({.force_merge = true})
+                       .whereHasComponent<PlayerID>()
+                       .whereHasComponent<Transform>()
+                       .gen();
+    if (players.empty()) {
+      default_ai_target(ai, transform);
+      return;
+    }
+    vec2 closest_pos = players[0].get().get<Transform>().pos();
+    float closest_dist = distance_sq(transform.pos(), closest_pos);
+    for (const auto &ref : players) {
+      const auto &p = ref.get();
+      vec2 ppos = p.get<Transform>().pos();
+      float d = distance_sq(transform.pos(), ppos);
+      if (d < closest_dist) {
+        closest_dist = d;
+        closest_pos = ppos;
+      }
+    }
+    ai.target = closest_pos;
   }
 
   void hippo_ai_target(AIControlled &ai, Transform &transform) {
@@ -356,4 +382,43 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
   }
 };
 
-// boost systems live in systems.h for both players and ai
+struct AIShoot : PausableSystem<AIControlled, Transform, CanShoot> {
+  virtual void for_each_with(Entity &entity, AIControlled &,
+                             Transform &transform, CanShoot &canShoot,
+                             float dt) override {
+    if (RoundManager::get().active_round_type != RoundType::Kills) {
+      return;
+    }
+    magic_enum::enum_for_each<InputAction>([&](auto val) {
+      constexpr InputAction action = val;
+      canShoot.pass_time(action, dt);
+    });
+    vec2 forward_dir{std::sin(transform.as_rad()),
+                     -std::cos(transform.as_rad())};
+    auto players = EntityQuery({.force_merge = true})
+                       .whereHasComponent<PlayerID>()
+                       .whereHasComponent<Transform>()
+                       .gen();
+    if (players.empty()) {
+      return;
+    }
+    float best_alignment = -2.0f;
+    for (const auto &ref : players) {
+      const auto &p = ref.get();
+      if (p.id == entity.id)
+        continue;
+      vec2 to_p = p.get<Transform>().pos() - transform.pos();
+      if (vec_mag(to_p) < 0.001f)
+        continue;
+      vec2 dir_to_p = vec_norm(to_p);
+      float dot = forward_dir.x * dir_to_p.x + forward_dir.y * dir_to_p.y;
+      if (dot > best_alignment)
+        best_alignment = dot;
+    }
+    const float fire_threshold = std::cos(10.0f * (M_PI / 180.0f));
+    if (best_alignment >= fire_threshold) {
+      canShoot.fire(entity, InputAction::ShootLeft, dt);
+      canShoot.fire(entity, InputAction::ShootRight, dt);
+    }
+  }
+};

@@ -1201,26 +1201,12 @@ private:
 
     Entity &damager = damager_entities[0].get();
 
-    if (!damager.has<PlayerID>()) {
-      log_warn("Player died from environment damage - no kill awarded");
+    if (damager.has<HasKillCountTracker>()) {
+      damager.get<HasKillCountTracker>().kills++;
       return;
     }
 
-    input::GamepadID killer_player_id = damager.get<PlayerID>().id;
-
-    // Find the player with this ID and give them a kill
-    auto killer_players = EntityQuery({.force_merge = true})
-                              .whereHasComponent<PlayerID>()
-                              .whereHasComponent<HasKillCountTracker>()
-                              .whereLambda([killer_player_id](const Entity &e) {
-                                return e.get<PlayerID>().id == killer_player_id;
-                              })
-                              .gen();
-
-    if (!killer_players.empty()) {
-      killer_players[0].get().template get<HasKillCountTracker>().kills++;
-      log_info("Player {} got a kill!", killer_player_id);
-    }
+    log_warn("Death from non-attributable source - no kill awarded");
   }
 };
 
