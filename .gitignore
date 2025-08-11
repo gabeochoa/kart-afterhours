@@ -28,3 +28,5 @@ build/*
 .xmake/*
 settings.json
 .watchman*
+TODO.md 
+resources/sounds/possibles/*
