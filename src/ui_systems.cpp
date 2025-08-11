@@ -42,15 +42,21 @@ ElementResult create_player_card(
                            .with_custom_color(bg_color)
                            .disable_rounded_corners());
 
-  // Player label
   std::string player_label = label;
   if (is_ai) {
     player_label += " (AI)";
   }
 
-  imm::div(context, mk(card.ent()),
+  auto header_row =
+      imm::div(context, mk(card.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+                   .with_flex_direction(FlexDirection::Row)
+                   .with_debug_name("player_card_header"));
+
+  imm::div(context, mk(header_row.ent()),
            ComponentConfig{}
-               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+               .with_size(ComponentSize{percent(0.8f), percent(1.f)})
                .with_label(player_label)
                .with_color_usage(Theme::Usage::Custom)
                .with_custom_color(bg_color)
@@ -83,18 +89,29 @@ ElementResult create_player_card(
                  .with_debug_name("player_card_ranking"));
   }
 
-  // Next color button
   if (on_next_color) {
-    if (imm::button(
-            context, mk(card.ent()),
-            ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-                .with_label("Next Color")
-                .disable_rounded_corners()
-                .with_skip_tabbing(true)
-                .with_debug_name("next_color_button"))) {
+    raylib::Texture2D sheet = EntityHelper::get_singleton_cmp<
+                                  afterhours::texture_manager::HasSpritesheet>()
+                                  ->texture;
+    auto src = afterhours::texture_manager::idx_to_sprite_frame(0, 6);
+
+    auto icon_cell =
+        imm::div(context, mk(header_row.ent()),
+                 ComponentConfig{}
+                     .with_size(ComponentSize{percent(0.2f), percent(1.f)})
+                     .with_padding(Padding{.top = percent(0.02f),
+                                           .left = percent(0.02f),
+                                           .bottom = percent(0.02f),
+                                           .right = percent(0.02f)})
+                     .with_debug_name("next_color_cell"));
+
+    auto clicked = imm::image_button(
+        context, mk(icon_cell.ent()), sheet, src,
+        ComponentConfig{}
+            .with_size(ComponentSize{percent(1.f), percent(1.f)})
+            .with_debug_name("next_color_icon"));
+    if (clicked)
       on_next_color();
-    }
   }
 
   // AI Difficulty navigation bar
