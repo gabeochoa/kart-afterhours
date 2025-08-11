@@ -311,15 +311,73 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
       const Entity &entity,
       const window_manager::ProvidesCurrentResolution &pCurrentResolution,
       float) const override {
-    auto resolution = pCurrentResolution.current_resolution;
-    raylib::DrawTextureRec(mainRT.texture,
-                           {
-                               0,
-                               0,
-                               static_cast<float>(resolution.width),
-                               -1.f * static_cast<float>(resolution.height),
-                           },
-                           {0, 0}, raylib::WHITE);
+    const int window_w = raylib::GetScreenWidth();
+    const int window_h = raylib::GetScreenHeight();
+
+    const int content_w = mainRT.texture.width;
+    const int content_h = mainRT.texture.height;
+
+    int dest_w = window_w;
+    int dest_h =
+        static_cast<int>(std::round((double)dest_w * content_h / content_w));
+    if (dest_h > window_h) {
+      dest_h = window_h;
+      dest_w =
+          static_cast<int>(std::round((double)dest_h * content_w / content_h));
+    }
+
+    const int bar_w_total = window_w - dest_w;
+    const int bar_h_total = window_h - dest_h;
+    const int bar_left = bar_w_total / 2;
+    const int bar_top = bar_h_total / 2;
+
+    const raylib::Rectangle src{0.0f, 0.0f, (float)mainRT.texture.width,
+                                -(float)mainRT.texture.height};
+    const raylib::Rectangle dst{(float)bar_left, (float)bar_top, (float)dest_w,
+                                (float)dest_h};
+    raylib::DrawTexturePro(mainRT.texture, src, dst, {0.0f, 0.0f}, 0.0f,
+                           raylib::WHITE);
+  }
+};
+
+struct RenderLetterboxBars : System<window_manager::ProvidesCurrentResolution> {
+  virtual ~RenderLetterboxBars() {}
+  virtual void for_each_with(
+      const Entity &entity,
+      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
+      float) const override {
+    const int window_w = raylib::GetScreenWidth();
+    const int window_h = raylib::GetScreenHeight();
+
+    const int content_w = mainRT.texture.width;
+    const int content_h = mainRT.texture.height;
+
+    int dest_w = window_w;
+    int dest_h =
+        static_cast<int>(std::round((double)dest_w * content_h / content_w));
+    if (dest_h > window_h) {
+      dest_h = window_h;
+      dest_w =
+          static_cast<int>(std::round((double)dest_h * content_w / content_h));
+    }
+
+    const int bar_w_total = window_w - dest_w;
+    const int bar_h_total = window_h - dest_h;
+    const int bar_left = bar_w_total / 2;
+    const int bar_right = bar_w_total - bar_left;
+    const int bar_top = bar_h_total / 2;
+    const int bar_bottom = bar_h_total - bar_top;
+
+    if (bar_left > 0) {
+      raylib::DrawRectangle(0, 0, bar_left, window_h, raylib::BLACK);
+      raylib::DrawRectangle(window_w - bar_right, 0, bar_right, window_h,
+                            raylib::BLACK);
+    }
+    if (bar_top > 0) {
+      raylib::DrawRectangle(0, 0, window_w, bar_top, raylib::BLACK);
+      raylib::DrawRectangle(0, window_h - bar_bottom, window_w, bar_bottom,
+                            raylib::BLACK);
+    }
   }
 };
 
