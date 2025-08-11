@@ -1,6 +1,6 @@
 {
     "audio": {
-        "master_volume": 0.49507811665534973,
+        "master_volume": 0.7053923010826111,
         "music_volume": 0.3267187476158142,
         "sfx_volume": 0.47609373927116394
     },
@@ -10,7 +10,7 @@
         "width": 1280
     },
     "round_settings": {
-        "active_round_type": 3,
+        "active_round_type": 1,
         "settings": {
             "CatAndMouse": {
                 "allow_tag_backs": false,

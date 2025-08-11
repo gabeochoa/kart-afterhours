@@ -175,9 +175,7 @@ ElementResult create_volume_slider(UIContext<InputAction> &context,
 
   if (auto result =
           slider(context, mk(parent, index), volume,
-                 ComponentConfig{}
-                     .with_size(ComponentSize{pixels(300.f), pixels(50.f)})
-                     .with_label(std::move(volume_label)))) {
+                 ComponentConfig{}.with_label(std::move(volume_label)))) {
     volume = result.as<float>();
     on_change(volume);
     return {true, parent};
@@ -993,16 +991,22 @@ void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundLivesSettings>();
 
   imm::div(context, mk(entity),
-           ComponentConfig{}.with_label(
-               std::format("Num Lives: {}", rl_settings.num_starting_lives)));
+           ComponentConfig{}
+               .with_label(
+                   std::format("Num Lives: {}", rl_settings.num_starting_lives))
+               .with_size(ComponentSize{percent(1.f), percent(0.2f)})
+               .with_margin(Margin{.top = screen_pct(0.01f)}));
 }
 
 void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundKillsSettings>();
 
   imm::div(context, mk(entity),
-           ComponentConfig{}.with_label(std::format(
-               "Round Length: {}", rl_settings.current_round_time)));
+           ComponentConfig{}
+               .with_label(std::format("Round Length: {}",
+                                       rl_settings.current_round_time))
+               .with_size(ComponentSize{screen_pct(0.3f), screen_pct(0.06f)})
+               .with_margin(Margin{.top = screen_pct(0.01f)}));
 
   {
     // TODO replace with actual strings
@@ -1088,13 +1092,10 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}
                    .with_debug_name("settings_group")
-                   .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                   .with_margin(Margin{
-                       .top = percent(0.2f),
-                       .bottom = percent(0.2f),
-                       .left = percent(0.4f),
-                       .right = percent(0.4f),
-                   }));
+                   .with_size(ComponentSize{percent(0.5f), percent(1.f)})
+                   .with_margin(Margin{.top = screen_pct(0.15f),
+                                       .left = screen_pct(0.2f),
+                                       .right = screen_pct(0.2f)}));
 
   {
     auto win_condition_div =
@@ -1106,11 +1107,9 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     static size_t selected_round_type =
         static_cast<size_t>(RoundManager::get().active_round_type);
 
-    if (auto result =
-            imm::navigation_bar(context, mk(win_condition_div.ent()),
-                                RoundType_NAMES, selected_round_type,
-                                ComponentConfig{}.with_size(
-                                    ComponentSize{percent(1.f), percent(1.f)}));
+    if (auto result = imm::navigation_bar(context, mk(win_condition_div.ent()),
+                                          RoundType_NAMES, selected_round_type,
+                                          ComponentConfig{});
         result) {
       RoundManager::get().set_active_round_type(
           static_cast<int>(selected_round_type));
@@ -1123,7 +1122,9 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
   if (auto result = imm::checkbox_group(
           context, mk(settings_group.ent()), enabled_weapons,
           WEAPON_STRING_LIST, {1, 3},
-          ComponentConfig{}.with_flex_direction(FlexDirection::Column));
+          ComponentConfig{}
+              .with_flex_direction(FlexDirection::Column)
+              .with_margin(Margin{.top = screen_pct(0.01f)}));
       result) {
     auto mask = result.as<unsigned long>();
     log_info("weapon checkbox_group changed; mask={}", mask);

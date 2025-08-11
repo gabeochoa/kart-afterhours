@@ -58,6 +58,13 @@ struct SetupGameStylingDefaults
             .with_size(ComponentSize{screen_pct(200.f / 1280.f),
                                      screen_pct(50.f / 720.f)})
             .with_color_usage(Theme::Usage::Primary));
+
+    styling_defaults.set_component_config(
+        ComponentType::NavigationBar,
+        ComponentConfig{}
+            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
+                                     screen_pct(50.f / 720.f)})
+            .with_color_usage(Theme::Usage::Primary));
   }
 };
 

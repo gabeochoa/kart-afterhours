@@ -296,6 +296,7 @@ struct RenderDebugWindowInfo
   }
 
   virtual bool should_run(float) override {
+    return true; // @nocommit just for  testing ui scale
     inpc = input::get_input_collector<InputAction>();
     if (!inpc.has_value())
       return false;
