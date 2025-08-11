@@ -127,6 +127,11 @@ struct AIDifficulty : BaseComponent {
   AIDifficulty(Difficulty diff = Difficulty::Medium) : difficulty(diff) {}
 };
 
+struct AIBoostCooldown : BaseComponent {
+  float next_allowed_time = 0.0f;
+  float cooldown_seconds = 3.0f;
+};
+
 struct HasEntityIDBasedColor : HasColor {
   EntityID id{-1};
   raylib::Color default_{raylib::RAYWHITE};

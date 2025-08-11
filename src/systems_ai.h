@@ -19,6 +19,11 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
     (void)dt;
 
     auto round_type = RoundManager::get().active_round_type;
+    auto &round_settings = RoundManager::get().get_active_settings();
+    if (round_settings.state != RoundSettings::GameState::InGame) {
+      pre_round_ai_target(ai, transform);
+      return;
+    }
 
     switch (round_type) {
     case RoundType::Lives:
@@ -42,6 +47,16 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
   }
 
 private:
+  void pre_round_ai_target(AIControlled &ai, Transform &transform) {
+    const bool has_no_target = (ai.target.x == 0.0f && ai.target.y == 0.0f);
+    float distance_to_target = distance_sq(transform.pos(), ai.target);
+    if (has_no_target || distance_to_target < 100.0f) {
+      float screen_width = raylib::GetScreenWidth();
+      float screen_height = raylib::GetScreenHeight();
+      ai.target = vec_rand_in_box(Rectangle{0, 0, screen_width, screen_height});
+    }
+  }
+
   void default_ai_target(AIControlled &ai, Transform &transform) {
     // Check if we're close enough to current target to pick a new one
     float distance_to_target = distance_sq(transform.pos(), ai.target);
@@ -277,6 +292,12 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
 
   virtual void for_each_with(Entity &entity, AIControlled &ai,
                              Transform &transform, float dt) override {
+    const auto &round_settings = RoundManager::get().get_active_settings();
+    const bool is_in_game =
+        round_settings.state == RoundSettings::GameState::InGame;
+    if (!is_in_game) {
+      transform.accel_mult = 1.0f;
+    }
 
     if (ai.target.x == 0 && ai.target.y == 0) {
       return;
@@ -331,7 +352,12 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
     const float ahead_threshold = std::cos(1.0f * (M_PI / 180.0f));
     if (ahead_dot > ahead_threshold && distance_to_target_sq > 400.0f &&
         !transform.is_reversing() && transform.accel_mult <= 1.f) {
-      entity.addComponentIfMissing<WantsBoost>();
+      float now = static_cast<float>(raylib::GetTime());
+      auto &bc = entity.addComponentIfMissing<AIBoostCooldown>();
+      if (now >= bc.next_allowed_time) {
+        entity.addComponentIfMissing<WantsBoost>();
+        bc.next_allowed_time = now + bc.cooldown_seconds;
+      }
     }
 
     auto max_movement_limit = (transform.accel_mult > 1.f)
@@ -386,6 +412,10 @@ struct AIShoot : PausableSystem<AIControlled, Transform, CanShoot> {
   virtual void for_each_with(Entity &entity, AIControlled &,
                              Transform &transform, CanShoot &canShoot,
                              float dt) override {
+    const auto &settings = RoundManager::get().get_active_settings();
+    if (settings.state != RoundSettings::GameState::InGame) {
+      return;
+    }
     if (RoundManager::get().active_round_type != RoundType::Kills) {
       return;
     }
