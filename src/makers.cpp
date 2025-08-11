@@ -225,6 +225,7 @@ Entity &make_obstacle(raylib::Rectangle rect, const raylib::Color color,
 void make_player(input::GamepadID id) {
   auto &entity = make_car(id);
   entity.addComponent<PlayerID>(id);
+  entity.addComponent<HonkState>();
 
   const auto player_id_text = "[Player " + std::to_string(id) + "]";
   const auto player_label_pos_offset = vec2{-.1f, 0.f};

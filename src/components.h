@@ -401,3 +401,7 @@ struct WasWinnerLastRound : BaseComponent {
 };
 
 struct WantsBoost : BaseComponent {};
+
+struct HonkState : BaseComponent {
+  bool was_down = false;
+};

@@ -838,9 +838,10 @@ struct UpdateCollidingEntities : PausableSystem<Transform> {
   }
 };
 
-struct VelFromInput : PausableSystem<PlayerID, Transform> {
+struct VelFromInput : PausableSystem<PlayerID, Transform, HonkState> {
   virtual void for_each_with(Entity &entity, PlayerID &playerID,
-                             Transform &transform, float dt) override {
+                             Transform &transform, HonkState &honk,
+                             float dt) override {
     input::PossibleInputCollector<InputAction> inpc =
         input::get_input_collector<InputAction>();
     if (!inpc.has_value()) {
@@ -850,6 +851,7 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
     transform.accel = 0.f;
     auto steer = 0.f;
 
+    bool honk_down = false;
     for (const auto &actions_done : inpc.inputs()) {
       if (actions_done.id != playerID.id) {
         continue;
@@ -874,6 +876,9 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
         break;
       case InputAction::Boost:
         break;
+      case InputAction::Honk:
+        honk_down = true;
+        break;
       default:
         break;
       }
@@ -897,13 +902,22 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
         entity.addComponentIfMissing<WantsBoost>();
       } break;
       case InputAction::Honk: {
-        SoundLibrary::get().play_random_match(
+        SoundLibrary::get().play_first_available_match(
             "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_");
       } break;
       default:
         break;
       }
     }
+
+    const char *horn_prefix =
+        "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
+    if (honk_down && !honk.was_down) {
+      SoundLibrary::get().play_first_available_match(horn_prefix);
+    } else if (honk_down) {
+      SoundLibrary::get().play_if_none_playing(horn_prefix);
+    }
+    honk.was_down = honk_down;
 
     float steering_multiplier = affector_steering_multiplier(transform);
     float steering_sensitivity =

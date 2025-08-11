@@ -63,6 +63,35 @@ struct SoundLibrary {
     impl.get_random_match(prefix).transform(raylib::PlaySound);
   }
 
+  void play_if_none_playing(const std::string &prefix) {
+    auto matches = impl.lookup(prefix);
+    if (matches.first == matches.second) {
+      log_warn("got no matches for your prefix search: {}", prefix);
+      return;
+    }
+    for (auto it = matches.first; it != matches.second; ++it) {
+      if (raylib::IsSoundPlaying(it->second)) {
+        return;
+      }
+    }
+    raylib::PlaySound(matches.first->second);
+  }
+
+  void play_first_available_match(const std::string &prefix) {
+    auto matches = impl.lookup(prefix);
+    if (matches.first == matches.second) {
+      log_warn("got no matches for your prefix search: {}", prefix);
+      return;
+    }
+    for (auto it = matches.first; it != matches.second; ++it) {
+      if (!raylib::IsSoundPlaying(it->second)) {
+        raylib::PlaySound(it->second);
+        return;
+      }
+    }
+    raylib::PlaySound(matches.first->second);
+  }
+
   void update_volume(const float new_v) {
     impl.update_volume(new_v);
     current_volume = new_v;
@@ -187,5 +216,12 @@ constexpr static void load_sounds() {
     std::string path = std::string("gdc/") + stem + ".wav";
     SoundLibrary::get().load(
         Files::get().fetch_resource_path("sounds", path).c_str(), stem.c_str());
+    // Load additional aliases to allow overlapping playback
+    for (int copy = 1; copy <= 3; ++copy) {
+      std::string alias = stem + std::string("_a") + std::to_string(copy);
+      SoundLibrary::get().load(
+          Files::get().fetch_resource_path("sounds", path).c_str(),
+          alias.c_str());
+    }
   }
 }
