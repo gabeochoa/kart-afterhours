@@ -4,6 +4,7 @@
 #include "config.h"
 #include "map_system.h"
 #include "sound_library.h"
+#include "texture_library.h"
 #include "ui_key.h"
 #include <afterhours/src/plugins/animation.h>
 
@@ -54,9 +55,19 @@ ElementResult create_player_card(
                    .with_flex_direction(FlexDirection::Row)
                    .with_debug_name("player_card_header"));
 
+  bool show_next_color_icon = static_cast<bool>(on_next_color);
+  bool show_remove_icon = is_ai && static_cast<bool>(on_remove);
+  int header_icon_count =
+      (show_next_color_icon ? 1 : 0) + (show_remove_icon ? 1 : 0);
+  const float header_icon_width = 0.2f;
+  float label_width =
+      1.f - (header_icon_width * static_cast<float>(header_icon_count));
+  if (label_width < 0.2f)
+    label_width = 0.2f;
+
   imm::div(context, mk(header_row.ent()),
            ComponentConfig{}
-               .with_size(ComponentSize{percent(0.8f), percent(1.f)})
+               .with_size(ComponentSize{percent(label_width), percent(1.f)})
                .with_label(player_label)
                .with_color_usage(Theme::Usage::Custom)
                .with_custom_color(bg_color)
@@ -89,29 +100,52 @@ ElementResult create_player_card(
                  .with_debug_name("player_card_ranking"));
   }
 
-  if (on_next_color) {
+  if (show_next_color_icon) {
     raylib::Texture2D sheet = EntityHelper::get_singleton_cmp<
                                   afterhours::texture_manager::HasSpritesheet>()
                                   ->texture;
     auto src = afterhours::texture_manager::idx_to_sprite_frame(0, 6);
 
-    auto icon_cell =
-        imm::div(context, mk(header_row.ent()),
-                 ComponentConfig{}
-                     .with_size(ComponentSize{percent(0.2f), percent(1.f)})
-                     .with_padding(Padding{.top = percent(0.02f),
-                                           .left = percent(0.02f),
-                                           .bottom = percent(0.02f),
-                                           .right = percent(0.02f)})
-                     .with_debug_name("next_color_cell"));
-
-    auto clicked = imm::image_button(
-        context, mk(icon_cell.ent()), sheet, src,
+    auto icon_cell = imm::div(
+        context, mk(header_row.ent()),
         ComponentConfig{}
-            .with_size(ComponentSize{percent(1.f), percent(1.f)})
-            .with_debug_name("next_color_icon"));
-    if (clicked)
+            .with_size(ComponentSize{percent(header_icon_width), percent(1.f)})
+            .with_padding(Padding{.top = percent(0.02f),
+                                  .left = percent(0.02f),
+                                  .bottom = percent(0.02f),
+                                  .right = percent(0.02f)})
+            .with_debug_name("next_color_cell"));
+
+    if (imm::image_button(
+            context, mk(icon_cell.ent()), sheet, src,
+            ComponentConfig{}
+                .with_size(ComponentSize{percent(1.f), percent(1.f)})
+                .with_debug_name("next_color_icon")))
       on_next_color();
+  }
+
+  if (show_remove_icon) {
+    auto &trash_tex = TextureLibrary::get().get("trashcan");
+    raylib::Rectangle src{0.f, 0.f, static_cast<float>(trash_tex.width),
+                          static_cast<float>(trash_tex.height)};
+
+    auto icon_cell = imm::div(
+        context, mk(header_row.ent()),
+        ComponentConfig{}
+            .with_size(ComponentSize{percent(header_icon_width), percent(1.f)})
+            .with_padding(Padding{.top = percent(0.02f),
+                                  .left = percent(0.02f),
+                                  .bottom = percent(0.02f),
+                                  .right = percent(0.02f)})
+            .with_debug_name("remove_ai_cell"));
+
+    if (imm::image_button(
+            context, mk(icon_cell.ent()), trash_tex, src,
+            ComponentConfig{}
+                .with_size(ComponentSize{percent(1.f), percent(1.f)})
+                .with_debug_name("remove_ai_icon"))) {
+      on_remove();
+    }
   }
 
   // AI Difficulty navigation bar
@@ -131,27 +165,20 @@ ElementResult create_player_card(
     }
   }
 
-  // Remove AI button
-  if (is_ai && on_remove) {
-    if (imm::button(
-            context, mk(card.ent()),
-            ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-                .with_label("Remove AI")
-                .disable_rounded_corners()
-                .with_debug_name("remove_ai_button"))) {
-      on_remove();
-    }
-  }
+  // Remove AI button (trashcan icon)
+  // removed: separate remove ai button; handled in header
 
-  // Add AI button
+  // Add AI button (dollar_sign icon)
   if (show_add_ai && on_add_ai) {
-    if (imm::button(
-            context, mk(card.ent()),
+    auto &dollar_tex = TextureLibrary::get().get("dollar_sign");
+    raylib::Rectangle src{0.f, 0.f, static_cast<float>(dollar_tex.width),
+                          static_cast<float>(dollar_tex.height)};
+
+    if (imm::image_button(
+            context, mk(card.ent()), dollar_tex, src,
             ComponentConfig{}
                 .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
                 .with_padding(Padding{.top = percent(0.25f)})
-                .with_label("Add AI")
                 .disable_rounded_corners()
                 .with_debug_name("add_ai_button"))) {
       on_add_ai();
@@ -1494,8 +1521,8 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
                                        UIContext<InputAction> &context) {
   auto elem =
       ui_helpers::create_screen_container(context, entity, "main_screen");
-  auto top_left = ui_helpers::create_top_left_container(
-      context, elem.ent(), "main_top_left", 0);
+  auto top_left = ui_helpers::create_top_left_container(context, elem.ent(),
+                                                        "main_top_left", 0);
 
   // Play button
   ui_helpers::create_styled_button(
