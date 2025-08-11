@@ -834,138 +834,8 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                      .with_size(ComponentSize{percent(0.35f), percent(0.25f)})
                      .with_margin(Margin{.top = screen_pct(0.08f)})
                      .with_debug_name("round_preview_container"));
-    auto round_lives_preview = [](Entity &entity,
-                                  UIContext<InputAction> &context) {
-      auto &rl_settings =
-          RoundManager::get().get_active_rt<RoundLivesSettings>();
 
-      imm::div(context, mk(entity),
-               ComponentConfig{}.with_label(std::format(
-                   "Num Lives: {}", rl_settings.num_starting_lives)));
-    };
-
-    auto round_kills_preview = [](Entity &entity,
-                                  UIContext<InputAction> &context) {
-      auto &rl_settings =
-          RoundManager::get().get_active_rt<RoundKillsSettings>();
-
-      std::string time_display;
-      switch (rl_settings.time_option) {
-      case RoundSettings::TimeOptions::Unlimited:
-        time_display = "Unlimited";
-        break;
-      case RoundSettings::TimeOptions::Seconds_10:
-        time_display = "10s";
-        break;
-      case RoundSettings::TimeOptions::Seconds_30:
-        time_display = "30s";
-        break;
-      case RoundSettings::TimeOptions::Minutes_1:
-        time_display = "1m";
-        break;
-      }
-
-      imm::div(context, mk(entity),
-               ComponentConfig{}.with_label(
-                   std::format("Round Length: {}", time_display)));
-    };
-
-    auto round_hippo_preview = [](Entity &entity,
-                                  UIContext<InputAction> &context) {
-      auto &rl_settings =
-          RoundManager::get().get_active_rt<RoundHippoSettings>();
-
-      imm::div(context, mk(entity),
-               ComponentConfig{}.with_label(
-                   std::format("Total Hippos: {}", rl_settings.total_hippos)));
-    };
-
-    auto round_cat_mouse_preview = [](Entity &entity,
-                                      UIContext<InputAction> &context) {
-      auto &rl_settings =
-          RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
-
-      std::string time_display;
-      switch (rl_settings.time_option) {
-      case RoundSettings::TimeOptions::Unlimited:
-        time_display = "Unlimited";
-        break;
-      case RoundSettings::TimeOptions::Seconds_10:
-        time_display = "10s";
-        break;
-      case RoundSettings::TimeOptions::Seconds_30:
-        time_display = "30s";
-        break;
-      case RoundSettings::TimeOptions::Minutes_1:
-        time_display = "1m";
-        break;
-      }
-
-      imm::div(context, mk(entity),
-               ComponentConfig{}.with_label(
-                   std::format("Round Length: {}", time_display)));
-    };
-
-    {
-      imm::div(
-          context, mk(preview_container.ent()),
-          ComponentConfig{}.with_label(std::format(
-              "Win Condition: {}",
-              magic_enum::enum_name(RoundManager::get().active_round_type))));
-    }
-
-    {
-      auto *spritesheet_component = EntityHelper::get_singleton_cmp<
-          afterhours::texture_manager::HasSpritesheet>();
-      if (spritesheet_component) {
-        raylib::Texture2D sheet = spritesheet_component->texture;
-        const auto &weps = RoundManager::get().get_enabled_weapons();
-        const size_t num_enabled = weps.count();
-        if (num_enabled > 0) {
-          float icon_px =
-              current_resolution_provider
-                  ? (current_resolution_provider->current_resolution.height /
-                     720.f) *
-                        32.f
-                  : 32.f;
-
-          std::vector<afterhours::texture_manager::Rectangle> frames;
-          frames.reserve(num_enabled);
-          for (size_t i = 0; i < WEAPON_COUNT; ++i) {
-            if (!weps.test(i))
-              continue;
-            frames.push_back(weapon_icon_frame(static_cast<Weapon::Type>(i)));
-          }
-
-          imm::icon_row(
-              context, mk(preview_container.ent()), sheet, frames,
-              icon_px / 32.f,
-              ComponentConfig{}
-                  .with_size(ComponentSize{percent(1.f), pixels(icon_px)})
-                  .with_skip_tabbing(true)
-                  .with_debug_name("weapon_icon_row"));
-        }
-      }
-    }
-
-    switch (RoundManager::get().active_round_type) {
-    case RoundType::Lives:
-      round_lives_preview(preview_container.ent(), context);
-      break;
-    case RoundType::Kills:
-      round_kills_preview(preview_container.ent(), context);
-      break;
-    case RoundType::Hippo:
-      round_hippo_preview(preview_container.ent(), context);
-      break;
-    case RoundType::CatAndMouse:
-      round_cat_mouse_preview(preview_container.ent(), context);
-      break;
-    default:
-      log_error("You need to add a handler for UI settings for round type {}",
-                (int)RoundManager::get().active_round_type);
-      break;
-    }
+    render_round_settings_preview(context, preview_container.ent());
   }
 
   size_t num_slots = players.size() + ais.size() + 1;
@@ -997,6 +867,219 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
+}
+
+void ScheduleMainMenuUI::render_round_settings_preview(
+    UIContext<InputAction> &context, Entity &parent) {
+  imm::div(context, mk(parent),
+           ComponentConfig{}.with_label(std::format(
+               "Win Condition: {}",
+               magic_enum::enum_name(RoundManager::get().active_round_type))));
+
+  auto *spritesheet_component = EntityHelper::get_singleton_cmp<
+      afterhours::texture_manager::HasSpritesheet>();
+  if (spritesheet_component) {
+    raylib::Texture2D sheet = spritesheet_component->texture;
+    const auto &weps = RoundManager::get().get_enabled_weapons();
+    const size_t num_enabled = weps.count();
+    if (num_enabled > 0) {
+      float icon_px =
+          current_resolution_provider
+              ? (current_resolution_provider->current_resolution.height /
+                 720.f) *
+                    32.f
+              : 32.f;
+
+      std::vector<afterhours::texture_manager::Rectangle> frames;
+      frames.reserve(num_enabled);
+      for (size_t i = 0; i < WEAPON_COUNT; ++i) {
+        if (!weps.test(i))
+          continue;
+        frames.push_back(weapon_icon_frame(static_cast<Weapon::Type>(i)));
+      }
+
+      imm::icon_row(context, mk(parent), sheet, frames, icon_px / 32.f,
+                    ComponentConfig{}
+                        .with_size(ComponentSize{percent(1.f), pixels(icon_px)})
+                        .with_skip_tabbing(true)
+                        .with_debug_name("weapon_icon_row"));
+    }
+  }
+
+  switch (RoundManager::get().active_round_type) {
+  case RoundType::Lives: {
+    auto &s = RoundManager::get().get_active_rt<RoundLivesSettings>();
+    imm::div(context, mk(parent),
+             ComponentConfig{}.with_label(
+                 std::format("Num Lives: {}", s.num_starting_lives)));
+    break;
+  }
+  case RoundType::Kills: {
+    auto &s = RoundManager::get().get_active_rt<RoundKillsSettings>();
+    std::string time_display;
+    switch (s.time_option) {
+    case RoundSettings::TimeOptions::Unlimited:
+      time_display = "Unlimited";
+      break;
+    case RoundSettings::TimeOptions::Seconds_10:
+      time_display = "10s";
+      break;
+    case RoundSettings::TimeOptions::Seconds_30:
+      time_display = "30s";
+      break;
+    case RoundSettings::TimeOptions::Minutes_1:
+      time_display = "1m";
+      break;
+    }
+    imm::div(context, mk(parent),
+             ComponentConfig{}.with_label(
+                 std::format("Round Length: {}", time_display)));
+    break;
+  }
+  case RoundType::Hippo: {
+    auto &s = RoundManager::get().get_active_rt<RoundHippoSettings>();
+    imm::div(context, mk(parent),
+             ComponentConfig{}.with_label(
+                 std::format("Total Hippos: {}", s.total_hippos)));
+    break;
+  }
+  case RoundType::CatAndMouse: {
+    auto &s = RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+    std::string time_display;
+    switch (s.time_option) {
+    case RoundSettings::TimeOptions::Unlimited:
+      time_display = "Unlimited";
+      break;
+    case RoundSettings::TimeOptions::Seconds_10:
+      time_display = "10s";
+      break;
+    case RoundSettings::TimeOptions::Seconds_30:
+      time_display = "30s";
+      break;
+    case RoundSettings::TimeOptions::Minutes_1:
+      time_display = "1m";
+      break;
+    }
+    imm::div(context, mk(parent),
+             ComponentConfig{}.with_label(
+                 std::format("Round Length: {}", time_display)));
+    break;
+  }
+  default:
+    imm::div(context, mk(parent),
+             ComponentConfig{}.with_label("Round Settings"));
+    break;
+  }
+}
+
+void ScheduleMainMenuUI::render_map_preview(
+    UIContext<InputAction> &context, Entity &preview_box,
+    int effective_preview_index, int selected_map_index,
+    const std::vector<std::pair<int, MapConfig>> &compatible_maps,
+    bool overriding_preview, int prev_preview_index) {
+  auto maybe_shuffle =
+      afterhours::animation::manager<UIKey>().get_value(UIKey::MapShuffle);
+
+  if (effective_preview_index == MapManager::RANDOM_MAP_INDEX &&
+      maybe_shuffle.has_value() && !compatible_maps.empty()) {
+    int n = static_cast<int>(compatible_maps.size());
+    int animated_idx = std::clamp(
+        static_cast<int>(std::floor(maybe_shuffle.value())) % n, 0, n - 1);
+    const auto &animated_pair =
+        compatible_maps[static_cast<size_t>(animated_idx)];
+    const auto &animated_map = animated_pair.second;
+
+    imm::div(context, mk(preview_box),
+             ComponentConfig{}
+                 .with_label(animated_map.display_name)
+                 .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                 .with_debug_name("map_title"));
+
+    if (MapManager::get().preview_textures_initialized) {
+      int abs_idx = animated_pair.first;
+      const auto &rt = MapManager::get().get_preview_texture(abs_idx);
+      imm::image(
+          context, mk(preview_box),
+          ComponentConfig{}
+              .with_size(ComponentSize{percent(1.f), percent(0.7f, 0.1f)})
+              .with_debug_name("map_preview")
+              .with_texture(
+                  rt.texture,
+                  afterhours::texture_manager::HasTexture::Alignment::Center));
+    }
+
+    return;
+  }
+
+  if (effective_preview_index == MapManager::RANDOM_MAP_INDEX) {
+    imm::div(context, mk(preview_box),
+             ComponentConfig{}
+                 .with_label("???")
+                 .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                 .with_debug_name("map_title"));
+    return;
+  }
+
+  auto selected_map_it =
+      std::find_if(compatible_maps.begin(), compatible_maps.end(),
+                   [effective_preview_index](const auto &pair) {
+                     return pair.first == effective_preview_index;
+                   });
+  if (selected_map_it == compatible_maps.end()) {
+    return;
+  }
+
+  const auto &preview_map = selected_map_it->second;
+  imm::div(context, mk(preview_box),
+           ComponentConfig{}
+               .with_label(preview_map.display_name)
+               .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+               .with_debug_name("map_title"));
+
+  if (!MapManager::get().preview_textures_initialized) {
+    return;
+  }
+
+  float fade_v = afterhours::animation::manager<UIKey>()
+                     .get_value(UIKey::MapPreviewFade)
+                     .value_or(1.0f);
+  fade_v = std::clamp(fade_v, 0.0f, 1.0f);
+
+  if (!overriding_preview && prev_preview_index >= 0 &&
+      prev_preview_index != selected_map_index && fade_v < 1.0f) {
+    const auto &rt_prev =
+        MapManager::get().get_preview_texture(prev_preview_index);
+    afterhours::texture_manager::Rectangle full_src_prev{
+        .x = 0,
+        .y = 0,
+        .width = (float)rt_prev.texture.width,
+        .height = (float)rt_prev.texture.height,
+    };
+    imm::sprite(context, mk(preview_box), rt_prev.texture, full_src_prev,
+                ComponentConfig{}
+                    .with_size(ComponentSize{percent(1.f), percent(1.0f)})
+                    .with_debug_name("map_preview_prev")
+                    .with_opacity(1.0f - fade_v)
+                    .with_render_layer(0));
+  }
+
+  const auto &rt_cur =
+      MapManager::get().get_preview_texture(effective_preview_index);
+  imm::sprite(context, mk(preview_box), rt_cur.texture,
+              afterhours::texture_manager::Rectangle{
+                  .x = 0,
+                  .y = 0,
+                  .width = (float)rt_cur.texture.width,
+                  .height = (float)rt_cur.texture.height,
+              },
+              ComponentConfig{}
+                  .with_size(ComponentSize{percent(1.f), percent(0.5f)})
+                  .with_debug_name("map_preview_cur")
+                  .with_opacity((!overriding_preview &&
+                                 prev_preview_index >= 0 && fade_v < 1.0f)
+                                    ? fade_v
+                                    : 1.0f)
+                  .with_render_layer(1));
 }
 
 void ScheduleMainMenuUI::for_each_with(Entity &entity,
@@ -1197,17 +1280,26 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                ComponentConfig{}
                    .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_flex_direction(FlexDirection::Row)
                    .with_absolute_position()
                    .with_debug_name("map_selection"));
+
+  auto left_col =
+      imm::div(context, mk(elem.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(0.2f), percent(1.0f)})
+                   .with_padding(Padding{.top = screen_pct(0.02f),
+                                         .left = screen_pct(0.02f)})
+                   .with_flex_direction(FlexDirection::Column)
+                   .with_debug_name("map_selection_left"));
 
   auto preview_box =
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}
-                   .with_size(ComponentSize{percent(1.0f), percent(0.4f, 0.6f)})
-                   .with_margin(Margin{.top = percent(0.1f),
-                                       .bottom = percent(0.1f),
-                                       .left = percent(0.1f),
-                                       .right = percent(0.1f)})
+                   .with_size(ComponentSize{percent(0.8f), percent(1.0f)})
+                   .with_margin(Margin{.top = percent(0.05f),
+                                       .bottom = percent(0.05f),
+                                       .right = percent(0.05f)})
                    .with_debug_name("preview_box")
                    .with_skip_tabbing(true));
 
@@ -1215,55 +1307,52 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
   auto compatible_maps =
       MapManager::get().get_maps_for_round_type(current_round_type);
   auto selected_map_index = MapManager::get().get_selected_map();
-  static int last_selected_map_index_for_preview = -2;
-  static int prev_preview_index = -2;
-  if (selected_map_index >= 0 && last_selected_map_index_for_preview >= 0 &&
-      last_selected_map_index_for_preview != selected_map_index) {
-    prev_preview_index = last_selected_map_index_for_preview;
-    afterhours::animation::anim(UIKey::MapPreviewFade)
-        .from(0.0f)
-        .to(1.0f, 0.12f, afterhours::animation::EasingType::EaseOutQuad);
-  }
-  last_selected_map_index_for_preview = selected_map_index;
+  static int prev_preview_index = -2; // previous preview used for fade-out
+  static int last_effective_preview_index = -2; // track last preview we showed
 
   constexpr int NO_PREVIEW_INDEX = -1000;
   int hovered_preview_index = NO_PREVIEW_INDEX;
   int focused_preview_index = NO_PREVIEW_INDEX;
+  static int persisted_hovered_preview_index = NO_PREVIEW_INDEX;
 
-  // Grid of map options (bottom)
-  auto map_grid =
-      imm::div(context, mk(elem.ent()),
+  // Round settings preview above map list
+  {
+    auto round_preview = imm::div(
+        context, mk(left_col.ent(), 1),
+        ComponentConfig{}
+            .with_debug_name("round_settings_preview")
+            // TODO i really just want to do children() but then everything
+            // below needs to not use percent... .
+            .with_size(ComponentSize{percent(1.f), percent(0.3f, 0.5f)})
+            .with_margin(Margin{.top = screen_pct(0.008f)}));
+
+    render_round_settings_preview(context, round_preview.ent());
+  }
+
+  auto map_list =
+      imm::div(context, mk(left_col.ent(), 2),
                ComponentConfig{}
                    .with_size(ComponentSize{percent(1.f), percent(0.5f)})
-                   .with_margin(Margin{
-                       .top = percent(0.1f),
-                       .bottom = percent(0.1f),
-                       .left = percent(0.1f),
-                       .right = percent(0.1f),
-                   })
-                   .with_flex_direction(FlexDirection::Row)
-                   .with_debug_name("map_grid"));
+                   .with_margin(Margin{.top = screen_pct(0.01f)})
+                   .with_flex_direction(FlexDirection::Column)
+                   .with_debug_name("map_list"));
 
-  size_t total_cards = compatible_maps.size() + 1;
-  float card_width = 1.f / static_cast<float>(total_cards);
+  auto map_grid_button_size =
+      ComponentSize{screen_pct(200.f / 1280.f), screen_pct(100.f / 720.f)};
 
   {
-    auto random_card = imm::div(
+    float inner_margin = 0.01f;
+    auto random_btn = imm::button(
         context,
-        mk(map_grid.ent(), static_cast<EntityID>(compatible_maps.size())),
+        mk(map_list.ent(), static_cast<EntityID>(compatible_maps.size())),
         ComponentConfig{}
-            .with_debug_name("map_card_random")
-            .with_size(ComponentSize{percent(card_width), percent(1.f)}));
-
-    auto random_btn =
-        imm::button(context, mk(random_card.ent(), random_card.ent().id),
-                    ComponentConfig{}
-                        .with_label("?")
-                        .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                        .with_margin(Margin{.top = percent(0.1f),
-                                            .bottom = percent(0.1f),
-                                            .left = percent(0.1f),
-                                            .right = percent(0.1f)}));
+            .with_label("?")
+            .with_size(map_grid_button_size)
+            .with_margin(Margin{.top = percent(inner_margin),
+                                .bottom = percent(inner_margin),
+                                .left = percent(inner_margin),
+                                .right = percent(inner_margin)})
+            .with_debug_name("map_card_random"));
     if (random_btn) {
       start_game_with_random_animation();
     }
@@ -1273,9 +1362,25 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     // reorder systems if same-frame hover preview is needed
     if (context.is_hot(random_btn_id)) {
       hovered_preview_index = MapManager::RANDOM_MAP_INDEX;
+      persisted_hovered_preview_index = hovered_preview_index;
     }
     if (context.has_focus(random_btn_id)) {
       focused_preview_index = MapManager::RANDOM_MAP_INDEX;
+    }
+    {
+      auto opt_ent = afterhours::EntityHelper::getEntityForID(random_btn_id);
+      if (opt_ent) {
+        auto &ent = opt_ent.asE();
+        if (ent.has<afterhours::ui::UIComponent>()) {
+          auto rect = ent.get<afterhours::ui::UIComponent>().rect();
+          auto mp = context.mouse_pos;
+          if (mp.x >= rect.x && mp.x <= rect.x + rect.width && mp.y >= rect.y &&
+              mp.y <= rect.y + rect.height) {
+            hovered_preview_index = MapManager::RANDOM_MAP_INDEX;
+            persisted_hovered_preview_index = hovered_preview_index;
+          }
+        }
+      }
     }
   }
 
@@ -1287,36 +1392,26 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     // drive a quick staggered slide-in once per card
     afterhours::animation::one_shot(UIKey::MapCard, i,
                                     ui_anims::make_map_card_slide(i));
-    float slide_v =
-        afterhours::animation::clamp_value(UIKey::MapCard, i, 0.0f, 1.0f);
-
-    auto map_card = imm::div(
-        context, mk(map_grid.ent(), static_cast<EntityID>(i)),
-        ComponentConfig{}
-            .with_debug_name("map_card")
-            .with_size(ComponentSize{percent(card_width), percent(1.f)})
-            .with_margin(Margin{.top = pixels((1.0f - slide_v) * 30.0f)})
-            .with_opacity(afterhours::animation::clamp_value(UIKey::MapCard, i,
-                                                             0.0f, 1.0f)));
 
     // selection pulse value for this card (0..1 anim value)
     float pulse_v =
         afterhours::animation::get_value(UIKey::MapCardPulse, i).value_or(0.0f);
-    float inner_margin_base = 0.10f;
-    float inner_margin_scale = 0.02f; // shrink margins by up to 2%
+    float inner_margin_base = 0.1f;
+    float inner_margin_scale = 0.02f;
     float inner_margin = inner_margin_base - (inner_margin_scale * pulse_v);
 
     auto map_btn =
-        imm::button(context, mk(map_card.ent(), map_card.ent().id),
+        imm::button(context, mk(map_list.ent(), static_cast<EntityID>(i)),
                     ComponentConfig{}
                         .with_label(map_config.display_name)
-                        .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                        .with_margin(Margin{
-                            .top = percent(inner_margin),
-                            .bottom = percent(inner_margin),
-                            .left = percent(inner_margin),
-                            .right = percent(inner_margin),
-                        }));
+                        .with_size(map_grid_button_size)
+                        .with_margin(Margin{.top = percent(inner_margin),
+                                            .bottom = percent(inner_margin),
+                                            .left = percent(inner_margin),
+                                            .right = percent(inner_margin)})
+                        .with_opacity(afterhours::animation::clamp_value(
+                            UIKey::MapCard, i, 0.0f, 1.0f))
+                        .with_debug_name("map_card"));
     if (map_btn) {
       MapManager::get().set_selected_map(map_index);
       MapManager::get().create_map();
@@ -1329,35 +1424,45 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     // reorder systems if same-frame hover preview is needed
     if (context.is_hot(btn_id)) {
       hovered_preview_index = map_index;
+      persisted_hovered_preview_index = hovered_preview_index;
     }
     if (context.has_focus(btn_id)) {
       focused_preview_index = map_index;
     }
-  }
-
-  // top-left controls
-  {
-    auto top_left =
-        imm::div(context, mk(elem.ent()),
-                 ComponentConfig{}
-                     .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                     .with_padding(Padding{.top = screen_pct(0.02f),
-                                           .left = screen_pct(0.02f),
-                                           .bottom = pixels(0.f),
-                                           .right = pixels(0.f)})
-                     .with_absolute_position()
-                     .with_debug_name("map_selection_top_left"));
-
-    ui_helpers::create_styled_button(
-        context, top_left.ent(), "back", [this]() { navigate_back(); }, 0);
+    {
+      auto opt_ent = afterhours::EntityHelper::getEntityForID(btn_id);
+      if (opt_ent) {
+        auto &ent = opt_ent.asE();
+        if (ent.has<afterhours::ui::UIComponent>()) {
+          auto rect = ent.get<afterhours::ui::UIComponent>().rect();
+          auto mp = context.mouse_pos;
+          if (mp.x >= rect.x && mp.x <= rect.x + rect.width && mp.y >= rect.y &&
+              mp.y <= rect.y + rect.height) {
+            hovered_preview_index = map_index;
+            persisted_hovered_preview_index = hovered_preview_index;
+          }
+        }
+      }
+    }
   }
 
   int effective_preview_index = selected_map_index;
   if (hovered_preview_index != NO_PREVIEW_INDEX) {
     effective_preview_index = hovered_preview_index;
+  } else if (persisted_hovered_preview_index != NO_PREVIEW_INDEX) {
+    effective_preview_index = persisted_hovered_preview_index;
   } else if (focused_preview_index != NO_PREVIEW_INDEX) {
     effective_preview_index = focused_preview_index;
   }
+
+  if (effective_preview_index >= 0 && last_effective_preview_index >= 0 &&
+      effective_preview_index != last_effective_preview_index) {
+    prev_preview_index = last_effective_preview_index;
+    afterhours::animation::anim(UIKey::MapPreviewFade)
+        .from(0.0f)
+        .to(1.0f, 0.12f, afterhours::animation::EasingType::EaseOutQuad);
+  }
+  last_effective_preview_index = effective_preview_index;
 
   auto selected_map_it =
       std::find_if(compatible_maps.begin(), compatible_maps.end(),
@@ -1368,114 +1473,13 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
   auto maybe_shuffle =
       afterhours::animation::manager<UIKey>().get_value(UIKey::MapShuffle);
   bool overriding_preview = effective_preview_index != selected_map_index;
+  render_map_preview(context, preview_box.ent(), effective_preview_index,
+                     selected_map_index, compatible_maps, overriding_preview,
+                     prev_preview_index);
 
-  if (effective_preview_index == MapManager::RANDOM_MAP_INDEX &&
-      maybe_shuffle.has_value() && !compatible_maps.empty()) {
-    int n = static_cast<int>(compatible_maps.size());
-    int animated_idx = std::clamp(
-        static_cast<int>(std::floor(maybe_shuffle.value())) % n, 0, n - 1);
-    const auto &animated_pair =
-        compatible_maps[static_cast<size_t>(animated_idx)];
-    const auto &animated_map = animated_pair.second;
+  ui_helpers::create_styled_button(
+      context, left_col.ent(), "back", [this]() { navigate_back(); }, 0);
 
-    imm::div(context, mk(preview_box.ent()),
-             ComponentConfig{}
-                 .with_label(animated_map.display_name)
-                 .with_size(ComponentSize{percent(1.f), percent(0.3f)})
-                 .with_debug_name("map_title"));
-
-    if (MapManager::get().preview_textures_initialized) {
-      int abs_idx = animated_pair.first;
-      const auto &rt = MapManager::get().get_preview_texture(abs_idx);
-      imm::image(
-          context, mk(preview_box.ent()),
-          ComponentConfig{}
-              .with_size(ComponentSize{percent(1.f), percent(1.0f)})
-              .with_debug_name("map_preview")
-              .with_texture(
-                  rt.texture,
-                  afterhours::texture_manager::HasTexture::Alignment::Center));
-    }
-
-    imm::div(context, mk(preview_box.ent()),
-             ComponentConfig{}
-                 .with_label(animated_map.description)
-                 .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-                 .with_margin(Margin{.top = percent(0.8f)})
-                 .with_debug_name("map_description"));
-  } else if (effective_preview_index == MapManager::RANDOM_MAP_INDEX) {
-    imm::div(context, mk(preview_box.ent()),
-             ComponentConfig{}
-                 .with_label("???")
-                 .with_size(ComponentSize{percent(1.f), percent(0.3f)})
-                 .with_debug_name("map_title"));
-
-    imm::div(context, mk(preview_box.ent()),
-             ComponentConfig{}
-                 .with_label("???")
-                 .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-                 .with_margin(Margin{.top = percent(0.8f)})
-                 .with_debug_name("map_description"));
-  } else if (selected_map_it != compatible_maps.end()) {
-    const auto &preview_map = selected_map_it->second;
-
-    imm::div(context, mk(preview_box.ent()),
-             ComponentConfig{}
-                 .with_label(preview_map.display_name)
-                 .with_size(ComponentSize{percent(1.f), percent(0.3f)})
-                 .with_debug_name("map_title"));
-
-    if (MapManager::get().preview_textures_initialized) {
-      float fade_v = afterhours::animation::manager<UIKey>()
-                         .get_value(UIKey::MapPreviewFade)
-                         .value_or(1.0f);
-      fade_v = std::clamp(fade_v, 0.0f, 1.0f);
-
-      if (!overriding_preview && prev_preview_index >= 0 &&
-          prev_preview_index != selected_map_index && fade_v < 1.0f) {
-        const auto &rt_prev =
-            MapManager::get().get_preview_texture(prev_preview_index);
-        afterhours::texture_manager::Rectangle full_src_prev{
-            .x = 0,
-            .y = 0,
-            .width = (float)rt_prev.texture.width,
-            .height = (float)rt_prev.texture.height,
-        };
-        imm::sprite(context, mk(preview_box.ent()), rt_prev.texture,
-                    full_src_prev,
-                    ComponentConfig{}
-                        .with_size(ComponentSize{percent(1.f), percent(1.0f)})
-                        .with_debug_name("map_preview_prev")
-                        .with_opacity(1.0f - fade_v)
-                        .with_render_layer(0));
-      }
-
-      int cur_idx = effective_preview_index;
-      const auto &rt_cur = MapManager::get().get_preview_texture(cur_idx);
-      imm::sprite(context, mk(preview_box.ent()), rt_cur.texture,
-                  afterhours::texture_manager::Rectangle{
-                      .x = 0,
-                      .y = 0,
-                      .width = (float)rt_cur.texture.width,
-                      .height = (float)rt_cur.texture.height,
-                  },
-                  ComponentConfig{}
-                      .with_size(ComponentSize{percent(1.f), percent(1.0f)})
-                      .with_debug_name("map_preview_cur")
-                      .with_opacity((!overriding_preview &&
-                                     prev_preview_index >= 0 && fade_v < 1.0f)
-                                        ? fade_v
-                                        : 1.0f)
-                      .with_render_layer(1));
-    }
-
-    imm::div(context, mk(preview_box.ent()),
-             ComponentConfig{}
-                 .with_label(preview_map.description)
-                 .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-                 .with_margin(Margin{.top = percent(0.8f)})
-                 .with_debug_name("map_description"));
-  }
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
 }

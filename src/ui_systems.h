@@ -10,6 +10,8 @@
 
 #include "round_settings.h"
 
+struct MapConfig;
+
 using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
 using Screen = GameStateManager::Screen;
@@ -131,6 +133,15 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   Screen settings_screen(Entity &entity, UIContext<InputAction> &context);
   Screen about_screen(Entity &entity, UIContext<InputAction> &context);
   Screen round_end_screen(Entity &entity, UIContext<InputAction> &context);
+
+  void render_map_preview(
+      UIContext<InputAction> &context, Entity &preview_box,
+      int effective_preview_index, int selected_map_index,
+      const std::vector<std::pair<int, MapConfig>> &compatible_maps,
+      bool overriding_preview, int prev_preview_index);
+
+  void render_round_settings_preview(UIContext<InputAction> &context,
+                                     Entity &parent);
 
   void exit_game() { running = false; }
 
