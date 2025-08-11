@@ -3,11 +3,11 @@
 #include "car_affectors.h"
 #include "components.h"
 #include "game_state_manager.h"
+#include "input_mapping.h"
 #include "makers.h"
 #include "map_system.h"
 #include "query.h"
 #include "round_settings.h"
-#include "input_mapping.h"
 #include "shader_library.h"
 #include "sound_library.h"
 #include <afterhours/ah.h>
@@ -261,15 +261,6 @@ struct RenderAnimationsWithShaders
     const auto &shader = ShaderLibrary::get().get(hasShader.shader_name);
     raylib::BeginShaderMode(shader);
 
-    if (hasShader.shader_name == std::string("car_honk")) {
-      int shockLoc = raylib::GetShaderLocation(shader, "shockT");
-      if (shockLoc != -1) {
-        float t = honk.shock_t;
-        raylib::SetShaderValue(shader, shockLoc, &t,
-                               raylib::SHADER_UNIFORM_FLOAT);
-      }
-    }
-
     // Render animation entities as SKYBLUE for visual distinction
     raylib::DrawRectanglePro(
         Rectangle{
@@ -329,61 +320,6 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
                                -1.f * static_cast<float>(resolution.height),
                            },
                            {0, 0}, raylib::WHITE);
-
-    // Overlay full-screen honk wave
-    // If entity has HonkState and active shock, draw screen-space ring
-    for (Entity &car : EQ().whereHasComponent<HonkState>().gen()) {
-      const HonkState &hs = car.get<HonkState>();
-      if (hs.shock_t <= 0.0f)
-        continue;
-      const auto &shader = ShaderLibrary::get().get("honk_wave");
-      raylib::BeginShaderMode(shader);
-      vec2 rez = {static_cast<float>(resolution.width),
-                  static_cast<float>(resolution.height)};
-      int rezLoc = raylib::GetShaderLocation(shader, "resolution");
-      if (rezLoc != -1) {
-        raylib::SetShaderValue(shader, rezLoc, &rez,
-                               raylib::SHADER_UNIFORM_VEC2);
-      }
-
-      int tLoc = raylib::GetShaderLocation(shader, "shockT");
-      if (tLoc != -1) {
-        float t = hs.shock_t;
-        raylib::SetShaderValue(shader, tLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
-      }
-      int cLoc = raylib::GetShaderLocation(shader, "centerPx");
-      if (cLoc != -1) {
-        // Recompute world center using current transform and sprite offsets,
-        // with rotation
-        const Transform &t = car.get<Transform>();
-        float offset_x = SPRITE_OFFSET_X;
-        float offset_y = SPRITE_OFFSET_Y;
-        float angleRad = t.angle * (M_PI / 180.f);
-        float rotated_x = offset_x * cosf(angleRad) - offset_y * sinf(angleRad);
-        float rotated_y = offset_x * sinf(angleRad) + offset_y * cosf(angleRad);
-        vec2 baseCenter{t.position.x + t.size.x / 2.f,
-                        t.position.y + t.size.y / 2.f};
-        vec2 worldCenter = baseCenter + vec2{rotated_x, rotated_y};
-
-        // Convert to screen space (2x scale, y-down)
-        float cx = worldCenter.x * 2.f;
-        float cy = worldCenter.y * 2.f;
-        vec2 center = {cx, static_cast<float>(resolution.height) - cy};
-        raylib::SetShaderValue(shader, cLoc, &center,
-                               raylib::SHADER_UNIFORM_VEC2);
-        if (car.has<PlayerID>()) {
-          log_info("honk ring center for player {} at screen ({}, {})",
-                   car.get<PlayerID>().id, center.x, center.y);
-        } else {
-          log_info("honk ring center at screen ({}, {})", center.x, center.y);
-        }
-      }
-
-      // Draw a full-screen rect to evaluate the shader
-      raylib::DrawRectangle(0, 0, resolution.width, resolution.height,
-                            raylib::WHITE);
-      raylib::EndShaderMode();
-    }
   }
 };
 
@@ -1027,31 +963,10 @@ struct VelFromInput
         "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
     if (honk_down && !honk.was_down) {
       SoundLibrary::get().play_first_available_match(horn_prefix);
-      honk.shock_t = 0.0001f; // kick off shockwave
     } else if (honk_down) {
       SoundLibrary::get().play_if_none_playing(horn_prefix);
     }
     honk.was_down = honk_down;
-
-    if (honk.shock_t > 0.0f) {
-      honk.shock_t += dt * 1.2f;
-      if (honk.shock_t >= 1.0f) {
-        honk.shock_t = 0.0f;
-      }
-    }
-
-    // Update screen-space center for honk wave overlay (car center)
-    if (honk.shock_t > 0.0f) {
-      // Match sprite draw center (uses SPRITE_OFFSET_X/Y and rotation)
-      float offset_x = SPRITE_OFFSET_X;
-      float offset_y = SPRITE_OFFSET_Y;
-      float angleRad = transform.angle * (M_PI / 180.f);
-      float rotated_x = offset_x * cosf(angleRad) - offset_y * sinf(angleRad);
-      float rotated_y = offset_x * sinf(angleRad) + offset_y * cosf(angleRad);
-      vec2 baseCenter{transform.position.x + transform.size.x / 2.f,
-                      transform.position.y + transform.size.y / 2.f};
-      honk.screen_center = baseCenter + vec2{rotated_x, rotated_y};
-    }
 
     float steering_multiplier = affector_steering_multiplier(transform);
     float steering_sensitivity =
