@@ -180,6 +180,7 @@ void game() {
       systems.register_render_system([&](float) { raylib::EndShaderMode(); });
       systems.register_render_system(std::make_unique<RenderLetterboxBars>());
       systems.register_render_system(std::make_unique<RenderFPS>());
+      systems.register_render_system(std::make_unique<RenderDebugWindowInfo>());
     }
     systems.register_render_system([&](float) { raylib::EndDrawing(); });
     //
