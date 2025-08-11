@@ -178,4 +178,14 @@ constexpr static void load_sounds() {
                                "Drive_Away_Fast_ORTF_DRCA_AUQ7_MK012_LR3.wav")
           .c_str(),
       "IntroPassBy_2");
+
+  // Preload horn variations for random selection by prefix
+  const char *horn_prefix =
+      "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
+  for (int i = 1; i <= 6; ++i) {
+    std::string stem = std::string(horn_prefix) + std::to_string(i);
+    std::string path = std::string("gdc/") + stem + ".wav";
+    SoundLibrary::get().load(
+        Files::get().fetch_resource_path("sounds", path).c_str(), stem.c_str());
+  }
 }

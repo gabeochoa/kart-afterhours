@@ -896,6 +896,10 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
       case InputAction::Boost: {
         entity.addComponentIfMissing<WantsBoost>();
       } break;
+      case InputAction::Honk: {
+        SoundLibrary::get().play_random_match(
+            "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_");
+      } break;
       default:
         break;
       }

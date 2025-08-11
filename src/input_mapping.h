@@ -23,6 +23,7 @@ enum class InputAction {
   PauseButton,
   ToggleUIDebug,
   ToggleUILayoutDebug,
+  Honk,
 };
 
 using afterhours::input;
@@ -123,6 +124,11 @@ inline auto get_mapping() {
           .axis = raylib::GAMEPAD_AXIS_RIGHT_TRIGGER,
           .dir = 1,
       },
+  };
+
+  mapping[InputAction::Honk] = {
+      raylib::KEY_H,
+      raylib::GAMEPAD_BUTTON_RIGHT_THUMB,
   };
 
   return mapping;
