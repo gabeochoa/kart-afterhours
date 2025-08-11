@@ -399,3 +399,5 @@ struct WasWinnerLastRound : BaseComponent {
   // Marker component to indicate this entity was the winner of the previous
   // round
 };
+
+struct WantsBoost : BaseComponent {};

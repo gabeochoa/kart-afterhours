@@ -839,8 +839,8 @@ struct UpdateCollidingEntities : PausableSystem<Transform> {
 };
 
 struct VelFromInput : PausableSystem<PlayerID, Transform> {
-  virtual void for_each_with(Entity &, PlayerID &playerID, Transform &transform,
-                             float dt) override {
+  virtual void for_each_with(Entity &entity, PlayerID &playerID,
+                             Transform &transform, float dt) override {
     input::PossibleInputCollector<InputAction> inpc =
         input::get_input_collector<InputAction>();
     if (!inpc.has_value()) {
@@ -894,15 +894,7 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
       case InputAction::Right:
         break;
       case InputAction::Boost: {
-        if (!transform.is_reversing() && transform.accel_mult <= 1.f) {
-          SoundLibrary::get().play_random_match(
-              "AIRBrst_Steam_Release_Short_03_JSE_SG_Mono_");
-          transform.accel_mult = Config::get().boost_acceleration.data;
-          const auto upfront_boost_speed = Config::get().max_speed.data * .2f;
-          transform.velocity +=
-              vec2{std::sin(transform.as_rad()) * upfront_boost_speed,
-                   -std::cos(transform.as_rad()) * upfront_boost_speed};
-        }
+        entity.addComponentIfMissing<WantsBoost>();
       } break;
       default:
         break;
@@ -926,11 +918,6 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
           steer * steering_sensitivity * dt * rad * steering_multiplier;
       transform.angle = std::fmod(transform.angle + 360.f, 360.f);
     }
-
-    const auto decayed_accel_mult =
-        transform.accel_mult -
-        (transform.accel_mult * Config::get().boost_decay_percent.data * dt);
-    transform.accel_mult = std::max(1.f, decayed_accel_mult);
 
     float accel_multiplier = affector_acceleration_multiplier(transform);
 
@@ -967,6 +954,34 @@ struct VelFromInput : PausableSystem<PlayerID, Transform> {
     transform.speed_dot_angle =
         transform.velocity.x * std::sin(transform.as_rad()) +
         transform.velocity.y * -std::cos(transform.as_rad());
+  }
+};
+
+struct ProcessBoostRequests : PausableSystem<WantsBoost, Transform> {
+  virtual void for_each_with(Entity &entity, WantsBoost &, Transform &transform,
+                             float) override {
+    if (transform.is_reversing() || transform.accel_mult > 1.f) {
+      entity.removeComponent<WantsBoost>();
+      return;
+    }
+    SoundLibrary::get().play_random_match(
+        "AIRBrst_Steam_Release_Short_03_JSE_SG_Mono_");
+    transform.accel_mult = Config::get().boost_acceleration.data;
+    const auto upfront_boost_speed = Config::get().max_speed.data * .2f;
+    transform.velocity +=
+        vec2{std::sin(transform.as_rad()) * upfront_boost_speed,
+             -std::cos(transform.as_rad()) * upfront_boost_speed};
+    entity.removeComponent<WantsBoost>();
+  }
+};
+
+struct BoostDecay : PausableSystem<Transform> {
+  virtual void for_each_with(Entity &, Transform &transform,
+                             float dt) override {
+    const auto decayed_accel_mult =
+        transform.accel_mult -
+        (transform.accel_mult * Config::get().boost_decay_percent.data * dt);
+    transform.accel_mult = std::max(1.f, decayed_accel_mult);
   }
 };
 

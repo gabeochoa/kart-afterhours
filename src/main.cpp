@@ -52,6 +52,9 @@ void game() {
   // Fixed update
   {
     systems.register_fixed_update_system(std::make_unique<VelFromInput>());
+    systems.register_fixed_update_system(
+        std::make_unique<ProcessBoostRequests>());
+    systems.register_fixed_update_system(std::make_unique<BoostDecay>());
     systems.register_fixed_update_system(std::make_unique<Move>());
   }
 

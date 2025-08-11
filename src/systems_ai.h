@@ -17,7 +17,6 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
                              Transform &transform, float dt) override {
     (void)dt;
 
-    // TODO make the ai have a difficulty slider
     auto round_type = RoundManager::get().active_round_type;
 
     switch (round_type) {
@@ -293,6 +292,22 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
       transform.angle = std::fmod(transform.angle + 360.f, 360.f);
     }
 
+    float distance_to_target_sq = distance_sq(transform.pos(), ai.target);
+
+    vec2 to_target_dir = vec_norm(ai.target - transform.pos());
+    vec2 forward_dir{
+        std::sin(transform.as_rad()),
+        -std::cos(transform.as_rad()),
+    };
+    float ahead_dot =
+        (forward_dir.x * to_target_dir.x) + (forward_dir.y * to_target_dir.y);
+
+    const float ahead_threshold = std::cos(1.0f * (M_PI / 180.0f));
+    if (ahead_dot > ahead_threshold && distance_to_target_sq > 400.0f &&
+        !transform.is_reversing() && transform.accel_mult <= 1.f) {
+      entity.addComponentIfMissing<WantsBoost>();
+    }
+
     auto max_movement_limit = (transform.accel_mult > 1.f)
                                   ? (Config::get().max_speed.data * 2.f)
                                   : Config::get().max_speed.data;
@@ -302,7 +317,8 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
     float mvt =
         std::max(-max_movement_limit,
                  std::min(max_movement_limit,
-                          transform.speed() + accel * accel_multiplier));
+                          transform.speed() + (accel * transform.accel_mult *
+                                               accel_multiplier)));
 
     // Apply difficulty-based speed multiplier
     float difficulty_multiplier = 1.0f;
@@ -339,3 +355,5 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
         transform.velocity * affector_speed_multiplier(transform);
   }
 };
+
+// boost systems live in systems.h for both players and ai
