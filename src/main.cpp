@@ -172,6 +172,8 @@ void game() {
       systems.register_render_system(
           std::make_unique<BeginShader>("post_processing"));
       systems.register_render_system(std::make_unique<RenderRenderTexture>());
+      systems.register_render_system(
+          std::make_unique<RenderDebugGridOverlay>());
       systems.register_render_system([&](float) { raylib::EndShaderMode(); });
       systems.register_render_system(std::make_unique<RenderFPS>());
     }

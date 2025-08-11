@@ -70,7 +70,7 @@ struct RenderSpritesWithShaders
     : System<Transform, afterhours::texture_manager::HasSprite, HasShader,
              HasColor> {
   virtual void
-  for_each_with(const Entity &, const Transform &transform,
+  for_each_with(const Entity &entity, const Transform &transform,
                 const afterhours::texture_manager::HasSprite &hasSprite,
                 const HasShader &hasShader, const HasColor &hasColor,
                 float) const override {
@@ -245,10 +245,12 @@ struct RenderSpritesWithShaders
 
 // System to render animations with per-entity shaders
 struct RenderAnimationsWithShaders
-    : System<Transform, afterhours::texture_manager::HasAnimation, HasShader> {
-  virtual void for_each_with(const Entity &, const Transform &transform,
+    : System<Transform, afterhours::texture_manager::HasAnimation, HasShader,
+             HonkState> {
+  virtual void for_each_with(const Entity &entity, const Transform &transform,
                              const afterhours::texture_manager::HasAnimation &,
-                             const HasShader &hasShader, float) const override {
+                             const HasShader &hasShader, const HonkState &honk,
+                             float) const override {
     if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
       log_warn("Shader not found: {}", hasShader.shader_name);
       return;
@@ -257,6 +259,15 @@ struct RenderAnimationsWithShaders
     // Apply shader
     const auto &shader = ShaderLibrary::get().get(hasShader.shader_name);
     raylib::BeginShaderMode(shader);
+
+    if (hasShader.shader_name == std::string("car_honk")) {
+      int shockLoc = raylib::GetShaderLocation(shader, "shockT");
+      if (shockLoc != -1) {
+        float t = honk.shock_t;
+        raylib::SetShaderValue(shader, shockLoc, &t,
+                               raylib::SHADER_UNIFORM_FLOAT);
+      }
+    }
 
     // Render animation entities as SKYBLUE for visual distinction
     raylib::DrawRectanglePro(
@@ -305,7 +316,7 @@ struct UpdateRenderTexture : System<> {
 struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderRenderTexture() {}
   virtual void for_each_with(
-      const Entity &,
+      const Entity &entity,
       const window_manager::ProvidesCurrentResolution &pCurrentResolution,
       float) const override {
     auto resolution = pCurrentResolution.current_resolution;
@@ -317,6 +328,86 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
                                -1.f * static_cast<float>(resolution.height),
                            },
                            {0, 0}, raylib::WHITE);
+
+    // Overlay full-screen honk wave
+    // If entity has HonkState and active shock, draw screen-space ring
+    for (Entity &car : EQ().whereHasComponent<HonkState>().gen()) {
+      const HonkState &hs = car.get<HonkState>();
+      if (hs.shock_t <= 0.0f)
+        continue;
+      const auto &shader = ShaderLibrary::get().get("honk_wave");
+      raylib::BeginShaderMode(shader);
+      vec2 rez = {static_cast<float>(resolution.width),
+                  static_cast<float>(resolution.height)};
+      int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+      if (rezLoc != -1) {
+        raylib::SetShaderValue(shader, rezLoc, &rez,
+                               raylib::SHADER_UNIFORM_VEC2);
+      }
+
+      int tLoc = raylib::GetShaderLocation(shader, "shockT");
+      if (tLoc != -1) {
+        float t = hs.shock_t;
+        raylib::SetShaderValue(shader, tLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
+      }
+      int cLoc = raylib::GetShaderLocation(shader, "centerPx");
+      if (cLoc != -1) {
+        // Recompute world center using current transform and sprite offsets,
+        // with rotation
+        const Transform &t = car.get<Transform>();
+        float offset_x = SPRITE_OFFSET_X;
+        float offset_y = SPRITE_OFFSET_Y;
+        float angleRad = t.angle * (M_PI / 180.f);
+        float rotated_x = offset_x * cosf(angleRad) - offset_y * sinf(angleRad);
+        float rotated_y = offset_x * sinf(angleRad) + offset_y * cosf(angleRad);
+        vec2 baseCenter{t.position.x + t.size.x / 2.f,
+                        t.position.y + t.size.y / 2.f};
+        vec2 worldCenter = baseCenter + vec2{rotated_x, rotated_y};
+
+        // Convert to screen space (2x scale, y-down)
+        float cx = worldCenter.x * 2.f;
+        float cy = worldCenter.y * 2.f;
+        vec2 center = {cx, static_cast<float>(resolution.height) - cy};
+        raylib::SetShaderValue(shader, cLoc, &center,
+                               raylib::SHADER_UNIFORM_VEC2);
+        if (car.has<PlayerID>()) {
+          log_info("honk ring center for player {} at screen ({}, {})",
+                   car.get<PlayerID>().id, center.x, center.y);
+        } else {
+          log_info("honk ring center at screen ({}, {})", center.x, center.y);
+        }
+      }
+
+      // Draw a full-screen rect to evaluate the shader
+      raylib::DrawRectangle(0, 0, resolution.width, resolution.height,
+                            raylib::WHITE);
+      raylib::EndShaderMode();
+    }
+  }
+};
+
+struct RenderDebugGridOverlay
+    : System<window_manager::ProvidesCurrentResolution> {
+  virtual void for_each_with(
+      const Entity &,
+      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
+      float) const override {
+    auto resolution = pCurrentResolution.current_resolution;
+    const int step = 80;
+    const raylib::Color line_color{255, 255, 255, 60};
+    const raylib::Color text_color{255, 255, 0, 200};
+
+    for (int x = 0; x <= resolution.width; x += step) {
+      raylib::DrawLine(x, 0, x, resolution.height, line_color);
+      std::string label = std::to_string(x);
+      raylib::DrawText(label.c_str(), x + 4, 6, 12, text_color);
+    }
+
+    for (int y = 0; y <= resolution.height; y += step) {
+      raylib::DrawLine(0, y, resolution.width, y, line_color);
+      std::string label = std::to_string(y);
+      raylib::DrawText(label.c_str(), 6, y + 4, 12, text_color);
+    }
   }
 };
 
@@ -838,10 +929,11 @@ struct UpdateCollidingEntities : PausableSystem<Transform> {
   }
 };
 
-struct VelFromInput : PausableSystem<PlayerID, Transform, HonkState> {
+struct VelFromInput
+    : PausableSystem<PlayerID, Transform, HonkState, HasShader> {
   virtual void for_each_with(Entity &entity, PlayerID &playerID,
                              Transform &transform, HonkState &honk,
-                             float dt) override {
+                             HasShader &hasShader, float dt) override {
     input::PossibleInputCollector<InputAction> inpc =
         input::get_input_collector<InputAction>();
     if (!inpc.has_value()) {
@@ -914,10 +1006,31 @@ struct VelFromInput : PausableSystem<PlayerID, Transform, HonkState> {
         "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
     if (honk_down && !honk.was_down) {
       SoundLibrary::get().play_first_available_match(horn_prefix);
+      honk.shock_t = 0.0001f; // kick off shockwave
     } else if (honk_down) {
       SoundLibrary::get().play_if_none_playing(horn_prefix);
     }
     honk.was_down = honk_down;
+
+    if (honk.shock_t > 0.0f) {
+      honk.shock_t += dt * 1.2f;
+      if (honk.shock_t >= 1.0f) {
+        honk.shock_t = 0.0f;
+      }
+    }
+
+    // Update screen-space center for honk wave overlay (car center)
+    if (honk.shock_t > 0.0f) {
+      // Match sprite draw center (uses SPRITE_OFFSET_X/Y and rotation)
+      float offset_x = SPRITE_OFFSET_X;
+      float offset_y = SPRITE_OFFSET_Y;
+      float angleRad = transform.angle * (M_PI / 180.f);
+      float rotated_x = offset_x * cosf(angleRad) - offset_y * sinf(angleRad);
+      float rotated_y = offset_x * sinf(angleRad) + offset_y * cosf(angleRad);
+      vec2 baseCenter{transform.position.x + transform.size.x / 2.f,
+                      transform.position.y + transform.size.y / 2.f};
+      honk.screen_center = baseCenter + vec2{rotated_x, rotated_y};
+    }
 
     float steering_multiplier = affector_steering_multiplier(transform);
     float steering_sensitivity =
