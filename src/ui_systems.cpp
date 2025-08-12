@@ -1970,54 +1970,35 @@ void SchedulePauseUI::for_each_with(Entity &entity,
     return;
   }
 
-  // Create pause menu UI
   auto elem =
-      imm::div(context, mk(entity),
-               ComponentConfig{}
-                   .with_font(get_font_name(FontID::EQPro), 75.f)
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute_position()
-                   .with_debug_name("pause_screen"));
+      ui_helpers::create_screen_container(context, entity, "pause_screen");
 
-  auto control_group =
+  auto left_col =
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_padding(button_group_padding)
-                   .with_absolute_position()
-                   .with_debug_name("pause_control_group"));
+                   .with_size(ComponentSize{percent(0.2f), percent(1.0f)})
+                   .with_padding(Padding{.top = screen_pct(0.02f),
+                                         .left = screen_pct(0.02f)})
+                   .with_flex_direction(FlexDirection::Column)
+                   .with_debug_name("pause_left"));
 
-  // Pause title
-  {
-    imm::div(context, mk(control_group.ent()),
-             ComponentConfig{}
-                 .with_label("paused")
-                 .with_font(get_font_name(FontID::EQPro), 100.f)
-                 .with_skip_tabbing(true)
-                 .with_size(ComponentSize{pixels(400.f), pixels(100.f)}));
-  }
+  imm::div(context, mk(left_col.ent(), 0),
+           ComponentConfig{}
+               .with_label("paused")
+               .with_font(get_font_name(FontID::EQPro), 100.f)
+               .with_skip_tabbing(true)
+               .with_size(ComponentSize{pixels(400.f), pixels(100.f)}));
 
-  // Resume button
-  {
-    if (imm::button(context, mk(control_group.ent()),
-                    ComponentConfig{}.with_label("resume"))) {
-      GameStateManager::get().unpause_game();
-    }
-  }
+  ui_helpers::create_styled_button(
+      context, left_col.ent(), "resume",
+      []() { GameStateManager::get().unpause_game(); }, 1);
 
-  {
-    if (imm::button(context, mk(control_group.ent()),
-                    ComponentConfig{}.with_label("back to setup"))) {
-      GameStateManager::get().end_game();
-    }
-  }
+  ui_helpers::create_styled_button(
+      context, left_col.ent(), "back to setup",
+      []() { GameStateManager::get().end_game(); }, 2);
 
-  {
-    if (imm::button(context, mk(control_group.ent()),
-                    ComponentConfig{}.with_label("exit game"))) {
-      exit_game();
-    }
-  }
+  ui_helpers::create_styled_button(
+      context, left_col.ent(), "exit game", [this]() { exit_game(); }, 3);
 }
 
 Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
