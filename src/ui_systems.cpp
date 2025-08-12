@@ -841,17 +841,6 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
       },
       1);
 
-  {
-    auto preview_container =
-        imm::div(context, mk(top_left.ent(), 2),
-                 ComponentConfig{}
-                     .with_size(ComponentSize{percent(0.35f), percent(0.25f)})
-                     .with_margin(Margin{.top = screen_pct(0.08f)})
-                     .with_debug_name("round_preview_container"));
-
-    render_round_settings_preview(context, preview_container.ent());
-  }
-
   size_t num_slots = players.size() + ais.size() + 1;
   // 0-4 => 1, 5->8 -> 2
   int fours = static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
