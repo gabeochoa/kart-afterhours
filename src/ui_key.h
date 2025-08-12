@@ -11,6 +11,7 @@ enum struct UIKey : size_t {
   RoundEndCard,
   RoundEndWinnerPulse,
   RoundEndScore,
+  SlideInAll,
 };
 
 namespace ui_anims {
