@@ -7,12 +7,30 @@
 #include <afterhours/src/plugins/window_manager.h>
 #include <algorithm>
 
+#include "game_state_manager.h"
 #include "ui_key.h"
 
 namespace ui_game {
 
 template <typename InputAction>
 struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
+  /*
+   Slide-in parameters overview:
+   - baseDelay (seconds): Baseline wait before an element starts animating.
+   - maxExtra (seconds): Extra wait scaled by vertical position; total delay =
+   baseDelay + normY * maxExtra.
+   - normY (0..1): Element Y normalized to screen height (top=0, bottom=1) to
+   stagger lower items later.
+   - Main menu scaling: When Screen::Main, baseDelay and maxExtra are multiplied
+   by 1.25f to slow only the main menu.
+   - Animation sequence: Hold(delay) -> overshoot to 1.1 (0.18s, EaseOutQuad) ->
+   settle to 1.0 (0.08s, EaseOutQuad).
+   - limit: If an element’s right edge is beyond 25% of screen width, slide-in
+   is skipped (applies mainly to left-side stack).
+   - off_left / tx: Start fully off-screen left; tx interpolates to 0 as the
+   animation value approaches 1. Opacity matches the same value. Units: seconds
+   for time, pixels for positions/offsets.
+  */
   afterhours::ui::UIContext<InputAction> *context;
   afterhours::window_manager::Resolution resolution;
 
@@ -46,7 +64,12 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
                      0.0f, 1.0f);
     }
     float baseDelay = 0.02f;
-    float maxExtra = 0.45f;
+    float maxExtra = 1.45f;
+    if (GameStateManager::get().active_screen ==
+        GameStateManager::Screen::Main) {
+      baseDelay *= 6.25f;
+      maxExtra *= 5.25f;
+    }
     float delay = baseDelay + normY * maxExtra;
 
     afterhours::animation::one_shot(
