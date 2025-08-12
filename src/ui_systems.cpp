@@ -3,17 +3,30 @@
 
 #include "config.h"
 #include "map_system.h"
-#include "sound_library.h"
+#include "preload.h" // FontID
 #include "texture_library.h"
 #include "ui_key.h"
 #include <afterhours/src/plugins/animation.h>
 
 using namespace afterhours;
 
+#if 1
+static inline void apply_slide_mods(afterhours::Entity &ent, float slide_v) {
+  if (!ent.has<afterhours::ui::UIComponent>())
+    return;
+  auto &mods = ent.addComponentIfMissing<afterhours::ui::HasUIModifiers>();
+  auto rect_now = ent.get<afterhours::ui::UIComponent>().rect();
+  float off_left = -(rect_now.x + rect_now.width + 20.0f);
+  float tx = (1.0f - std::min(slide_v, 1.0f)) * off_left;
+  mods.translate_x = tx;
+  mods.translate_y = 0.0f;
+  ent.addComponentIfMissing<afterhours::ui::HasOpacity>().value =
+      std::clamp(slide_v, 0.0f, 1.0f);
+}
+#endif
+
 #include "game_state_manager.h"
-#include "input_mapping.h"
-#include "makers.h"  // make_ai()
-#include "preload.h" // FontID
+#include "makers.h" // make_ai()
 #include "round_settings.h"
 
 // Reusable UI component functions
@@ -357,6 +370,7 @@ void ScheduleMainMenuUI::once(float) {
   }
 
   // character creator
+
   {
     players = EQ().whereHasComponent<PlayerID>().orderByPlayerID().gen();
     ais = EQ().whereHasComponent<AIControlled>().gen();
@@ -980,6 +994,20 @@ void ScheduleMainMenuUI::render_map_preview(
   auto maybe_shuffle =
       afterhours::animation::manager<UIKey>().get_value(UIKey::MapShuffle);
 
+  {
+    float container_fade = afterhours::animation::manager<UIKey>()
+                               .get_value(UIKey::MapPreviewFade)
+                               .value_or(1.0f);
+    container_fade = std::clamp(container_fade, 0.0f, 1.0f);
+    preview_box.addComponentIfMissing<afterhours::ui::HasOpacity>().value =
+        container_fade;
+  }
+
+  float fade_v = afterhours::animation::manager<UIKey>()
+                     .get_value(UIKey::MapPreviewFade)
+                     .value_or(1.0f);
+  fade_v = std::clamp(fade_v, 0.0f, 1.0f);
+
   if (effective_preview_index == MapManager::RANDOM_MAP_INDEX &&
       maybe_shuffle.has_value() && !compatible_maps.empty()) {
     int n = static_cast<int>(compatible_maps.size());
@@ -993,6 +1021,7 @@ void ScheduleMainMenuUI::render_map_preview(
              ComponentConfig{}
                  .with_label(animated_map.display_name)
                  .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                 .with_opacity(fade_v)
                  .with_debug_name("map_title"));
 
     if (MapManager::get().preview_textures_initialized) {
@@ -1002,6 +1031,7 @@ void ScheduleMainMenuUI::render_map_preview(
           context, mk(preview_box),
           ComponentConfig{}
               .with_size(ComponentSize{percent(1.f), percent(0.7f, 0.1f)})
+              .with_opacity(fade_v)
               .with_debug_name("map_preview")
               .with_texture(
                   rt.texture,
@@ -1016,6 +1046,7 @@ void ScheduleMainMenuUI::render_map_preview(
              ComponentConfig{}
                  .with_label("???")
                  .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+                 .with_opacity(fade_v)
                  .with_debug_name("map_title"));
     return;
   }
@@ -1034,16 +1065,14 @@ void ScheduleMainMenuUI::render_map_preview(
            ComponentConfig{}
                .with_label(preview_map.display_name)
                .with_size(ComponentSize{percent(1.f), percent(0.3f)})
+               .with_opacity(fade_v)
                .with_debug_name("map_title"));
 
   if (!MapManager::get().preview_textures_initialized) {
     return;
   }
 
-  float fade_v = afterhours::animation::manager<UIKey>()
-                     .get_value(UIKey::MapPreviewFade)
-                     .value_or(1.0f);
-  fade_v = std::clamp(fade_v, 0.0f, 1.0f);
+  // fade_v computed above
 
   if (!overriding_preview && prev_preview_index >= 0 &&
       prev_preview_index != selected_map_index && fade_v < 1.0f) {
@@ -1078,7 +1107,7 @@ void ScheduleMainMenuUI::render_map_preview(
                   .with_opacity((!overriding_preview &&
                                  prev_preview_index >= 0 && fade_v < 1.0f)
                                     ? fade_v
-                                    : 1.0f)
+                                    : fade_v)
                   .with_render_layer(1));
 }
 
@@ -1300,6 +1329,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_margin(Margin{.top = percent(0.05f),
                                        .bottom = percent(0.05f),
                                        .right = percent(0.05f)})
+                   .with_opacity(0.0f)
                    .with_debug_name("preview_box")
                    .with_skip_tabbing(true));
 
@@ -1352,7 +1382,40 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                                 .bottom = percent(inner_margin),
                                 .left = percent(inner_margin),
                                 .right = percent(inner_margin)})
+
+            .with_opacity(0.0f)
+            .with_translate(-2000.0f, 0.0f)
             .with_debug_name("map_card_random"));
+    // apply one-time slide-in from off-screen left, and persist final state
+    {
+      size_t random_index = compatible_maps.size();
+      afterhours::animation::one_shot(
+          UIKey::MapCard, random_index,
+          ui_anims::make_map_card_slide(random_index));
+
+      static int random_card_anim_state = 0; // 0:not started, 1:playing, 2:done
+      float slide_v = 0.0f;
+      if (auto mv =
+              afterhours::animation::get_value(UIKey::MapCard, random_index);
+          mv.has_value()) {
+        slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
+        random_card_anim_state = 1;
+      } else {
+        if (random_card_anim_state == 1) {
+          random_card_anim_state = 2;
+          slide_v = 1.0f;
+        } else if (random_card_anim_state == 2) {
+          slide_v = 1.0f;
+        } else {
+          slide_v = 0.0f;
+        }
+      }
+
+      auto opt_ent = afterhours::EntityHelper::getEntityForID(random_btn.id());
+      if (opt_ent) {
+        apply_slide_mods(opt_ent.asE(), slide_v);
+      }
+    }
     if (random_btn) {
       start_game_with_random_animation();
     }
@@ -1384,22 +1447,39 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     }
   }
 
+  static int map_card_anim_state[256] = {0}; // 0:not started, 1:playing, 2:done
   for (size_t i = 0; i < compatible_maps.size(); i++) {
     const auto &map_pair = compatible_maps[i];
     const auto &map_config = map_pair.second;
     int map_index = map_pair.first;
 
-    // drive a quick staggered slide-in once per card
+    // trigger once per app run
     afterhours::animation::one_shot(UIKey::MapCard, i,
                                     ui_anims::make_map_card_slide(i));
 
     // selection pulse value for this card (0..1 anim value)
     float pulse_v =
         afterhours::animation::get_value(UIKey::MapCardPulse, i).value_or(0.0f);
-    float inner_margin_base = 0.1f;
-    float inner_margin_scale = 0.02f;
+    float inner_margin_base = 0.02f;
+    float inner_margin_scale = 0.004f;
     float inner_margin = inner_margin_base - (inner_margin_scale * pulse_v);
 
+    float slide_v = 0.0f;
+    if (auto mv = afterhours::animation::get_value(UIKey::MapCard, i);
+        mv.has_value()) {
+      slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
+      map_card_anim_state[i] = 1;
+    } else {
+      if (map_card_anim_state[i] == 1) {
+        map_card_anim_state[i] = 2;
+        slide_v = 1.0f;
+      } else if (map_card_anim_state[i] == 2) {
+        slide_v = 1.0f;
+      } else {
+        slide_v = 0.0f;
+      }
+    }
+    // off-screen-left translation applied below per-entity
     auto map_btn =
         imm::button(context, mk(map_list.ent(), static_cast<EntityID>(i)),
                     ComponentConfig{}
@@ -1409,8 +1489,9 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                                             .bottom = percent(inner_margin),
                                             .left = percent(inner_margin),
                                             .right = percent(inner_margin)})
-                        .with_opacity(afterhours::animation::clamp_value(
-                            UIKey::MapCard, i, 0.0f, 1.0f))
+
+                        .with_opacity(0.0f)
+                        .with_translate(-2000.0f, 0.0f)
                         .with_debug_name("map_card"));
     if (map_btn) {
       MapManager::get().set_selected_map(map_index);
@@ -1419,6 +1500,16 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     }
 
     auto btn_id = map_btn.id();
+    {
+      auto opt_ent = afterhours::EntityHelper::getEntityForID(btn_id);
+      if (opt_ent) {
+        auto &ent = opt_ent.asE();
+        auto &mods =
+            ent.addComponentIfMissing<afterhours::ui::HasUIModifiers>();
+        (void)mods; // ensure component exists before applying via helper
+        apply_slide_mods(ent, slide_v);
+      }
+    }
     // TODO preview on hover via is_hot is delayed since hot is computed in
     // afterhours ui HandleClicks after this UI is built; use rect checks or
     // reorder systems if same-frame hover preview is needed
@@ -1435,6 +1526,19 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
         auto &ent = opt_ent.asE();
         if (ent.has<afterhours::ui::UIComponent>()) {
           auto rect = ent.get<afterhours::ui::UIComponent>().rect();
+          float mod_x = rect.x;
+          float mod_y = rect.y;
+          float comp_tx = 0.0f;
+          float comp_ty = 0.0f;
+          if (ent.has<afterhours::ui::HasUIModifiers>()) {
+            const auto &mods = ent.get<afterhours::ui::HasUIModifiers>();
+            comp_tx = mods.translate_x;
+            comp_ty = mods.translate_y;
+            auto mod_rect = mods.apply_modifier(rect);
+            mod_x = mod_rect.x;
+            mod_y = mod_rect.y;
+          }
+
           auto mp = context.mouse_pos;
           if (mp.x >= rect.x && mp.x <= rect.x + rect.width && mp.y >= rect.y &&
               mp.y <= rect.y + rect.height) {
@@ -1455,8 +1559,13 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     effective_preview_index = focused_preview_index;
   }
 
-  if (effective_preview_index >= 0 && last_effective_preview_index >= 0 &&
-      effective_preview_index != last_effective_preview_index) {
+  if (effective_preview_index >= 0 && last_effective_preview_index < 0) {
+    afterhours::animation::anim(UIKey::MapPreviewFade)
+        .from(0.0f)
+        .to(1.0f, 0.2f, afterhours::animation::EasingType::EaseOutQuad);
+  } else if (effective_preview_index >= 0 &&
+             last_effective_preview_index >= 0 &&
+             effective_preview_index != last_effective_preview_index) {
     prev_preview_index = last_effective_preview_index;
     afterhours::animation::anim(UIKey::MapPreviewFade)
         .from(0.0f)
