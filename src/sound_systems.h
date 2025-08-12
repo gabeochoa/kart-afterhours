@@ -4,6 +4,7 @@
 #include "components.h"
 #include "game_state_manager.h"
 #include "input_mapping.h"
+#include "music_library.h"
 #include "sound_library.h"
 #include "weapons.h"
 // afterhours UI
@@ -82,4 +83,27 @@ struct UIClickSounds
       SoundLibrary::get().play(SoundFile::UI_Select);
     }
   }
+};
+
+struct BackgroundMusic : System<> {
+  bool started = false;
+
+  virtual void once(float) override {
+    if (!raylib::IsAudioDeviceReady())
+      return;
+
+    if (!started && GameStateManager::get().is_menu_active()) {
+      auto &music = MusicLibrary::get().get("menu_music");
+      music.looping = true;
+      // TODO when we change the music, we should change this back to 0
+      raylib::SeekMusicStream(music, 3.0f);
+      raylib::PlayMusicStream(music);
+      started = true;
+    }
+
+    auto &music = MusicLibrary::get().get("menu_music");
+    raylib::UpdateMusicStream(music);
+  }
+
+  virtual void for_each_with(Entity &, float) override {}
 };
