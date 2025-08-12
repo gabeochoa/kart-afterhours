@@ -27,6 +27,8 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
   */
   afterhours::ui::UIContext<InputAction> *context;
   afterhours::window_manager::Resolution resolution;
+  GameStateManager::Screen last_screen = GameStateManager::Screen::None;
+  std::unordered_set<size_t> triggered_ids;
 
   virtual void once(float) override {
     this->context = afterhours::EntityHelper::get_singleton_cmp<
@@ -42,6 +44,11 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
   virtual void for_each_with_derived(afterhours::Entity &entity,
                                      afterhours::ui::UIComponent &component,
                                      const float) override {
+    auto current_screen = GameStateManager::get().active_screen;
+    if (current_screen != last_screen) {
+      triggered_ids.clear();
+      last_screen = current_screen;
+    }
     if (!component.was_rendered_to_screen)
       return;
 
@@ -58,17 +65,14 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
                      0.0f, 1.0f);
     }
     float baseDelay = 0.02f;
-    float maxExtra = 1.45f;
-    if (GameStateManager::get().active_screen ==
-        GameStateManager::Screen::Main) {
-      baseDelay *= 6.25f;
-      maxExtra *= 5.25f;
-    }
+    float maxExtra = 0.45f;
     float delay = baseDelay + normY * maxExtra;
 
-    afterhours::animation::one_shot(
-        UIKey::SlideInAll, static_cast<size_t>(entity.id), [delay](auto h) {
-          h.from(0.0f).sequence({
+    if (!triggered_ids.contains(static_cast<size_t>(entity.id))) {
+      afterhours::animation::anim(UIKey::SlideInAll,
+                                  static_cast<size_t>(entity.id))
+          .from(0.0f)
+          .sequence({
               {.to_value = 0.0f,
                .duration = delay,
                .easing = afterhours::animation::EasingType::Hold},
@@ -79,7 +83,8 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
                .duration = 0.08f,
                .easing = afterhours::animation::EasingType::EaseOutQuad},
           });
-        });
+      triggered_ids.insert(static_cast<size_t>(entity.id));
+    }
 
     float slide_v = 1.0f;
     if (auto mv = afterhours::animation::get_value(
