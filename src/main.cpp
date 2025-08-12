@@ -138,6 +138,8 @@ void game() {
     }
     ui::register_after_ui_updates<InputAction>(systems);
 
+    systems.register_update_system(std::make_unique<BackgroundMusic>());
+
     systems.register_update_system(std::make_unique<UIClickSounds>());
     systems.register_update_system(std::make_unique<UIMoveSounds>());
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());

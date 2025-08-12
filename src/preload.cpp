@@ -4,6 +4,7 @@
 #include "rl.h"
 
 #include "input_mapping.h"
+#include "music_library.h"
 #include "settings.h"
 #include "shader_library.h"
 #include "sound_library.h"
@@ -64,6 +65,9 @@ Preload &Preload::init(const char *title) {
 
   load_gamepad_mappings();
   load_sounds();
+  MusicLibrary::get().load(
+      Files::get().fetch_resource_path("sounds", "replace/cobolt.mp3").c_str(),
+      "menu_music");
 
   // TODO add load folder for shaders
 
