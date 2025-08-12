@@ -68,6 +68,7 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
     float maxExtra = 0.45f;
     float delay = baseDelay + normY * maxExtra;
 
+    bool newly_triggered = false;
     if (!triggered_ids.contains(static_cast<size_t>(entity.id))) {
       afterhours::animation::anim(UIKey::SlideInAll,
                                   static_cast<size_t>(entity.id))
@@ -84,9 +85,10 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
                .easing = afterhours::animation::EasingType::EaseOutQuad},
           });
       triggered_ids.insert(static_cast<size_t>(entity.id));
+      newly_triggered = true;
     }
 
-    float slide_v = 1.0f;
+    float slide_v = newly_triggered ? 0.0f : 1.0f;
     if (auto mv = afterhours::animation::get_value(
             UIKey::SlideInAll, static_cast<size_t>(entity.id));
         mv.has_value()) {
