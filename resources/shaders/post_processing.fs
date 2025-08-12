@@ -13,6 +13,15 @@ uniform sampler2D texture2;
 
 out vec4 finalColor;
 
+bool inBounds(vec2 p) {
+    return all(greaterThanEqual(p, vec2(0.0))) && all(lessThanEqual(p, vec2(1.0)));
+}
+
+vec4 safeTex0(vec2 p) {
+    if (!inBounds(p)) return vec4(0.0);
+    return texture(texture0, p);
+}
+
 void main()
 {
     vec2 uv = fragTexCoord;
@@ -21,19 +30,18 @@ void main()
 
     float k = 0.08;
     vec2 uvBarrel = 0.5 + centered * (1.0 + k * r2);
-    uvBarrel = clamp(uvBarrel, vec2(0.0), vec2(1.0));
 
     float aberrBase = 0.0018;
     float dist = length(centered);
     float edgeAtten = 1.0 - smoothstep(0.6, 0.95, dist);
     vec2 ca = centered * (aberrBase + 0.004 * r2) * edgeAtten;
 
-    vec2 uvR = clamp(uvBarrel + ca, vec2(0.0), vec2(1.0));
+    vec2 uvR = uvBarrel + ca;
     vec2 uvG = uvBarrel;
-    vec2 uvB = clamp(uvBarrel - ca, vec2(0.0), vec2(1.0));
-    vec4 cR = texture(texture0, uvR);
-    vec4 cG = texture(texture0, uvG);
-    vec4 cB = texture(texture0, uvB);
+    vec2 uvB = uvBarrel - ca;
+    vec4 cR = safeTex0(uvR);
+    vec4 cG = safeTex0(uvG);
+    vec4 cB = safeTex0(uvB);
     vec3 col = vec3(cR.r, cG.g, cB.b);
 
     float threshold = 0.72;
@@ -41,18 +49,18 @@ void main()
 
     vec2 px = 1.0 / max(resolution, vec2(1.0));
     vec3 bloom = vec3(0.0);
-    bloom += texture(texture0, clamp(uvBarrel + vec2( 1.0,  0.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2(-1.0,  0.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2( 0.0,  1.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2( 0.0, -1.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2( 1.0,  1.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2(-1.0,  1.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2( 1.0, -1.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2(-1.0, -1.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2( 2.0,  0.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2(-2.0,  0.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2( 0.0,  2.0) * px, vec2(0.0), vec2(1.0))).rgb;
-    bloom += texture(texture0, clamp(uvBarrel + vec2( 0.0, -2.0) * px, vec2(0.0), vec2(1.0))).rgb;
+    bloom += safeTex0(uvBarrel + vec2( 1.0,  0.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2(-1.0,  0.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2( 0.0,  1.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2( 0.0, -1.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2( 1.0,  1.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2(-1.0,  1.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2( 1.0, -1.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2(-1.0, -1.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2( 2.0,  0.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2(-2.0,  0.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2( 0.0,  2.0) * px).rgb;
+    bloom += safeTex0(uvBarrel + vec2( 0.0, -2.0) * px).rgb;
     bloom /= 12.0;
     bloom = max(bloom - vec3(threshold), vec3(0.0));
 
