@@ -25,47 +25,6 @@ struct CarRumble : System<Transform, CanShoot> {
   }
 };
 
-struct UIMoveSounds : System<> {
-  input::PossibleInputCollector<InputAction> inpc;
-
-  virtual bool should_run(float) override {
-    return GameStateManager::get().is_menu_active();
-  }
-
-  virtual void once(float) override {
-    inpc = input::get_input_collector<InputAction>();
-  }
-
-  template <typename TAction>
-  void play_move_if_any(const TAction &actions_done) const {
-    const bool is_move = actions_done.action == InputAction::WidgetLeft ||
-                         actions_done.action == InputAction::WidgetRight ||
-                         actions_done.action == InputAction::WidgetNext ||
-                         actions_done.action == InputAction::WidgetBack;
-    if (is_move) {
-      auto opt = EntityQuery({.force_merge = true})
-                     .whereHasComponent<SoundEmitter>()
-                     .gen_first();
-      if (opt.valid()) {
-        auto &ent = opt.asE();
-        auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-        req.policy = PlaySoundRequest::Policy::Enum;
-        req.file = SoundFile::UI_Move;
-      }
-    }
-  }
-
-  virtual void for_each_with(Entity &, float) override {
-    if (!inpc.has_value()) {
-      return;
-    }
-
-    for (const auto &act : inpc.inputs_pressed()) {
-      play_move_if_any(act);
-    }
-  }
-};
-
 struct UIClickSounds
     : afterhours::ui::SystemWithUIContext<afterhours::ui::HasClickListener> {
   afterhours::ui::UIContext<InputAction> *context = nullptr;
