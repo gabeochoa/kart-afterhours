@@ -76,6 +76,12 @@ Preload &Preload::init(const char *title) {
       "post_processing");
 
   ShaderLibrary::get().load(
+      Files::get()
+          .fetch_resource_path("shaders", "post_processing_tag.fs")
+          .c_str(),
+      "post_processing_tag");
+
+  ShaderLibrary::get().load(
       Files::get().fetch_resource_path("shaders", "entity_test.fs").c_str(),
       "entity_test");
 

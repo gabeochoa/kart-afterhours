@@ -177,8 +177,9 @@ void game() {
       // Render order: apply post-processing to game content, then draw
       // letterbox/pillar bars so they remain pure black on top.
       systems.register_render_system(
-          std::make_unique<BeginShader>("post_processing"));
-      // systems.register_render_system(std::make_unique<ConfigureCatSpotlight>());
+          std::make_unique<BeginPostProcessingShader>());
+      // systems.register_render_system(
+      //     std::make_unique<ConfigureTaggerSpotlight>());
       systems.register_render_system(std::make_unique<RenderRenderTexture>());
       systems.register_render_system(
           std::make_unique<RenderDebugGridOverlay>());

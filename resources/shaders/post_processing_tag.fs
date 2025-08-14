@@ -11,6 +11,14 @@ uniform vec4 colDiffuse;
 uniform sampler2D texture1;
 uniform sampler2D texture2;
 
+// Tagger spotlight controls
+uniform float spotlightEnabled; // 0.0 off, 1.0 on
+uniform vec2 spotlightPos;      // UV position [0,1]
+uniform float spotlightRadius;  // inner radius in UV units
+uniform float spotlightSoftness;// edge feather in UV units
+uniform float dimAmount;        // how much to dim outside [0,1]
+uniform float desaturateAmount; // how much to desaturate outside [0,1]
+
 out vec4 finalColor;
 
 bool inBounds(vec2 p) {
@@ -74,5 +82,26 @@ void main()
 
     float pulse = 0.95 + 0.06 * sin(time * 1.7);
 
+    // Apply Tagger spotlight if enabled
+    if (spotlightEnabled > 0.5) {
+        // Warp the spotlight position with the same barrel function
+        vec2 centeredSpot = spotlightPos - 0.5;
+        float r2Spot = dot(centeredSpot, centeredSpot);
+        float k2 = 0.08;
+        vec2 spotBarrel = 0.5 + centeredSpot * (1.0 + k2 * r2Spot);
+        // Account for aspect ratio so the circle appears round on screen
+        vec2 aspect = vec2(max(resolution.x / max(resolution.y, 1.0), 1.0), 1.0);
+        float d = length((uvBarrel - spotBarrel) * aspect);
+        float edge0 = spotlightRadius;
+        float edge1 = spotlightRadius + max(spotlightSoftness, 1e-5);
+        float outsideMask = smoothstep(edge0, edge1, d);
+
+        float gray = dot(col, vec3(0.299, 0.587, 0.114));
+        vec3 desat = mix(col, vec3(gray), clamp(desaturateAmount, 0.0, 1.0));
+        vec3 dimmed = desat * (1.0 - clamp(dimAmount, 0.0, 1.0));
+        col = mix(col, dimmed, outsideMask);
+    }
+
     finalColor = vec4(col * pulse, 1.0) * colDiffuse;
 }
+
