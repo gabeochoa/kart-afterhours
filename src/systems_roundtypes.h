@@ -471,3 +471,203 @@ struct ScaleTaggerSize : System<Transform, HasTagAndGoTracking> {
     update_size(entity, transform, taggerTracking);
   }
 };
+
+// Cat and Mice mode systems
+struct InitializeCatAndMice : PausableSystem<> {
+  bool initialized = false;
+  virtual void once(float) override {
+    if (RoundManager::get().active_round_type != RoundType::CatAndMice) {
+      initialized = false;
+      return;
+    }
+    if (!GameStateManager::get().is_game_active()) {
+      initialized = false;
+      return;
+    }
+    if (initialized) {
+      return;
+    }
+    auto &settings = RoundManager::get().get_active_rt<RoundCatAndMiceSettings>();
+    auto &base = RoundManager::get().get_active_settings();
+    base.reset_countdown();
+    settings.round_start_wall_time = static_cast<float>(raylib::GetTime());
+    settings.timer_started = true;
+
+    // Assign roles: pick cat among players if possible, else pick fairly between AI and players.
+// TODO: introduce a component (e.g., EligibleForCat) to mark/select from both AI and players evenly.
+    auto players = EntityQuery().whereHasComponent<PlayerID>().gen();
+    auto all_cars = EntityQuery().whereHasComponent<HasHealth>().gen();
+    afterhours::RefEntity *chosen = nullptr;
+    if (!players.empty()) {
+      // If we have a previous cat, rotate to next player id
+      std::vector<size_t> ids;
+      ids.reserve(players.size());
+      for (auto &p : players) ids.push_back(static_cast<size_t>(p.get().get<PlayerID>().id));
+      std::sort(ids.begin(), ids.end());
+      size_t next_id = ids.front();
+      if (settings.current_cat_player_id.has_value()) {
+        auto it = std::find(ids.begin(), ids.end(), *settings.current_cat_player_id);
+        if (it != ids.end() && std::next(it) != ids.end()) {
+          next_id = *std::next(it);
+        }
+      }
+      auto itp = std::ranges::find_if(players, [&](auto &ref) {
+        return static_cast<size_t>(ref.get().get<PlayerID>().id) == next_id;
+      });
+      if (itp != players.end()) {
+        chosen = &(*itp);
+        settings.current_cat_player_id = next_id;
+      }
+    }
+    if (!chosen && !all_cars.empty()) {
+      chosen = &all_cars[0];
+      settings.current_cat_player_id = chosen->get().has<PlayerID>()
+                                          ? std::optional<size_t>(static_cast<size_t>(
+                                                chosen->get().get<PlayerID>().id))
+                                          : std::nullopt;
+    }
+    // Apply roles and visuals
+    for (auto &ref : all_cars) {
+      Entity &e = ref.get();
+      auto &role = e.addComponentIfMissing<HasCatAndMiceRole>();
+      role.eliminated = false;
+      role.is_cat = (chosen && e.id == chosen->get().id);
+      // Visual scale
+      if (e.has<Transform>()) {
+        auto &t = e.get<Transform>();
+        if (role.is_cat) {
+          t.size = CarSizes::NORMAL_CAR_SIZE * CarSizes::CAT_SIZE_MULTIPLIER;
+          if (e.has<afterhours::texture_manager::HasSprite>()) {
+            e.get<afterhours::texture_manager::HasSprite>().scale = CarSizes::CAT_SPRITE_SCALE;
+          }
+        } else {
+          t.size = CarSizes::NORMAL_CAR_SIZE;
+          if (e.has<afterhours::texture_manager::HasSprite>()) {
+            e.get<afterhours::texture_manager::HasSprite>().scale = CarSizes::NORMAL_SPRITE_SCALE;
+          }
+        }
+      }
+    }
+    initialized = true;
+  }
+};
+
+// TODO: Support ghost mice (post-elimination non-interactive spectators) to keep players engaged
+struct CatInstantKillOnTouch : PausableSystem<Transform, HasCatAndMiceRole> {
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             HasCatAndMiceRole &role, float) override {
+    if (RoundManager::get().active_round_type != RoundType::CatAndMice) {
+      return;
+    }
+    if (!role.is_cat) {
+      return;
+    }
+    // Cat collides with any mouse that is not eliminated
+    auto mice = EntityQuery()
+                    .whereHasComponent<Transform>()
+                    .whereHasComponent<HasCatAndMiceRole>()
+                    .whereNotID(entity.id)
+                    .whereOverlaps(transform.rect())
+                    .gen();
+    for (auto &mref : mice) {
+      Entity &m = mref.get();
+      auto &mrole = m.get<HasCatAndMiceRole>();
+      if (mrole.eliminated || mrole.is_cat) continue;
+      // Instantly eliminate: set health to 0 and mark eliminated; do not respawn
+      if (m.has<HasHealth>()) {
+        auto &hh = m.get<HasHealth>();
+        hh.amount = 0;
+        hh.last_damaged_by = entity.id;
+      }
+      mrole.eliminated = true;
+    }
+  }
+};
+
+struct CheckCatAndMiceWinCondition : PausableSystem<> {
+  virtual void once(float) override {
+    if (RoundManager::get().active_round_type != RoundType::CatAndMice) {
+      return;
+    }
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+    auto remaining_mice = EntityQuery()
+                              .whereHasComponent<HasCatAndMiceRole>()
+                              .whereLambda([](const Entity &e) {
+                                const auto &r = e.get<HasCatAndMiceRole>();
+                                return !r.is_cat && !r.eliminated;
+                              })
+                              .gen_count();
+    if (remaining_mice == 0) {
+      auto &cm = RoundManager::get().get_active_rt<RoundCatAndMiceSettings>();
+      float end_time = static_cast<float>(raylib::GetTime());
+      cm.last_completion_time = end_time - cm.round_start_wall_time;
+
+      // Winner is the cat
+      auto cat = EntityQuery()
+                     .whereHasComponent<HasCatAndMiceRole>()
+                     .whereLambda([](const Entity &e) {
+                       return e.get<HasCatAndMiceRole>().is_cat;
+                     })
+                     .gen_first();
+      if (cat.valid()) {
+        GameStateManager::get().end_game({cat.get()});
+      } else {
+        GameStateManager::get().end_game();
+      }
+    }
+  }
+};
+
+struct ScaleCatSize : System<Transform, HasCatAndMiceRole> {
+  void set_size(Entity &entity, Transform &transform, bool is_cat) const {
+    transform.size = is_cat ? CarSizes::NORMAL_CAR_SIZE * CarSizes::CAT_SIZE_MULTIPLIER
+                            : CarSizes::NORMAL_CAR_SIZE;
+    if (entity.has<afterhours::texture_manager::HasSprite>()) {
+      auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
+      sprite.scale = is_cat ? CarSizes::CAT_SPRITE_SCALE
+                            : CarSizes::NORMAL_SPRITE_SCALE;
+    }
+  }
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             HasCatAndMiceRole &role, float) override {
+    if (RoundManager::get().active_round_type != RoundType::CatAndMice) {
+      set_size(entity, transform, false);
+      return;
+    }
+    set_size(entity, transform, role.is_cat);
+  }
+};
+
+struct StartCatAndMiceTimer : PausableSystem<> {
+  virtual void once(float) override {
+    if (RoundManager::get().active_round_type != RoundType::CatAndMice) {
+      return;
+    }
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+    auto &base = RoundManager::get().get_active_settings();
+    auto &cm = RoundManager::get().get_active_rt<RoundCatAndMiceSettings>();
+    if (base.state == RoundSettings::GameState::InGame && !cm.timer_started) {
+      cm.round_start_wall_time = static_cast<float>(raylib::GetTime());
+      cm.timer_started = true;
+      // Reset all mice health and stop movement at start
+      for (auto &ref : EntityQuery().whereHasComponent<HasCatAndMiceRole>().gen()) {
+        Entity &e = ref.get();
+        if (!e.has<HasHealth>()) continue;
+        auto &hh = e.get<HasHealth>();
+        hh.amount = hh.max_amount;
+        if (e.has<Transform>()) {
+          auto &t = e.get<Transform>();
+          t.velocity = {0.f, 0.f};
+          if (e.has<PlayerID>()) {
+            t.position = get_spawn_position(static_cast<size_t>(e.get<PlayerID>().id));
+          }
+        }
+        e.get<HasCatAndMiceRole>().eliminated = false;
+      }
+    }
+  }
+};

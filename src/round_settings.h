@@ -16,6 +16,8 @@ constexpr vec2 NORMAL_CAR_SIZE = vec2{15.f, 25.f};
 constexpr float NORMAL_SPRITE_SCALE = 1.0f;
 constexpr float TAG_SPRITE_SCALE = 2.0f;
 constexpr float TAG_SIZE_MULTIPLIER = 2.0f;
+constexpr float CAT_SPRITE_SCALE = 2.0f;
+constexpr float CAT_SIZE_MULTIPLIER = 2.0f;
 } // namespace CarSizes
 
 enum struct RoundType : size_t {
@@ -23,6 +25,7 @@ enum struct RoundType : size_t {
   Kills,
   Hippo,
   TagAndGo,
+  CatAndMice,
 };
 constexpr static size_t num_round_types = magic_enum::enum_count<RoundType>();
 constexpr size_t enum_to_index(RoundType type) {
@@ -162,6 +165,27 @@ struct RoundTagAndGoSettings : RoundSettings {
   }
 };
 
+struct RoundCatAndMiceSettings : RoundSettings {
+  // Rotate cat among human players (PlayerID). If none, pick an AI.
+  // Stores the current cat's PlayerID if applicable.
+  std::optional<size_t> current_cat_player_id{};
+
+  // Track round timing
+  float round_start_wall_time = 0.0f; // raylib::GetTime at round start
+  float last_completion_time = -1.0f; // seconds to clear all mice last round
+  bool timer_started = false;
+
+  // Number of AI present when the mode was initialized (for consistent respawns)
+  int initial_ai_count = 0;
+
+  // This mode does not use countdown by default, but we can reuse base countdown if desired
+  RoundCatAndMiceSettings() { /* no timer */ }
+
+  void reset_temp_data() override {
+    timer_started = false;
+  }
+};
+
 SINGLETON_FWD(RoundManager)
 struct RoundManager {
   SINGLETON(RoundManager)
@@ -179,6 +203,8 @@ struct RoundManager {
         std::make_unique<RoundHippoSettings>();
     settings[enum_to_index(RoundType::TagAndGo)] =
         std::make_unique<RoundTagAndGoSettings>();
+    settings[enum_to_index(RoundType::CatAndMice)] =
+        std::make_unique<RoundCatAndMiceSettings>();
 
     settings[0]->enabled_weapons.reset().set(0);
     settings[1]->enabled_weapons.reset().set(1);
@@ -206,6 +232,8 @@ struct RoundManager {
       return static_cast<T &>(rt_settings);
     case RoundType::TagAndGo:
       return static_cast<T &>(rt_settings);
+    case RoundType::CatAndMice:
+      return static_cast<T &>(rt_settings);
     default:
       // This should never happen, but provides a clear error
       log_error("Invalid round type in get_active_rt: {}",
@@ -224,6 +252,8 @@ struct RoundManager {
     case RoundType::Hippo:
       return static_cast<const T &>(rt_settings);
     case RoundType::TagAndGo:
+      return static_cast<const T &>(rt_settings);
+    case RoundType::CatAndMice:
       return static_cast<const T &>(rt_settings);
     default:
       // This should never happen, but provides a clear error
@@ -259,6 +289,9 @@ struct RoundManager {
     case RoundType::Lives:
       // Lives mode doesn't use timers, so no initialization needed
       break;
+    case RoundType::CatAndMice:
+      // CatAndMice doesn't use a countdown timer by default
+      break;
     default:
       log_error("Unknown round type in set_active_round_type: {}",
                 static_cast<size_t>(active_round_type));
@@ -292,6 +325,8 @@ struct RoundManager {
       return true;
     case RoundType::TagAndGo:
       return true;
+    case RoundType::CatAndMice:
+      return true;
     default:
       log_error("Invalid round type in uses_countdown: {}",
                 static_cast<size_t>(active_round_type));
@@ -308,6 +343,8 @@ struct RoundManager {
     case RoundType::Hippo:
       return true;
     case RoundType::TagAndGo:
+      return true;
+    case RoundType::CatAndMice:
       return true;
     default:
       log_error("Invalid round type in uses_timer: {}",
@@ -334,6 +371,8 @@ struct RoundManager {
       return get_active_rt<RoundHippoSettings>().current_round_time;
     case RoundType::TagAndGo:
       return get_active_rt<RoundTagAndGoSettings>().current_round_time;
+    case RoundType::CatAndMice:
+      return -1.0f; // Uses stopwatch-like timing, not countdown timer
     default:
       log_error("Invalid round type in get_current_round_time: {}",
                 static_cast<size_t>(active_round_type));
@@ -382,6 +421,17 @@ struct RoundManager {
             static_cast<const RoundTagAndGoSettings &>(*settings[i]);
         round_j["speed_multiplier"] = tag_settings.speed_multiplier;
         round_j["allow_tag_backs"] = tag_settings.allow_tag_backs;
+        break;
+      }
+      case RoundType::CatAndMice: {
+        auto &cat_settings =
+            static_cast<const RoundCatAndMiceSettings &>(*settings[i]);
+        if (cat_settings.current_cat_player_id.has_value()) {
+          round_j["current_cat_player_id"] =
+              static_cast<size_t>(*cat_settings.current_cat_player_id);
+        }
+        round_j["last_completion_time"] = cat_settings.last_completion_time;
+        round_j["initial_ai_count"] = cat_settings.initial_ai_count;
         break;
       }
       }
@@ -458,6 +508,23 @@ struct RoundManager {
             if (round_j.contains("allow_tag_backs")) {
               tag_settings.allow_tag_backs =
                   round_j["allow_tag_backs"].get<bool>();
+            }
+            break;
+          }
+          case RoundType::CatAndMice: {
+            auto &cat_settings =
+                static_cast<RoundCatAndMiceSettings &>(*settings[i]);
+            if (round_j.contains("current_cat_player_id")) {
+              cat_settings.current_cat_player_id =
+                  round_j["current_cat_player_id"].get<size_t>();
+            }
+            if (round_j.contains("last_completion_time")) {
+              cat_settings.last_completion_time =
+                  round_j["last_completion_time"].get<float>();
+            }
+            if (round_j.contains("initial_ai_count")) {
+              cat_settings.initial_ai_count =
+                  round_j["initial_ai_count"].get<int>();
             }
             break;
           }
