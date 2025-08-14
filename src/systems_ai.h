@@ -144,34 +144,11 @@ private:
       }
     }
 
-    // Get AI difficulty and add random offset based on difficulty
-    AIDifficulty::Difficulty difficulty = AIDifficulty::Difficulty::Medium;
-    if (entity.has<AIDifficulty>()) {
-      difficulty = entity.get<AIDifficulty>().difficulty;
-    }
+    // Base jitter comes from AIParams (populated by AIUpdateAIParamsSystem)
+    float offset_range = params.hippo_target_jitter;
 
     float distance_to_hippo =
         sqrt(distance_sq(transform.pos(), closest_hippo_pos));
-
-    float offset_range = 0.0f;
-    switch (difficulty) {
-    case AIDifficulty::Difficulty::Easy:
-      offset_range = params.hippo_jitter_easy;
-      break;
-    case AIDifficulty::Difficulty::Medium:
-      offset_range = params.hippo_jitter_medium;
-      break;
-    case AIDifficulty::Difficulty::Hard:
-      offset_range = params.hippo_jitter_hard;
-      break;
-    case AIDifficulty::Difficulty::Expert:
-      offset_range = params.hippo_jitter_expert;
-      break;
-    default:
-      offset_range = params.hippo_jitter_medium;
-      break;
-    }
-
     float distance_factor =
         std::min(1.0f, distance_to_hippo / params.hippo_jitter_distance_scale);
     float actual_offset_range = offset_range * distance_factor;
@@ -505,6 +482,7 @@ struct AIUpdateAIParamsSystem : System<AIParams, AIDifficulty> {
       params.hippo_jitter_medium = 110.0f;
       params.hippo_jitter_hard = 60.0f;
       params.hippo_jitter_expert = 0.0f;
+      params.hippo_target_jitter = params.hippo_jitter_easy;
       params.shooting_alignment_angle_deg = 15.0f;
       params.boost_cooldown_seconds = 3.5f;
       break;
@@ -513,6 +491,7 @@ struct AIUpdateAIParamsSystem : System<AIParams, AIDifficulty> {
       params.hippo_jitter_medium = 100.0f;
       params.hippo_jitter_hard = 50.0f;
       params.hippo_jitter_expert = 0.0f;
+      params.hippo_target_jitter = params.hippo_jitter_medium;
       params.shooting_alignment_angle_deg = 12.0f;
       params.boost_cooldown_seconds = 3.0f;
       break;
@@ -521,6 +500,7 @@ struct AIUpdateAIParamsSystem : System<AIParams, AIDifficulty> {
       params.hippo_jitter_medium = 80.0f;
       params.hippo_jitter_hard = 40.0f;
       params.hippo_jitter_expert = 0.0f;
+      params.hippo_target_jitter = params.hippo_jitter_hard;
       params.shooting_alignment_angle_deg = 8.0f;
       params.boost_cooldown_seconds = 2.5f;
       break;
@@ -529,6 +509,7 @@ struct AIUpdateAIParamsSystem : System<AIParams, AIDifficulty> {
       params.hippo_jitter_medium = 60.0f;
       params.hippo_jitter_hard = 30.0f;
       params.hippo_jitter_expert = 0.0f;
+      params.hippo_target_jitter = params.hippo_jitter_expert;
       params.shooting_alignment_angle_deg = 6.0f;
       params.boost_cooldown_seconds = 2.0f;
       break;

@@ -154,6 +154,9 @@ struct AIParams : BaseComponent {
   // Hippo mode: divisor for distance-based jitter attenuation
   float hippo_jitter_distance_scale{300.0f};
 
+  // Hippo mode: evaluated jitter to use (set by systems, not code branching)
+  float hippo_target_jitter{100.0f};
+
   // Kills mode shooting: maximum allowed misalignment to fire (degrees)
   float shooting_alignment_angle_deg{10.0f};
 
