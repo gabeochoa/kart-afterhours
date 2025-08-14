@@ -592,12 +592,15 @@ def write_html_index(outdir: str):
 <html lang=\"en\">
 <meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <title>Dependency Graphs</title>
-<style>body{font-family:sans-serif;margin:20px} .grid{display:grid;grid-template-columns:1fr;gap:20px} .viewport{position:relative;overflow:hidden;border:1px solid #ddd;background:#fafafa;height:70vh} .svg-container{width:100%;height:100%;} .dimmed{opacity:0.2} .node{cursor:pointer}</style>
+<style>body{font-family:sans-serif;margin:20px} .grid{display:grid;grid-template-columns:1fr;gap:20px} .controls{display:flex;gap:8px;align-items:center;margin:8px 0} .controls input{padding:6px 8px;border:1px solid #ccc;border-radius:4px;min-width:260px} .viewport{position:relative;overflow:hidden;border:1px solid #ddd;background:#fafafa;height:70vh} .svg-container{width:100%;height:100%;} .dimmed{opacity:0.2} .node{cursor:pointer}</style>
 <h1>Dependency Graphs</h1>
 <p>Drag to pan. Scroll to zoom.</p>
 <div class=\"grid\">
   <div>
     <h2>Systems ↔ Resources</h2>
+    <div class=\"controls\">
+      <input id=\"search-comp\" type=\"text\" placeholder=\"Search system or resource (Enter to focus)\" />
+    </div>
     <div class=\"viewport\">
       <div id=\"comp-container\" class=\"svg-container\">[[COMP_SVG]]</div>
     </div>
@@ -605,6 +608,9 @@ def write_html_index(outdir: str):
   </div>
   <div>
     <h2>System Conflicts</h2>
+    <div class=\"controls\">
+      <input id=\"search-conf\" type=\"text\" placeholder=\"Search system (Enter to focus)\" />
+    </div>
     <div class=\"viewport\">
       <div id=\"conf-container\" class=\"svg-container\">[[CONF_SVG]]</div>
     </div>
@@ -613,8 +619,9 @@ def write_html_index(outdir: str):
   
 </div>
 <script src=\"https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js\"></script>
+<script src=\"https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js\"></script>
 <script>
-function initZoomD3(containerId){
+function initZoomD3(containerId, searchInputId){
   const container = document.getElementById(containerId);
   const svg = d3.select(container).select('svg');
   if(svg.empty()) return;
@@ -623,7 +630,8 @@ function initZoomD3(containerId){
   const wrap = svg.append('g');
   const children = Array.from(svgNode.childNodes);
   for(const n of children){ if(n !== wrap.node()) wrap.node().appendChild(n); }
-  const zoom = d3.zoom().scaleExtent([0.1,20]).on('zoom', (event)=>{ wrap.attr('transform', event.transform); });
+  let currentTransform = d3.zoomIdentity;
+  const zoom = d3.zoom().scaleExtent([0.1,20]).on('zoom', (event)=>{ wrap.attr('transform', event.transform); currentTransform = event.transform; });
   svg.call(zoom);
   let focused = null;
 
@@ -698,9 +706,37 @@ function initZoomD3(containerId){
 
   svg.on('dblclick', () => resetFilter());
   window.addEventListener('keydown', (e) => { if(e.key === 'Escape') resetFilter(); });
+  // Search
+  const nodeIndex = [];
+  nodeGroups.each(function(){ const n = getNodeName(this); if(n) nodeIndex.push({ name: n }); });
+  const fuse = new Fuse(nodeIndex, { keys: ['name'], threshold: 0.3, includeScore: true });
+  const input = document.getElementById(searchInputId);
+  if(input){
+    input.addEventListener('keydown', (e) => {
+      if(e.key !== 'Enter') return;
+      const q = input.value.trim();
+      if(!q){ resetFilter(); return; }
+      const res = fuse.search(q, { limit: 1 });
+      if(!res.length) return;
+      const name = res[0].item.name;
+      focused = name;
+      const neighbors = adj.get(name) || new Set();
+      const keep = new Set([name, ...neighbors]);
+      applyFilter(keep);
+      const ng = Array.from(nodeGroups.nodes()).find(g => getNodeName(g) === name);
+      if(ng){
+        const bbox = ng.getBBox();
+        const vp = container.getBoundingClientRect();
+        const k = currentTransform.k || 1;
+        const cx = bbox.x + bbox.width/2; const cy = bbox.y + bbox.height/2;
+        const tx = vp.width/2 - cx * k; const ty = vp.height/2 - cy * k;
+        svg.transition().duration(220).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
+      }
+    });
+  }
 }
-initZoomD3('comp-container');
-initZoomD3('conf-container');
+initZoomD3('comp-container','search-comp');
+initZoomD3('conf-container','search-conf');
 </script>
 </html>
 """
