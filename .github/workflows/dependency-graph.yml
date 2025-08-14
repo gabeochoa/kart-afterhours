@@ -1,0 +1,22 @@
+name: Dependency Graph
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+      - name: Run dependency analysis
+        run: make deps
+      - name: Check baseline
+        run: make deps-check

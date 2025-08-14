@@ -1,5 +1,58 @@
 #!/usr/bin/env python3
 
+"""
+Dependency Graph Generator for ECS Systems
+
+What this does
+- Parses C++ ECS systems (structs deriving from System<...>/PausableSystem<...>) in src/
+- Infers per-system read/write sets for components, singletons, and globals
+- Maps each system to a stage (fixed_update/update/render) via src/main.cpp
+- Emits Graphviz DOT graphs and a JSON summary
+- Optionally renders SVG and writes a simple HTML viewer
+
+Quick start
+- Generate graphs and JSON summary into build/:
+  $ python3 tools/dependency_graph.py --src src --main src/main.cpp --outdir build
+
+- Also render SVGs (requires Graphviz 'dot'):
+  $ python3 tools/dependency_graph.py --outdir build  # dot is auto-detected
+
+- Serve artifacts over HTTP and view in a browser:
+  $ (cd build && python3 -m http.server 8080)
+  Then open http://localhost:8080/ in a browser. If SVGs exist, open:
+    - systems_components.svg
+    - system_conflicts.svg
+  Or run with --write-html to emit an index.html that links to these.
+
+- If you do not have Graphviz, use --write-html to generate index.html using DOT files;
+  you can paste DOT files into online viewers or install graphviz.
+
+Config to refine analysis
+- You can mark known read-only or write-only resources to refine conflicts with --config:
+  $ python3 tools/dependency_graph.py --config tools/dep_config.json
+
+Example dep_config.json
+{
+  "components": {
+    "Transform": "rw",              // rw | r | w
+    "HasColor": "r"
+  },
+  "singletons": {
+    "ShaderLibrary": "r",
+    "SoundLibrary": "w"
+  },
+  "globals": {
+    "mainRT": "w"
+  }
+}
+
+CI integration (suggested)
+- Create a baseline once:
+  $ python3 tools/dependency_graph.py --outdir build && cp build/dependency_summary.json tools/dependency_baseline.json
+- In CI, regenerate and compare against the baseline to fail on changes.
+
+"""
+
 import argparse
 import os
 import re
@@ -22,6 +75,7 @@ def iter_sources(root: str) -> List[str]:
         for fn in filenames:
             if fn.endswith(('.h', '.hpp', '.cpp', '.cc', '.cxx')):
                 files.append(os.path.join(dirpath, fn))
+    files.sort()
     return files
 
 
@@ -346,16 +400,17 @@ def colorize_batches_per_stage(systems: List[SystemModel], conflicts: Dict[Tuple
     batches_by_stage: Dict[str, List[List[str]]] = {}
     for stage, syss in by_stage.items():
         # Build adjacency
-        idx = {s.name: k for k, s in enumerate(syss)}
-        adj = [set() for _ in syss]
+        syss_sorted = sorted(syss, key=lambda s: s.name)
+        idx = {s.name: k for k, s in enumerate(syss_sorted)}
+        adj = [set() for _ in syss_sorted]
         for (a, b), _ in conflicts.items():
             if a in idx and b in idx:
                 ia, ib = idx[a], idx[b]
                 adj[ia].add(ib)
                 adj[ib].add(ia)
-        # Order by degree desc
-        order = sorted(range(len(syss)), key=lambda i: len(adj[i]), reverse=True)
-        color_of = [-1] * len(syss)
+        # Order by degree desc, tie-break by name
+        order = sorted(range(len(syss_sorted)), key=lambda i: (len(adj[i]), syss_sorted[i].name), reverse=True)
+        color_of = [-1] * len(syss_sorted)
         for u in order:
             used = {color_of[v] for v in adj[u] if color_of[v] != -1}
             c = 0
@@ -366,7 +421,7 @@ def colorize_batches_per_stage(systems: List[SystemModel], conflicts: Dict[Tuple
         batches: List[List[str]] = [[] for _ in range(max_color + 1)]
         for i, c in enumerate(color_of):
             if c >= 0:
-                batches[c].append(syss[i].name)
+                batches[c].append(syss_sorted[i].name)
         batches_by_stage[stage] = [sorted(b) for b in batches if b]
     return batches_by_stage
 
@@ -385,7 +440,7 @@ def emit_system_component_dot(systems: List[SystemModel], out_path: str):
     for stage, syss in stages.items():
         lines.append(f'  subgraph cluster_{stage} {{')
         lines.append(f'    label="{stage}";')
-        for s in syss:
+        for s in sorted(syss, key=lambda s: s.name):
             lines.append(f'    "{s.name}" [shape=box, style=filled, fillcolor="lightgray"];')
         lines.append('  }')
     # Resource nodes (components, singletons, globals)
@@ -407,7 +462,7 @@ def emit_system_component_dot(systems: List[SystemModel], out_path: str):
         lines.append(f'  "glob:{c}" [label="{c}", shape=diamond, color=purple];')
 
     # Edges: reads (resource -> system), writes (system -> resource)
-    for s in systems:
+    for s in sorted(systems, key=lambda s: s.name):
         for r in sorted(s.read_components):
             lines.append(f'  "comp:{r}" -> "{s.name}" [color=darkgreen, label="R"];')
         for r in sorted(s.write_components):
@@ -437,16 +492,68 @@ def emit_system_conflict_dot(systems: List[SystemModel], conflicts: Dict[Tuple[s
     for stage, syss in stages.items():
         lines.append(f'  subgraph cluster_{stage} {{')
         lines.append(f'    label="{stage}";')
-        for s in syss:
+        for s in sorted(syss, key=lambda s: s.name):
             lines.append(f'    "{s.name}" [shape=box, style=filled, fillcolor="lightyellow"];')
         lines.append('  }')
     # Conflict edges within stages
-    for (a, b), reasons in conflicts.items():
+    for (a, b), reasons in sorted(conflicts.items(), key=lambda kv: kv[0]):
         label = ','.join(sorted(reasons))
         lines.append(f'  "{a}" -- "{b}" [color=red, label="{label}"];')
     lines.append('}')
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
+
+
+def apply_config_constraints(systems: List[SystemModel], config: Dict):
+    comp_cfg = {k: v for k, v in (config.get('components') or {}).items()}
+    sing_cfg = {k: v for k, v in (config.get('singletons') or {}).items()}
+    glob_cfg = {k: v for k, v in (config.get('globals') or {}).items()}
+
+    for s in systems:
+        # components
+        for name, mode in comp_cfg.items():
+            if mode == 'r':
+                s.write_components.discard(name)
+            elif mode == 'w':
+                s.read_components.discard(name)
+        # singletons
+        for name, mode in sing_cfg.items():
+            if mode == 'r':
+                s.write_singletons.discard(name)
+            elif mode == 'w':
+                s.read_singletons.discard(name)
+        # globals
+        for name, mode in glob_cfg.items():
+            if mode == 'r':
+                s.write_globals.discard(name)
+            elif mode == 'w':
+                s.read_globals.discard(name)
+
+
+def write_html_index(outdir: str):
+    html = """<!doctype html>
+<html lang=\"en\">
+<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+<title>Dependency Graphs</title>
+<style>body{font-family:sans-serif;margin:20px} .grid{display:grid;grid-template-columns:1fr;gap:20px} img,object{max-width:100%;border:1px solid #ddd}</style>
+<h1>Dependency Graphs</h1>
+<p>Open the SVGs directly if present; otherwise render DOTs using online tools or install Graphviz.</p>
+<div class=\"grid\">
+  <div>
+    <h2>Systems ↔ Resources</h2>
+    <object data=\"systems_components.svg\" type=\"image/svg+xml\"></object>
+    <p>DOT: <a href=\"systems_components.dot\">systems_components.dot</a></p>
+  </div>
+  <div>
+    <h2>System Conflicts</h2>
+    <object data=\"system_conflicts.svg\" type=\"image/svg+xml\"></object>
+    <p>DOT: <a href=\"system_conflicts.dot\">system_conflicts.dot</a></p>
+  </div>
+</div>
+</html>
+"""
+    with open(os.path.join(outdir, 'index.html'), 'w', encoding='utf-8') as f:
+        f.write(html)
 
 
 # ------------------- Main -------------------
@@ -457,6 +564,8 @@ def main():
     parser.add_argument('--main', default='src/main.cpp', help='Path to main.cpp (default: src/main.cpp)')
     parser.add_argument('--outdir', default='build', help='Output directory (default: build)')
     parser.add_argument('--no-svg', action='store_true', help='Do not attempt to render SVG via dot')
+    parser.add_argument('--config', default=None, help='Optional JSON config file to constrain resource modes (r/w/rw)')
+    parser.add_argument('--write-html', action='store_true', help='Emit a simple index.html in outdir')
     args = parser.parse_args()
 
     src_root = os.path.abspath(args.src)
@@ -482,6 +591,15 @@ def main():
             sys.stage = stage_by_system.get(sys.name, 'unknown')
             systems.append(sys)
 
+    # Apply optional config constraints
+    if args.config and os.path.exists(args.config):
+        try:
+            with open(args.config, 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
+            apply_config_constraints(systems, cfg)
+        except Exception as e:
+            print(f"Warning: failed to load config {args.config}: {e}")
+
     # Compute conflicts and batches
     conflicts = compute_conflicts(systems)
     batches_by_stage = colorize_batches_per_stage(systems, conflicts)
@@ -494,7 +612,7 @@ def main():
 
     # Also write JSON summary
     summary = []
-    for s in systems:
+    for s in sorted(systems, key=lambda s: s.name):
         summary.append({
             'name': s.name,
             'file': os.path.relpath(s.file_path, start=src_root),
@@ -518,6 +636,9 @@ def main():
                 subprocess.run(['dot', '-Tsvg', dot_file, '-o', svg_out], check=True)
             except subprocess.CalledProcessError:
                 pass
+
+    if args.write_html:
+        write_html_index(outdir)
 
     # Print batch summary
     print('Safe parallel batches per stage (heuristic):')

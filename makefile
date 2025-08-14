@@ -107,3 +107,19 @@ getxm:
 xm:
 	xmake create -l c++ -t module.binary kart.exe
 
+.PHONY: deps deps-html deps-check
+
+deps:
+	python3 tools/dependency_graph.py --src src --main src/main.cpp --outdir build
+
+# Requires graphviz 'dot' on PATH
+deps-html:
+	python3 tools/dependency_graph.py --src src --main src/main.cpp --outdir build --write-html
+
+# Create or update baseline: cp build/dependency_summary.json tools/dependency_baseline.json
+# Fails if current summary differs from baseline
+deps-check: deps
+	@echo "Checking dependency graph against baseline..."
+	@[ -f tools/dependency_baseline.json ] || (echo "No baseline found at tools/dependency_baseline.json" && exit 2)
+	@diff -u tools/dependency_baseline.json build/dependency_summary.json || (echo "Dependency summary changed. Run 'make deps' and update baseline if intentional." && exit 1)
+

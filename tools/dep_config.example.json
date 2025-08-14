@@ -1,0 +1,17 @@
+{
+	"components": {
+		"Transform": "rw",
+		"HasColor": "r",
+		"HasShader": "rw"
+	},
+	"singletons": {
+		"RoundManager": "rw",
+		"GameStateManager": "rw",
+		"ShaderLibrary": "r",
+		"SoundLibrary": "w",
+		"MusicLibrary": "w"
+	},
+	"globals": {
+		"mainRT": "w"
+	}
+}
