@@ -88,6 +88,7 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
   }
 
   if (wp.config.spread > 0.f) {
+    // TODO: improve RNG seeding/determinism for projectile spread
     std::mt19937_64 rng;
     const auto timeSeed =
         std::chrono::high_resolution_clock::now().time_since_epoch().count();
@@ -193,6 +194,7 @@ void make_bullet(Entity &parent, const ProjectileConfig &cfg,
 
   float final_angle_offset = angle_offset;
   if (cfg.spread > 0.f) {
+    // TODO: improve RNG seeding/determinism for projectile spread
     std::mt19937_64 rng;
     const auto timeSeed =
         std::chrono::high_resolution_clock::now().time_since_epoch().count();

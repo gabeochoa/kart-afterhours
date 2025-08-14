@@ -808,16 +808,17 @@ struct WeaponFireSystem : PausableSystem<WantsWeaponFire, CanShoot, Transform> {
     }
     auto &weapon = *canShoot.weapons[want.action];
     if (weapon.fire(dt)) {
-      ProjectileConfig proj;
-      proj.size = weapon.config.size;
-      proj.speed = weapon.config.speed;
-      proj.acceleration = weapon.config.acceleration;
-      proj.life_time_seconds = weapon.config.life_time_seconds;
-      proj.spread = weapon.config.spread;
-      proj.can_wrap_around = weapon.config.can_wrap_around;
-      proj.render_out_of_bounds = weapon.config.render_out_of_bounds;
-      proj.base_damage = weapon.config.base_damage;
-      proj.angle_offsets = {0.f};
+      ProjectileConfig proj = ProjectileConfig::builder()
+                                  .with_size(weapon.config.size)
+                                  .with_speed(weapon.config.speed)
+                                  .with_acceleration(weapon.config.acceleration)
+                                  .with_lifetime(weapon.config.life_time_seconds)
+                                  .with_spread(weapon.config.spread)
+                                  .with_can_wrap(weapon.config.can_wrap_around)
+                                  .with_render_out_of_bounds(weapon.config.render_out_of_bounds)
+                                  .with_base_damage(weapon.config.base_damage)
+                                  .with_angle_offsets({0.f})
+                                  .build();
 
       RecoilConfig rec{weapon.config.knockback_amt};
 
