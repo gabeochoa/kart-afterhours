@@ -45,7 +45,7 @@ else
 	CXX := clang++ -std=c++23 -Wmost -fsanitize=address
 	# CXX := g++-14 -fmax-errors=10 -std=c++23 -DBACKWARD
 	FLAGS = -g $(RAYLIB_FLAGS) -ftime-trace 
-	COMPILE = $(MAKE) old
+	COMPILE = xmake
 endif
 
 
