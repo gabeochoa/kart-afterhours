@@ -481,6 +481,11 @@ struct ProjectileConfig : BaseComponent {
         angle_offsets(std::move(angles)) {}
 };
 
+struct WeaponSoundInfo : BaseComponent {
+  std::string name;
+  bool has_multiple{false};
+};
+
 struct WantsWeaponFire : BaseComponent {
   InputAction action;
   WantsWeaponFire() = default;
@@ -492,11 +497,13 @@ struct WeaponFired : BaseComponent {
   int firing_direction{0};
   ProjectileConfig projectile;
   RecoilConfig recoil;
+  WeaponSoundInfo sound;
   InputAction action{};
 
   WeaponFired() = default;
   WeaponFired(InputAction act, int weapon_type_in, int firing_direction_in,
-              const ProjectileConfig &proj, const RecoilConfig &rec)
+              const ProjectileConfig &proj, const RecoilConfig &rec,
+              const WeaponSoundInfo &snd)
       : weapon_type(weapon_type_in), firing_direction(firing_direction_in),
-        projectile(proj), recoil(rec), action(act) {}
+        projectile(proj), recoil(rec), sound(snd), action(act) {}
 };

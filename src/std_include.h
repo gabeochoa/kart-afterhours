@@ -27,6 +27,7 @@
 #include <source_location>
 #include <sstream>
 #include <stack>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <unordered_map>

@@ -816,10 +816,12 @@ struct WeaponFireSystem : PausableSystem<WantsWeaponFire, CanShoot, Transform> {
       proj.angle_offsets = {0.f};
 
       RecoilConfig rec{weapon.config.knockback_amt};
+      WeaponSoundInfo snd{.name = weapon.config.sound.name,
+                          .has_multiple = weapon.config.sound.has_multiple};
 
       entity.addComponent<WeaponFired>(
           WeaponFired{want.action, static_cast<int>(weapon.type),
-                      static_cast<int>(weapon.firing_direction), proj, rec});
+                      static_cast<int>(weapon.firing_direction), proj, rec, snd});
     }
     entity.removeComponent<WantsWeaponFire>();
   }
@@ -863,22 +865,10 @@ struct WeaponRecoilSystem : System<WeaponFired, Transform> {
 
 struct WeaponSoundSystem : System<WeaponFired> {
   virtual void for_each_with(Entity &, WeaponFired &evt, float) override {
-    switch (static_cast<Weapon::Type>(evt.weapon_type)) {
-    case Weapon::Type::Cannon:
-      SoundLibrary::get().play(SoundFile::Weapon_Canon_Shot);
-      break;
-    case Weapon::Type::Sniper:
-      SoundLibrary::get().play(SoundFile::Weapon_Sniper_Shot);
-      break;
-    case Weapon::Type::Shotgun:
-      SoundLibrary::get().play(SoundFile::Weapon_Shotgun_Shot);
-      break;
-    case Weapon::Type::MachineGun:
-      SoundLibrary::get().play_random_match(
-          "SPAS-12_-_FIRING_-_Pump_Action_-_Take_1_-_20m_In_Front_-_AB_-_MKH8020_");
-      break;
-    default:
-      break;
+    if (evt.sound.has_multiple) {
+      SoundLibrary::get().play_random_match(evt.sound.name);
+    } else {
+      SoundLibrary::get().play(evt.sound.name.c_str());
     }
   }
 };
