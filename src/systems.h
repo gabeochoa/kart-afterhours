@@ -808,7 +808,6 @@ struct WeaponFireSystem : PausableSystem<WantsWeaponFire, CanShoot, Transform> {
     }
     auto &weapon = *canShoot.weapons[want.action];
     if (weapon.fire(dt)) {
-      // Build event data via components
       ProjectileConfig proj;
       proj.size = weapon.config.size;
       proj.speed = weapon.config.speed;
@@ -818,7 +817,6 @@ struct WeaponFireSystem : PausableSystem<WantsWeaponFire, CanShoot, Transform> {
       proj.can_wrap_around = weapon.config.can_wrap_around;
       proj.render_out_of_bounds = weapon.config.render_out_of_bounds;
       proj.base_damage = weapon.config.base_damage;
-      // Default one bullet; Shotgun will expand via angle_offsets later
       proj.angle_offsets = {0.f};
 
       RecoilConfig rec{weapon.config.knockback_amt};
@@ -845,14 +843,11 @@ struct ProjectileSpawnSystem : System<WeaponFired, Transform> {
       break;
     }
 
-    // Base angle is entity orientation
     const float base_angle = entity.get<Transform>().angle;
 
-    // Muzzle poof animation
     make_poof_anim(entity, static_cast<Weapon::FiringDirection>(evt.firing_direction),
                    base_angle, 0.f);
 
-    // Spawn one or more projectiles
     for (float ao : cfg.angle_offsets) {
       make_bullet(entity, cfg,
                   static_cast<Weapon::FiringDirection>(evt.firing_direction),
@@ -916,7 +911,6 @@ struct Shoot : PausableSystem<PlayerID, Transform, CanShoot> {
       if (actions_done.id != playerID.id)
         continue;
 
-      // Instead of firing immediately, enqueue a fire request
       if (actions_done.amount_pressed > 0.f) {
         entity.addComponentIfMissing<WantsWeaponFire>(actions_done.action);
       }

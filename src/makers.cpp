@@ -136,7 +136,6 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
   bullet_transform.cleanup_out_of_bounds = !wp.config.can_wrap_around;
 }
 
-// Event-driven overloads
 void make_poof_anim(Entity &parent, Weapon::FiringDirection dir,
                     float base_angle, float angle_offset) {
   const Transform &parent_transform = parent.get<Transform>();
