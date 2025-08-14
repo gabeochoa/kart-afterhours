@@ -2,6 +2,7 @@
 
 #include "car_affectors.h"
 #include "components.h"
+#include "components_weapons.h"
 #include "game_state_manager.h"
 #include "input_mapping.h"
 #include "makers.h"
@@ -789,6 +790,105 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
   }
 };
 
+struct WeaponCooldownSystem : PausableSystem<CanShoot> {
+  virtual void for_each_with(Entity &, CanShoot &canShoot, float dt) override {
+    magic_enum::enum_for_each<InputAction>([&](auto val) {
+      constexpr InputAction action = val;
+      canShoot.pass_time(action, dt);
+    });
+  }
+};
+
+struct WeaponFireSystem : PausableSystem<WantsWeaponFire, CanShoot, Transform> {
+  virtual void for_each_with(Entity &entity, WantsWeaponFire &want,
+                             CanShoot &canShoot, Transform &,
+                             float dt) override {
+    if (!canShoot.weapons.contains(want.action)) {
+      entity.removeComponent<WantsWeaponFire>();
+      return;
+    }
+    auto &weapon = *canShoot.weapons[want.action];
+    if (weapon.fire(dt)) {
+      ProjectileConfig proj =
+          ProjectileConfig::builder()
+              .with_size(weapon.config.size)
+              .with_speed(weapon.config.speed)
+              .with_acceleration(weapon.config.acceleration)
+              .with_lifetime(weapon.config.life_time_seconds)
+              .with_spread(weapon.config.spread)
+              .with_can_wrap(weapon.config.can_wrap_around)
+              .with_render_out_of_bounds(weapon.config.render_out_of_bounds)
+              .with_base_damage(weapon.config.base_damage)
+              .with_angle_offsets({0.f})
+              .build();
+
+      RecoilConfig rec{weapon.config.knockback_amt};
+      WeaponSoundInfo snd{};
+      snd.name = weapon.config.sound.name;
+      snd.has_multiple = weapon.config.sound.has_multiple;
+
+      entity.addComponent<WeaponFired>(
+          WeaponFired{want.action, static_cast<int>(weapon.type),
+                      static_cast<int>(weapon.firing_direction),
+                      std::move(proj), std::move(rec), std::move(snd)});
+    }
+    entity.removeComponent<WantsWeaponFire>();
+  }
+};
+
+struct ProjectileSpawnSystem : System<WeaponFired, Transform> {
+  virtual void for_each_with(Entity &entity, WeaponFired &evt,
+                             Transform &transform, float) override {
+    (void)transform;
+    ProjectileConfig &cfg = evt.projectile;
+    switch (static_cast<Weapon::Type>(evt.weapon_type)) {
+    case Weapon::Type::Shotgun:
+      cfg.angle_offsets = {-15.f, -5.f, 5.f, 15.f};
+      break;
+    default:
+      break;
+    }
+
+    const float base_angle = entity.get<Transform>().angle;
+
+    make_poof_anim(entity,
+                   static_cast<Weapon::FiringDirection>(evt.firing_direction),
+                   base_angle, 0.f);
+
+    for (float ao : cfg.angle_offsets) {
+      make_bullet(entity, cfg,
+                  static_cast<Weapon::FiringDirection>(evt.firing_direction),
+                  base_angle, ao);
+    }
+  }
+};
+
+struct WeaponRecoilSystem : System<WeaponFired, Transform> {
+  virtual void for_each_with(Entity &entity, WeaponFired &evt, Transform &t,
+                             float) override {
+    const float knockback_amt = evt.recoil.knockback_amt;
+    vec2 recoil = {std::cos(t.as_rad()), std::sin(t.as_rad())};
+    recoil = vec_norm(vec2{-recoil.y, recoil.x});
+    t.velocity += (recoil * knockback_amt);
+  }
+};
+
+struct WeaponSoundSystem : System<WeaponFired> {
+  virtual void for_each_with(Entity &, WeaponFired &evt, float) override {
+    if (evt.sound.has_multiple) {
+      SoundLibrary::get().play_random_match(evt.sound.name);
+    } else {
+      SoundLibrary::get().play(evt.sound.name.c_str());
+    }
+  }
+};
+
+struct WeaponFiredCleanupSystem : System<WeaponFired> {
+  virtual void for_each_with(Entity &entity, WeaponFired &, float) override {
+    entity.removeComponent<WeaponFired>();
+  }
+};
+
 struct Shoot : PausableSystem<PlayerID, Transform, CanShoot> {
   input::PossibleInputCollector<InputAction> inpc;
 
@@ -796,12 +896,7 @@ struct Shoot : PausableSystem<PlayerID, Transform, CanShoot> {
     inpc = input::get_input_collector<InputAction>();
   }
   virtual void for_each_with(Entity &entity, PlayerID &playerID, Transform &,
-                             CanShoot &canShoot, float dt) override {
-
-    magic_enum::enum_for_each<InputAction>([&](auto val) {
-      constexpr InputAction action = val;
-      canShoot.pass_time(action, dt);
-    });
+                             CanShoot &, float) override {
 
     if (!inpc.has_value()) {
       return;
@@ -811,7 +906,9 @@ struct Shoot : PausableSystem<PlayerID, Transform, CanShoot> {
       if (actions_done.id != playerID.id)
         continue;
 
-      canShoot.fire(entity, actions_done.action, dt);
+      if (actions_done.amount_pressed > 0.f) {
+        entity.addComponentIfMissing<WantsWeaponFire>(actions_done.action);
+      }
     }
   }
 };
