@@ -9,3 +9,5 @@
 extern bool running;
 // TODO move into library or somethign
 extern raylib::RenderTexture2D mainRT;
+// second render texture for compositing tag shader and UI
+extern raylib::RenderTexture2D screenRT;
