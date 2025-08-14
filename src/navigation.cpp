@@ -2,8 +2,8 @@
 
 #include "query.h"
 
-static inline NavigationStack &nav() {
-  return *afterhours::EntityHelper::get_singleton_cmp<NavigationStack>();
+static inline MenuNavigationStack &nav() {
+  return *afterhours::EntityHelper::get_singleton_cmp<MenuNavigationStack>();
 }
 
 namespace navigation {

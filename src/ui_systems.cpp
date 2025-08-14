@@ -355,7 +355,7 @@ void ScheduleMainMenuUI::once(float) {
 
 bool ScheduleMainMenuUI::should_run(float) {
   // Visibility managed by NavigationSystem; render if menu active and UI visible
-  auto *nav = EntityHelper::get_singleton_cmp<NavigationStack>();
+  auto *nav = EntityHelper::get_singleton_cmp<MenuNavigationStack>();
   return GameStateManager::get().is_menu_active() && (nav ? nav->ui_visible : true);
 }
 

@@ -158,8 +158,8 @@ Preload &Preload::make_singleton() {
     EntityHelper::registerSingleton<ManagesAvailableColors>(sophie);
 
     // Navigation stack singleton for consistent UI navigation
-    sophie.addComponent<NavigationStack>();
-    EntityHelper::registerSingleton<NavigationStack>(sophie);
+    sophie.addComponent<MenuNavigationStack>();
+    EntityHelper::registerSingleton<MenuNavigationStack>(sophie);
   }
 
   return *this;

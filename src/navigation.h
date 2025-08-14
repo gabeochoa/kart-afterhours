@@ -9,7 +9,7 @@
 
 using Screen = GameStateManager::Screen;
 
-struct NavigationStack : BaseComponent {
+struct MenuNavigationStack : BaseComponent {
   std::vector<Screen> stack;
   bool ui_visible{true};
 };
