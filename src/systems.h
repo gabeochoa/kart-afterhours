@@ -2,6 +2,7 @@
 
 #include "car_affectors.h"
 #include "components.h"
+#include "components_weapons.h"
 #include "game_state_manager.h"
 #include "input_mapping.h"
 #include "makers.h"
@@ -817,14 +818,14 @@ struct WeaponFireSystem : PausableSystem<WantsWeaponFire, CanShoot, Transform> {
                                   .with_can_wrap(weapon.config.can_wrap_around)
                                   .with_render_out_of_bounds(weapon.config.render_out_of_bounds)
                                   .with_base_damage(weapon.config.base_damage)
-                                  .with_angle_offsets({0.f})
-                                  .build();
+                                  .with_angle_offsets({0.f});
 
       RecoilConfig rec{weapon.config.knockback_amt};
+      WeaponSoundInfo sound{};
 
       entity.addComponent<WeaponFired>(
           WeaponFired{want.action, static_cast<int>(weapon.type),
-                      static_cast<int>(weapon.firing_direction), std::move(proj), std::move(rec)});
+                      static_cast<int>(weapon.firing_direction), proj, rec, sound});
     }
     entity.removeComponent<WantsWeaponFire>();
   }

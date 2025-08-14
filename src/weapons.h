@@ -2,6 +2,7 @@
 #pragma once
 
 #include "components.h"
+#include "components_weapons.h"
 #include "rl.h"
 #include "sound_library.h"
 
