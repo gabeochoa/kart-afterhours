@@ -44,11 +44,11 @@ struct UIMoveSounds : System<> {
                          actions_done.action == InputAction::WidgetBack;
     if (is_move) {
       auto opt = EntityQuery({.force_merge = true})
-                     .whereHasComponent<SoundEmitter>()
+                     .template whereHasComponent<SoundEmitter>()
                      .gen_first();
       if (opt.valid()) {
-        auto &ent = opt.asE();
-        auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+        Entity &ent = opt.asE();
+        PlaySoundRequest &req = ent.addComponentIfMissing<PlaySoundRequest>();
         req.policy = PlaySoundRequest::Policy::Enum;
         req.file = SoundFile::UI_Move;
       }
@@ -90,11 +90,11 @@ struct UIClickSounds
     // If this element registered a click this frame, play the UI_Select sound
     if (hasClickListener.down) {
       auto opt = EntityQuery({.force_merge = true})
-                     .whereHasComponent<SoundEmitter>()
+                     .template whereHasComponent<SoundEmitter>()
                      .gen_first();
       if (opt.valid()) {
-        auto &ent = opt.asE();
-        auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+        Entity &ent = opt.asE();
+        PlaySoundRequest &req = ent.addComponentIfMissing<PlaySoundRequest>();
         req.policy = PlaySoundRequest::Policy::Enum;
         req.file = SoundFile::UI_Select;
       }
@@ -262,11 +262,11 @@ struct UISoundBindingSystem : System<> {
                          actions_done.action == InputAction::WidgetBack;
     if (is_move) {
       auto opt = EntityQuery({.force_merge = true})
-                     .whereHasComponent<SoundEmitter>()
+                     .template whereHasComponent<SoundEmitter>()
                      .gen_first();
       if (opt.valid()) {
-        auto &ent = opt.asE();
-        auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+        Entity &ent = opt.asE();
+        PlaySoundRequest &req = ent.addComponentIfMissing<PlaySoundRequest>();
         req.policy = PlaySoundRequest::Policy::Enum;
         req.file = SoundFile::UI_Move;
       }
