@@ -139,7 +139,6 @@ private:
       }
     }
 
-    // Base jitter comes from AIParams (populated by AIUpdateAIParamsSystem)
     float offset_range = params.hippo_target_jitter;
 
     float distance_to_hippo =
