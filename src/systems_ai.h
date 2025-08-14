@@ -13,19 +13,14 @@
 #include <algorithm>
 
 // TODO feels like we will need pathfinding at some point
-struct AITargetSelection : PausableSystem<AIControlled, Transform> {
+struct AITargetSelection : PausableSystem<AIControlled, Transform, AIParams> {
 
   virtual void for_each_with(Entity &entity, AIControlled &ai,
-                             Transform &transform, float dt) override {
+                             Transform &transform, AIParams &params, float dt) override {
     (void)dt;
 
     auto round_type = RoundManager::get().active_round_type;
     auto &round_settings = RoundManager::get().get_active_settings();
-
-    // Select params (default if missing)
-    AIParams default_params{};
-    const AIParams &params = entity.has<AIParams>() ? entity.get<AIParams>()
-                                                    : default_params;
 
     if (round_settings.state != RoundSettings::GameState::InGame) {
       pre_round_ai_target(entity, ai, transform, params);
@@ -275,10 +270,10 @@ private:
   }
 };
 
-struct AIVelocity : PausableSystem<AIControlled, Transform> {
+struct AIVelocity : PausableSystem<AIControlled, Transform, AIParams> {
 
   virtual void for_each_with(Entity &entity, AIControlled &ai,
-                             Transform &transform, float dt) override {
+                             Transform &transform, AIParams &params, float dt) override {
     const auto &round_settings = RoundManager::get().get_active_settings();
     const bool is_in_game =
         round_settings.state == RoundSettings::GameState::InGame;
@@ -336,23 +331,13 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
     float ahead_dot =
         (forward_dir.x * to_target_dir.x) + (forward_dir.y * to_target_dir.y);
 
-    float ahead_deg = 1.0f;
-    float min_distance_sq = 400.0f;
-    if (entity.has<AIParams>()) {
-      const auto &p = entity.get<AIParams>();
-      ahead_deg = p.boost_ahead_alignment_deg;
-      min_distance_sq = p.boost_min_distance_sq;
-    }
-    const float ahead_threshold = std::cos(ahead_deg * (M_PI / 180.0f));
-    if (ahead_dot > ahead_threshold && distance_to_target_sq > min_distance_sq &&
+    const float ahead_threshold = std::cos(params.boost_ahead_alignment_deg * (M_PI / 180.0f));
+    if (ahead_dot > ahead_threshold && distance_to_target_sq > params.boost_min_distance_sq &&
         !transform.is_reversing() && transform.accel_mult <= 1.f) {
       float now = static_cast<float>(raylib::GetTime());
       auto &bc = entity.addComponentIfMissing<AIBoostCooldown>();
-      if (entity.has<AIParams>()) {
-        const auto &p = entity.get<AIParams>();
-        if (p.boost_cooldown_seconds > 0.0f) {
-          bc.cooldown_seconds = p.boost_cooldown_seconds;
-        }
+      if (params.boost_cooldown_seconds > 0.0f) {
+        bc.cooldown_seconds = params.boost_cooldown_seconds;
       }
       if (now >= bc.next_allowed_time) {
         entity.addComponentIfMissing<WantsBoost>();
@@ -408,9 +393,9 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
   }
 };
 
-struct AIShoot : PausableSystem<AIControlled, Transform, CanShoot> {
+struct AIShoot : PausableSystem<AIControlled, Transform, AIParams, CanShoot> {
   virtual void for_each_with(Entity &entity, AIControlled &,
-                             Transform &transform, CanShoot &canShoot,
+                             Transform &transform, AIParams &params, CanShoot &canShoot,
                              float dt) override {
     const auto &settings = RoundManager::get().get_active_settings();
     if (settings.state != RoundSettings::GameState::InGame) {
@@ -445,11 +430,7 @@ struct AIShoot : PausableSystem<AIControlled, Transform, CanShoot> {
       if (dot > best_alignment)
         best_alignment = dot;
     }
-    float alignment_deg = 10.0f;
-    if (entity.has<AIParams>()) {
-      alignment_deg = entity.get<AIParams>().shooting_alignment_angle_deg;
-    }
-    const float fire_threshold = std::cos(alignment_deg * (M_PI / 180.0f));
+    const float fire_threshold = std::cos(params.shooting_alignment_angle_deg * (M_PI / 180.0f));
     if (best_alignment >= fire_threshold) {
       canShoot.fire(entity, InputAction::ShootLeft, dt);
       canShoot.fire(entity, InputAction::ShootRight, dt);
