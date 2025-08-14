@@ -34,7 +34,7 @@ const std::array<MapConfig, MapManager::MAP_COUNT> MapManager::available_maps =
     {{{.display_name = "Arena",
        .description = "Classic open arena with strategic obstacles",
        .compatible_round_types = std::bitset<4>(
-           0b1111), // All round types (Lives, Kills, Score, CatAndMouse)
+           0b1111), // All round types (Lives, Kills, Score, TagAndGo)
        .create_map_func = create_arena_map},
       {.display_name = "Maze",
        .description = "Complex maze layout for tactical gameplay",
@@ -42,20 +42,20 @@ const std::array<MapConfig, MapManager::MAP_COUNT> MapManager::available_maps =
        .create_map_func = create_maze_map},
       {.display_name = "Race Track",
        .description = "Race track layout with speed-focused gameplay",
-       .compatible_round_types = std::bitset<4>(0b1100), // Score, CatAndMouse
+       .compatible_round_types = std::bitset<4>(0b1100), // Score, TagAndGo
        .create_map_func = create_race_map},
       {.display_name = "Battle Arena",
        .description = "Combat-focused layout with cover points",
        .compatible_round_types = std::bitset<4>(0b0011), // Lives, Kills
        .create_map_func = create_battle_map},
-      {.display_name = "Cat & Mouse",
+      {.display_name = "Tag And Go",
        .description = "Special layout optimized for tag gameplay",
-       .compatible_round_types = std::bitset<4>(0b1000), // CatAndMouse only
-       .create_map_func = create_catmouse_map},
+       .compatible_round_types = std::bitset<4>(0b1000), // TagAndGo only
+       .create_map_func = create_tagandgo_map},
       {.display_name = "Test Map",
        .description = "Test map with green walls and big X for preview testing",
        .compatible_round_types = std::bitset<4>(
-           0b1111), // All round types (Lives, Kills, Score, CatAndMouse)
+           0b1111), // All round types (Lives, Kills, Score, TagAndGo)
        .create_map_func = create_test_map}}};
 
 void MapManager::initialize_preview_textures() {
@@ -335,7 +335,7 @@ void MapManager::create_battle_map() {
   make_obstacle(screen_pct(0.7f, 0.5f, 35, 35), raylib::BROWN, cover_config);
 }
 
-void MapManager::create_catmouse_map() {
+void MapManager::create_tagandgo_map() {
   auto *pcr = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesCurrentResolution>();
   window_manager::Resolution resolution = pcr->current_resolution;
@@ -355,7 +355,7 @@ void MapManager::create_catmouse_map() {
       .restitution = 0.f,
   };
 
-  // Create safe zones and obstacles for cat and mouse
+  // Create safe zones and obstacles for Tag And Go
   // Safe zones (smaller, harder to reach)
   make_obstacle(screen_pct(0.1f, 0.1f, 25, 25), raylib::GREEN,
                 safe_zone_config);

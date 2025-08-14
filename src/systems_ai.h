@@ -35,8 +35,8 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
     case RoundType::Hippo:
       hippo_ai_target(ai, transform);
       break;
-    case RoundType::CatAndMouse:
-      cat_mouse_ai_target(entity, ai, transform);
+    case RoundType::TagAndGo:
+      tag_and_go_ai_target(entity, ai, transform);
       break;
     default:
       log_error("Invalid round type in AITargetSelection: {}",
@@ -185,99 +185,95 @@ private:
     ai.target = target_pos;
   }
 
-  void cat_mouse_ai_target(Entity &entity, AIControlled &ai,
-                           Transform &transform) {
-    if (!entity.has<HasCatMouseTracking>()) {
+  void tag_and_go_ai_target(Entity &entity, AIControlled &ai,
+                            Transform &transform) {
+    if (!entity.has<HasTagAndGoTracking>()) {
       default_ai_target(ai, transform);
       return;
     }
 
-    // Check if cat and mouse game is properly initialized
-    auto &cat_mouse_settings =
-        RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
-    if (cat_mouse_settings.state !=
-        RoundCatAndMouseSettings::GameState::InGame) {
+    auto &tag_settings =
+        RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
+    if (tag_settings.state != RoundTagAndGoSettings::GameState::InGame) {
       default_ai_target(ai, transform);
       return;
     }
 
-    auto &cat_mouse_tracking = entity.get<HasCatMouseTracking>();
+    auto &tag_tracking = entity.get<HasTagAndGoTracking>();
 
-    if (cat_mouse_tracking.is_cat) {
-      cat_targeting(ai, transform);
+    if (tag_tracking.is_tagger) {
+      tagger_targeting(ai, transform);
     } else {
-      mouse_targeting(ai, transform);
+      runner_targeting(ai, transform);
     }
   }
 
-  void cat_targeting(AIControlled &ai, Transform &transform) {
-    auto mice = EntityQuery()
-                    .whereHasComponent<Transform>()
-                    .whereHasComponent<HasCatMouseTracking>()
-                    .whereLambda([](const Entity &e) {
-                      return !e.get<HasCatMouseTracking>().is_cat;
-                    })
-                    .gen();
+  void tagger_targeting(AIControlled &ai, Transform &transform) {
+    auto runners = EntityQuery()
+                       .whereHasComponent<Transform>()
+                       .whereHasComponent<HasTagAndGoTracking>()
+                       .whereLambda([](const Entity &e) {
+                         return !e.get<HasTagAndGoTracking>().is_tagger;
+                       })
+                       .gen();
 
-    if (mice.empty()) {
-      log_warn("No mice found for cat AI");
+    if (runners.empty()) {
+      log_warn("No runners found for tagger AI");
       return;
     }
 
-    vec2 closest_mouse_pos = mice[0].get().get<Transform>().pos();
-    float closest_distance = distance_sq(transform.pos(), closest_mouse_pos);
+    vec2 closest_runner_pos = runners[0].get().get<Transform>().pos();
+    float closest_distance = distance_sq(transform.pos(), closest_runner_pos);
 
-    for (const auto &mouse_ref : mice) {
-      const auto &mouse = mouse_ref.get();
-      vec2 mouse_pos = mouse.get<Transform>().pos();
-      float distance = distance_sq(transform.pos(), mouse_pos);
+    for (const auto &runner_ref : runners) {
+      const auto &runner = runner_ref.get();
+      vec2 runner_pos = runner.get<Transform>().pos();
+      float distance = distance_sq(transform.pos(), runner_pos);
 
       if (distance < closest_distance) {
         closest_distance = distance;
-        closest_mouse_pos = mouse_pos;
+        closest_runner_pos = runner_pos;
       }
     }
 
-    ai.target = closest_mouse_pos;
+    ai.target = closest_runner_pos;
   }
 
-  void mouse_targeting(AIControlled &ai, Transform &transform) {
-    auto cats = EntityQuery()
-                    .whereHasComponent<Transform>()
-                    .whereHasComponent<HasCatMouseTracking>()
-                    .whereLambda([](const Entity &e) {
-                      return e.get<HasCatMouseTracking>().is_cat;
-                    })
-                    .gen();
+  void runner_targeting(AIControlled &ai, Transform &transform) {
+    auto taggers = EntityQuery()
+                       .whereHasComponent<Transform>()
+                       .whereHasComponent<HasTagAndGoTracking>()
+                       .whereLambda([](const Entity &e) {
+                         return e.get<HasTagAndGoTracking>().is_tagger;
+                       })
+                       .gen();
 
-    if (cats.empty()) {
-      log_warn("No cats found for mouse AI");
+    if (taggers.empty()) {
+      log_warn("No taggers found for runner AI");
       return;
     }
 
-    vec2 closest_cat_pos = cats[0].get().get<Transform>().pos();
-    float closest_distance = distance_sq(transform.pos(), closest_cat_pos);
+    vec2 closest_tagger_pos = taggers[0].get().get<Transform>().pos();
+    float closest_distance = distance_sq(transform.pos(), closest_tagger_pos);
 
-    for (const auto &cat_ref : cats) {
-      const auto &cat = cat_ref.get();
-      vec2 cat_pos = cat.get<Transform>().pos();
-      float distance = distance_sq(transform.pos(), cat_pos);
+    for (const auto &tagger_ref : taggers) {
+      const auto &tagger = tagger_ref.get();
+      vec2 tagger_pos = tagger.get<Transform>().pos();
+      float distance = distance_sq(transform.pos(), tagger_pos);
 
       if (distance < closest_distance) {
         closest_distance = distance;
-        closest_cat_pos = cat_pos;
+        closest_tagger_pos = tagger_pos;
       }
     }
 
-    // Calculate direction away from cat
-    vec2 away_from_cat = transform.pos() - closest_cat_pos;
-    if (vec_mag(away_from_cat) < 0.1f) {
-      away_from_cat = vec2(1.0f, 0.0f);
+    vec2 away_from_tagger = transform.pos() - closest_tagger_pos;
+    if (vec_mag(away_from_tagger) < 0.1f) {
+      away_from_tagger = vec2(1.0f, 0.0f);
     }
-    away_from_cat = vec_norm(away_from_cat);
+    away_from_tagger = vec_norm(away_from_tagger);
 
-    // Use current velocity direction if moving, otherwise use away from cat
-    vec2 move_direction = away_from_cat;
+    vec2 move_direction = away_from_tagger;
     if (vec_mag(transform.velocity) > 1.0f) {
       move_direction = vec_norm(transform.velocity);
     }
@@ -391,11 +387,11 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
     }
     mvt *= difficulty_multiplier;
 
-    // Apply speed multiplier for cat and mouse mode
-    if (RoundManager::get().active_round_type == RoundType::CatAndMouse) {
-      auto &cat_mouse_settings =
-          RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
-      mvt *= cat_mouse_settings.speed_multiplier;
+    // Apply speed multiplier for TagAndGo mode
+    if (RoundManager::get().active_round_type == RoundType::TagAndGo) {
+      auto &tag_settings =
+          RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
+      mvt *= tag_settings.speed_multiplier;
     }
 
     transform.velocity += vec2{

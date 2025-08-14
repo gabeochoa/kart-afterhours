@@ -11,7 +11,7 @@ uniform vec4 colDiffuse;
 uniform sampler2D texture1;
 uniform sampler2D texture2;
 
-// Cat spotlight controls
+// Tagger spotlight controls
 uniform float spotlightEnabled; // 0.0 off, 1.0 on
 uniform vec2 spotlightPos;      // UV position [0,1]
 uniform float spotlightRadius;  // inner radius in UV units
@@ -82,7 +82,7 @@ void main()
 
     float pulse = 0.95 + 0.06 * sin(time * 1.7);
 
-    // Apply Cat spotlight if enabled
+    // Apply Tagger spotlight if enabled
     if (spotlightEnabled > 0.5) {
         // Measure in the same space we sample (barrel-warped) so alignment looks correct
         // Warp the spotlight position with the same barrel function

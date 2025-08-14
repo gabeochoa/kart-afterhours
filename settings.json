@@ -2,7 +2,7 @@
     "audio": {
         "master_volume": 0.7053923010826111,
         "music_volume": 0.6917187571525574,
-        "sfx_volume": 0.47609373927116394
+        "sfx_volume": 0.3560938835144043
     },
     "fullscreen_enabled": false,
     "resolution": {
@@ -10,15 +10,8 @@
         "width": 1280
     },
     "round_settings": {
-        "active_round_type": 1,
+        "active_round_type": 3,
         "settings": {
-            "CatAndMouse": {
-                "allow_tag_backs": false,
-                "enabled_weapons": 7,
-                "show_countdown_timer": true,
-                "speed_multiplier": 0.699999988079071,
-                "time_option": 3
-            },
             "Hippo": {
                 "enabled_weapons": 4,
                 "show_countdown_timer": true,
@@ -35,6 +28,13 @@
                 "num_starting_lives": 1,
                 "show_countdown_timer": true,
                 "time_option": 0
+            },
+            "TagAndGo": {
+                "allow_tag_backs": false,
+                "enabled_weapons": 7,
+                "show_countdown_timer": true,
+                "speed_multiplier": 0.699999988079071,
+                "time_option": 3
             }
         }
     }

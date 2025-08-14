@@ -14,15 +14,15 @@
 namespace CarSizes {
 constexpr vec2 NORMAL_CAR_SIZE = vec2{15.f, 25.f};
 constexpr float NORMAL_SPRITE_SCALE = 1.0f;
-constexpr float CAT_SPRITE_SCALE = 2.0f;
-constexpr float CAT_SIZE_MULTIPLIER = 2.0f;
+constexpr float TAG_SPRITE_SCALE = 2.0f;
+constexpr float TAG_SIZE_MULTIPLIER = 2.0f;
 } // namespace CarSizes
 
 enum struct RoundType : size_t {
   Lives,
   Kills,
   Hippo,
-  CatAndMouse,
+  TagAndGo,
 };
 constexpr static size_t num_round_types = magic_enum::enum_count<RoundType>();
 constexpr size_t enum_to_index(RoundType type) {
@@ -135,12 +135,12 @@ struct RoundHippoSettings : RoundSettings {
   }
 };
 
-struct RoundCatAndMouseSettings : RoundSettings {
+struct RoundTagAndGoSettings : RoundSettings {
   // TODO: audit cooldown time setting
-  // TODO: Add UI announcement of who is the current cat on game start
+  // TODO: Add UI announcement of who is the current tagger on game start
 
-  // Whether to announce the cat in UI
-  bool announce_cat_in_ui = true;
+  // Whether to announce the tagger in UI
+  bool announce_tagger_in_ui = true;
 
   // Whether to allow immediate tag backs after a tag
   bool allow_tag_backs = false;
@@ -155,8 +155,8 @@ struct RoundCatAndMouseSettings : RoundSettings {
     return allow_tag_backs ? 0.25f : tag_cooldown_time;
   }
 
-  // Override default time option for cat and mouse
-  RoundCatAndMouseSettings() {
+  // Override default time option for TagAndGo
+  RoundTagAndGoSettings() {
     time_option = DEFAULT_TIMER_TIME_OPTION;
     reset_round_time();
   }
@@ -177,15 +177,15 @@ struct RoundManager {
         std::make_unique<RoundKillsSettings>();
     settings[enum_to_index(RoundType::Hippo)] =
         std::make_unique<RoundHippoSettings>();
-    settings[enum_to_index(RoundType::CatAndMouse)] =
-        std::make_unique<RoundCatAndMouseSettings>();
+    settings[enum_to_index(RoundType::TagAndGo)] =
+        std::make_unique<RoundTagAndGoSettings>();
 
     settings[0]->enabled_weapons.reset().set(0);
     settings[1]->enabled_weapons.reset().set(1);
     settings[2]->enabled_weapons.reset().set(2);
   }
 
-  RoundType active_round_type = RoundType::CatAndMouse;
+  RoundType active_round_type = RoundType::TagAndGo;
 
   RoundSettings &get_active_settings() {
     return *(settings[enum_to_index(active_round_type)]);
@@ -204,7 +204,7 @@ struct RoundManager {
       return static_cast<T &>(rt_settings);
     case RoundType::Hippo:
       return static_cast<T &>(rt_settings);
-    case RoundType::CatAndMouse:
+    case RoundType::TagAndGo:
       return static_cast<T &>(rt_settings);
     default:
       // This should never happen, but provides a clear error
@@ -223,7 +223,7 @@ struct RoundManager {
       return static_cast<const T &>(rt_settings);
     case RoundType::Hippo:
       return static_cast<const T &>(rt_settings);
-    case RoundType::CatAndMouse:
+    case RoundType::TagAndGo:
       return static_cast<const T &>(rt_settings);
     default:
       // This should never happen, but provides a clear error
@@ -244,10 +244,10 @@ struct RoundManager {
       hippo_settings.reset_round_time();
       break;
     }
-    case RoundType::CatAndMouse: {
-      auto &cat_mouse_settings = get_active_rt<RoundCatAndMouseSettings>();
-      cat_mouse_settings.time_option = DEFAULT_TIMER_TIME_OPTION;
-      cat_mouse_settings.reset_round_time();
+    case RoundType::TagAndGo: {
+      auto &tag_and_go_settings = get_active_rt<RoundTagAndGoSettings>();
+      tag_and_go_settings.time_option = DEFAULT_TIMER_TIME_OPTION;
+      tag_and_go_settings.reset_round_time();
       break;
     }
     case RoundType::Kills: {
@@ -290,7 +290,7 @@ struct RoundManager {
       return true;
     case RoundType::Hippo:
       return true;
-    case RoundType::CatAndMouse:
+    case RoundType::TagAndGo:
       return true;
     default:
       log_error("Invalid round type in uses_countdown: {}",
@@ -307,7 +307,7 @@ struct RoundManager {
       return true;
     case RoundType::Hippo:
       return true;
-    case RoundType::CatAndMouse:
+    case RoundType::TagAndGo:
       return true;
     default:
       log_error("Invalid round type in uses_timer: {}",
@@ -332,8 +332,8 @@ struct RoundManager {
       return get_active_rt<RoundKillsSettings>().current_round_time;
     case RoundType::Hippo:
       return get_active_rt<RoundHippoSettings>().current_round_time;
-    case RoundType::CatAndMouse:
-      return get_active_rt<RoundCatAndMouseSettings>().current_round_time;
+    case RoundType::TagAndGo:
+      return get_active_rt<RoundTagAndGoSettings>().current_round_time;
     default:
       log_error("Invalid round type in get_current_round_time: {}",
                 static_cast<size_t>(active_round_type));
@@ -377,11 +377,11 @@ struct RoundManager {
         round_j["total_hippos"] = hippo_settings.total_hippos;
         break;
       }
-      case RoundType::CatAndMouse: {
-        auto &cat_settings =
-            static_cast<const RoundCatAndMouseSettings &>(*settings[i]);
-        round_j["speed_multiplier"] = cat_settings.speed_multiplier;
-        round_j["allow_tag_backs"] = cat_settings.allow_tag_backs;
+      case RoundType::TagAndGo: {
+        auto &tag_settings =
+            static_cast<const RoundTagAndGoSettings &>(*settings[i]);
+        round_j["speed_multiplier"] = tag_settings.speed_multiplier;
+        round_j["allow_tag_backs"] = tag_settings.allow_tag_backs;
         break;
       }
       }
@@ -448,15 +448,15 @@ struct RoundManager {
             }
             break;
           }
-          case RoundType::CatAndMouse: {
-            auto &cat_settings =
-                static_cast<RoundCatAndMouseSettings &>(*settings[i]);
+          case RoundType::TagAndGo: {
+            auto &tag_settings =
+                static_cast<RoundTagAndGoSettings &>(*settings[i]);
             if (round_j.contains("speed_multiplier")) {
-              cat_settings.speed_multiplier =
+              tag_settings.speed_multiplier =
                   round_j["speed_multiplier"].get<float>();
             }
             if (round_j.contains("allow_tag_backs")) {
-              cat_settings.allow_tag_backs =
+              tag_settings.allow_tag_backs =
                   round_j["allow_tag_backs"].get<bool>();
             }
             break;

@@ -95,14 +95,14 @@ void game() {
     systems.register_update_system(std::make_unique<ProcessHippoCollection>());
     systems.register_update_system(std::make_unique<SpawnHippoItems>());
     systems.register_update_system(std::make_unique<CheckHippoWinCondition>());
-    systems.register_update_system(std::make_unique<InitializeCatMouseGame>());
-    systems.register_update_system(std::make_unique<UpdateCatMouseTimers>());
+    systems.register_update_system(std::make_unique<InitializeTagAndGoGame>());
+    systems.register_update_system(std::make_unique<UpdateTagAndGoTimers>());
     systems.register_update_system(std::make_unique<UpdateRoundCountdown>());
     systems.register_update_system(
-        std::make_unique<HandleCatMouseTagTransfer>());
+        std::make_unique<HandleTagAndGoTagTransfer>());
     systems.register_update_system(
-        std::make_unique<CheckCatMouseWinCondition>());
-    systems.register_update_system(std::make_unique<ScaleCatSize>());
+        std::make_unique<CheckTagAndGoWinCondition>());
+    systems.register_update_system(std::make_unique<ScaleTaggerSize>());
 
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
     systems.register_update_system(std::make_unique<UpdateShaderValues>());

@@ -106,8 +106,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                const std::vector<OptEntity> &round_ais,
                                std::optional<int> ranking = std::nullopt);
   std::map<EntityID, int>
-  get_cat_mouse_rankings(const std::vector<OptEntity> &round_players,
-                         const std::vector<OptEntity> &round_ais);
+  get_tag_and_go_rankings(const std::vector<OptEntity> &round_players,
+                          const std::vector<OptEntity> &round_ais);
   void render_round_end_stats(UIContext<InputAction> &context, Entity &parent,
                               const OptEntity &car, raylib::Color bg_color);
   void render_lives_stats(UIContext<InputAction> &context, Entity &parent,
@@ -118,8 +118,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                           const OptEntity &car, raylib::Color bg_color);
   void render_hippo_stats(UIContext<InputAction> &context, Entity &parent,
                           const OptEntity &car, raylib::Color bg_color);
-  void render_cat_mouse_stats(UIContext<InputAction> &context, Entity &parent,
-                              const OptEntity &car, raylib::Color bg_color);
+  void render_tag_and_go_stats(UIContext<InputAction> &context, Entity &parent,
+                               const OptEntity &car, raylib::Color bg_color);
   void render_unknown_stats(UIContext<InputAction> &context, Entity &parent,
                             const OptEntity &car, raylib::Color bg_color);
   void navigate_back();
