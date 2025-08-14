@@ -162,6 +162,7 @@ void game() {
           std::make_unique<RenderAnimationsWithShaders>());
       //
       systems.register_render_system(std::make_unique<RenderPlayerHUD>());
+      systems.register_render_system(std::make_unique<TagAndGoVisualSystem>());
       systems.register_render_system(std::make_unique<RenderLabels>());
       systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
       systems.register_render_system(std::make_unique<RenderOOB>());

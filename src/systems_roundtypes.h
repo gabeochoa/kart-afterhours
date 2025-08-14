@@ -442,10 +442,6 @@ struct ScaleTaggerSize : System<Transform, HasTagAndGoTracking> {
 
   void reset_to_normal_size(Entity &entity, Transform &transform) {
     transform.size = CarSizes::NORMAL_CAR_SIZE;
-    if (entity.has<afterhours::texture_manager::HasSprite>()) {
-      auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
-      sprite.scale = CarSizes::NORMAL_SPRITE_SCALE;
-    }
   }
 
   void update_size(Entity &entity, Transform &transform,
@@ -454,11 +450,6 @@ struct ScaleTaggerSize : System<Transform, HasTagAndGoTracking> {
         taggerTracking.is_tagger
             ? CarSizes::NORMAL_CAR_SIZE * CarSizes::TAG_SIZE_MULTIPLIER
             : CarSizes::NORMAL_CAR_SIZE;
-    if (entity.has<afterhours::texture_manager::HasSprite>()) {
-      auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
-      sprite.scale = taggerTracking.is_tagger ? CarSizes::TAG_SPRITE_SCALE
-                                              : CarSizes::NORMAL_SPRITE_SCALE;
-    }
   }
 
   virtual void for_each_with(Entity &entity, Transform &transform,
@@ -469,5 +460,67 @@ struct ScaleTaggerSize : System<Transform, HasTagAndGoTracking> {
       return;
     }
     update_size(entity, transform, taggerTracking);
+  }
+};
+
+struct TagAndGoVisualSystem : System<Transform, HasTagAndGoTracking> {
+  virtual void for_each_with(const Entity &entity, const Transform &transform,
+                             const HasTagAndGoTracking &taggerTracking,
+                             float) const override {
+    if (RoundManager::get().active_round_type != RoundType::TagAndGo) {
+      return;
+    }
+
+    TaggerIndicatorStyle style{};
+    if (entity.has<TaggerIndicatorStyle>()) {
+      style = entity.get<TaggerIndicatorStyle>();
+    }
+
+    if (taggerTracking.is_tagger) {
+      const float crown_size = style.crown_size;
+      const float crown_y_offset = transform.size.y + style.crown_y_offset;
+      vec2 crown_pos = transform.pos() - vec2{crown_size / 2.f, crown_y_offset};
+      raylib::Color crown_color = style.crown_color;
+
+      raylib::DrawRectangle(static_cast<int>(crown_pos.x),
+                            static_cast<int>(crown_pos.y),
+                            static_cast<int>(crown_size),
+                            static_cast<int>(crown_size / 3.f), crown_color);
+
+      float point_width = crown_size / static_cast<float>(style.crown_points);
+      for (int i = 0; i < style.crown_points; i++) {
+        float x = crown_pos.x + (i * point_width);
+        raylib::DrawTriangle(
+            vec2{x, crown_pos.y},
+            vec2{x + point_width / 2.f, crown_pos.y - crown_size / 2.f},
+            vec2{x + point_width, crown_pos.y}, crown_color);
+      }
+
+      raylib::DrawCircleV(crown_pos + vec2{crown_size / 2.f, crown_size / 6.f},
+                          style.jewel_radius, style.jewel_color);
+    }
+
+    auto &tag_settings =
+        RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
+    float current_time = static_cast<float>(raylib::GetTime());
+    if (current_time - taggerTracking.last_tag_time <
+        tag_settings.get_tag_cooldown()) {
+      const float shield_size = style.shield_size;
+      const float shield_y_offset = transform.size.y + style.shield_y_offset;
+      vec2 shield_pos =
+          transform.pos() - vec2{shield_size / 2.f, shield_y_offset};
+
+      raylib::DrawTriangle(
+          vec2{shield_pos.x + shield_size / 2.f, shield_pos.y},
+          vec2{shield_pos.x, shield_pos.y + shield_size},
+          vec2{shield_pos.x + shield_size, shield_pos.y + shield_size},
+          style.shield_color);
+
+      raylib::DrawTriangleLines(
+          vec2{shield_pos.x + shield_size / 2.f, shield_pos.y},
+          vec2{shield_pos.x, shield_pos.y + shield_size},
+          vec2{shield_pos.x + shield_size, shield_pos.y + shield_size},
+          style.shield_border_color);
+    }
   }
 };
