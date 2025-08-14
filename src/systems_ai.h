@@ -453,45 +453,26 @@ struct AIUpdateAIParamsSystem : System<AIParams, AIDifficulty> {
            GameStateManager::Screen::CharacterCreation;
   }
 
-  virtual void for_each_with(Entity &, AIParams &params, AIDifficulty &diff,
+  virtual void for_each_with(Entity &entity, AIParams &params, AIDifficulty &diff,
                              float) override {
-    // Tune hippo jitter by difficulty
-    switch (diff.difficulty) {
-    case AIDifficulty::Difficulty::Easy:
-      params.hippo_jitter_easy = 220.0f;
-      params.hippo_jitter_medium = 110.0f;
-      params.hippo_jitter_hard = 60.0f;
-      params.hippo_jitter_expert = 0.0f;
-      params.hippo_target_jitter = params.hippo_jitter_easy;
-      params.shooting_alignment_angle_deg = 15.0f;
-      params.boost_cooldown_seconds = 3.5f;
+    RoundType active_mode = RoundManager::get().active_round_type;
+    if (entity.has<AIMode>()) {
+      const auto &aim = entity.get<AIMode>();
+      active_mode = aim.follow_round_type ? active_mode : aim.mode;
+    }
+
+    switch (active_mode) {
+    case RoundType::Lives:
+      update_for_lives(params, diff.difficulty);
       break;
-    case AIDifficulty::Difficulty::Medium:
-      params.hippo_jitter_easy = 200.0f;
-      params.hippo_jitter_medium = 100.0f;
-      params.hippo_jitter_hard = 50.0f;
-      params.hippo_jitter_expert = 0.0f;
-      params.hippo_target_jitter = params.hippo_jitter_medium;
-      params.shooting_alignment_angle_deg = 12.0f;
-      params.boost_cooldown_seconds = 3.0f;
+    case RoundType::Kills:
+      update_for_kills(params, diff.difficulty);
       break;
-    case AIDifficulty::Difficulty::Hard:
-      params.hippo_jitter_easy = 160.0f;
-      params.hippo_jitter_medium = 80.0f;
-      params.hippo_jitter_hard = 40.0f;
-      params.hippo_jitter_expert = 0.0f;
-      params.hippo_target_jitter = params.hippo_jitter_hard;
-      params.shooting_alignment_angle_deg = 8.0f;
-      params.boost_cooldown_seconds = 2.5f;
+    case RoundType::Hippo:
+      update_for_hippo(params, diff.difficulty);
       break;
-    case AIDifficulty::Difficulty::Expert:
-      params.hippo_jitter_easy = 120.0f;
-      params.hippo_jitter_medium = 60.0f;
-      params.hippo_jitter_hard = 30.0f;
-      params.hippo_jitter_expert = 0.0f;
-      params.hippo_target_jitter = params.hippo_jitter_expert;
-      params.shooting_alignment_angle_deg = 6.0f;
-      params.boost_cooldown_seconds = 2.0f;
+    case RoundType::TagAndGo:
+      update_for_tag_and_go(params, diff.difficulty);
       break;
     }
 
@@ -499,5 +480,87 @@ struct AIUpdateAIParamsSystem : System<AIParams, AIDifficulty> {
     params.boost_min_distance_sq = std::max(params.boost_min_distance_sq, 0.0f);
     params.boost_ahead_alignment_deg =
         std::clamp(params.boost_ahead_alignment_deg, 0.1f, 30.0f);
+  }
+
+private:
+  static void update_for_lives(AIParams &params,
+                               AIDifficulty::Difficulty difficulty) {
+    // Lives behaves similar to Kills for generic difficulty tuning
+    update_for_kills(params, difficulty);
+  }
+
+  static void update_for_kills(AIParams &params,
+                               AIDifficulty::Difficulty difficulty) {
+    switch (difficulty) {
+    case AIDifficulty::Difficulty::Easy:
+      params.shooting_alignment_angle_deg = 15.0f;
+      params.boost_cooldown_seconds = 3.5f;
+      break;
+    case AIDifficulty::Difficulty::Medium:
+      params.shooting_alignment_angle_deg = 12.0f;
+      params.boost_cooldown_seconds = 3.0f;
+      break;
+    case AIDifficulty::Difficulty::Hard:
+      params.shooting_alignment_angle_deg = 8.0f;
+      params.boost_cooldown_seconds = 2.5f;
+      break;
+    case AIDifficulty::Difficulty::Expert:
+      params.shooting_alignment_angle_deg = 6.0f;
+      params.boost_cooldown_seconds = 2.0f;
+      break;
+    }
+  }
+
+  static void update_for_hippo(AIParams &params,
+                               AIDifficulty::Difficulty difficulty) {
+    switch (difficulty) {
+    case AIDifficulty::Difficulty::Easy:
+      params.hippo_jitter_easy = 220.0f;
+      params.hippo_jitter_medium = 110.0f;
+      params.hippo_jitter_hard = 60.0f;
+      params.hippo_jitter_expert = 0.0f;
+      params.hippo_target_jitter = params.hippo_jitter_easy;
+      break;
+    case AIDifficulty::Difficulty::Medium:
+      params.hippo_jitter_easy = 200.0f;
+      params.hippo_jitter_medium = 100.0f;
+      params.hippo_jitter_hard = 50.0f;
+      params.hippo_jitter_expert = 0.0f;
+      params.hippo_target_jitter = params.hippo_jitter_medium;
+      break;
+    case AIDifficulty::Difficulty::Hard:
+      params.hippo_jitter_easy = 160.0f;
+      params.hippo_jitter_medium = 80.0f;
+      params.hippo_jitter_hard = 40.0f;
+      params.hippo_jitter_expert = 0.0f;
+      params.hippo_target_jitter = params.hippo_jitter_hard;
+      break;
+    case AIDifficulty::Difficulty::Expert:
+      params.hippo_jitter_easy = 120.0f;
+      params.hippo_jitter_medium = 60.0f;
+      params.hippo_jitter_hard = 30.0f;
+      params.hippo_jitter_expert = 0.0f;
+      params.hippo_target_jitter = params.hippo_jitter_expert;
+      break;
+    }
+  }
+
+  static void update_for_tag_and_go(AIParams &params,
+                                    AIDifficulty::Difficulty difficulty) {
+    // Keep boost feeling difficulty-dependent in Tag mode as well
+    switch (difficulty) {
+    case AIDifficulty::Difficulty::Easy:
+      params.boost_cooldown_seconds = 3.5f;
+      break;
+    case AIDifficulty::Difficulty::Medium:
+      params.boost_cooldown_seconds = 3.0f;
+      break;
+    case AIDifficulty::Difficulty::Hard:
+      params.boost_cooldown_seconds = 2.5f;
+      break;
+    case AIDifficulty::Difficulty::Expert:
+      params.boost_cooldown_seconds = 2.0f;
+      break;
+    }
   }
 };
