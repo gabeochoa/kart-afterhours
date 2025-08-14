@@ -318,8 +318,6 @@ Padding button_padding = Padding{
     .right = pixels(0.f),
 };
 
-// Navigation moved to NavigationSystem/navigation.h helpers
-
 void ScheduleMainMenuUI::update_resolution_cache() {
   resolution_provider = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesAvailableWindowResolutions>();
