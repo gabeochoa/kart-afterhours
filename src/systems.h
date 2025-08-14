@@ -2,6 +2,7 @@
 
 #include "car_affectors.h"
 #include "components.h"
+#include "components_weapons.h"
 #include "game_state_manager.h"
 #include "input_mapping.h"
 #include "makers.h"
