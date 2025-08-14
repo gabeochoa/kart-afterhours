@@ -442,6 +442,10 @@ struct ScaleTaggerSize : System<Transform, HasTagAndGoTracking> {
 
   void reset_to_normal_size(Entity &entity, Transform &transform) {
     transform.size = CarSizes::NORMAL_CAR_SIZE;
+    if (entity.has<afterhours::texture_manager::HasSprite>()) {
+      auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
+      sprite.scale = CarSizes::NORMAL_SPRITE_SCALE;
+    }
   }
 
   void update_size(Entity &entity, Transform &transform,
@@ -450,6 +454,11 @@ struct ScaleTaggerSize : System<Transform, HasTagAndGoTracking> {
         taggerTracking.is_tagger
             ? CarSizes::NORMAL_CAR_SIZE * CarSizes::TAG_SIZE_MULTIPLIER
             : CarSizes::NORMAL_CAR_SIZE;
+    if (entity.has<afterhours::texture_manager::HasSprite>()) {
+      auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
+      sprite.scale = taggerTracking.is_tagger ? CarSizes::TAG_SPRITE_SCALE
+                                              : CarSizes::NORMAL_SPRITE_SCALE;
+    }
   }
 
   virtual void for_each_with(Entity &entity, Transform &transform,
