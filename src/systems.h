@@ -802,30 +802,36 @@ struct WeaponCooldownSystem : PausableSystem<CanShoot> {
 
 struct WeaponFireSystem : PausableSystem<WantsWeaponFire, CanShoot, Transform> {
   virtual void for_each_with(Entity &entity, WantsWeaponFire &want,
-                             CanShoot &canShoot, Transform &, float dt) override {
+                             CanShoot &canShoot, Transform &,
+                             float dt) override {
     if (!canShoot.weapons.contains(want.action)) {
       entity.removeComponent<WantsWeaponFire>();
       return;
     }
     auto &weapon = *canShoot.weapons[want.action];
     if (weapon.fire(dt)) {
-      ProjectileConfig proj = ProjectileConfig::builder()
-                                  .with_size(weapon.config.size)
-                                  .with_speed(weapon.config.speed)
-                                  .with_acceleration(weapon.config.acceleration)
-                                  .with_lifetime(weapon.config.life_time_seconds)
-                                  .with_spread(weapon.config.spread)
-                                  .with_can_wrap(weapon.config.can_wrap_around)
-                                  .with_render_out_of_bounds(weapon.config.render_out_of_bounds)
-                                  .with_base_damage(weapon.config.base_damage)
-                                  .with_angle_offsets({0.f});
+      ProjectileConfig proj =
+          ProjectileConfig::builder()
+              .with_size(weapon.config.size)
+              .with_speed(weapon.config.speed)
+              .with_acceleration(weapon.config.acceleration)
+              .with_lifetime(weapon.config.life_time_seconds)
+              .with_spread(weapon.config.spread)
+              .with_can_wrap(weapon.config.can_wrap_around)
+              .with_render_out_of_bounds(weapon.config.render_out_of_bounds)
+              .with_base_damage(weapon.config.base_damage)
+              .with_angle_offsets({0.f})
+              .build();
 
       RecoilConfig rec{weapon.config.knockback_amt};
-      WeaponSoundInfo sound{};
+      WeaponSoundInfo snd{};
+      snd.name = weapon.config.sound.name;
+      snd.has_multiple = weapon.config.sound.has_multiple;
 
       entity.addComponent<WeaponFired>(
           WeaponFired{want.action, static_cast<int>(weapon.type),
-                      static_cast<int>(weapon.firing_direction), proj, rec, sound});
+                      static_cast<int>(weapon.firing_direction),
+                      std::move(proj), std::move(rec), std::move(snd)});
     }
     entity.removeComponent<WantsWeaponFire>();
   }
@@ -835,8 +841,7 @@ struct ProjectileSpawnSystem : System<WeaponFired, Transform> {
   virtual void for_each_with(Entity &entity, WeaponFired &evt,
                              Transform &transform, float) override {
     (void)transform;
-    // Adjust projectile pattern by weapon type
-    ProjectileConfig cfg = std::move(evt.projectile);
+    ProjectileConfig &cfg = evt.projectile;
     switch (static_cast<Weapon::Type>(evt.weapon_type)) {
     case Weapon::Type::Shotgun:
       cfg.angle_offsets = {-15.f, -5.f, 5.f, 15.f};
@@ -847,7 +852,8 @@ struct ProjectileSpawnSystem : System<WeaponFired, Transform> {
 
     const float base_angle = entity.get<Transform>().angle;
 
-    make_poof_anim(entity, static_cast<Weapon::FiringDirection>(evt.firing_direction),
+    make_poof_anim(entity,
+                   static_cast<Weapon::FiringDirection>(evt.firing_direction),
                    base_angle, 0.f);
 
     for (float ao : cfg.angle_offsets) {

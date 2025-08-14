@@ -1,7 +1,7 @@
 #pragma once
 
-#include "rl.h"
 #include "input_mapping.h"
+#include "rl.h"
 
 using namespace afterhours;
 
@@ -31,51 +31,61 @@ struct ProjectileConfig {
         render_out_of_bounds(render_oob), base_damage(dmg),
         angle_offsets(std::move(angles)) {}
 
-  ProjectileConfig& with_size(vec2 v) {
-    size = v;
-    return *this;
-  }
-  ProjectileConfig& with_speed(float v) {
-    speed = v;
-    return *this;
-  }
-  ProjectileConfig& with_acceleration(float v) {
-    acceleration = v;
-    return *this;
-  }
-  ProjectileConfig& with_lifetime(float v) {
-    life_time_seconds = v;
-    return *this;
-  }
-  ProjectileConfig& with_spread(float v) {
-    spread = v;
-    return *this;
-  }
-  ProjectileConfig& with_can_wrap(bool v) {
-    can_wrap_around = v;
-    return *this;
-  }
-  ProjectileConfig& with_render_out_of_bounds(bool v) {
-    render_out_of_bounds = v;
-    return *this;
-  }
-  ProjectileConfig& with_base_damage(int v) {
-    base_damage = v;
-    return *this;
-  }
-  ProjectileConfig& with_angle_offsets(std::vector<float> v) {
-    angle_offsets = std::move(v);
-    return *this;
-  }
-  ProjectileConfig& add_angle_offset(float v) {
-    angle_offsets.push_back(v);
-    return *this;
-  }
-
-  static ProjectileConfig builder() { return ProjectileConfig{}; }
+  struct Builder;
+  static Builder builder();
 };
 
-struct WeaponSoundInfo {
+struct ProjectileConfig::Builder {
+  ProjectileConfig cfg{};
+  Builder &with_size(vec2 v) {
+    cfg.size = v;
+    return *this;
+  }
+  Builder &with_speed(float v) {
+    cfg.speed = v;
+    return *this;
+  }
+  Builder &with_acceleration(float v) {
+    cfg.acceleration = v;
+    return *this;
+  }
+  Builder &with_lifetime(float v) {
+    cfg.life_time_seconds = v;
+    return *this;
+  }
+  Builder &with_spread(float v) {
+    cfg.spread = v;
+    return *this;
+  }
+  Builder &with_can_wrap(bool v) {
+    cfg.can_wrap_around = v;
+    return *this;
+  }
+  Builder &with_render_out_of_bounds(bool v) {
+    cfg.render_out_of_bounds = v;
+    return *this;
+  }
+  Builder &with_base_damage(int v) {
+    cfg.base_damage = v;
+    return *this;
+  }
+  Builder &with_angle_offsets(std::vector<float> v) {
+    cfg.angle_offsets = std::move(v);
+    return *this;
+  }
+  Builder &add_angle_offset(float v) {
+    cfg.angle_offsets.push_back(v);
+    return *this;
+  }
+  ProjectileConfig build() && { return std::move(cfg); }
+  ProjectileConfig build() & { return std::move(cfg); }
+};
+
+inline ProjectileConfig::Builder ProjectileConfig::builder() {
+  return Builder{};
+}
+
+struct WeaponSoundInfo : BaseComponent {
   std::string name;
   bool has_multiple{false};
   
@@ -102,9 +112,8 @@ struct WeaponFired : BaseComponent {
   WeaponFired(WeaponFired&&) = default;
   WeaponFired& operator=(WeaponFired&&) = default;
   WeaponFired(InputAction act, int weapon_type_in, int firing_direction_in,
-              const ProjectileConfig& proj, const RecoilConfig& rec,
-              const WeaponSoundInfo& snd)
+              ProjectileConfig proj, RecoilConfig rec, WeaponSoundInfo snd)
       : weapon_type(weapon_type_in), firing_direction(firing_direction_in),
-        projectile(proj), recoil(rec),
-        sound(snd), action(act) {}
+        projectile(std::move(proj)), recoil(std::move(rec)),
+        sound(std::move(snd)), action(act) {}
 };
