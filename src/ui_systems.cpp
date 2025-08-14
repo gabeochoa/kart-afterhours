@@ -1,4 +1,3 @@
-
 #include "ui_systems.h"
 
 #include "config.h"
@@ -1603,7 +1602,18 @@ void ScheduleMainMenuUI::start_game_with_random_animation() {
            .easing = afterhours::animation::animation::EasingType::EaseOutQuad},
       })
       .hold(0.5f)
-      .on_step(1.0f, [](int) { SoundLibrary::get().play(SoundFile::UI_Move); })
+      .on_step(1.0f,
+               [](int) {
+                 auto opt = EntityQuery({.force_merge = true})
+                                .whereHasComponent<SoundEmitter>()
+                                .gen_first();
+                 if (opt.valid()) {
+                   auto &ent = opt.asE();
+                   auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+                   req.policy = PlaySoundRequest::Policy::Enum;
+                   req.file = SoundFile::UI_Move;
+                 }
+               })
       .on_complete([final_map_index]() {
         MapManager::get().set_selected_map(final_map_index);
         MapManager::get().create_map();

@@ -80,7 +80,16 @@ struct Cannon : Weapon {
                    .cooldownReset = 1.f,
                    .on_shoot =
                        [](Entity &parent, Weapon &wp) {
-                         SoundLibrary::get().play(SoundFile::Weapon_Canon_Shot);
+                         if (auto opt = EntityQuery({.force_merge = true})
+                                            .whereHasComponent<SoundEmitter>()
+                                            .gen_first();
+                             opt.valid()) {
+                           auto &ent = opt.asE();
+                           auto &req =
+                               ent.addComponentIfMissing<PlaySoundRequest>();
+                           req.policy = PlaySoundRequest::Policy::Enum;
+                           req.file = SoundFile::Weapon_Canon_Shot;
+                         }
                          make_poof_anim(parent, wp);
                          make_bullet(parent, wp);
                          wp.apply_recoil(parent.get<Transform>(),
@@ -100,8 +109,16 @@ struct Sniper : Weapon {
                    .cooldownReset = 3.f,
                    .on_shoot =
                        [](Entity &parent, Weapon &wp) {
-                         SoundLibrary::get().play(
-                             SoundFile::Weapon_Sniper_Shot);
+                         if (auto opt = EntityQuery({.force_merge = true})
+                                            .whereHasComponent<SoundEmitter>()
+                                            .gen_first();
+                             opt.valid()) {
+                           auto &ent = opt.asE();
+                           auto &req =
+                               ent.addComponentIfMissing<PlaySoundRequest>();
+                           req.policy = PlaySoundRequest::Policy::Enum;
+                           req.file = SoundFile::Weapon_Sniper_Shot;
+                         }
                          make_poof_anim(parent, wp);
                          make_bullet(parent, wp);
                          wp.apply_recoil(parent.get<Transform>(),
@@ -121,8 +138,16 @@ struct Shotgun : Weapon {
                    .cooldownReset = 3.f,
                    .on_shoot =
                        [](Entity &parent, Weapon &wp) {
-                         SoundLibrary::get().play(
-                             SoundFile::Weapon_Shotgun_Shot);
+                         if (auto opt = EntityQuery({.force_merge = true})
+                                            .whereHasComponent<SoundEmitter>()
+                                            .gen_first();
+                             opt.valid()) {
+                           auto &ent = opt.asE();
+                           auto &req =
+                               ent.addComponentIfMissing<PlaySoundRequest>();
+                           req.policy = PlaySoundRequest::Policy::Enum;
+                           req.file = SoundFile::Weapon_Shotgun_Shot;
+                         }
                          // TODO more poofs
                          make_poof_anim(parent, wp);
                          make_bullet(parent, wp, -15);
@@ -142,29 +167,38 @@ struct Shotgun : Weapon {
 struct MachineGun : Weapon {
 
   MachineGun(const Weapon::FiringDirection &fd)
-      : Weapon(
-            Weapon::Type::MachineGun, //
-            Weapon::Config{.cooldownReset = 0.2f,
-                           .on_shoot =
-                               [](Entity &parent, Weapon &wp) {
-                                 SoundLibrary::get().play_random_match(
-                                     "SPAS-12_-_FIRING_-_Pump_Action_-_Take_1_-"
-                                     "_20m_In_Front_-_AB_-_MKH8020_");
-                                 make_poof_anim(parent, wp);
-                                 make_bullet(parent, wp);
-                                 wp.apply_recoil(parent.get<Transform>(),
-                                                 wp.config.knockback_amt);
-                               },
-                           .knockback_amt = 0.1f,
-                           .base_damage = kill_shots_to_base_dmg(12),
-                           .size = vec2{10., 10.f},
-                           .speed = ::Config::get().machine_gun_fire_rate.data,
-                           .acceleration = 2.f,
-                           .life_time_seconds = 1.f,
-                           .spread = 1.f,
-                           .can_wrap_around = false,
-                           .render_out_of_bounds = false},
-            fd) {}
+      : Weapon(Weapon::Type::MachineGun, //
+               Weapon::Config{
+                   .cooldownReset = 0.2f,
+                   .on_shoot =
+                       [](Entity &parent, Weapon &wp) {
+                         if (auto opt = EntityQuery({.force_merge = true})
+                                            .whereHasComponent<SoundEmitter>()
+                                            .gen_first();
+                             opt.valid()) {
+                           auto &ent = opt.asE();
+                           auto &req =
+                               ent.addComponentIfMissing<PlaySoundRequest>();
+                           req.policy = PlaySoundRequest::Policy::PrefixRandom;
+                           req.prefix =
+                               "SPAS-12_-_FIRING_-_Pump_Action_-_Take_1_-"
+                               "_20m_In_Front_-_AB_-_MKH8020_";
+                         }
+                         make_poof_anim(parent, wp);
+                         make_bullet(parent, wp);
+                         wp.apply_recoil(parent.get<Transform>(),
+                                         wp.config.knockback_amt);
+                       },
+                   .knockback_amt = 0.1f,
+                   .base_damage = kill_shots_to_base_dmg(12),
+                   .size = vec2{10., 10.f},
+                   .speed = ::Config::get().machine_gun_fire_rate.data,
+                   .acceleration = 2.f,
+                   .life_time_seconds = 1.f,
+                   .spread = 1.f,
+                   .can_wrap_around = false,
+                   .render_out_of_bounds = false},
+               fd) {}
 };
 
 struct CanShoot : BaseComponent {

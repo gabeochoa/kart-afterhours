@@ -453,3 +453,44 @@ struct WantsBoost : BaseComponent {};
 struct HonkState : BaseComponent {
   bool was_down = false;
 };
+
+// New sound components for aliasing and centralized playback
+#include "sound_library.h"
+#include <string>
+#include <vector>
+
+struct SoundEmitter : BaseComponent {
+  // Default number of alias copies to create per base sound when needed
+  int default_alias_copies = 4;
+
+  // Managed alias names per base key (e.g., "UISelect" -> ["UISelect_a0", ...])
+  std::map<std::string, std::vector<std::string>> alias_names_by_base;
+  // Round-robin index for each base key
+  std::map<std::string, size_t> next_alias_index_by_base;
+};
+
+struct PlaySoundRequest : BaseComponent {
+  enum class Policy {
+    Name,                   // Use exact sound name
+    Enum,                   // Use SoundFile enum
+    PrefixRandom,           // Use Library::get_random_match(prefix)
+    PrefixFirstAvailable,   // Use Library::play_first_available_match(prefix)
+    PrefixIfNonePlaying     // Use Library::play_if_none_playing(prefix)
+  };
+
+  Policy policy{Policy::Name};
+
+  // For Policy::Name
+  std::string name;
+  // For Policy::Enum
+  SoundFile file{SoundFile::UI_Move};
+  // For Prefix policies
+  std::string prefix;
+
+  // Prefer using alias pool when available (falls back to direct play)
+  bool prefer_alias{true};
+
+  PlaySoundRequest() = default;
+  explicit PlaySoundRequest(SoundFile f)
+      : policy(Policy::Enum), file(f), prefer_alias(true) {}
+};

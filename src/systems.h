@@ -1235,8 +1235,17 @@ struct VelFromInput
         entity.addComponentIfMissing<WantsBoost>();
       } break;
       case InputAction::Honk: {
-        SoundLibrary::get().play_first_available_match(
-            "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_");
+        if (auto opt = EntityQuery({.force_merge = true})
+                           .whereHasComponent<SoundEmitter>()
+                           .gen_first();
+            opt.valid()) {
+          auto &ent = opt.asE();
+          auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+          req.policy = honk.was_down ? PlaySoundRequest::Policy::PrefixIfNonePlaying
+                                     : PlaySoundRequest::Policy::PrefixFirstAvailable;
+          req.prefix =
+              "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
+        }
       } break;
       default:
         break;
@@ -1245,10 +1254,17 @@ struct VelFromInput
 
     const char *horn_prefix =
         "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
-    if (honk_down && !honk.was_down) {
-      SoundLibrary::get().play_first_available_match(horn_prefix);
-    } else if (honk_down) {
-      SoundLibrary::get().play_if_none_playing(horn_prefix);
+    if (honk_down) {
+      if (auto opt = EntityQuery({.force_merge = true})
+                         .whereHasComponent<SoundEmitter>()
+                         .gen_first();
+          opt.valid()) {
+        auto &ent = opt.asE();
+        auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+        req.policy = honk.was_down ? PlaySoundRequest::Policy::PrefixIfNonePlaying
+                                   : PlaySoundRequest::Policy::PrefixFirstAvailable;
+        req.prefix = horn_prefix;
+      }
     }
     honk.was_down = honk_down;
 
@@ -1315,8 +1331,15 @@ struct ProcessBoostRequests : PausableSystem<WantsBoost, Transform> {
       entity.removeComponent<WantsBoost>();
       return;
     }
-    SoundLibrary::get().play_random_match(
-        "AIRBrst_Steam_Release_Short_03_JSE_SG_Mono_");
+    if (auto opt = EntityQuery({.force_merge = true})
+                       .whereHasComponent<SoundEmitter>()
+                       .gen_first();
+        opt.valid()) {
+      auto &ent = opt.asE();
+      auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+      req.policy = PlaySoundRequest::Policy::PrefixRandom;
+      req.prefix = "AIRBrst_Steam_Release_Short_03_JSE_SG_Mono_";
+    }
     transform.accel_mult = Config::get().boost_acceleration.data;
     const auto upfront_boost_speed = Config::get().max_speed.data * .2f;
     transform.velocity +=
