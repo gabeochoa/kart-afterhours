@@ -1,0 +1,1522 @@
+{
+  "systems": [
+    {
+      "name": "AIShoot",
+      "file": "systems_ai.h",
+      "stage": "update",
+      "declared_components": [
+        "AIControlled",
+        "CanShoot",
+        "Transform"
+      ],
+      "reads": [
+        "AIControlled",
+        "CanShoot",
+        "PlayerID",
+        "Transform"
+      ],
+      "writes": [
+        "AIControlled",
+        "CanShoot",
+        "Transform"
+      ],
+      "read_singletons": [
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "AITargetSelection",
+      "file": "systems_ai.h",
+      "stage": "update",
+      "declared_components": [
+        "AIControlled",
+        "Transform"
+      ],
+      "reads": [
+        "AIControlled",
+        "HasTagAndGoTracking",
+        "HippoItem",
+        "PlayerID",
+        "Transform"
+      ],
+      "writes": [
+        "AIControlled",
+        "Transform"
+      ],
+      "read_singletons": [
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "AIVelocity",
+      "file": "systems_ai.h",
+      "stage": "update",
+      "declared_components": [
+        "AIControlled",
+        "Transform"
+      ],
+      "reads": [
+        "AIControlled",
+        "AIDifficulty",
+        "Transform"
+      ],
+      "writes": [
+        "AIBoostCooldown",
+        "AIControlled",
+        "Transform",
+        "WantsBoost"
+      ],
+      "read_singletons": [
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "ApplyWinnerShader",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "HasShader",
+        "WasWinnerLastRound"
+      ],
+      "reads": [
+        "HasShader",
+        "WasWinnerLastRound"
+      ],
+      "writes": [
+        "HasShader",
+        "WasWinnerLastRound"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "BackgroundMusic",
+      "file": "sound_systems.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [],
+      "writes": [],
+      "read_singletons": [
+        "GameStateManager"
+      ],
+      "write_singletons": [
+        "EntityStorage",
+        "MusicLibrary"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "BeginPostProcessingShader",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [],
+      "reads": [],
+      "writes": [],
+      "read_singletons": [
+        "ShaderLibrary",
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "BeginShader",
+      "file": "shader_library.h",
+      "stage": "unknown",
+      "declared_components": [],
+      "reads": [],
+      "writes": [],
+      "read_singletons": [
+        "ShaderLibrary"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "BoostDecay",
+      "file": "systems.h",
+      "stage": "fixed_update",
+      "declared_components": [
+        "Transform"
+      ],
+      "reads": [
+        "Transform"
+      ],
+      "writes": [
+        "Transform"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "CarRumble",
+      "file": "sound_systems.h",
+      "stage": "render",
+      "declared_components": [
+        "CanShoot",
+        "Transform"
+      ],
+      "reads": [
+        "CanShoot",
+        "Transform"
+      ],
+      "writes": [],
+      "read_singletons": [],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "CheckHippoWinCondition",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [
+        "HasHippoCollection",
+        "HippoItem"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "GameStateManager",
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "GameStateManager"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "CheckKillsWinCondition",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [
+        "HasKillCountTracker"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "GameStateManager",
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "GameStateManager"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "CheckLivesWinCondition",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [
+        "HasMultipleLives",
+        "PlayerID"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "GameStateManager",
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "GameStateManager"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "CheckTagAndGoWinCondition",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [
+        "HasTagAndGoTracking"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "GameStateManager",
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "GameStateManager"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "ConfigureTaggerSpotlight",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [],
+      "reads": [
+        "HasTagAndGoTracking",
+        "Transform"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "RoundManager",
+        "ShaderLibrary",
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "DrainLife",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "HasLifetime"
+      ],
+      "reads": [
+        "HasLifetime"
+      ],
+      "writes": [
+        "HasLifetime"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "HandleTagAndGoTagTransfer",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [
+        "HasTagAndGoTracking",
+        "Transform"
+      ],
+      "reads": [
+        "HasTagAndGoTracking",
+        "Transform"
+      ],
+      "writes": [
+        "HasTagAndGoTracking",
+        "Transform"
+      ],
+      "read_singletons": [
+        "GameStateManager",
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "InitializeTagAndGoGame",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [
+        "HasTagAndGoTracking"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "GameStateManager",
+        "RoundManager"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "IntroScreens",
+      "file": "intro.h",
+      "stage": "unknown",
+      "declared_components": [
+        "ui::FontManager",
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "reads": [
+        "ui::FontManager",
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "writes": [
+        "ui::FontManager",
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "read_singletons": [
+        "ShaderLibrary",
+        "afterhours::texture_manager::HasSpritesheet",
+        "ui::FontManager"
+      ],
+      "write_singletons": [
+        "EntityStorage",
+        "SoundLibrary"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "MarkEntitiesWithShaders",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "HasShader"
+      ],
+      "reads": [
+        "HasShader",
+        "SkipTextureManagerRendering"
+      ],
+      "writes": [
+        "HasShader",
+        "SkipTextureManagerRendering"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "MatchKartsToPlayers",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "input::ProvidesMaxGamepadID"
+      ],
+      "reads": [
+        "PlayerID",
+        "input::ProvidesMaxGamepadID"
+      ],
+      "writes": [
+        "input::ProvidesMaxGamepadID"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "Move",
+      "file": "systems.h",
+      "stage": "fixed_update",
+      "declared_components": [
+        "Transform"
+      ],
+      "reads": [
+        "Transform"
+      ],
+      "writes": [
+        "Transform"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "PausableSystem",
+      "file": "systems.h",
+      "stage": "unknown",
+      "declared_components": [
+        "Components..."
+      ],
+      "reads": [
+        "Components..."
+      ],
+      "writes": [],
+      "read_singletons": [
+        "GameStateManager"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "ProcessBoostRequests",
+      "file": "systems.h",
+      "stage": "fixed_update",
+      "declared_components": [
+        "Transform",
+        "WantsBoost"
+      ],
+      "reads": [
+        "Transform",
+        "WantsBoost"
+      ],
+      "writes": [
+        "Transform",
+        "WantsBoost"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage",
+        "SoundLibrary"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "ProcessCollisionAbsorption",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "CollisionAbsorber",
+        "Transform"
+      ],
+      "reads": [
+        "CollisionAbsorber",
+        "Transform"
+      ],
+      "writes": [
+        "CollisionAbsorber",
+        "Transform"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "ProcessDamage",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "HasHealth",
+        "Transform"
+      ],
+      "reads": [
+        "CanDamage",
+        "HasHealth",
+        "Transform"
+      ],
+      "writes": [
+        "HasHealth",
+        "Transform"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "ProcessDeath",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "HasHealth",
+        "Transform"
+      ],
+      "reads": [
+        "HasHealth",
+        "HasKillCountTracker",
+        "HasMultipleLives",
+        "PlayerID",
+        "Transform"
+      ],
+      "writes": [
+        "HasHealth",
+        "Transform"
+      ],
+      "read_singletons": [
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "ProcessHippoCollection",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [
+        "HasHippoCollection",
+        "Transform"
+      ],
+      "reads": [
+        "HasHippoCollection",
+        "HippoItem",
+        "Transform"
+      ],
+      "writes": [
+        "HasHippoCollection",
+        "Transform"
+      ],
+      "read_singletons": [
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderAnimationsWithShaders",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "HasShader",
+        "HonkState",
+        "Transform",
+        "afterhours::texture_manager::HasAnimation"
+      ],
+      "reads": [
+        "HasShader",
+        "HonkState",
+        "Transform",
+        "afterhours::texture_manager::HasAnimation"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "ShaderLibrary"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderDebugGridOverlay",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "reads": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "writes": [],
+      "read_singletons": [],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderDebugWindowInfo",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "reads": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "writes": [],
+      "read_singletons": [],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderEntities",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "Transform"
+      ],
+      "reads": [
+        "HasColor",
+        "HasShader",
+        "Transform",
+        "afterhours::texture_manager::HasAnimation",
+        "afterhours::texture_manager::HasSpritesheet"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "ShaderLibrary"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderFPS",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "reads": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "writes": [],
+      "read_singletons": [],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderLabels",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "HasLabels",
+        "Transform"
+      ],
+      "reads": [
+        "HasLabels",
+        "Transform"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "ui::FontManager"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderLetterboxBars",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "reads": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "writes": [],
+      "read_singletons": [],
+      "write_singletons": [],
+      "read_globals": [
+        "mainRT"
+      ],
+      "write_globals": []
+    },
+    {
+      "name": "RenderOOB",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "Transform"
+      ],
+      "reads": [
+        "HasColor",
+        "Transform"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "afterhours::window_manager::ProvidesCurrentResolution"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderPlayerHUD",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "HasHealth",
+        "Transform"
+      ],
+      "reads": [
+        "HasColor",
+        "HasHealth",
+        "HasKillCountTracker",
+        "HasMultipleLives",
+        "HasTagAndGoTracking",
+        "Transform"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "RoundManager"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderRenderTexture",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "reads": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "writes": [],
+      "read_singletons": [],
+      "write_singletons": [],
+      "read_globals": [
+        "mainRT"
+      ],
+      "write_globals": []
+    },
+    {
+      "name": "RenderRoundTimer",
+      "file": "systems_roundtypes.h",
+      "stage": "render",
+      "declared_components": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "reads": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "GameStateManager",
+        "RoundManager"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderSkid",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "TireMarkComponent",
+        "Transform"
+      ],
+      "reads": [
+        "HasShader",
+        "TireMarkComponent",
+        "Transform"
+      ],
+      "writes": [],
+      "read_singletons": [],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderSpritesWithShaders",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "HasColor",
+        "HasShader",
+        "Transform",
+        "afterhours::texture_manager::HasSprite"
+      ],
+      "reads": [
+        "HasColor",
+        "HasShader",
+        "Transform",
+        "afterhours::texture_manager::HasSprite"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "ShaderLibrary",
+        "afterhours::texture_manager::HasSpritesheet",
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "RenderWeaponCooldown",
+      "file": "systems.h",
+      "stage": "render",
+      "declared_components": [
+        "CanShoot",
+        "Transform"
+      ],
+      "reads": [
+        "CanShoot",
+        "Transform"
+      ],
+      "writes": [],
+      "read_singletons": [],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "ScaleTaggerSize",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [
+        "HasTagAndGoTracking",
+        "Transform"
+      ],
+      "reads": [
+        "HasTagAndGoTracking",
+        "Transform",
+        "afterhours::texture_manager::HasSprite"
+      ],
+      "writes": [
+        "HasTagAndGoTracking",
+        "Transform"
+      ],
+      "read_singletons": [
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "ScheduleDebugUI",
+      "file": "ui_systems.h",
+      "stage": "update",
+      "declared_components": [
+        "afterhours::ui::UIContext<InputAction"
+      ],
+      "reads": [
+        "afterhours::ui::UIContext<InputAction",
+        "afterhours::ui::UIContext<InputAction>"
+      ],
+      "writes": [
+        "afterhours::ui::UIContext<InputAction>"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "ScheduleMainMenuUI",
+      "file": "ui_systems.h",
+      "stage": "update",
+      "declared_components": [
+        "afterhours::ui::UIContext<InputAction"
+      ],
+      "reads": [
+        "UIContext<InputAction>",
+        "afterhours::ui::UIContext<InputAction"
+      ],
+      "writes": [
+        "UIContext<InputAction>"
+      ],
+      "read_singletons": [
+        "GameStateManager"
+      ],
+      "write_singletons": [
+        "EntityStorage",
+        "GameStateManager"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "SchedulePauseUI",
+      "file": "ui_systems.h",
+      "stage": "update",
+      "declared_components": [
+        "afterhours::ui::UIContext<InputAction"
+      ],
+      "reads": [
+        "afterhours::ui::UIContext<InputAction",
+        "afterhours::ui::UIContext<InputAction>"
+      ],
+      "writes": [
+        "afterhours::ui::UIContext<InputAction>"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "SetupGameStylingDefaults",
+      "file": "ui_systems.h",
+      "stage": "update",
+      "declared_components": [
+        "afterhours::ui::UIContext<InputAction"
+      ],
+      "reads": [
+        "afterhours::ui::UIContext<InputAction"
+      ],
+      "writes": [],
+      "read_singletons": [],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "Shoot",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "CanShoot",
+        "PlayerID",
+        "Transform"
+      ],
+      "reads": [
+        "CanShoot",
+        "PlayerID",
+        "Transform"
+      ],
+      "writes": [
+        "CanShoot",
+        "PlayerID",
+        "Transform"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "SkidMarks",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "TireMarkComponent",
+        "Transform"
+      ],
+      "reads": [
+        "HasShader",
+        "TireMarkComponent",
+        "Transform"
+      ],
+      "writes": [
+        "TireMarkComponent",
+        "Transform"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "SpawnHippoItems",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [
+        "HippoItem"
+      ],
+      "writes": [],
+      "read_singletons": [
+        "RoundManager",
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "write_singletons": [],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UIClickSounds",
+      "file": "sound_systems.h",
+      "stage": "update",
+      "declared_components": [
+        "afterhours::ui::HasClickListener"
+      ],
+      "reads": [
+        "afterhours::ui::HasClickListener",
+        "afterhours::ui::UIComponent"
+      ],
+      "writes": [
+        "afterhours::ui::HasClickListener",
+        "afterhours::ui::UIComponent"
+      ],
+      "read_singletons": [
+        "GameStateManager",
+        "afterhours::ui::UIContext<InputAction"
+      ],
+      "write_singletons": [
+        "EntityStorage",
+        "SoundLibrary"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UIMoveSounds",
+      "file": "sound_systems.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [],
+      "writes": [],
+      "read_singletons": [
+        "GameStateManager"
+      ],
+      "write_singletons": [
+        "EntityStorage",
+        "SoundLibrary"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UpdateAnimationTransform",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "Transform",
+        "afterhours::texture_manager::HasAnimation"
+      ],
+      "reads": [
+        "Transform",
+        "afterhours::texture_manager::HasAnimation"
+      ],
+      "writes": [
+        "Transform",
+        "afterhours::texture_manager::HasAnimation"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UpdateCollidingEntities",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "Transform"
+      ],
+      "reads": [
+        "CollisionAbsorber",
+        "IsFloorOverlay",
+        "Transform"
+      ],
+      "writes": [
+        "Transform"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UpdateColorBasedOnEntityID",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "HasEntityIDBasedColor"
+      ],
+      "reads": [
+        "HasEntityIDBasedColor"
+      ],
+      "writes": [
+        "HasEntityIDBasedColor"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UpdateRenderTexture",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [],
+      "writes": [],
+      "read_singletons": [
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "write_singletons": [],
+      "read_globals": [
+        "mainRT"
+      ],
+      "write_globals": [
+        "mainRT"
+      ]
+    },
+    {
+      "name": "UpdateRoundCountdown",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [],
+      "writes": [],
+      "read_singletons": [
+        "GameStateManager",
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "SoundLibrary"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UpdateShaderValues",
+      "file": "shader_library.h",
+      "stage": "update",
+      "declared_components": [],
+      "reads": [],
+      "writes": [],
+      "read_singletons": [
+        "ShaderLibrary",
+        "window_manager::ProvidesCurrentResolution"
+      ],
+      "write_singletons": [
+        "ShaderLibrary"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UpdateSpriteTransform",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "Transform",
+        "afterhours::texture_manager::HasSprite"
+      ],
+      "reads": [
+        "HasColor",
+        "Transform",
+        "afterhours::texture_manager::HasSprite"
+      ],
+      "writes": [
+        "Transform",
+        "afterhours::texture_manager::HasSprite"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UpdateTagAndGoTimers",
+      "file": "systems_roundtypes.h",
+      "stage": "update",
+      "declared_components": [
+        "HasTagAndGoTracking"
+      ],
+      "reads": [
+        "HasTagAndGoTracking"
+      ],
+      "writes": [
+        "HasTagAndGoTracking"
+      ],
+      "read_singletons": [
+        "GameStateManager",
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UpdateTrackingEntities",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "TracksEntity",
+        "Transform"
+      ],
+      "reads": [
+        "TracksEntity",
+        "Transform"
+      ],
+      "writes": [
+        "TracksEntity",
+        "Transform"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UpdateUIButtonWiggle",
+      "file": "ui_button_wiggle.h",
+      "stage": "unknown",
+      "declared_components": [
+        "afterhours::ui::HasClickListener"
+      ],
+      "reads": [
+        "afterhours::ui::HasClickListener",
+        "afterhours::ui::UIComponent"
+      ],
+      "writes": [
+        "afterhours::ui::HasClickListener",
+        "afterhours::ui::HasUIModifiers",
+        "afterhours::ui::UIComponent"
+      ],
+      "read_singletons": [
+        "afterhours::ui::UIContext<InputAction"
+      ],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "UpdateUISlideIn",
+      "file": "ui_slide_in.h",
+      "stage": "unknown",
+      "declared_components": [],
+      "reads": [
+        "afterhours::ui::UIComponent"
+      ],
+      "writes": [
+        "afterhours::ui::HasOpacity",
+        "afterhours::ui::HasUIModifiers",
+        "afterhours::ui::UIComponent"
+      ],
+      "read_singletons": [
+        "GameStateManager",
+        "afterhours::ui::UIContext<InputAction",
+        "afterhours::window_manager::ProvidesCurrentResolution"
+      ],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "VelFromInput",
+      "file": "systems.h",
+      "stage": "fixed_update",
+      "declared_components": [
+        "HasShader",
+        "HonkState",
+        "PlayerID",
+        "Transform"
+      ],
+      "reads": [
+        "HasShader",
+        "HonkState",
+        "PlayerID",
+        "Transform"
+      ],
+      "writes": [
+        "HasShader",
+        "HonkState",
+        "PlayerID",
+        "Transform",
+        "WantsBoost"
+      ],
+      "read_singletons": [
+        "RoundManager"
+      ],
+      "write_singletons": [
+        "EntityStorage",
+        "SoundLibrary"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    },
+    {
+      "name": "WrapAroundTransform",
+      "file": "systems.h",
+      "stage": "update",
+      "declared_components": [
+        "CanWrapAround",
+        "Transform"
+      ],
+      "reads": [
+        "CanWrapAround",
+        "Transform",
+        "afterhours::window_manager::ProvidesCurrentResolution"
+      ],
+      "writes": [
+        "CanWrapAround",
+        "Transform"
+      ],
+      "read_singletons": [],
+      "write_singletons": [
+        "EntityStorage"
+      ],
+      "read_globals": [],
+      "write_globals": []
+    }
+  ],
+  "batches_by_stage": {
+    "unknown": [
+      [
+        "BeginShader",
+        "PausableSystem",
+        "UpdateUISlideIn"
+      ],
+      [
+        "UpdateUIButtonWiggle"
+      ],
+      [
+        "IntroScreens"
+      ]
+    ],
+    "update": [
+      [
+        "ScheduleMainMenuUI",
+        "SetupGameStylingDefaults",
+        "SpawnHippoItems",
+        "UpdateRenderTexture",
+        "UpdateShaderValues"
+      ],
+      [
+        "UpdateRoundCountdown",
+        "UpdateTagAndGoTimers"
+      ],
+      [
+        "InitializeTagAndGoGame",
+        "UIMoveSounds"
+      ],
+      [
+        "UIClickSounds"
+      ],
+      [
+        "HandleTagAndGoTagTransfer"
+      ],
+      [
+        "BackgroundMusic"
+      ],
+      [
+        "CheckLivesWinCondition",
+        "ScaleTaggerSize"
+      ],
+      [
+        "CheckTagAndGoWinCondition",
+        "Shoot"
+      ],
+      [
+        "CheckKillsWinCondition",
+        "ProcessHippoCollection"
+      ],
+      [
+        "CheckHippoWinCondition",
+        "WrapAroundTransform"
+      ],
+      [
+        "UpdateTrackingEntities"
+      ],
+      [
+        "UpdateSpriteTransform"
+      ],
+      [
+        "UpdateColorBasedOnEntityID"
+      ],
+      [
+        "UpdateCollidingEntities"
+      ],
+      [
+        "UpdateAnimationTransform"
+      ],
+      [
+        "SkidMarks"
+      ],
+      [
+        "SchedulePauseUI"
+      ],
+      [
+        "ScheduleDebugUI"
+      ],
+      [
+        "ProcessDeath"
+      ],
+      [
+        "ProcessDamage"
+      ],
+      [
+        "ProcessCollisionAbsorption"
+      ],
+      [
+        "MatchKartsToPlayers"
+      ],
+      [
+        "MarkEntitiesWithShaders"
+      ],
+      [
+        "DrainLife"
+      ],
+      [
+        "ApplyWinnerShader"
+      ],
+      [
+        "AIVelocity"
+      ],
+      [
+        "AITargetSelection"
+      ],
+      [
+        "AIShoot"
+      ]
+    ],
+    "render": [
+      [
+        "BeginPostProcessingShader",
+        "CarRumble",
+        "ConfigureTaggerSpotlight",
+        "RenderAnimationsWithShaders",
+        "RenderDebugGridOverlay",
+        "RenderDebugWindowInfo",
+        "RenderEntities",
+        "RenderFPS",
+        "RenderLabels",
+        "RenderLetterboxBars",
+        "RenderOOB",
+        "RenderPlayerHUD",
+        "RenderRenderTexture",
+        "RenderRoundTimer",
+        "RenderSkid",
+        "RenderSpritesWithShaders",
+        "RenderWeaponCooldown"
+      ]
+    ],
+    "fixed_update": [
+      [
+        "VelFromInput"
+      ],
+      [
+        "ProcessBoostRequests"
+      ],
+      [
+        "Move"
+      ],
+      [
+        "BoostDecay"
+      ]
+    ]
+  }
+}
