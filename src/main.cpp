@@ -102,7 +102,8 @@ void game() {
         std::make_unique<HandleTagAndGoTagTransfer>());
     systems.register_update_system(
         std::make_unique<CheckTagAndGoWinCondition>());
-    systems.register_update_system(std::make_unique<ScaleTaggerSize>());
+    systems.register_update_system(std::make_unique<ComputeTagAndGoEntityScale>());
+    systems.register_update_system(std::make_unique<ApplyEntityScale>());
 
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
     systems.register_update_system(std::make_unique<UpdateShaderValues>());

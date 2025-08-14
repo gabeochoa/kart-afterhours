@@ -303,6 +303,12 @@ struct TaggerIndicatorStyle : BaseComponent {
   raylib::Color shield_border_color = raylib::WHITE;
 };
 
+struct HasEntityScale : BaseComponent {
+  bool enabled = false;
+  float size_multiplier = 1.0f;    // Applied to NORMAL_CAR_SIZE
+  float sprite_scale = 1.0f;       // Renderer-specific scale factor
+};
+
 struct HasHippoCollection : BaseComponent {
   int hippos_collected = 0;
 

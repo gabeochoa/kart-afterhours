@@ -438,37 +438,41 @@ struct RenderRoundTimer : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
-struct ScaleTaggerSize : System<Transform, HasTagAndGoTracking> {
-
-  void reset_to_normal_size(Entity &entity, Transform &transform) {
-    transform.size = CarSizes::NORMAL_CAR_SIZE;
-    if (entity.has<afterhours::texture_manager::HasSprite>()) {
-      auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
-      sprite.scale = CarSizes::NORMAL_SPRITE_SCALE;
-    }
-  }
-
-  void update_size(Entity &entity, Transform &transform,
-                   HasTagAndGoTracking &taggerTracking) {
-    transform.size =
-        taggerTracking.is_tagger
-            ? CarSizes::NORMAL_CAR_SIZE * CarSizes::TAG_SIZE_MULTIPLIER
-            : CarSizes::NORMAL_CAR_SIZE;
-    if (entity.has<afterhours::texture_manager::HasSprite>()) {
-      auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
-      sprite.scale = taggerTracking.is_tagger ? CarSizes::TAG_SPRITE_SCALE
-                                              : CarSizes::NORMAL_SPRITE_SCALE;
-    }
-  }
-
-  virtual void for_each_with(Entity &entity, Transform &transform,
+struct ComputeTagAndGoEntityScale : System<HasEntityScale, HasTagAndGoTracking> {
+  virtual void for_each_with(Entity &entity, HasEntityScale &scale,
                              HasTagAndGoTracking &taggerTracking,
                              float) override {
     if (RoundManager::get().active_round_type != RoundType::TagAndGo) {
-      reset_to_normal_size(entity, transform);
+      scale.enabled = false;
       return;
     }
-    update_size(entity, transform, taggerTracking);
+    if (taggerTracking.is_tagger) {
+      scale.enabled = true;
+      scale.size_multiplier = CarSizes::TAG_SIZE_MULTIPLIER;
+      scale.sprite_scale = CarSizes::TAG_SPRITE_SCALE;
+    } else {
+      scale.enabled = false;
+    }
+  }
+};
+
+struct ApplyEntityScale : System<Transform, HasEntityScale> {
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             HasEntityScale &scale, float) override {
+    if (!scale.enabled) {
+      // reset to defaults when disabled
+      transform.size = CarSizes::NORMAL_CAR_SIZE;
+      if (entity.has<afterhours::texture_manager::HasSprite>()) {
+        auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
+        sprite.scale = CarSizes::NORMAL_SPRITE_SCALE;
+      }
+      return;
+    }
+    transform.size = CarSizes::NORMAL_CAR_SIZE * scale.size_multiplier;
+    if (entity.has<afterhours::texture_manager::HasSprite>()) {
+      auto &sprite = entity.get<afterhours::texture_manager::HasSprite>();
+      sprite.scale = scale.sprite_scale;
+    }
   }
 };
 
