@@ -5,9 +5,9 @@
 #include "game_state_manager.h"
 #include "input_mapping.h"
 #include "music_library.h"
+#include "query.h"
 #include "sound_library.h"
 #include "weapons.h"
-#include "query.h"
 // afterhours UI
 #include <afterhours/src/plugins/ui/components.h>
 #include <afterhours/src/plugins/ui/context.h>
@@ -49,7 +49,8 @@ struct UIMoveSounds : System<> {
       if (opt.valid()) {
         auto &ent = opt.asE();
         auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-        req = PlaySoundRequest(SoundFile::UI_Move);
+        req.policy = PlaySoundRequest::Policy::Enum;
+        req.file = SoundFile::UI_Move;
       }
     }
   }
@@ -94,7 +95,8 @@ struct UIClickSounds
       if (opt.valid()) {
         auto &ent = opt.asE();
         auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-        req = PlaySoundRequest(SoundFile::UI_Select);
+        req.policy = PlaySoundRequest::Policy::Enum;
+        req.file = SoundFile::UI_Select;
       }
     }
   }
@@ -125,7 +127,8 @@ struct BackgroundMusic : System<> {
 
 // Centralized playback that supports aliasing/prefix policies
 struct SoundPlaybackSystem : System<PlaySoundRequest> {
-  virtual void for_each_with(Entity &entity, PlaySoundRequest &req, float) override {
+  virtual void for_each_with(Entity &entity, PlaySoundRequest &req,
+                             float) override {
     // Fetch audio singleton emitter (for alias settings)
     SoundEmitter *emitter = EntityHelper::get_singleton_cmp<SoundEmitter>();
     // Dispatch by policy
@@ -181,12 +184,12 @@ struct SoundPlaybackSystem : System<PlaySoundRequest> {
   static void play_with_alias_or_name(SoundEmitter *emitter, const char *name,
                                       bool prefer_alias) {
     const std::string base{name};
- 
+
     if (prefer_alias && emitter) {
       ensure_alias_names(emitter, base, emitter->default_alias_copies);
       auto &names = emitter->alias_names_by_base[base];
       auto &idx = emitter->next_alias_index_by_base[base];
- 
+
       // Find a non-playing alias if possible
       for (size_t i = 0; i < names.size(); ++i) {
         size_t try_index = (idx + i) % names.size();
@@ -203,7 +206,7 @@ struct SoundPlaybackSystem : System<PlaySoundRequest> {
       // All busy or no aliases loaded; try multi-play for concurrency
       try {
         auto &s = SoundLibrary::get().get(base);
-        raylib::PlaySoundMulti(s);
+        raylib::PlaySound(s);
       } catch (...) {
         // Fallback
         SoundLibrary::get().play(name);
@@ -211,11 +214,11 @@ struct SoundPlaybackSystem : System<PlaySoundRequest> {
       idx = (idx + 1) % names.size();
       return;
     }
- 
+
     // No alias preference or no emitter: try multi-play for concurrency
     try {
       auto &s = SoundLibrary::get().get(base);
-      raylib::PlaySoundMulti(s);
+      raylib::PlaySound(s);
     } catch (...) {
       SoundLibrary::get().play(name);
     }
@@ -230,7 +233,9 @@ struct UISoundBindingSystem : System<> {
     return GameStateManager::get().is_menu_active();
   }
 
-  virtual void once(float) override { inpc = input::get_input_collector<InputAction>(); }
+  virtual void once(float) override {
+    inpc = input::get_input_collector<InputAction>();
+  }
 
   template <typename TAction>
   static void enqueue_move_if_any(const TAction &actions_done) {
@@ -239,11 +244,14 @@ struct UISoundBindingSystem : System<> {
                          actions_done.action == InputAction::WidgetNext ||
                          actions_done.action == InputAction::WidgetBack;
     if (is_move) {
-      auto opt = EntityQuery({.force_merge = true}).whereHasComponent<SoundEmitter>().gen_first();
+      auto opt = EntityQuery({.force_merge = true})
+                     .whereHasComponent<SoundEmitter>()
+                     .gen_first();
       if (opt.valid()) {
         auto &ent = opt.asE();
         auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-        req = PlaySoundRequest(SoundFile::UI_Move);
+        req.policy = PlaySoundRequest::Policy::Enum;
+        req.file = SoundFile::UI_Move;
       }
     }
   }

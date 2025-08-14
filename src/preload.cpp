@@ -130,9 +130,20 @@ Preload &Preload::make_singleton() {
   auto &sophie = EntityHelper::createEntity();
   {
     input::add_singleton_components<InputAction>(sophie, get_mapping());
-    window_manager::add_singleton_components(sophie);
-    texture_manager::add_singleton_components(sophie);
-    afterhours::animation::add_singleton_components(sophie);
+    window_manager::add_singleton_components(sophie, 200);
+    ui::add_singleton_components<InputAction>(sophie);
+
+    texture_manager::add_singleton_components(
+        sophie, raylib::LoadTexture(
+                    Files::get()
+                        .fetch_resource_path("images", "spritesheet.png")
+                        .c_str()));
+
+    sophie.get<ui::FontManager>().load_font(
+        get_font_name(FontID::EQPro),
+        Files::get()
+            .fetch_resource_path("", "eqprorounded-regular.ttf")
+            .c_str());
 
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();

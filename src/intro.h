@@ -3,6 +3,7 @@
 
 #include "rl.h"
 
+#include "components.h"
 #include "config.h"
 #include "preload.h"
 #include "shader_library.h"
@@ -227,19 +228,28 @@ struct IntroScreens
 
         if (!passbyPlayed[i] && car_pos.x >= (float)resolution.width * 0.1f) {
           auto enqueue = [](const char *name) {
-            auto opt = EntityQuery({.force_merge = true}).whereHasComponent<SoundEmitter>().gen_first();
+            auto opt = EntityQuery({.force_merge = true})
+                           .whereHasComponent<SoundEmitter>()
+                           .gen_first();
             if (opt.valid()) {
               auto &ent = opt.asE();
               auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
               req.policy = PlaySoundRequest::Policy::Name;
               req.name = name;
-              req.prefer_alias = false; // these pass-bys are long; no aliasing needed
+              req.prefer_alias =
+                  false; // these pass-bys are long; no aliasing needed
             }
           };
           switch (i) {
-          case 0: enqueue("IntroPassBy_0"); break;
-          case 1: enqueue("IntroPassBy_1"); break;
-          case 2: enqueue("IntroPassBy_2"); break;
+          case 0:
+            enqueue("IntroPassBy_0");
+            break;
+          case 1:
+            enqueue("IntroPassBy_1");
+            break;
+          case 2:
+            enqueue("IntroPassBy_2");
+            break;
           }
           passbyPlayed[i] = true;
         }
@@ -447,7 +457,9 @@ struct IntroScreens
     if (!passbyStarted && previous_state != State::Chase &&
         state == State::Chase) {
       set_passby_volume(1.f);
-      auto opt = EntityQuery({.force_merge = true}).whereHasComponent<SoundEmitter>().gen_first();
+      auto opt = EntityQuery({.force_merge = true})
+                     .whereHasComponent<SoundEmitter>()
+                     .gen_first();
       if (opt.valid()) {
         auto &ent = opt.asE();
         auto &r0 = ent.addComponentIfMissing<PlaySoundRequest>();
