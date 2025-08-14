@@ -155,6 +155,11 @@ Preload &Preload::make_singleton() {
 
     sophie.addComponent<ManagesAvailableColors>();
     EntityHelper::registerSingleton<ManagesAvailableColors>(sophie);
+
+    sophie.addComponent<PlayerPresenceCache>();
+    EntityHelper::registerSingleton<PlayerPresenceCache>(sophie);
+    sophie.addComponent<DesiredLocalPlayers>();
+    EntityHelper::registerSingleton<DesiredLocalPlayers>(sophie);
   }
 
   return *this;

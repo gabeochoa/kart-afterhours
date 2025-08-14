@@ -77,7 +77,8 @@ void game() {
     systems.register_update_system(std::make_unique<AISetActiveMode>());
     systems.register_update_system(std::make_unique<AIUpdateAIParamsSystem>());
     systems.register_update_system(std::make_unique<Shoot>());
-    systems.register_update_system(std::make_unique<MatchKartsToPlayers>());
+    systems.register_update_system(std::make_unique<PlayerJoinLeaveSystem>());
+    systems.register_update_system(std::make_unique<PlayerAutoFillSystem>());
     systems.register_update_system(std::make_unique<ProcessDamage>());
     systems.register_update_system(
         std::make_unique<ProcessCollisionAbsorption>());

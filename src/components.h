@@ -3,6 +3,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 
 #include "input_mapping.h"
 #include "math_util.h"
@@ -115,6 +116,15 @@ struct ManagesAvailableColors : BaseComponent {
     users[id] = index;
     return colors[index];
   }
+};
+
+struct PlayerPresenceCache : BaseComponent {
+  std::bitset<input::MAX_GAMEPAD_ID> connected;
+};
+
+struct DesiredLocalPlayers : BaseComponent {
+  // When not set, autofill is disabled
+  std::optional<size_t> desired_total;
 };
 
 struct AIControlled : BaseComponent {
