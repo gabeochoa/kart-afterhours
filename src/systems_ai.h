@@ -16,7 +16,8 @@
 struct AITargetSelection : PausableSystem<AIControlled, Transform, AIParams> {
 
   virtual void for_each_with(Entity &entity, AIControlled &ai,
-                             Transform &transform, AIParams &params, float dt) override {
+                             Transform &transform, AIParams &params,
+                             float dt) override {
     (void)dt;
 
     auto round_type = RoundManager::get().active_round_type;
@@ -48,8 +49,8 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform, AIParams> {
   }
 
 private:
-  void pre_round_ai_target(Entity &entity, AIControlled &ai, Transform &transform,
-                           const AIParams &params) {
+  void pre_round_ai_target(Entity &entity, AIControlled &ai,
+                           Transform &transform, const AIParams &params) {
     (void)entity;
     const bool has_no_target = (ai.target.x == 0.0f && ai.target.y == 0.0f);
     float distance_to_target = distance_sq(transform.pos(), ai.target);
@@ -150,9 +151,9 @@ private:
     vec2 target_pos = closest_hippo_pos;
     if (actual_offset_range > 0.0f) {
       // TODO: Extract rng seeding and random float helpers into a shared util
-      unsigned int seed = entity.id +
-                          static_cast<unsigned int>(closest_hippo_pos.x * 1000) +
-                          static_cast<unsigned int>(closest_hippo_pos.y * 1000);
+      unsigned int seed =
+          entity.id + static_cast<unsigned int>(closest_hippo_pos.x * 1000) +
+          static_cast<unsigned int>(closest_hippo_pos.y * 1000);
 
       seed = seed * 1103515245 + 12345;
       float rand_x = (static_cast<float>(seed & 0x7FFF) / 32767.0f - 0.5f) *
@@ -262,8 +263,8 @@ private:
       move_direction = vec_norm(transform.velocity);
     }
 
-    vec2 target_pos =
-        transform.pos() + move_direction * params.runner_evade_lookahead_distance;
+    vec2 target_pos = transform.pos() +
+                      move_direction * params.runner_evade_lookahead_distance;
 
     ai.target = target_pos;
   }
@@ -272,7 +273,8 @@ private:
 struct AIVelocity : PausableSystem<AIControlled, Transform, AIParams> {
 
   virtual void for_each_with(Entity &entity, AIControlled &ai,
-                             Transform &transform, AIParams &params, float dt) override {
+                             Transform &transform, AIParams &params,
+                             float dt) override {
     const auto &round_settings = RoundManager::get().get_active_settings();
     const bool is_in_game =
         round_settings.state == RoundSettings::GameState::InGame;
@@ -330,8 +332,10 @@ struct AIVelocity : PausableSystem<AIControlled, Transform, AIParams> {
     float ahead_dot =
         (forward_dir.x * to_target_dir.x) + (forward_dir.y * to_target_dir.y);
 
-    const float ahead_threshold = std::cos(params.boost_ahead_alignment_deg * (M_PI / 180.0f));
-    if (ahead_dot > ahead_threshold && distance_to_target_sq > params.boost_min_distance_sq &&
+    const float ahead_threshold =
+        std::cos(params.boost_ahead_alignment_deg * (M_PI / 180.0f));
+    if (ahead_dot > ahead_threshold &&
+        distance_to_target_sq > params.boost_min_distance_sq &&
         !transform.is_reversing() && transform.accel_mult <= 1.f) {
       float now = static_cast<float>(raylib::GetTime());
       auto &bc = entity.addComponentIfMissing<AIBoostCooldown>();
@@ -394,8 +398,8 @@ struct AIVelocity : PausableSystem<AIControlled, Transform, AIParams> {
 
 struct AIShoot : PausableSystem<AIControlled, Transform, AIParams, CanShoot> {
   virtual void for_each_with(Entity &entity, AIControlled &,
-                             Transform &transform, AIParams &params, CanShoot &canShoot,
-                             float dt) override {
+                             Transform &transform, AIParams &params,
+                             CanShoot &canShoot, float dt) override {
     const auto &settings = RoundManager::get().get_active_settings();
     if (settings.state != RoundSettings::GameState::InGame) {
       return;
@@ -429,7 +433,8 @@ struct AIShoot : PausableSystem<AIControlled, Transform, AIParams, CanShoot> {
       if (dot > best_alignment)
         best_alignment = dot;
     }
-    const float fire_threshold = std::cos(params.shooting_alignment_angle_deg * (M_PI / 180.0f));
+    const float fire_threshold =
+        std::cos(params.shooting_alignment_angle_deg * (M_PI / 180.0f));
     if (best_alignment >= fire_threshold) {
       canShoot.fire(entity, InputAction::ShootLeft, dt);
       canShoot.fire(entity, InputAction::ShootRight, dt);
@@ -446,15 +451,16 @@ struct AISetActiveMode : System<AIMode> {
   }
 };
 
-// Applies difficulty-based parameter updates for AIParams; runs only on character creation screen
+// Applies difficulty-based parameter updates for AIParams; runs only on
+// character creation screen
 struct AIUpdateAIParamsSystem : System<AIParams, AIDifficulty> {
   virtual bool should_run(float) override {
     return GameStateManager::get().active_screen ==
            GameStateManager::Screen::CharacterCreation;
   }
 
-  virtual void for_each_with(Entity &entity, AIParams &params, AIDifficulty &diff,
-                             float) override {
+  virtual void for_each_with(Entity &entity, AIParams &params,
+                             AIDifficulty &diff, float) override {
     RoundType active_mode = RoundManager::get().active_round_type;
     if (entity.has<AIMode>()) {
       const auto &aim = entity.get<AIMode>();

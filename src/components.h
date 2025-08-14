@@ -471,11 +471,11 @@ struct SoundEmitter : BaseComponent {
 
 struct PlaySoundRequest : BaseComponent {
   enum class Policy {
-    Name,                   // Use exact sound name
-    Enum,                   // Use SoundFile enum
-    PrefixRandom,           // Use Library::get_random_match(prefix)
-    PrefixFirstAvailable,   // Use Library::play_first_available_match(prefix)
-    PrefixIfNonePlaying     // Use Library::play_if_none_playing(prefix)
+    Name,                 // Use exact sound name
+    Enum,                 // Use SoundFile enum
+    PrefixRandom,         // Use Library::get_random_match(prefix)
+    PrefixFirstAvailable, // Use Library::play_first_available_match(prefix)
+    PrefixIfNonePlaying   // Use Library::play_if_none_playing(prefix)
   };
 
   Policy policy{Policy::Name};
