@@ -333,6 +333,7 @@ struct HasTagAndGoTracking : BaseComponent {
   HasTagAndGoTracking() = default;
 };
 
+// TODO: Allow "ghost" mice state after elimination (non-colliding, visual ghost effect)
 struct HasCatAndMiceRole : BaseComponent {
   bool is_cat = false;
   bool eliminated = false;

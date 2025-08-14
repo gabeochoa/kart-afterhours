@@ -552,6 +552,7 @@ struct InitializeCatAndMice : PausableSystem<> {
   }
 };
 
+// TODO: Support ghost mice (post-elimination non-interactive spectators) to keep players engaged
 struct CatInstantKillOnTouch : PausableSystem<Transform, HasCatAndMiceRole> {
   virtual void for_each_with(Entity &entity, Transform &transform,
                              HasCatAndMiceRole &role, float) override {
