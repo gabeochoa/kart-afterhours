@@ -6,6 +6,7 @@
 #include "preload.h" // FontID
 #include "texture_library.h"
 #include "ui_key.h"
+#include "navigation.h"
 #include <afterhours/src/plugins/animation.h>
 
 using namespace afterhours;
@@ -317,26 +318,7 @@ Padding button_padding = Padding{
     .right = pixels(0.f),
 };
 
-void ScheduleMainMenuUI::navigate_back() {
-  // If we're on the main screen, exit the game
-  if (GameStateManager::get().active_screen == GameStateManager::Screen::Main ||
-      navigation_stack.empty()) {
-    exit_game();
-    return;
-  }
-
-  Screen previous_screen = navigation_stack.back();
-  navigation_stack.pop_back();
-  GameStateManager::get().set_next_screen(previous_screen);
-}
-
-void ScheduleMainMenuUI::navigate_to_screen(Screen screen) {
-  if (GameStateManager::get().active_screen != screen) {
-    navigation_stack.push_back(GameStateManager::get().active_screen);
-  }
-
-  GameStateManager::get().set_next_screen(screen);
-}
+// Navigation moved to NavigationSystem/navigation.h helpers
 
 void ScheduleMainMenuUI::update_resolution_cache() {
   resolution_provider = EntityHelper::get_singleton_cmp<
@@ -362,13 +344,6 @@ void ScheduleMainMenuUI::once(float) {
     update_resolution_cache();
   }
 
-  if (navigation_stack.empty()) {
-    if (GameStateManager::get().active_screen !=
-        GameStateManager::Screen::Main) {
-      navigation_stack.push_back(GameStateManager::Screen::Main);
-    }
-  }
-
   // character creator
 
   {
@@ -379,36 +354,9 @@ void ScheduleMainMenuUI::once(float) {
 }
 
 bool ScheduleMainMenuUI::should_run(float) {
-  inpc = input::get_input_collector<InputAction>();
-  if (GameStateManager::get().is_game_active()) {
-    ui_visible = false;
-  } else if (GameStateManager::get().is_menu_active()) {
-    ui_visible = true;
-  }
-
-  const bool start_pressed =
-      std::ranges::any_of(inpc.inputs_pressed(), [](const auto &actions_done) {
-        return actions_done.action == InputAction::WidgetMod;
-      });
-
-  if (!ui_visible && start_pressed) {
-    navigate_to_screen(GameStateManager::Screen::Main);
-    ui_visible = true;
-  } else if (ui_visible && start_pressed) {
-    ui_visible = false;
-  }
-
-  // Handle escape key for back navigation
-  const bool escape_pressed =
-      std::ranges::any_of(inpc.inputs_pressed(), [](const auto &actions_done) {
-        return actions_done.action == InputAction::MenuBack;
-      });
-
-  if (escape_pressed && ui_visible) {
-    navigate_back();
-  }
-
-  return ui_visible;
+  // Visibility managed by NavigationSystem; render if menu active and UI visible
+  auto *nav = EntityHelper::get_singleton_cmp<NavigationStack>();
+  return GameStateManager::get().is_menu_active() && (nav ? nav->ui_visible : true);
 }
 
 void ScheduleMainMenuUI::character_selector_column(
@@ -830,13 +778,13 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
   ui_helpers::create_styled_button(
       context, top_left.ent(), "round settings",
-      [this]() { navigate_to_screen(GameStateManager::Screen::RoundSettings); },
+      []() { navigation::to(GameStateManager::Screen::RoundSettings); },
       0);
 
   ui_helpers::create_styled_button(
       context, top_left.ent(), "back",
-      [this]() {
-        GameStateManager::get().set_next_screen(GameStateManager::Screen::Main);
+      []() {
+        navigation::back();
       },
       1);
 
@@ -1222,12 +1170,12 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                      .with_absolute_position()
                      .with_debug_name("round_settings_top_left"));
 
-    ui_helpers::create_styled_button(
-        context, settings_group.ent(), "select map",
-        [this]() {
-          navigate_to_screen(GameStateManager::Screen::MapSelection);
+      ui_helpers::create_styled_button(
+      context, settings_group.ent(), "select map",
+      []() {
+          navigation::to(GameStateManager::Screen::MapSelection);
         },
-        0);
+      0);
 
     {
       auto win_condition_div =
@@ -1283,7 +1231,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     }
 
     ui_helpers::create_styled_button(
-        context, settings_group.ent(), "back", [this]() { navigate_back(); },
+        context, settings_group.ent(), "back", []() { navigation::back(); },
         2);
   }
 
@@ -1576,7 +1524,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                      prev_preview_index);
 
   ui_helpers::create_styled_button(
-      context, left_col.ent(), "back", [this]() { navigate_back(); }, 0);
+      context, left_col.ent(), "back", []() { navigation::back(); }, 0);
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
@@ -1621,20 +1569,20 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
   // Play button
   ui_helpers::create_styled_button(
       context, top_left.ent(), "play",
-      [this]() {
-        navigate_to_screen(GameStateManager::Screen::CharacterCreation);
+      []() {
+        navigation::to(GameStateManager::Screen::CharacterCreation);
       },
       0);
 
   // About button
   ui_helpers::create_styled_button(
       context, top_left.ent(), "about",
-      [this]() { navigate_to_screen(GameStateManager::Screen::About); }, 1);
+      []() { navigation::to(GameStateManager::Screen::About); }, 1);
 
   // Settings button
   ui_helpers::create_styled_button(
       context, top_left.ent(), "settings",
-      [this]() { navigate_to_screen(GameStateManager::Screen::Settings); }, 2);
+      []() { navigation::to(GameStateManager::Screen::Settings); }, 2);
 
   // Exit button
   ui_helpers::create_styled_button(
@@ -1653,10 +1601,10 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
         context, elem.ent(), "settings_top_left", 0);
     ui_helpers::create_styled_button(
         context, top_left.ent(), "back",
-        [this]() {
+        []() {
           Settings::get().update_resolution(
-              current_resolution_provider->current_resolution);
-          navigate_back();
+              EntityHelper::get_singleton_cmp<window_manager::ProvidesCurrentResolution>()->current_resolution);
+          navigation::back();
         },
         0);
   }
@@ -1726,7 +1674,7 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
     auto top_left = ui_helpers::create_top_left_container(context, elem.ent(),
                                                           "about_top_left", 0);
     ui_helpers::create_styled_button(
-        context, top_left.ent(), "back", [this]() { navigate_back(); }, 0);
+        context, top_left.ent(), "back", []() { navigation::back(); }, 0);
   }
 
   auto control_group =
@@ -2119,7 +2067,7 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
   {
     if (imm::button(context, mk(button_group.ent()),
                     ComponentConfig{}.with_label("continue"))) {
-      navigate_to_screen(GameStateManager::Screen::CharacterCreation);
+      navigation::to(GameStateManager::Screen::CharacterCreation);
     }
   }
 

@@ -9,6 +9,7 @@
 #include "shader_library.h"
 #include "sound_library.h"
 #include "texture_library.h"
+#include "navigation.h"
 
 using namespace afterhours;
 // for HasTexture
@@ -155,6 +156,10 @@ Preload &Preload::make_singleton() {
 
     sophie.addComponent<ManagesAvailableColors>();
     EntityHelper::registerSingleton<ManagesAvailableColors>(sophie);
+
+    // Navigation stack singleton for consistent UI navigation
+    sophie.addComponent<NavigationStack>();
+    EntityHelper::registerSingleton<NavigationStack>(sophie);
   }
 
   return *this;
