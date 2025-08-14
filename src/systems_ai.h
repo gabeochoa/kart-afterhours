@@ -10,6 +10,7 @@
 #include "shader_library.h"
 #include "weapons.h"
 #include <afterhours/ah.h>
+#include <algorithm>
 
 // TODO feels like we will need pathfinding at some point
 struct AITargetSelection : PausableSystem<AIControlled, Transform> {
@@ -31,44 +32,22 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
       return;
     }
 
-    AIMode::Mode active_mode = AIMode::Mode::AutoFromRound;
+    RoundType active_mode = round_type;
     if (entity.has<AIMode>()) {
-      active_mode = entity.get<AIMode>().mode;
-    }
-    if (active_mode == AIMode::Mode::AutoFromRound) {
-      switch (round_type) {
-      case RoundType::Lives:
-      case RoundType::Kills:
-        active_mode = AIMode::Mode::Kills;
-        break;
-      case RoundType::Hippo:
-        active_mode = AIMode::Mode::Hippo;
-        break;
-      case RoundType::TagAndGo:
-        active_mode = AIMode::Mode::TagAndGo;
-        break;
-      default:
-        log_error("Invalid round type in AITargetSelection: {}",
-                  static_cast<size_t>(round_type));
-        active_mode = AIMode::Mode::Default;
-        break;
-      }
+      const auto &aim = entity.get<AIMode>();
+      active_mode = aim.follow_round_type ? round_type : aim.mode;
     }
 
     switch (active_mode) {
-    case AIMode::Mode::Kills:
+    case RoundType::Lives:
+    case RoundType::Kills:
       kills_ai_target(entity, ai, transform, params);
       break;
-    case AIMode::Mode::Hippo:
+    case RoundType::Hippo:
       hippo_ai_target(entity, ai, transform, params);
       break;
-    case AIMode::Mode::TagAndGo:
+    case RoundType::TagAndGo:
       tag_and_go_ai_target(entity, ai, transform, params);
-      break;
-    case AIMode::Mode::Default:
-    case AIMode::Mode::AutoFromRound:
-    default:
-      default_ai_target(entity, ai, transform, params);
       break;
     }
   }
@@ -380,11 +359,24 @@ struct AIVelocity : PausableSystem<AIControlled, Transform> {
     float ahead_dot =
         (forward_dir.x * to_target_dir.x) + (forward_dir.y * to_target_dir.y);
 
-    const float ahead_threshold = std::cos(1.0f * (M_PI / 180.0f));
-    if (ahead_dot > ahead_threshold && distance_to_target_sq > 400.0f &&
+    float ahead_deg = 1.0f;
+    float min_distance_sq = 400.0f;
+    if (entity.has<AIParams>()) {
+      const auto &p = entity.get<AIParams>();
+      ahead_deg = p.boost_ahead_alignment_deg;
+      min_distance_sq = p.boost_min_distance_sq;
+    }
+    const float ahead_threshold = std::cos(ahead_deg * (M_PI / 180.0f));
+    if (ahead_dot > ahead_threshold && distance_to_target_sq > min_distance_sq &&
         !transform.is_reversing() && transform.accel_mult <= 1.f) {
       float now = static_cast<float>(raylib::GetTime());
       auto &bc = entity.addComponentIfMissing<AIBoostCooldown>();
+      if (entity.has<AIParams>()) {
+        const auto &p = entity.get<AIParams>();
+        if (p.boost_cooldown_seconds > 0.0f) {
+          bc.cooldown_seconds = p.boost_cooldown_seconds;
+        }
+      }
       if (now >= bc.next_allowed_time) {
         entity.addComponentIfMissing<WantsBoost>();
         bc.next_allowed_time = now + bc.cooldown_seconds;
@@ -485,5 +477,66 @@ struct AIShoot : PausableSystem<AIControlled, Transform, CanShoot> {
       canShoot.fire(entity, InputAction::ShootLeft, dt);
       canShoot.fire(entity, InputAction::ShootRight, dt);
     }
+  }
+};
+
+// Keeps AIMode.mode in sync with RoundManager when follow_round_type is true
+struct AISetActiveMode : System<AIMode> {
+  virtual void for_each_with(Entity &, AIMode &aim, float) override {
+    if (aim.follow_round_type) {
+      aim.mode = RoundManager::get().active_round_type;
+    }
+  }
+};
+
+// Applies difficulty-based parameter updates for AIParams; runs only on character creation screen
+struct AIUpdateAIParamsSystem : System<AIParams, AIDifficulty> {
+  virtual bool should_run(float) override {
+    return GameStateManager::get().active_screen ==
+           GameStateManager::Screen::CharacterCreation;
+  }
+
+  virtual void for_each_with(Entity &, AIParams &params, AIDifficulty &diff,
+                             float) override {
+    // Tune hippo jitter by difficulty
+    switch (diff.difficulty) {
+    case AIDifficulty::Difficulty::Easy:
+      params.hippo_jitter_easy = 220.0f;
+      params.hippo_jitter_medium = 110.0f;
+      params.hippo_jitter_hard = 60.0f;
+      params.hippo_jitter_expert = 0.0f;
+      params.shooting_alignment_angle_deg = 15.0f;
+      params.boost_cooldown_seconds = 3.5f;
+      break;
+    case AIDifficulty::Difficulty::Medium:
+      params.hippo_jitter_easy = 200.0f;
+      params.hippo_jitter_medium = 100.0f;
+      params.hippo_jitter_hard = 50.0f;
+      params.hippo_jitter_expert = 0.0f;
+      params.shooting_alignment_angle_deg = 12.0f;
+      params.boost_cooldown_seconds = 3.0f;
+      break;
+    case AIDifficulty::Difficulty::Hard:
+      params.hippo_jitter_easy = 160.0f;
+      params.hippo_jitter_medium = 80.0f;
+      params.hippo_jitter_hard = 40.0f;
+      params.hippo_jitter_expert = 0.0f;
+      params.shooting_alignment_angle_deg = 8.0f;
+      params.boost_cooldown_seconds = 2.5f;
+      break;
+    case AIDifficulty::Difficulty::Expert:
+      params.hippo_jitter_easy = 120.0f;
+      params.hippo_jitter_medium = 60.0f;
+      params.hippo_jitter_hard = 30.0f;
+      params.hippo_jitter_expert = 0.0f;
+      params.shooting_alignment_angle_deg = 6.0f;
+      params.boost_cooldown_seconds = 2.0f;
+      break;
+    }
+
+    // Ensure boost gating defaults make sense
+    params.boost_min_distance_sq = std::max(params.boost_min_distance_sq, 0.0f);
+    params.boost_ahead_alignment_deg =
+        std::clamp(params.boost_ahead_alignment_deg, 0.1f, 30.0f);
   }
 };

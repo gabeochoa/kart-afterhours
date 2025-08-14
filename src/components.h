@@ -44,6 +44,8 @@ static vec2 get_spawn_position(size_t id) {
 }
 
 #include "bitset_utils.h"
+// Forward declare RoundType to avoid heavy header include
+enum struct RoundType : size_t;
 struct ManagesAvailableColors : BaseComponent {
   constexpr static std::array<raylib::Color, input::MAX_GAMEPAD_ID> colors = {{
       raylib::BLUE,
@@ -128,11 +130,12 @@ struct AIDifficulty : BaseComponent {
 };
 
 struct AIMode : BaseComponent {
-  enum class Mode { AutoFromRound, Default, Kills, Hippo, TagAndGo };
+  // If true, the mode will be kept in sync with RoundManager::active_round_type
+  bool follow_round_type{true};
+  RoundType mode{RoundType::Lives};
 
-  Mode mode{Mode::AutoFromRound};
-
-  AIMode(Mode m = Mode::AutoFromRound) : mode(m) {}
+  AIMode(RoundType m = RoundType::Lives, bool follow = true)
+      : follow_round_type(follow), mode(m) {}
 };
 
 struct AIParams : BaseComponent {
@@ -153,6 +156,14 @@ struct AIParams : BaseComponent {
 
   // Kills mode shooting: maximum allowed misalignment to fire (degrees)
   float shooting_alignment_angle_deg{10.0f};
+
+  // Boost behavior parameters
+  // Only consider boosting when the target is at least this far away (squared distance)
+  float boost_min_distance_sq{400.0f};
+  // Only consider boosting when the target is within this ahead cone (degrees)
+  float boost_ahead_alignment_deg{1.0f};
+  // Cooldown override for AI boost requests (seconds); <= 0 to keep current component/default
+  float boost_cooldown_seconds{3.0f};
 };
 
 struct AIBoostCooldown : BaseComponent {

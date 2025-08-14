@@ -263,7 +263,7 @@ void make_ai() {
   auto &entity = make_car(num_players + num_ais);
   entity.addComponent<AIControlled>();
   entity.addComponent<AIDifficulty>();
-  entity.addComponent<AIMode>(AIMode::Mode::AutoFromRound);
+  entity.addComponent<AIMode>(RoundType::Lives, true);
   entity.addComponent<AIParams>();
 }
 
