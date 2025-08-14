@@ -479,6 +479,53 @@ struct ProjectileConfig : BaseComponent {
         spread(spr), can_wrap_around(can_wrap),
         render_out_of_bounds(render_oob), base_damage(dmg),
         angle_offsets(std::move(angles)) {}
+
+  struct Builder {
+    ProjectileConfig cfg{};
+    Builder &with_size(vec2 v) {
+      cfg.size = v;
+      return *this;
+    }
+    Builder &with_speed(float v) {
+      cfg.speed = v;
+      return *this;
+    }
+    Builder &with_acceleration(float v) {
+      cfg.acceleration = v;
+      return *this;
+    }
+    Builder &with_lifetime(float v) {
+      cfg.life_time_seconds = v;
+      return *this;
+    }
+    Builder &with_spread(float v) {
+      cfg.spread = v;
+      return *this;
+    }
+    Builder &with_can_wrap(bool v) {
+      cfg.can_wrap_around = v;
+      return *this;
+    }
+    Builder &with_render_out_of_bounds(bool v) {
+      cfg.render_out_of_bounds = v;
+      return *this;
+    }
+    Builder &with_base_damage(int v) {
+      cfg.base_damage = v;
+      return *this;
+    }
+    Builder &with_angle_offsets(std::vector<float> v) {
+      cfg.angle_offsets = std::move(v);
+      return *this;
+    }
+    Builder &add_angle_offset(float v) {
+      cfg.angle_offsets.push_back(v);
+      return *this;
+    }
+    ProjectileConfig build() { return cfg; }
+  };
+
+  static Builder builder() { return Builder{}; }
 };
 
 struct WeaponSoundInfo : BaseComponent {
