@@ -1352,9 +1352,8 @@ struct VelFromInput
             opt.valid()) {
           auto &ent = opt.asE();
           auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-          req.policy = honk.was_down
-                           ? PlaySoundRequest::Policy::PrefixIfNonePlaying
-                           : PlaySoundRequest::Policy::PrefixFirstAvailable;
+          req.policy = honk.was_down ? PlaySoundRequest::Policy::PrefixIfNonePlaying
+                                     : PlaySoundRequest::Policy::PrefixFirstAvailable;
           req.prefix =
               "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
         }
@@ -1373,9 +1372,8 @@ struct VelFromInput
           opt.valid()) {
         auto &ent = opt.asE();
         auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-        req.policy = honk.was_down
-                         ? PlaySoundRequest::Policy::PrefixIfNonePlaying
-                         : PlaySoundRequest::Policy::PrefixFirstAvailable;
+        req.policy = honk.was_down ? PlaySoundRequest::Policy::PrefixIfNonePlaying
+                                   : PlaySoundRequest::Policy::PrefixFirstAvailable;
         req.prefix = horn_prefix;
       }
     }
