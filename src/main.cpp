@@ -27,12 +27,15 @@ backward::SignalHandling sh;
 bool running = true;
 // TODO move into library or somethign
 raylib::RenderTexture2D mainRT;
+raylib::RenderTexture2D screenRT;
 
 using namespace afterhours;
 
 void game() {
   mainRT = raylib::LoadRenderTexture(Settings::get().get_screen_width(),
                                      Settings::get().get_screen_height());
+  screenRT = raylib::LoadRenderTexture(Settings::get().get_screen_width(),
+                                       Settings::get().get_screen_height());
 
   SystemManager systems;
 
@@ -152,6 +155,7 @@ void game() {
   // renders
   {
     systems.register_render_system([&](float) {
+      // pass 1: render world into mainRT
       raylib::BeginTextureMode(mainRT);
       raylib::ClearBackground(raylib::DARKGRAY);
     });
@@ -169,12 +173,56 @@ void game() {
       systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
       systems.register_render_system(std::make_unique<RenderOOB>());
       systems.register_render_system(std::make_unique<CarRumble>());
-      //
-      ui::register_render_systems<InputAction>(
-          systems, InputAction::ToggleUILayoutDebug);
-      //
+      // (UI moved to pass 2 so it is after tag shader)
     }
     systems.register_render_system([&](float) { raylib::EndTextureMode(); });
+    // pass 2: render mainRT with tag shader into screenRT, then draw UI into
+    // screenRT
+    systems.register_render_system(
+        std::make_unique<ConfigureTaggerSpotlight>());
+    systems.register_render_system([&](float) {
+      raylib::BeginTextureMode(screenRT);
+      raylib::ClearBackground(raylib::BLANK);
+      // bind tag shader if available; spotlight enabled is controlled via
+      // uniforms
+      bool useTagShader = ShaderLibrary::get().contains("post_processing_tag");
+      if (useTagShader) {
+        const auto &shader = ShaderLibrary::get().get("post_processing_tag");
+        raylib::BeginShaderMode(shader);
+        float t = static_cast<float>(raylib::GetTime());
+        int timeLoc = raylib::GetShaderLocation(shader, "time");
+        if (timeLoc != -1) {
+          raylib::SetShaderValue(shader, timeLoc, &t,
+                                 raylib::SHADER_UNIFORM_FLOAT);
+        }
+        auto *rez = EntityHelper::get_singleton_cmp<
+            window_manager::ProvidesCurrentResolution>();
+        if (rez) {
+          vec2 r = {static_cast<float>(rez->current_resolution.width),
+                    static_cast<float>(rez->current_resolution.height)};
+          int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+          if (rezLoc != -1) {
+            raylib::SetShaderValue(shader, rezLoc, &r,
+                                   raylib::SHADER_UNIFORM_VEC2);
+          }
+        }
+      }
+      // draw mainRT into screenRT (1:1, same size)
+      const raylib::Rectangle src{0.0f, 0.0f, (float)mainRT.texture.width,
+                                  -(float)mainRT.texture.height};
+      const raylib::Rectangle dst{0.0f, 0.0f, (float)screenRT.texture.width,
+                                  (float)screenRT.texture.height};
+      raylib::DrawTexturePro(mainRT.texture, src, dst, {0.0f, 0.0f}, 0.0f,
+                             raylib::WHITE);
+      if (useTagShader) {
+        raylib::EndShaderMode();
+      }
+    });
+    // render UI into screenRT (still in texture mode)
+    ui::register_render_systems<InputAction>(systems,
+                                             InputAction::ToggleUILayoutDebug);
+    systems.register_render_system([&](float) { raylib::EndTextureMode(); });
+    // pass 3: draw to screen with base post-processing shader
     systems.register_render_system([&](float) { raylib::BeginDrawing(); });
     {
       // Render order: apply post-processing to game content, then draw

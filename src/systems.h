@@ -345,6 +345,9 @@ struct UpdateRenderTexture : System<> {
       resolution = pcr->current_resolution;
       raylib::UnloadRenderTexture(mainRT);
       mainRT = raylib::LoadRenderTexture(resolution.width, resolution.height);
+      // keep the second render texture in sync
+      raylib::UnloadRenderTexture(screenRT);
+      screenRT = raylib::LoadRenderTexture(resolution.width, resolution.height);
     }
   }
 };
