@@ -199,6 +199,7 @@ private:
 
     vec2 target_pos = closest_hippo_pos;
     if (actual_offset_range > 0.0f) {
+      // TODO: Extract rng seeding and random float helpers into a shared util
       unsigned int seed = entity.id +
                           static_cast<unsigned int>(closest_hippo_pos.x * 1000) +
                           static_cast<unsigned int>(closest_hippo_pos.y * 1000);
