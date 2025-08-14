@@ -402,6 +402,125 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
+struct ConfigureCatSpotlight : System<> {
+  virtual void once(float) override {
+    if (!ShaderLibrary::get().contains("post_processing")) {
+      return;
+    }
+    // Always update common uniforms
+    set_common_uniforms();
+    auto &settings = RoundManager::get().get_active_settings();
+    if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
+      set_enabled(false);
+      return;
+    }
+    if (settings.state != RoundSettings::GameState::Countdown) {
+      set_enabled(false);
+      return;
+    }
+    OptEntity cat = EntityQuery()
+                        .whereHasComponent<Transform>()
+                        .whereHasComponent<HasCatMouseTracking>()
+                        .whereLambda([](const Entity &e) {
+                          return e.get<HasCatMouseTracking>().is_cat;
+                        })
+                        .gen_first();
+    if (!cat.valid()) {
+      set_enabled(false);
+      return;
+    }
+    auto *rez = EntityHelper::get_singleton_cmp<
+        window_manager::ProvidesCurrentResolution>();
+    if (!rez) {
+      set_enabled(false);
+      return;
+    }
+    vec2 screen = {static_cast<float>(rez->current_resolution.width),
+                   static_cast<float>(rez->current_resolution.height)};
+    vec2 center = cat->get<Transform>().center();
+    // Account for sprite fine-tune offsets used in rendering so spotlight
+    // centers correctly
+    const float offset_x = SPRITE_OFFSET_X;
+    const float offset_y = SPRITE_OFFSET_Y;
+    vec2 adjusted = {center.x + offset_x, center.y + offset_y};
+    float ux = adjusted.x / std::max(1.0f, screen.x);
+    float uy = adjusted.y / std::max(1.0f, screen.y);
+    // Flip Y to match render texture sampling (DrawTexturePro uses negative
+    // src.height)
+    vec2 uv = {ux, 1.0f - uy};
+    float t = static_cast<float>(raylib::GetTime());
+    float radius = 0.22f + 0.02f * std::sin(t * 3.0f);
+    float softness = 0.18f;
+    float dim = 0.82f;
+    float desat = 0.85f;
+    set_values(true, uv, radius, softness, dim, desat);
+  }
+
+  void set_enabled(bool on) const {
+    const auto &shader = ShaderLibrary::get().get("post_processing");
+    float enabled = on ? 1.0f : 0.0f;
+    int loc = raylib::GetShaderLocation(shader, "spotlightEnabled");
+    if (loc != -1) {
+      raylib::SetShaderValue(shader, loc, &enabled,
+                             raylib::SHADER_UNIFORM_FLOAT);
+    }
+  }
+
+  void set_values(bool on, vec2 pos, float radius, float softness, float dim,
+                  float desat) const {
+    const auto &shader = ShaderLibrary::get().get("post_processing");
+    float enabled = on ? 1.0f : 0.0f;
+    int locEnabled = raylib::GetShaderLocation(shader, "spotlightEnabled");
+    if (locEnabled != -1) {
+      raylib::SetShaderValue(shader, locEnabled, &enabled,
+                             raylib::SHADER_UNIFORM_FLOAT);
+    }
+    int locPos = raylib::GetShaderLocation(shader, "spotlightPos");
+    if (locPos != -1) {
+      raylib::SetShaderValue(shader, locPos, &pos, raylib::SHADER_UNIFORM_VEC2);
+    }
+    int locRad = raylib::GetShaderLocation(shader, "spotlightRadius");
+    if (locRad != -1) {
+      raylib::SetShaderValue(shader, locRad, &radius,
+                             raylib::SHADER_UNIFORM_FLOAT);
+    }
+    int locSoft = raylib::GetShaderLocation(shader, "spotlightSoftness");
+    if (locSoft != -1) {
+      raylib::SetShaderValue(shader, locSoft, &softness,
+                             raylib::SHADER_UNIFORM_FLOAT);
+    }
+    int locDim = raylib::GetShaderLocation(shader, "dimAmount");
+    if (locDim != -1) {
+      raylib::SetShaderValue(shader, locDim, &dim,
+                             raylib::SHADER_UNIFORM_FLOAT);
+    }
+    int locDesat = raylib::GetShaderLocation(shader, "desaturateAmount");
+    if (locDesat != -1) {
+      raylib::SetShaderValue(shader, locDesat, &desat,
+                             raylib::SHADER_UNIFORM_FLOAT);
+    }
+  }
+
+  void set_common_uniforms() const {
+    const auto &shader = ShaderLibrary::get().get("post_processing");
+    float t = static_cast<float>(raylib::GetTime());
+    int timeLoc = raylib::GetShaderLocation(shader, "time");
+    if (timeLoc != -1) {
+      raylib::SetShaderValue(shader, timeLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
+    }
+    auto *rez = EntityHelper::get_singleton_cmp<
+        window_manager::ProvidesCurrentResolution>();
+    if (rez) {
+      vec2 r = {static_cast<float>(rez->current_resolution.width),
+                static_cast<float>(rez->current_resolution.height)};
+      int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+      if (rezLoc != -1) {
+        raylib::SetShaderValue(shader, rezLoc, &r, raylib::SHADER_UNIFORM_VEC2);
+      }
+    }
+  }
+};
+
 struct RenderLetterboxBars : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderLetterboxBars() {}
   virtual void for_each_with(

@@ -161,7 +161,6 @@ void game() {
       systems.register_render_system(
           std::make_unique<RenderAnimationsWithShaders>());
       //
-      systems.register_render_system(std::make_unique<RenderRoundTimer>());
       systems.register_render_system(std::make_unique<RenderPlayerHUD>());
       systems.register_render_system(std::make_unique<RenderLabels>());
       systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
@@ -179,11 +178,13 @@ void game() {
       // letterbox/pillar bars so they remain pure black on top.
       systems.register_render_system(
           std::make_unique<BeginShader>("post_processing"));
+      systems.register_render_system(std::make_unique<ConfigureCatSpotlight>());
       systems.register_render_system(std::make_unique<RenderRenderTexture>());
       systems.register_render_system(
           std::make_unique<RenderDebugGridOverlay>());
       systems.register_render_system([&](float) { raylib::EndShaderMode(); });
       systems.register_render_system(std::make_unique<RenderLetterboxBars>());
+      systems.register_render_system(std::make_unique<RenderRoundTimer>());
       systems.register_render_system(std::make_unique<RenderFPS>());
       systems.register_render_system(std::make_unique<RenderDebugWindowInfo>());
     }
