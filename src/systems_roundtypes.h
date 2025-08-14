@@ -493,7 +493,8 @@ struct InitializeCatAndMice : PausableSystem<> {
     settings.round_start_wall_time = static_cast<float>(raylib::GetTime());
     settings.timer_started = true;
 
-    // Assign roles: pick cat among players if possible, else any entity
+    // Assign roles: pick cat among players if possible, else pick fairly between AI and players.
+// TODO: introduce a component (e.g., EligibleForCat) to mark/select from both AI and players evenly.
     auto players = EntityQuery().whereHasComponent<PlayerID>().gen();
     auto all_cars = EntityQuery().whereHasComponent<HasHealth>().gen();
     afterhours::RefEntity *chosen = nullptr;
