@@ -171,14 +171,7 @@ struct SoundPlaybackSystem : System<PlaySoundRequest> {
   }
 
   static bool library_contains(const std::string &name) {
-    // There is no public contains on SoundLibrary, but Library has contains
-    // through impl; expose via play/get try-catch alternative
-    try {
-      (void)SoundLibrary::get().get(name);
-      return true;
-    } catch (...) {
-      return false;
-    }
+    return SoundLibrary::get().contains(name);
   }
 
   static void play_with_alias_or_name(SoundEmitter *emitter, const char *name,
