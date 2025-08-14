@@ -44,6 +44,8 @@ static vec2 get_spawn_position(size_t id) {
 }
 
 #include "bitset_utils.h"
+// Forward declare RoundType to avoid heavy header include
+enum struct RoundType : size_t;
 struct ManagesAvailableColors : BaseComponent {
   constexpr static std::array<raylib::Color, input::MAX_GAMEPAD_ID> colors = {{
       raylib::BLUE,
@@ -125,6 +127,48 @@ struct AIDifficulty : BaseComponent {
   Difficulty difficulty{Difficulty::Medium};
 
   AIDifficulty(Difficulty diff = Difficulty::Medium) : difficulty(diff) {}
+};
+
+struct AIMode : BaseComponent {
+  // If true, the mode will be kept in sync with RoundManager::active_round_type
+  bool follow_round_type{true};
+  RoundType mode{static_cast<RoundType>(0)};
+
+  AIMode(RoundType m = static_cast<RoundType>(0), bool follow = true)
+      : follow_round_type(follow), mode(m) {}
+};
+
+struct AIParams : BaseComponent {
+  // How close to the current target before choosing a new one (world units)
+  float retarget_radius{10.0f};
+
+  // Tag & Go: how far ahead runners try to move when evading
+  float runner_evade_lookahead_distance{100.0f};
+
+  // Hippo mode: base jitter radius by difficulty
+  float hippo_jitter_easy{200.0f};
+  float hippo_jitter_medium{100.0f};
+  float hippo_jitter_hard{50.0f};
+  float hippo_jitter_expert{0.0f};
+
+  // Hippo mode: divisor for distance-based jitter attenuation
+  float hippo_jitter_distance_scale{300.0f};
+
+  // Hippo mode: evaluated jitter to use (set by systems, not code branching)
+  float hippo_target_jitter{100.0f};
+
+  // Kills mode shooting: maximum allowed misalignment to fire (degrees)
+  float shooting_alignment_angle_deg{10.0f};
+
+  // Boost behavior parameters
+  // Only consider boosting when the target is at least this far away (squared
+  // distance)
+  float boost_min_distance_sq{400.0f};
+  // Only consider boosting when the target is within this ahead cone (degrees)
+  float boost_ahead_alignment_deg{1.0f};
+  // Cooldown override for AI boost requests (seconds); <= 0 to keep current
+  // component/default
+  float boost_cooldown_seconds{3.0f};
 };
 
 struct AIBoostCooldown : BaseComponent {
