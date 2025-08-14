@@ -6,8 +6,6 @@
 #include "sound_library.h"
 
 struct Weapon {
-  using FireFn = std::function<void(Entity &, Weapon &)>;
-
   enum struct Type {
     Cannon,
     Shotgun,
@@ -17,7 +15,6 @@ struct Weapon {
 
   struct Config {
     float cooldownReset;
-    FireFn on_shoot;
 
     float knockback_amt = 0.25f;
     int base_damage = 1;
@@ -78,14 +75,6 @@ struct Cannon : Weapon {
       : Weapon(Weapon::Type::Cannon, //
                Weapon::Config{
                    .cooldownReset = 1.f,
-                   .on_shoot =
-                       [](Entity &parent, Weapon &wp) {
-                         SoundLibrary::get().play(SoundFile::Weapon_Canon_Shot);
-                         make_poof_anim(parent, wp);
-                         make_bullet(parent, wp);
-                         wp.apply_recoil(parent.get<Transform>(),
-                                         wp.config.knockback_amt);
-                       },
                    .knockback_amt = 0.25f,
                    .base_damage = kill_shots_to_base_dmg(3),
                },
@@ -98,15 +87,6 @@ struct Sniper : Weapon {
       : Weapon(Weapon::Type::Sniper, //
                Weapon::Config{
                    .cooldownReset = 3.f,
-                   .on_shoot =
-                       [](Entity &parent, Weapon &wp) {
-                         SoundLibrary::get().play(
-                             SoundFile::Weapon_Sniper_Shot);
-                         make_poof_anim(parent, wp);
-                         make_bullet(parent, wp);
-                         wp.apply_recoil(parent.get<Transform>(),
-                                         wp.config.knockback_amt);
-                       },
                    .knockback_amt = 0.50f,
                    .base_damage = kill_shots_to_base_dmg(1),
                },
@@ -119,19 +99,6 @@ struct Shotgun : Weapon {
       : Weapon(Weapon::Type::Shotgun, //
                Weapon::Config{
                    .cooldownReset = 3.f,
-                   .on_shoot =
-                       [](Entity &parent, Weapon &wp) {
-                         SoundLibrary::get().play(
-                             SoundFile::Weapon_Shotgun_Shot);
-                         // TODO more poofs
-                         make_poof_anim(parent, wp);
-                         make_bullet(parent, wp, -15);
-                         make_bullet(parent, wp, -5);
-                         make_bullet(parent, wp, 5);
-                         make_bullet(parent, wp, 15);
-                         wp.apply_recoil(parent.get<Transform>(),
-                                         wp.config.knockback_amt);
-                       },
                    .knockback_amt = 0.50f,
                    // This is per bullet
                    .base_damage = kill_shots_to_base_dmg(4),
@@ -145,16 +112,6 @@ struct MachineGun : Weapon {
       : Weapon(
             Weapon::Type::MachineGun, //
             Weapon::Config{.cooldownReset = 0.2f,
-                           .on_shoot =
-                               [](Entity &parent, Weapon &wp) {
-                                 SoundLibrary::get().play_random_match(
-                                     "SPAS-12_-_FIRING_-_Pump_Action_-_Take_1_-"
-                                     "_20m_In_Front_-_AB_-_MKH8020_");
-                                 make_poof_anim(parent, wp);
-                                 make_bullet(parent, wp);
-                                 wp.apply_recoil(parent.get<Transform>(),
-                                                 wp.config.knockback_amt);
-                               },
                            .knockback_amt = 0.1f,
                            .base_damage = kill_shots_to_base_dmg(12),
                            .size = vec2{10., 10.f},
@@ -209,7 +166,6 @@ struct CanShoot : BaseComponent {
     if (!weapons.contains(action))
       return false;
     if (weapons[action]->fire(dt)) {
-      weapons[action]->config.on_shoot(parent, *weapons[action]);
       return true;
     }
     return false;

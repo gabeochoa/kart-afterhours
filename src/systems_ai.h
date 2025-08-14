@@ -403,10 +403,6 @@ struct AIShoot : PausableSystem<AIControlled, Transform, AIParams, CanShoot> {
     if (RoundManager::get().active_round_type != RoundType::Kills) {
       return;
     }
-    magic_enum::enum_for_each<InputAction>([&](auto val) {
-      constexpr InputAction action = val;
-      canShoot.pass_time(action, dt);
-    });
     vec2 forward_dir{std::sin(transform.as_rad()),
                      -std::cos(transform.as_rad())};
     auto players = EntityQuery({.force_merge = true})
@@ -431,8 +427,8 @@ struct AIShoot : PausableSystem<AIControlled, Transform, AIParams, CanShoot> {
     }
     const float fire_threshold = std::cos(params.shooting_alignment_angle_deg * (M_PI / 180.0f));
     if (best_alignment >= fire_threshold) {
-      canShoot.fire(entity, InputAction::ShootLeft, dt);
-      canShoot.fire(entity, InputAction::ShootRight, dt);
+      entity.addComponentIfMissing<WantsWeaponFire>(InputAction::ShootLeft);
+      entity.addComponentIfMissing<WantsWeaponFire>(InputAction::ShootRight);
     }
   }
 };

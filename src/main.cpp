@@ -90,6 +90,13 @@ void game() {
     systems.register_update_system(std::make_unique<AITargetSelection>());
     systems.register_update_system(std::make_unique<AIVelocity>());
     systems.register_update_system(std::make_unique<AIShoot>());
+    // New weapon systems
+    systems.register_update_system(std::make_unique<WeaponCooldownSystem>());
+    systems.register_update_system(std::make_unique<WeaponFireSystem>());
+    systems.register_update_system(std::make_unique<ProjectileSpawnSystem>());
+    systems.register_update_system(std::make_unique<WeaponRecoilSystem>());
+    systems.register_update_system(std::make_unique<WeaponSoundSystem>());
+    systems.register_update_system(std::make_unique<WeaponFiredCleanupSystem>());
     systems.register_update_system(std::make_unique<DrainLife>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
     systems.register_update_system(std::make_unique<CheckLivesWinCondition>());

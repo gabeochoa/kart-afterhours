@@ -134,6 +134,108 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
   bullet_transform.cleanup_out_of_bounds = !wp.config.can_wrap_around;
 }
 
+// Event-driven overloads
+void make_poof_anim(Entity &parent, Weapon::FiringDirection dir,
+                    float base_angle, float angle_offset) {
+  const Transform &parent_transform = parent.get<Transform>();
+
+  vec2 off;
+  float angle = 0.f;
+  switch (dir) {
+  case Weapon::FiringDirection::Forward:
+    off = {0.f, 0.f};
+    angle = 0.f;
+    break;
+  case Weapon::FiringDirection::Left:
+    off = {-20.f, 10.f};
+    angle = -90.f;
+    break;
+  case Weapon::FiringDirection::Right:
+    off = {20.f, 10.f};
+    angle = 90.f;
+    break;
+  case Weapon::FiringDirection::Back:
+    off = {0.f, 0.f};
+    angle = 180.f;
+    break;
+  }
+
+  auto &poof = EntityHelper::createEntity();
+  poof.addComponent<TracksEntity>(parent.id, off);
+  poof.addComponent<Transform>(parent_transform.pos() + off, vec2{10.f, 10.f})
+      .set_angle(base_angle + angle_offset);
+  const Transform &transform = poof.get<Transform>();
+  poof.addComponent<HasAnimation>(transform.position, transform.size,
+                                  transform.angle, vec2{0, 0}, 14, 1.f / 20.f,
+                                  true, 1.f, 0, angle, raylib::RAYWHITE);
+}
+
+void make_bullet(Entity &parent, const ProjectileConfig &cfg,
+                 Weapon::FiringDirection dir, float base_angle,
+                 float angle_offset) {
+  const Transform &transform = parent.get<Transform>();
+
+  auto angle = 0.f;
+  switch (dir) {
+  case Weapon::FiringDirection::Forward:
+    break;
+  case Weapon::FiringDirection::Left:
+    angle = -90.f;
+    break;
+  case Weapon::FiringDirection::Right:
+    angle = 90.f;
+    break;
+  case Weapon::FiringDirection::Back:
+    angle = 180.f;
+    break;
+  }
+
+  float final_angle_offset = angle_offset;
+  if (cfg.spread > 0.f) {
+    std::mt19937_64 rng;
+    const auto timeSeed =
+        std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    std::seed_seq ss{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed >> 32)};
+    rng.seed(ss);
+    std::uniform_real_distribution<float> unif(-cfg.spread, cfg.spread);
+    final_angle_offset += cfg.size.x * unif(rng);
+  }
+
+  vec2 spawn_bias{0, cfg.size.y};
+  auto bullet_spawn_pos = transform.pos() + spawn_bias;
+
+  auto &bullet = EntityHelper::createEntity();
+  bullet.addComponent<Transform>(bullet_spawn_pos, cfg.size)
+      .set_angle(final_angle_offset);
+
+  bullet.addComponent<CanDamage>(parent.id, cfg.base_damage);
+  bullet.addComponent<CollisionAbsorber>(
+      CollisionAbsorber::AbsorberType::Absorbed, parent.id);
+  bullet.addComponent<HasLifetime>(cfg.life_time_seconds);
+
+  auto wrap_padding = cfg.can_wrap_around ? 0.f : std::numeric_limits<float>::max();
+  bullet.addComponent<CanWrapAround>(wrap_padding);
+
+  bullet.addComponent<HasEntityIDBasedColor>(
+      parent.id, parent.get<HasColor>().color(), raylib::RED);
+
+  const auto rad = transform.as_rad() + to_radians(angle + final_angle_offset);
+  auto &bullet_transform = bullet.get<Transform>();
+
+  bullet_transform.collision_config =
+      CollisionConfig{.mass = 1.f, .friction = 0.f, .restitution = 0.f};
+
+  bullet_transform.velocity =
+      vec2{std::sin(rad) * cfg.speed, -std::cos(rad) * cfg.speed};
+
+  bullet_transform.accel = cfg.acceleration;
+
+  bullet_transform.render_out_of_bounds =
+      cfg.can_wrap_around && cfg.render_out_of_bounds;
+
+  bullet_transform.cleanup_out_of_bounds = !cfg.can_wrap_around;
+}
+
 Entity &make_car(size_t id) {
   auto &entity = EntityHelper::createEntity();
 
