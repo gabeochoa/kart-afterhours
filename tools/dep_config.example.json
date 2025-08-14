@@ -1,0 +1,28 @@
+{
+	"components": {
+		"Transform": "rw",
+		"HasColor": "r",
+		"HasShader": "rw"
+	},
+	"singletons": {
+		"RoundManager": "rw",
+		"GameStateManager": "rw",
+		"ShaderLibrary": "r",
+		"SoundLibrary": "w",
+		"MusicLibrary": "w"
+	},
+	"globals": {
+		"mainRT": "w"
+	},
+	"systems": {
+		"RenderSpritesWithShaders": {
+			"singletons": { "ShaderLibrary": "r" }
+		},
+		"RenderAnimationsWithShaders": {
+			"singletons": { "ShaderLibrary": "r" }
+		},
+		"UpdateShaderValues": {
+			"singletons": { "ShaderLibrary": "w" }
+		}
+	}
+}
