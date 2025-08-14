@@ -720,38 +720,105 @@ struct UpdateColorBasedOnEntityID : System<HasEntityIDBasedColor> {
   }
 };
 
-struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
+struct PlayerJoinLeaveSystem
+    : System<input::ProvidesMaxGamepadID, PlayerPresenceCache> {
 
-  virtual void for_each_with(Entity &,
-                             input::ProvidesMaxGamepadID &maxGamepadID,
-                             float) override {
+  virtual void for_each_with(Entity &, input::ProvidesMaxGamepadID &maxGamepadID,
+                             PlayerPresenceCache &cache, float) override {
+
+    std::bitset<input::MAX_GAMEPAD_ID> current{};
+    const size_t limit = static_cast<size_t>(maxGamepadID.count());
+    for (size_t i = 0; i < limit; ++i) {
+      current.set(i, input::is_gamepad_available(static_cast<int>(i)));
+    }
+
+    if (current == cache.connected) {
+      return;
+    }
 
     auto existing_players = EQ().whereHasComponent<PlayerID>().gen();
 
-    // we are good
-    if (existing_players.size() + 1 == maxGamepadID.count())
-      return;
+    // Handle leaves
+    {
+      auto left = cache.connected & (~current);
+      if (left.any()) {
+        for (size_t i = 0; i < limit; ++i) {
+          if (!left.test(i))
+            continue;
+          for (Entity &player : existing_players) {
+            if (static_cast<size_t>(player.get<PlayerID>().id) != i)
+              continue;
+            if (auto *colors = EntityHelper::get_singleton_cmp<ManagesAvailableColors>()) {
+              colors->release_only(player.id);
+            }
+            player.cleanup = true;
+            break;
+          }
+        }
+      }
+    }
 
-    if (existing_players.size() > maxGamepadID.count() + 1) {
-      // remove the player that left
-      for (Entity &player : existing_players) {
-        if (input::is_gamepad_available(player.get<PlayerID>().id))
-          continue;
-        player.cleanup = true;
+    // Handle joins
+    {
+      auto joined = current & (~cache.connected);
+      if (joined.any()) {
+        for (size_t i = 0; i < limit; ++i) {
+          if (!joined.test(i))
+            continue;
+          bool found = false;
+          for (Entity &player : existing_players) {
+            if (static_cast<size_t>(player.get<PlayerID>().id) == i) {
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            make_player(static_cast<int>(i));
+          }
+        }
+      }
+    }
+
+    cache.connected = current;
+  }
+};
+
+struct PlayerAutoFillSystem : System<DesiredLocalPlayers> {
+
+  virtual void for_each_with(Entity &, DesiredLocalPlayers &desired,
+                             float) override {
+    if (!desired.desired_total.has_value()) {
+      return; // Autofill disabled unless explicitly set
+    }
+
+    const size_t desired_total =
+        std::min(static_cast<size_t>(input::MAX_GAMEPAD_ID),
+                 desired.desired_total.value());
+
+    size_t num_players = EQ().whereHasComponent<PlayerID>().gen_count();
+    size_t num_ais = EQ().whereHasComponent<AIControlled>().gen_count();
+
+    const size_t total = num_players + num_ais;
+
+    if (total < desired_total) {
+      size_t to_add = desired_total - total;
+      for (size_t i = 0; i < to_add; ++i) {
+        make_ai();
       }
       return;
     }
-    // TODO add +1 here to auto gen extra players
-    for (int i = 0; i < (int)maxGamepadID.count(); i++) {
-      bool found = false;
-      for (Entity &player : existing_players) {
-        if (i == player.get<PlayerID>().id) {
-          found = true;
+
+    if (total > desired_total && num_ais > 0) {
+      size_t to_remove = std::min(num_ais, total - desired_total);
+      auto ais = EQ().whereHasComponent<AIControlled>().gen();
+      for (Entity &ai : ais) {
+        if (to_remove == 0)
           break;
+        if (auto *colors = EntityHelper::get_singleton_cmp<ManagesAvailableColors>()) {
+          colors->release_only(ai.id);
         }
-      }
-      if (!found) {
-        make_player(i);
+        ai.cleanup = true;
+        --to_remove;
       }
     }
   }
