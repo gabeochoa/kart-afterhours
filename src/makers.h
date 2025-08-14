@@ -8,7 +8,6 @@ void make_explosion_anim(Entity &parent);
 void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset);
 void make_bullet(Entity &parent, const Weapon &wp, float angle_offset);
 
-// Event-driven overloads
 void make_poof_anim(Entity &parent, Weapon::FiringDirection dir,
                     float base_angle, float angle_offset);
 void make_bullet(Entity &parent, const ProjectileConfig &cfg,

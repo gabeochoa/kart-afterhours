@@ -454,7 +454,6 @@ struct HonkState : BaseComponent {
   bool was_down = false;
 };
 
-// New: Weapon firing config components
 struct RecoilConfig : BaseComponent {
   float knockback_amt{0.f};
   RecoilConfig() = default;
@@ -489,7 +488,6 @@ struct WantsWeaponFire : BaseComponent {
 };
 
 struct WeaponFired : BaseComponent {
-  // Store minimal info to avoid circular deps with weapons.h
   int weapon_type{0};
   int firing_direction{0};
   ProjectileConfig projectile;
