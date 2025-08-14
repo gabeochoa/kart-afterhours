@@ -20,47 +20,82 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform> {
 
     auto round_type = RoundManager::get().active_round_type;
     auto &round_settings = RoundManager::get().get_active_settings();
+
+    // Select params (default if missing)
+    AIParams default_params{};
+    const AIParams &params = entity.has<AIParams>() ? entity.get<AIParams>()
+                                                    : default_params;
+
     if (round_settings.state != RoundSettings::GameState::InGame) {
-      pre_round_ai_target(ai, transform);
+      pre_round_ai_target(entity, ai, transform, params);
       return;
     }
 
-    switch (round_type) {
-    case RoundType::Lives:
-    case RoundType::Kills:
-      kills_ai_target(ai, transform);
+    AIMode::Mode active_mode = AIMode::Mode::AutoFromRound;
+    if (entity.has<AIMode>()) {
+      active_mode = entity.get<AIMode>().mode;
+    }
+    if (active_mode == AIMode::Mode::AutoFromRound) {
+      switch (round_type) {
+      case RoundType::Lives:
+      case RoundType::Kills:
+        active_mode = AIMode::Mode::Kills;
+        break;
+      case RoundType::Hippo:
+        active_mode = AIMode::Mode::Hippo;
+        break;
+      case RoundType::TagAndGo:
+        active_mode = AIMode::Mode::TagAndGo;
+        break;
+      default:
+        log_error("Invalid round type in AITargetSelection: {}",
+                  static_cast<size_t>(round_type));
+        active_mode = AIMode::Mode::Default;
+        break;
+      }
+    }
+
+    switch (active_mode) {
+    case AIMode::Mode::Kills:
+      kills_ai_target(entity, ai, transform, params);
       break;
-      default_ai_target(ai, transform);
+    case AIMode::Mode::Hippo:
+      hippo_ai_target(entity, ai, transform, params);
       break;
-    case RoundType::Hippo:
-      hippo_ai_target(ai, transform);
+    case AIMode::Mode::TagAndGo:
+      tag_and_go_ai_target(entity, ai, transform, params);
       break;
-    case RoundType::TagAndGo:
-      tag_and_go_ai_target(entity, ai, transform);
-      break;
+    case AIMode::Mode::Default:
+    case AIMode::Mode::AutoFromRound:
     default:
-      log_error("Invalid round type in AITargetSelection: {}",
-                static_cast<size_t>(round_type));
-      default_ai_target(ai, transform);
+      default_ai_target(entity, ai, transform, params);
       break;
     }
   }
 
 private:
-  void pre_round_ai_target(AIControlled &ai, Transform &transform) {
+  void pre_round_ai_target(Entity &entity, AIControlled &ai, Transform &transform,
+                           const AIParams &params) {
+    (void)entity;
     const bool has_no_target = (ai.target.x == 0.0f && ai.target.y == 0.0f);
     float distance_to_target = distance_sq(transform.pos(), ai.target);
-    if (has_no_target || distance_to_target < 100.0f) {
+    const float retarget_radius_sq =
+        params.retarget_radius * params.retarget_radius;
+    if (has_no_target || distance_to_target < retarget_radius_sq) {
       float screen_width = raylib::GetScreenWidth();
       float screen_height = raylib::GetScreenHeight();
       ai.target = vec_rand_in_box(Rectangle{0, 0, screen_width, screen_height});
     }
   }
 
-  void default_ai_target(AIControlled &ai, Transform &transform) {
+  void default_ai_target(Entity &entity, AIControlled &ai, Transform &transform,
+                         const AIParams &params) {
+    (void)entity;
     // Check if we're close enough to current target to pick a new one
     float distance_to_target = distance_sq(transform.pos(), ai.target);
-    if (distance_to_target > 100.0f) {
+    const float retarget_radius_sq =
+        params.retarget_radius * params.retarget_radius;
+    if (distance_to_target > retarget_radius_sq) {
       return;
     }
 
@@ -74,13 +109,15 @@ private:
     }
   }
 
-  void kills_ai_target(AIControlled &ai, Transform &transform) {
+  void kills_ai_target(Entity &entity, AIControlled &ai, Transform &transform,
+                       const AIParams &params) {
+    (void)params;
     auto players = EntityQuery({.force_merge = true})
                        .whereHasComponent<PlayerID>()
                        .whereHasComponent<Transform>()
                        .gen();
     if (players.empty()) {
-      default_ai_target(ai, transform);
+      default_ai_target(entity, ai, transform, params);
       return;
     }
     vec2 closest_pos = players[0].get().get<Transform>().pos();
@@ -97,7 +134,8 @@ private:
     ai.target = closest_pos;
   }
 
-  void hippo_ai_target(AIControlled &ai, Transform &transform) {
+  void hippo_ai_target(Entity &entity, AIControlled &ai, Transform &transform,
+                       const AIParams &params) {
     // Find all hippo items that haven't been collected
     auto hippo_items = EQ().whereHasComponent<HippoItem>()
                            .whereLambda([](const Entity &e) {
@@ -107,7 +145,7 @@ private:
 
     if (hippo_items.empty()) {
       // No hippos available, use default targeting
-      default_ai_target(ai, transform);
+      default_ai_target(entity, ai, transform, params);
       return;
     }
 
@@ -128,15 +166,9 @@ private:
     }
 
     // Get AI difficulty and add random offset based on difficulty
-    auto ai_entity = EQ().whereHasComponent<AIControlled>()
-                         .whereLambda([&ai](const Entity &e) {
-                           return &e.get<AIControlled>() == &ai;
-                         })
-                         .gen_first();
-
     AIDifficulty::Difficulty difficulty = AIDifficulty::Difficulty::Medium;
-    if (ai_entity.valid() && ai_entity->has<AIDifficulty>()) {
-      difficulty = ai_entity->get<AIDifficulty>().difficulty;
+    if (entity.has<AIDifficulty>()) {
+      difficulty = entity.get<AIDifficulty>().difficulty;
     }
 
     float distance_to_hippo =
@@ -145,31 +177,31 @@ private:
     float offset_range = 0.0f;
     switch (difficulty) {
     case AIDifficulty::Difficulty::Easy:
-      offset_range = 200.0f;
+      offset_range = params.hippo_jitter_easy;
       break;
     case AIDifficulty::Difficulty::Medium:
-      offset_range = 100.0f;
+      offset_range = params.hippo_jitter_medium;
       break;
     case AIDifficulty::Difficulty::Hard:
-      offset_range = 50.0f;
+      offset_range = params.hippo_jitter_hard;
       break;
     case AIDifficulty::Difficulty::Expert:
-      offset_range = 0.0f;
+      offset_range = params.hippo_jitter_expert;
       break;
     default:
-      offset_range = 100.0f;
+      offset_range = params.hippo_jitter_medium;
       break;
     }
 
-    float distance_factor = std::min(1.0f, distance_to_hippo / 300.0f);
+    float distance_factor =
+        std::min(1.0f, distance_to_hippo / params.hippo_jitter_distance_scale);
     float actual_offset_range = offset_range * distance_factor;
 
     vec2 target_pos = closest_hippo_pos;
     if (actual_offset_range > 0.0f) {
-      unsigned int seed =
-          ai_entity->id +
-          static_cast<unsigned int>(closest_hippo_pos.x * 1000) +
-          static_cast<unsigned int>(closest_hippo_pos.y * 1000);
+      unsigned int seed = entity.id +
+                          static_cast<unsigned int>(closest_hippo_pos.x * 1000) +
+                          static_cast<unsigned int>(closest_hippo_pos.y * 1000);
 
       seed = seed * 1103515245 + 12345;
       float rand_x = (static_cast<float>(seed & 0x7FFF) / 32767.0f - 0.5f) *
@@ -186,16 +218,16 @@ private:
   }
 
   void tag_and_go_ai_target(Entity &entity, AIControlled &ai,
-                            Transform &transform) {
+                            Transform &transform, const AIParams &params) {
     if (!entity.has<HasTagAndGoTracking>()) {
-      default_ai_target(ai, transform);
+      default_ai_target(entity, ai, transform, params);
       return;
     }
 
     auto &tag_settings =
         RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
     if (tag_settings.state != RoundTagAndGoSettings::GameState::InGame) {
-      default_ai_target(ai, transform);
+      default_ai_target(entity, ai, transform, params);
       return;
     }
 
@@ -204,7 +236,7 @@ private:
     if (tag_tracking.is_tagger) {
       tagger_targeting(ai, transform);
     } else {
-      runner_targeting(ai, transform);
+      runner_targeting(ai, transform, params);
     }
   }
 
@@ -239,7 +271,8 @@ private:
     ai.target = closest_runner_pos;
   }
 
-  void runner_targeting(AIControlled &ai, Transform &transform) {
+  void runner_targeting(AIControlled &ai, Transform &transform,
+                        const AIParams &params) {
     auto taggers = EntityQuery()
                        .whereHasComponent<Transform>()
                        .whereHasComponent<HasTagAndGoTracking>()
@@ -278,7 +311,8 @@ private:
       move_direction = vec_norm(transform.velocity);
     }
 
-    vec2 target_pos = transform.pos() + move_direction * 100.0f;
+    vec2 target_pos =
+        transform.pos() + move_direction * params.runner_evade_lookahead_distance;
 
     ai.target = target_pos;
   }
@@ -441,7 +475,11 @@ struct AIShoot : PausableSystem<AIControlled, Transform, CanShoot> {
       if (dot > best_alignment)
         best_alignment = dot;
     }
-    const float fire_threshold = std::cos(10.0f * (M_PI / 180.0f));
+    float alignment_deg = 10.0f;
+    if (entity.has<AIParams>()) {
+      alignment_deg = entity.get<AIParams>().shooting_alignment_angle_deg;
+    }
+    const float fire_threshold = std::cos(alignment_deg * (M_PI / 180.0f));
     if (best_alignment >= fire_threshold) {
       canShoot.fire(entity, InputAction::ShootLeft, dt);
       canShoot.fire(entity, InputAction::ShootRight, dt);

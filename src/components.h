@@ -127,6 +127,34 @@ struct AIDifficulty : BaseComponent {
   AIDifficulty(Difficulty diff = Difficulty::Medium) : difficulty(diff) {}
 };
 
+struct AIMode : BaseComponent {
+  enum class Mode { AutoFromRound, Default, Kills, Hippo, TagAndGo };
+
+  Mode mode{Mode::AutoFromRound};
+
+  AIMode(Mode m = Mode::AutoFromRound) : mode(m) {}
+};
+
+struct AIParams : BaseComponent {
+  // How close to the current target before choosing a new one (world units)
+  float retarget_radius{10.0f};
+
+  // Tag & Go: how far ahead runners try to move when evading
+  float runner_evade_lookahead_distance{100.0f};
+
+  // Hippo mode: base jitter radius by difficulty
+  float hippo_jitter_easy{200.0f};
+  float hippo_jitter_medium{100.0f};
+  float hippo_jitter_hard{50.0f};
+  float hippo_jitter_expert{0.0f};
+
+  // Hippo mode: divisor for distance-based jitter attenuation
+  float hippo_jitter_distance_scale{300.0f};
+
+  // Kills mode shooting: maximum allowed misalignment to fire (degrees)
+  float shooting_alignment_angle_deg{10.0f};
+};
+
 struct AIBoostCooldown : BaseComponent {
   float next_allowed_time = 0.0f;
   float cooldown_seconds = 3.0f;
