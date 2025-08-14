@@ -326,7 +326,7 @@ struct RoundManager {
     case RoundType::TagAndGo:
       return true;
     case RoundType::CatAndMice:
-      return true; // brief countdown is nice for this mode
+      return true;
     default:
       log_error("Invalid round type in uses_countdown: {}",
                 static_cast<size_t>(active_round_type));
@@ -345,7 +345,7 @@ struct RoundManager {
     case RoundType::TagAndGo:
       return true;
     case RoundType::CatAndMice:
-      return true; // enable countdown system; round timer display remains off
+      return true;
     default:
       log_error("Invalid round type in uses_timer: {}",
                 static_cast<size_t>(active_round_type));
