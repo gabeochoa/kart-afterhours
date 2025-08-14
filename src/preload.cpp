@@ -156,7 +156,12 @@ Preload &Preload::make_singleton() {
     sophie.addComponent<ManagesAvailableColors>();
     EntityHelper::registerSingleton<ManagesAvailableColors>(sophie);
   }
-
+  {
+    // Audio emitter singleton for centralized sound requests
+    auto &audio = EntityHelper::createEntity();
+    audio.addComponent<SoundEmitter>();
+    EntityHelper::registerSingleton<SoundEmitter>(audio);
+  }
   return *this;
 }
 
