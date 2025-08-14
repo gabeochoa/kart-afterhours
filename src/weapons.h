@@ -14,6 +14,11 @@ struct Weapon {
     MachineGun,
   } type;
 
+  struct SoundConfig {
+    std::string name;
+    bool has_multiple{false};
+  };
+
   struct Config {
     float cooldownReset;
 
@@ -27,6 +32,8 @@ struct Weapon {
     float spread{0.f};
     bool can_wrap_around{true};
     bool render_out_of_bounds{false};
+
+    SoundConfig sound;
   } config;
 
   enum struct FiringDirection {
@@ -78,6 +85,7 @@ struct Cannon : Weapon {
                    .cooldownReset = 1.f,
                    .knockback_amt = 0.25f,
                    .base_damage = kill_shots_to_base_dmg(3),
+                   .sound = SoundConfig{.name = sound_file_to_str(SoundFile::Weapon_Canon_Shot), .has_multiple = false},
                },
                fd) {}
 };
@@ -90,6 +98,7 @@ struct Sniper : Weapon {
                    .cooldownReset = 3.f,
                    .knockback_amt = 0.50f,
                    .base_damage = kill_shots_to_base_dmg(1),
+                   .sound = SoundConfig{.name = sound_file_to_str(SoundFile::Weapon_Sniper_Shot), .has_multiple = false},
                },
                fd) {}
 };
@@ -101,8 +110,8 @@ struct Shotgun : Weapon {
                Weapon::Config{
                    .cooldownReset = 3.f,
                    .knockback_amt = 0.50f,
-                   // This is per bullet
                    .base_damage = kill_shots_to_base_dmg(4),
+                   .sound = SoundConfig{.name = sound_file_to_str(SoundFile::Weapon_Shotgun_Shot), .has_multiple = false},
                },
                fd) {}
 };
@@ -121,7 +130,8 @@ struct MachineGun : Weapon {
                            .life_time_seconds = 1.f,
                            .spread = 1.f,
                            .can_wrap_around = false,
-                           .render_out_of_bounds = false},
+                           .render_out_of_bounds = false,
+                           .sound = SoundConfig{.name = "SPAS-12_-_FIRING_-_Pump_Action_-_Take_1_-_20m_In_Front_-_AB_-_MKH8020_", .has_multiple = true}},
             fd) {}
 };
 
@@ -156,14 +166,12 @@ struct CanShoot : BaseComponent {
   }
 
   bool pass_time(InputAction action, float dt) {
-    // TODO add warning
     if (!weapons.contains(action))
       return false;
     return weapons[action]->pass_time(dt);
   }
 
   bool fire(Entity &parent, InputAction action, float dt) {
-    // TODO add warning
     if (!weapons.contains(action))
       return false;
     if (weapons[action]->fire(dt)) {

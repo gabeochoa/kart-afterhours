@@ -456,12 +456,8 @@ struct HonkState : BaseComponent {
 #include <vector>
 
 struct SoundEmitter : BaseComponent {
-  // Default number of alias copies to create per base sound when needed
   int default_alias_copies = 4;
-
-  // Managed alias names per base key (e.g., "UISelect" -> ["UISelect_a0", ...])
   std::map<std::string, std::vector<std::string>> alias_names_by_base;
-  // Round-robin index for each base key
   std::map<std::string, size_t> next_alias_index_by_base;
 };
 
@@ -475,15 +471,9 @@ struct PlaySoundRequest : BaseComponent {
   };
 
   Policy policy{Policy::Name};
-
-  // For Policy::Name
   std::string name;
-  // For Policy::Enum
   SoundFile file{SoundFile::UI_Move};
-  // For Prefix policies
   std::string prefix;
-
-  // Prefer using alias pool when available (falls back to direct play)
   bool prefer_alias{true};
 
   PlaySoundRequest() = default;
