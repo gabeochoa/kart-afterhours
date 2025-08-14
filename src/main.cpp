@@ -140,8 +140,9 @@ void game() {
 
     systems.register_update_system(std::make_unique<BackgroundMusic>());
 
+    systems.register_update_system(std::make_unique<UISoundBindingSystem>());
+    systems.register_update_system(std::make_unique<SoundPlaybackSystem>());
     systems.register_update_system(std::make_unique<UIClickSounds>());
-    systems.register_update_system(std::make_unique<UIMoveSounds>());
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
   }

@@ -376,7 +376,12 @@ struct UpdateRoundCountdown : PausableSystem<> {
     // play the sound a bit early so it feels more natural
     if (settings.countdown_before_start < 0.05f &&
         settings.countdown_before_start > 0.03f) {
-      SoundLibrary::get().play(SoundFile::Round_Start);
+      auto opt = EntityQuery({.force_merge = true}).whereHasComponent<SoundEmitter>().gen_first();
+      if (opt.valid()) {
+        auto &ent = opt.asE();
+        auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+        req = PlaySoundRequest(SoundFile::Round_Start);
+      }
     }
 
     if (settings.countdown_before_start > 0) {

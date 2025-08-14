@@ -130,20 +130,9 @@ Preload &Preload::make_singleton() {
   auto &sophie = EntityHelper::createEntity();
   {
     input::add_singleton_components<InputAction>(sophie, get_mapping());
-    window_manager::add_singleton_components(sophie, 200);
-    ui::add_singleton_components<InputAction>(sophie);
-
-    texture_manager::add_singleton_components(
-        sophie, raylib::LoadTexture(
-                    Files::get()
-                        .fetch_resource_path("images", "spritesheet.png")
-                        .c_str()));
-
-    sophie.get<ui::FontManager>().load_font(
-        get_font_name(FontID::EQPro),
-        Files::get()
-            .fetch_resource_path("", "eqprorounded-regular.ttf")
-            .c_str());
+    window_manager::add_singleton_components(sophie);
+    texture_manager::add_singleton_components(sophie);
+    afterhours::animation::add_singleton_components(sophie);
 
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();
@@ -156,7 +145,12 @@ Preload &Preload::make_singleton() {
     sophie.addComponent<ManagesAvailableColors>();
     EntityHelper::registerSingleton<ManagesAvailableColors>(sophie);
   }
-
+  {
+    // Audio emitter singleton for centralized sound requests
+    auto &audio = EntityHelper::createEntity();
+    audio.addComponent<SoundEmitter>();
+    EntityHelper::registerSingleton<SoundEmitter>(audio);
+  }
   return *this;
 }
 

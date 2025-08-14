@@ -226,16 +226,20 @@ struct IntroScreens
             90.f;
 
         if (!passbyPlayed[i] && car_pos.x >= (float)resolution.width * 0.1f) {
+          auto enqueue = [](const char *name) {
+            auto opt = EntityQuery({.force_merge = true}).whereHasComponent<SoundEmitter>().gen_first();
+            if (opt.valid()) {
+              auto &ent = opt.asE();
+              auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+              req.policy = PlaySoundRequest::Policy::Name;
+              req.name = name;
+              req.prefer_alias = false; // these pass-bys are long; no aliasing needed
+            }
+          };
           switch (i) {
-          case 0:
-            SoundLibrary::get().play("IntroPassBy_0");
-            break;
-          case 1:
-            SoundLibrary::get().play("IntroPassBy_1");
-            break;
-          case 2:
-            SoundLibrary::get().play("IntroPassBy_2");
-            break;
+          case 0: enqueue("IntroPassBy_0"); break;
+          case 1: enqueue("IntroPassBy_1"); break;
+          case 2: enqueue("IntroPassBy_2"); break;
           }
           passbyPlayed[i] = true;
         }
@@ -443,9 +447,22 @@ struct IntroScreens
     if (!passbyStarted && previous_state != State::Chase &&
         state == State::Chase) {
       set_passby_volume(1.f);
-      SoundLibrary::get().play("IntroPassBy_0");
-      SoundLibrary::get().play("IntroPassBy_1");
-      SoundLibrary::get().play("IntroPassBy_2");
+      auto opt = EntityQuery({.force_merge = true}).whereHasComponent<SoundEmitter>().gen_first();
+      if (opt.valid()) {
+        auto &ent = opt.asE();
+        auto &r0 = ent.addComponentIfMissing<PlaySoundRequest>();
+        r0.policy = PlaySoundRequest::Policy::Name;
+        r0.name = "IntroPassBy_0";
+        r0.prefer_alias = false;
+        auto &r1 = ent.addComponentIfMissing<PlaySoundRequest>();
+        r1.policy = PlaySoundRequest::Policy::Name;
+        r1.name = "IntroPassBy_1";
+        r1.prefer_alias = false;
+        auto &r2 = ent.addComponentIfMissing<PlaySoundRequest>();
+        r2.policy = PlaySoundRequest::Policy::Name;
+        r2.name = "IntroPassBy_2";
+        r2.prefer_alias = false;
+      }
       passbyStarted = true;
     }
 
