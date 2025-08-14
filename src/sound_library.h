@@ -52,6 +52,9 @@ struct SoundLibrary {
   [[nodiscard]] const raylib::Sound &get(const std::string &name) const {
     return impl.get(name);
   }
+  [[nodiscard]] bool contains(const std::string &name) const {
+    return impl.contains(name);
+  }
   void load(const char *filename, const char *name) {
     impl.load(filename, name);
   }
