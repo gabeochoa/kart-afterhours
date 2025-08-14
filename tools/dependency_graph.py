@@ -575,27 +575,137 @@ def apply_config_constraints(systems: List[SystemModel], config: Dict):
 
 
 def write_html_index(outdir: str):
+    comp_svg_path = os.path.join(outdir, 'systems_components.svg')
+    conf_svg_path = os.path.join(outdir, 'system_conflicts.svg')
+    try:
+        with open(comp_svg_path, 'r', encoding='utf-8', errors='ignore') as fsvg:
+            comp_svg = fsvg.read()
+    except Exception:
+        comp_svg = '<p>systems_components.svg not found. Install graphviz and rerun generation.</p>'
+    try:
+        with open(conf_svg_path, 'r', encoding='utf-8', errors='ignore') as fsvg:
+            conf_svg = fsvg.read()
+    except Exception:
+        conf_svg = '<p>system_conflicts.svg not found. Install graphviz and rerun generation.</p>'
+
     html = """<!doctype html>
 <html lang=\"en\">
 <meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <title>Dependency Graphs</title>
-<style>body{font-family:sans-serif;margin:20px} .grid{display:grid;grid-template-columns:1fr;gap:20px} img,object{max-width:100%;border:1px solid #ddd}</style>
+<style>body{font-family:sans-serif;margin:20px} .grid{display:grid;grid-template-columns:1fr;gap:20px} .viewport{position:relative;overflow:hidden;border:1px solid #ddd;background:#fafafa;height:70vh} .svg-container{width:100%;height:100%;} .dimmed{opacity:0.2} .node{cursor:pointer}</style>
 <h1>Dependency Graphs</h1>
-<p>Open the SVGs directly if present; otherwise render DOTs using online tools or install Graphviz.</p>
+<p>Drag to pan. Scroll to zoom.</p>
 <div class=\"grid\">
   <div>
     <h2>Systems ↔ Resources</h2>
-    <object data=\"systems_components.svg\" type=\"image/svg+xml\"></object>
+    <div class=\"viewport\">
+      <div id=\"comp-container\" class=\"svg-container\">[[COMP_SVG]]</div>
+    </div>
     <p>DOT: <a href=\"systems_components.dot\">systems_components.dot</a></p>
   </div>
   <div>
     <h2>System Conflicts</h2>
-    <object data=\"system_conflicts.svg\" type=\"image/svg+xml\"></object>
+    <div class=\"viewport\">
+      <div id=\"conf-container\" class=\"svg-container\">[[CONF_SVG]]</div>
+    </div>
     <p>DOT: <a href=\"system_conflicts.dot\">system_conflicts.dot</a></p>
   </div>
+  
 </div>
+<script src=\"https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js\"></script>
+<script>
+function initZoomD3(containerId){
+  const container = document.getElementById(containerId);
+  const svg = d3.select(container).select('svg');
+  if(svg.empty()) return;
+  svg.attr('width', null).attr('height', null).style('width','auto').style('height','auto');
+  const svgNode = svg.node();
+  const wrap = svg.append('g');
+  const children = Array.from(svgNode.childNodes);
+  for(const n of children){ if(n !== wrap.node()) wrap.node().appendChild(n); }
+  const zoom = d3.zoom().scaleExtent([0.1,20]).on('zoom', (event)=>{ wrap.attr('transform', event.transform); });
+  svg.call(zoom);
+  let focused = null;
+
+  // Build adjacency from Graphviz output
+  const nodeGroups = wrap.selectAll('g.node');
+  const edgeGroups = wrap.selectAll('g.edge');
+  const getNodeName = (g) => {
+    const t = d3.select(g).select('title');
+    return t.empty() ? null : t.text();
+  };
+  const adj = new Map();
+  nodeGroups.each(function(){
+    const n = getNodeName(this);
+    if(n && !adj.has(n)) adj.set(n, new Set());
+  });
+  edgeGroups.each(function(){
+    const title = d3.select(this).select('title').text() || '';
+    const m = title.match(/(.+)->(.+)/) || title.match(/(.+)--(.+)/);
+    if(m){
+      const a = m[1].trim();
+      const b = m[2].trim();
+      if(!adj.has(a)) adj.set(a, new Set());
+      if(!adj.has(b)) adj.set(b, new Set());
+      adj.get(a).add(b);
+      adj.get(b).add(a);
+    }
+  });
+
+  const applyFilter = (visibleSet) => {
+    nodeGroups.each(function(){
+      const name = getNodeName(this);
+      const show = name && visibleSet.has(name);
+      d3.select(this).classed('dimmed', !show);
+    });
+    edgeGroups.each(function(){
+      const title = d3.select(this).select('title').text() || '';
+      const m = title.match(/(.+)->(.+)/) || title.match(/(.+)--(.+)/);
+      let show = false;
+      if(m && focused){
+        const a = m[1].trim();
+        const b = m[2].trim();
+        show = (a === focused || b === focused);
+      }
+      d3.select(this).classed('dimmed', !show);
+    });
+  };
+
+  const resetFilter = () => {
+    nodeGroups.classed('dimmed', false);
+    edgeGroups.classed('dimmed', false);
+    focused = null;
+  };
+
+  // Delegate click handling so child elements inside nodes work reliably
+  svg.on('click', (event) => {
+    const target = event.target;
+    if(!target) return;
+    const nodeGroup = target.closest ? target.closest('g.node') : null;
+    if(!nodeGroup) return;
+    event.stopPropagation();
+    const name = getNodeName(nodeGroup);
+    if(!name) return;
+    if (focused === name) {
+      resetFilter();
+    } else {
+      focused = name;
+      const neighbors = adj.get(name) || new Set();
+      const keep = new Set([name, ...neighbors]);
+      applyFilter(keep);
+    }
+  });
+
+  svg.on('dblclick', () => resetFilter());
+  window.addEventListener('keydown', (e) => { if(e.key === 'Escape') resetFilter(); });
+}
+initZoomD3('comp-container');
+initZoomD3('conf-container');
+</script>
 </html>
 """
+    html = html.replace('[[COMP_SVG]]', comp_svg)
+    html = html.replace('[[CONF_SVG]]', conf_svg)
     with open(os.path.join(outdir, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(html)
 
