@@ -333,6 +333,12 @@ struct HasTagAndGoTracking : BaseComponent {
   HasTagAndGoTracking() = default;
 };
 
+struct HasCatAndMiceRole : BaseComponent {
+  bool is_cat = false;
+  bool eliminated = false;
+  HasCatAndMiceRole() = default;
+};
+
 struct HasHippoCollection : BaseComponent {
   int hippos_collected = 0;
 

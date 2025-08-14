@@ -1,4 +1,3 @@
-
 #include "ui_systems.h"
 
 #include "config.h"
@@ -607,6 +606,12 @@ void ScheduleMainMenuUI::round_end_player_column(
                                car->get<HasTagAndGoTracking>().time_as_not_it);
     }
     break;
+  case RoundType::CatAndMice:
+    if (car->has<HasCatAndMiceRole>()) {
+      const auto &r = car->get<HasCatAndMiceRole>();
+      stats_text = r.is_cat ? std::string("Cat") : (r.eliminated ? std::string("Out") : std::string("Mouse"));
+    }
+    break;
   default:
     stats_text = "Unknown";
     break;
@@ -654,6 +659,13 @@ void ScheduleMainMenuUI::round_end_player_column(
     }
     break;
   }
+  case RoundType::CatAndMice: {
+    if (car->has<HasCatAndMiceRole>()) {
+      const auto &r = car->get<HasCatAndMiceRole>();
+      animated_stats = r.is_cat ? std::string("Cat") : (r.eliminated ? std::string("Out") : std::string("Mouse"));
+    }
+    break;
+  }
   default: {
     break;
   }
@@ -681,6 +693,19 @@ void ScheduleMainMenuUI::render_round_end_stats(UIContext<InputAction> &context,
   case RoundType::TagAndGo:
     render_tag_and_go_stats(context, parent, car, bg_color);
     break;
+  case RoundType::CatAndMice: {
+    auto &cm = RoundManager::get().get_active_rt<RoundCatAndMiceSettings>();
+    std::string stats_text = cm.last_completion_time >= 0
+                                 ? std::format("Last Time: {:.2f}s", cm.last_completion_time)
+                                 : std::string("Hunt the mice!\nTouch = instant KO");
+    imm::div(context, mk(parent, 1),
+             ComponentConfig{}
+                 .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
+                 .with_label(stats_text)
+                 .with_color_usage(Theme::Usage::Custom)
+                 .with_custom_color(bg_color)
+                 .disable_rounded_corners());
+  } break;
   default:
     render_unknown_stats(context, parent, car, bg_color);
     break;
@@ -965,6 +990,13 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
                  std::format("Round Length: {}", time_display)));
+    break;
+  }
+  case RoundType::CatAndMice: {
+    auto &s = RoundManager::get().get_active_rt<RoundCatAndMiceSettings>();
+    std::string title = "Cat and Mice";
+    imm::div(context, mk(parent),
+             ComponentConfig{}.with_label(title));
     break;
   }
   default:
@@ -1276,6 +1308,12 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     case RoundType::TagAndGo:
       round_tag_and_go_settings(settings_group.ent(), context);
       break;
+    case RoundType::CatAndMice: {
+      // No per-round settings yet; show a note
+      imm::div(context, mk(settings_group.ent()),
+               ComponentConfig{}.with_label("Cat is huge and eliminates on touch. Clear all mice!"));
+      break;
+    }
     default:
       log_error("You need to add a handler for UI settings for round type {}",
                 (int)RoundManager::get().active_round_type);
@@ -2053,6 +2091,18 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
                  .with_skip_tabbing(true)
                  .with_size(ComponentSize{pixels(400.f), pixels(100.f)})
                  .with_margin(Margin{.top = screen_pct(0.05f)}));
+  }
+
+  if (RoundManager::get().active_round_type == RoundType::CatAndMice) {
+    auto &cm = RoundManager::get().get_active_rt<RoundCatAndMiceSettings>();
+    std::string summary = cm.last_completion_time >= 0
+                              ? std::format("Clear time: {:.2f}s", cm.last_completion_time)
+                              : std::string("Clear all mice!");
+    imm::div(context, mk(elem.ent()),
+             ComponentConfig{}
+                 .with_label(summary)
+                 .with_size(ComponentSize{percent(1.f), percent(0.15f)})
+                 .with_margin(Margin{.top = screen_pct(0.02f)}));
   }
 
   std::map<EntityID, int> rankings;

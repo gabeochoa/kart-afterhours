@@ -106,6 +106,13 @@ void game() {
         std::make_unique<CheckTagAndGoWinCondition>());
     systems.register_update_system(std::make_unique<ScaleTaggerSize>());
 
+    // Cat and Mice game mode systems
+    systems.register_update_system(std::make_unique<InitializeCatAndMice>());
+    systems.register_update_system(std::make_unique<StartCatAndMiceTimer>());
+    systems.register_update_system(std::make_unique<CatInstantKillOnTouch>());
+    systems.register_update_system(std::make_unique<CheckCatAndMiceWinCondition>());
+    systems.register_update_system(std::make_unique<ScaleCatSize>());
+
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
     systems.register_update_system(std::make_unique<UpdateShaderValues>());
     systems.register_update_system(

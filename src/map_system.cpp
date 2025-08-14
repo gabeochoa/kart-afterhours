@@ -33,29 +33,29 @@ vec2 get_preview_offset(int map_index) {
 const std::array<MapConfig, MapManager::MAP_COUNT> MapManager::available_maps =
     {{{.display_name = "Arena",
        .description = "Classic open arena with strategic obstacles",
-       .compatible_round_types = std::bitset<4>(
-           0b1111), // All round types (Lives, Kills, Score, TagAndGo)
+       .compatible_round_types = std::bitset<magic_enum::enum_count<RoundType>()>(
+           0b11111), // All round types including CatAndMice
        .create_map_func = create_arena_map},
       {.display_name = "Maze",
        .description = "Complex maze layout for tactical gameplay",
-       .compatible_round_types = std::bitset<4>(0b0011), // Lives, Kills
+       .compatible_round_types = std::bitset<magic_enum::enum_count<RoundType>()>(0b00111), // Lives, Kills, CatAndMice
        .create_map_func = create_maze_map},
       {.display_name = "Race Track",
        .description = "Race track layout with speed-focused gameplay",
-       .compatible_round_types = std::bitset<4>(0b1100), // Score, TagAndGo
+       .compatible_round_types = std::bitset<magic_enum::enum_count<RoundType>()>(0b11000), // Kills/Tagish only
        .create_map_func = create_race_map},
       {.display_name = "Battle Arena",
        .description = "Combat-focused layout with cover points",
-       .compatible_round_types = std::bitset<4>(0b0011), // Lives, Kills
+       .compatible_round_types = std::bitset<magic_enum::enum_count<RoundType>()>(0b00111), // Lives, Kills, CatAndMice
        .create_map_func = create_battle_map},
       {.display_name = "Tag And Go",
        .description = "Special layout optimized for tag gameplay",
-       .compatible_round_types = std::bitset<4>(0b1000), // TagAndGo only
+       .compatible_round_types = std::bitset<magic_enum::enum_count<RoundType>()>(0b010000), // TagAndGo only
        .create_map_func = create_tagandgo_map},
       {.display_name = "Test Map",
        .description = "Test map with green walls and big X for preview testing",
-       .compatible_round_types = std::bitset<4>(
-           0b1111), // All round types (Lives, Kills, Score, TagAndGo)
+       .compatible_round_types = std::bitset<magic_enum::enum_count<RoundType>()>(
+           0b11111), // All round types incl. CatAndMice
        .create_map_func = create_test_map}}};
 
 void MapManager::initialize_preview_textures() {

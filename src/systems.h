@@ -1439,7 +1439,8 @@ struct ProcessDeath : PausableSystem<Transform, HasHealth> {
     make_explosion_anim(entity);
 
     // Handle player respawning
-    if (entity.has<PlayerID>()) {
+    if (entity.has<PlayerID>() &&
+        RoundManager::get().active_round_type != RoundType::CatAndMice) {
       transform.position =
           get_spawn_position(static_cast<size_t>(entity.get<PlayerID>().id));
     }
@@ -1456,10 +1457,12 @@ struct ProcessDeath : PausableSystem<Transform, HasHealth> {
         return;
       }
 
-      entity.get<HasMultipleLives>().num_lives_remaining -= 1;
-      if (entity.get<HasMultipleLives>().num_lives_remaining) {
-        hasHealth.amount = hasHealth.max_amount;
-        return;
+      if (RoundManager::get().active_round_type != RoundType::CatAndMice) {
+        entity.get<HasMultipleLives>().num_lives_remaining -= 1;
+        if (entity.get<HasMultipleLives>().num_lives_remaining) {
+          hasHealth.amount = hasHealth.max_amount;
+          return;
+        }
       }
     }
 
