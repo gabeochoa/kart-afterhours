@@ -132,9 +132,9 @@ struct AIDifficulty : BaseComponent {
 struct AIMode : BaseComponent {
   // If true, the mode will be kept in sync with RoundManager::active_round_type
   bool follow_round_type{true};
-  RoundType mode{RoundType::Lives};
+  RoundType mode{static_cast<RoundType>(0)};
 
-  AIMode(RoundType m = RoundType::Lives, bool follow = true)
+  AIMode(RoundType m = static_cast<RoundType>(0), bool follow = true)
       : follow_round_type(follow), mode(m) {}
 };
 
@@ -161,11 +161,13 @@ struct AIParams : BaseComponent {
   float shooting_alignment_angle_deg{10.0f};
 
   // Boost behavior parameters
-  // Only consider boosting when the target is at least this far away (squared distance)
+  // Only consider boosting when the target is at least this far away (squared
+  // distance)
   float boost_min_distance_sq{400.0f};
   // Only consider boosting when the target is within this ahead cone (degrees)
   float boost_ahead_alignment_deg{1.0f};
-  // Cooldown override for AI boost requests (seconds); <= 0 to keep current component/default
+  // Cooldown override for AI boost requests (seconds); <= 0 to keep current
+  // component/default
   float boost_cooldown_seconds{3.0f};
 };
 
