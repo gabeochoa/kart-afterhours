@@ -30,6 +30,7 @@ Quick start
 Config to refine analysis
 - You can mark known read-only or write-only resources to refine conflicts with --config:
   $ python3 tools/dependency_graph.py --config tools/dep_config.json
+- You can also add per-system overrides in the config under a "systems" section.
 
 Example dep_config.json
 {
@@ -43,6 +44,14 @@ Example dep_config.json
   },
   "globals": {
     "mainRT": "w"
+  },
+  "systems": {
+    "RenderSpritesWithShaders": {
+      "singletons": { "ShaderLibrary": "r" }
+    },
+    "UpdateShaderValues": {
+      "singletons": { "ShaderLibrary": "w" }
+    }
   }
 }
 
@@ -510,24 +519,59 @@ def apply_config_constraints(systems: List[SystemModel], config: Dict):
     glob_cfg = {k: v for k, v in (config.get('globals') or {}).items()}
 
     for s in systems:
-        # components
+        # global type-level constraints
         for name, mode in comp_cfg.items():
             if mode == 'r':
                 s.write_components.discard(name)
             elif mode == 'w':
                 s.read_components.discard(name)
-        # singletons
         for name, mode in sing_cfg.items():
             if mode == 'r':
                 s.write_singletons.discard(name)
             elif mode == 'w':
                 s.read_singletons.discard(name)
-        # globals
         for name, mode in glob_cfg.items():
             if mode == 'r':
                 s.write_globals.discard(name)
             elif mode == 'w':
                 s.read_globals.discard(name)
+
+    # per-system overrides
+    systems_cfg = config.get('systems') or {}
+    for s in systems:
+        sc = systems_cfg.get(s.name)
+        if not sc:
+            continue
+        for name, mode in (sc.get('components') or {}).items():
+            if mode == 'r':
+                s.write_components.discard(name)
+                s.read_components.add(name)
+            elif mode == 'w':
+                s.read_components.discard(name)
+                s.write_components.add(name)
+            elif mode == 'rw':
+                s.read_components.add(name)
+                s.write_components.add(name)
+        for name, mode in (sc.get('singletons') or {}).items():
+            if mode == 'r':
+                s.write_singletons.discard(name)
+                s.read_singletons.add(name)
+            elif mode == 'w':
+                s.read_singletons.discard(name)
+                s.write_singletons.add(name)
+            elif mode == 'rw':
+                s.read_singletons.add(name)
+                s.write_singletons.add(name)
+        for name, mode in (sc.get('globals') or {}).items():
+            if mode == 'r':
+                s.write_globals.discard(name)
+                s.read_globals.add(name)
+            elif mode == 'w':
+                s.read_globals.discard(name)
+                s.write_globals.add(name)
+            elif mode == 'rw':
+                s.read_globals.add(name)
+                s.write_globals.add(name)
 
 
 def write_html_index(outdir: str):
@@ -556,6 +600,18 @@ def write_html_index(outdir: str):
         f.write(html)
 
 
+def print_read_write_summary(systems: List[SystemModel]):
+    print('Per-system read/write resources:')
+    for s in sorted(systems, key=lambda s: (s.stage, s.name)):
+        reads = sorted(list(s.resources_read()))
+        writes = sorted(list(s.resources_written()))
+        print(f'- [{s.stage}] {s.name}')
+        if reads:
+            print(f'    reads:  {", ".join(reads)}')
+        if writes:
+            print(f'    writes: {", ".join(writes)}')
+
+
 # ------------------- Main -------------------
 
 def main():
@@ -566,6 +622,7 @@ def main():
     parser.add_argument('--no-svg', action='store_true', help='Do not attempt to render SVG via dot')
     parser.add_argument('--config', default=None, help='Optional JSON config file to constrain resource modes (r/w/rw)')
     parser.add_argument('--write-html', action='store_true', help='Emit a simple index.html in outdir')
+    parser.add_argument('--print-rw', action='store_true', help='Print a concise per-system read/write summary')
     args = parser.parse_args()
 
     src_root = os.path.abspath(args.src)
@@ -646,6 +703,9 @@ def main():
         print(f'  {stage}:')
         for i, batch in enumerate(batches, 1):
             print(f'    batch {i}: {", ".join(batch)}')
+
+    if args.print_rw:
+        print_read_write_summary(systems)
 
 
 if __name__ == '__main__':

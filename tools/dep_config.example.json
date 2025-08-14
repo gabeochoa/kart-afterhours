@@ -13,5 +13,16 @@
 	},
 	"globals": {
 		"mainRT": "w"
+	},
+	"systems": {
+		"RenderSpritesWithShaders": {
+			"singletons": { "ShaderLibrary": "r" }
+		},
+		"RenderAnimationsWithShaders": {
+			"singletons": { "ShaderLibrary": "r" }
+		},
+		"UpdateShaderValues": {
+			"singletons": { "ShaderLibrary": "w" }
+		}
 	}
 }
