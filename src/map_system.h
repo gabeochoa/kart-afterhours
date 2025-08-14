@@ -88,6 +88,6 @@ private:
   static void create_maze_map();
   static void create_race_map();
   static void create_battle_map();
-  static void create_catmouse_map();
+  static void create_tagandgo_map();
   static void create_test_map();
 };

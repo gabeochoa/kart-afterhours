@@ -140,7 +140,7 @@ Entity &make_car(size_t id) {
   int starting_lives = RoundManager::get().fetch_num_starting_lives();
   entity.addComponent<HasMultipleLives>(starting_lives);
   entity.addComponent<HasKillCountTracker>();
-  entity.addComponent<HasCatMouseTracking>();
+  entity.addComponent<HasTagAndGoTracking>();
   entity.addComponent<HasHippoCollection>();
 
   auto &transform = entity.addComponent<Transform>(

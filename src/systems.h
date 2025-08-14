@@ -402,7 +402,7 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
-struct ConfigureCatSpotlight : System<> {
+struct ConfigureTaggerSpotlight : System<> {
   virtual void once(float) override {
     if (!ShaderLibrary::get().contains("post_processing")) {
       return;
@@ -410,7 +410,7 @@ struct ConfigureCatSpotlight : System<> {
     // Always update common uniforms
     set_common_uniforms();
     auto &settings = RoundManager::get().get_active_settings();
-    if (RoundManager::get().active_round_type != RoundType::CatAndMouse) {
+    if (RoundManager::get().active_round_type != RoundType::TagAndGo) {
       set_enabled(false);
       return;
     }
@@ -418,14 +418,14 @@ struct ConfigureCatSpotlight : System<> {
       set_enabled(false);
       return;
     }
-    OptEntity cat = EntityQuery()
-                        .whereHasComponent<Transform>()
-                        .whereHasComponent<HasCatMouseTracking>()
-                        .whereLambda([](const Entity &e) {
-                          return e.get<HasCatMouseTracking>().is_cat;
-                        })
-                        .gen_first();
-    if (!cat.valid()) {
+    OptEntity tagger = EntityQuery()
+                           .whereHasComponent<Transform>()
+                           .whereHasComponent<HasTagAndGoTracking>()
+                           .whereLambda([](const Entity &e) {
+                             return e.get<HasTagAndGoTracking>().is_tagger;
+                           })
+                           .gen_first();
+    if (!tagger.valid()) {
       set_enabled(false);
       return;
     }
@@ -437,7 +437,7 @@ struct ConfigureCatSpotlight : System<> {
     }
     vec2 screen = {static_cast<float>(rez->current_resolution.width),
                    static_cast<float>(rez->current_resolution.height)};
-    vec2 center = cat->get<Transform>().center();
+    vec2 center = tagger->get<Transform>().center();
     // Account for sprite fine-tune offsets used in rendering so spotlight
     // centers correctly
     const float offset_x = SPRITE_OFFSET_X;
@@ -1223,11 +1223,11 @@ struct VelFromInput
                        Config::get().max_speed.data);
     }
 
-    // Apply speed multiplier for cat and mouse mode
-    if (RoundManager::get().active_round_type == RoundType::CatAndMouse) {
-      auto &cat_mouse_settings =
-          RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
-      mvt *= cat_mouse_settings.speed_multiplier;
+    // Apply speed multiplier for TagAndGo mode
+    if (RoundManager::get().active_round_type == RoundType::TagAndGo) {
+      auto &tag_settings =
+          RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
+      mvt *= tag_settings.speed_multiplier;
     }
 
     if (!transform.is_reversing()) {
@@ -1528,8 +1528,8 @@ struct RenderPlayerHUD : System<Transform, HasHealth> {
     case RoundType::Kills:
       render_kills(entity, transform, color);
       break;
-    case RoundType::CatAndMouse:
-      render_cat_indicator(entity, transform, color);
+    case RoundType::TagAndGo:
+      render_tagger_indicator(entity, transform, color);
       break;
     default:
       break;
@@ -1570,16 +1570,16 @@ private:
         static_cast<int>(text_size), color);
   }
 
-  void render_cat_indicator(const Entity &entity, const Transform &transform,
-                            raylib::Color) const {
+  void render_tagger_indicator(const Entity &entity, const Transform &transform,
+                               raylib::Color) const {
     // TODO add color to entity
-    if (!entity.has<HasCatMouseTracking>())
+    if (!entity.has<HasTagAndGoTracking>())
       return;
 
-    const auto &catMouseTracking = entity.get<HasCatMouseTracking>();
+    const auto &taggerTracking = entity.get<HasTagAndGoTracking>();
 
-    // Draw crown for cat
-    if (catMouseTracking.is_cat) {
+    // Draw crown for the tagger
+    if (taggerTracking.is_tagger) {
       // Draw a crown above the player who is "it"
       const float crown_size = 15.f;
       const float crown_y_offset = transform.size.y + 20.f;
@@ -1613,10 +1613,10 @@ private:
 
     // Draw shield for players in cooldown (safe period)
     float current_time = static_cast<float>(raylib::GetTime());
-    auto &cat_mouse_settings =
-        RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
-    if (current_time - catMouseTracking.last_tag_time <
-        cat_mouse_settings.tag_cooldown_time) {
+    auto &tag_settings =
+        RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
+    if (current_time - taggerTracking.last_tag_time <
+        tag_settings.tag_cooldown_time) {
       // TODO: Add pulsing animation to shield to make it more obvious
       // TODO: Add countdown timer above shield showing remaining safe time
       // Draw a shield above the player who is safe

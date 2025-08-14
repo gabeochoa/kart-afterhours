@@ -601,10 +601,10 @@ void ScheduleMainMenuUI::round_end_player_column(
       stats_text = "Hippos: 0";
     }
     break;
-  case RoundType::CatAndMouse:
-    if (car->has<HasCatMouseTracking>()) {
-      stats_text = std::format("Mouse: {:.1f}s",
-                               car->get<HasCatMouseTracking>().time_as_mouse);
+  case RoundType::TagAndGo:
+    if (car->has<HasTagAndGoTracking>()) {
+      stats_text = std::format("Not It: {:.1f}s",
+                               car->get<HasTagAndGoTracking>().time_as_not_it);
     }
     break;
   default:
@@ -646,11 +646,11 @@ void ScheduleMainMenuUI::round_end_player_column(
     animated_stats = std::format("Hippos: {}", shown);
     break;
   }
-  case RoundType::CatAndMouse: {
-    if (car->has<HasCatMouseTracking>()) {
-      float final_val = car->get<HasCatMouseTracking>().time_as_mouse;
+  case RoundType::TagAndGo: {
+    if (car->has<HasTagAndGoTracking>()) {
+      float final_val = car->get<HasTagAndGoTracking>().time_as_not_it;
       float shown = std::round(score_t * final_val * 10.0f) / 10.0f;
-      animated_stats = std::format("Mouse: {:.1f}s", shown);
+      animated_stats = std::format("Not It: {:.1f}s", shown);
     }
     break;
   }
@@ -678,8 +678,8 @@ void ScheduleMainMenuUI::render_round_end_stats(UIContext<InputAction> &context,
   case RoundType::Hippo:
     render_hippo_stats(context, parent, car, bg_color);
     break;
-  case RoundType::CatAndMouse:
-    render_cat_mouse_stats(context, parent, car, bg_color);
+  case RoundType::TagAndGo:
+    render_tag_and_go_stats(context, parent, car, bg_color);
     break;
   default:
     render_unknown_stats(context, parent, car, bg_color);
@@ -747,17 +747,16 @@ void ScheduleMainMenuUI::render_hippo_stats(UIContext<InputAction> &context,
                .disable_rounded_corners());
 }
 
-void ScheduleMainMenuUI::render_cat_mouse_stats(UIContext<InputAction> &context,
-                                                Entity &parent,
-                                                const OptEntity &car,
-                                                raylib::Color bg_color) {
-  if (!car->has<HasCatMouseTracking>()) {
+void ScheduleMainMenuUI::render_tag_and_go_stats(
+    UIContext<InputAction> &context, Entity &parent, const OptEntity &car,
+    raylib::Color bg_color) {
+  if (!car->has<HasTagAndGoTracking>()) {
     return;
   }
 
-  const auto &tracking = car->get<HasCatMouseTracking>();
+  const auto &tracking = car->get<HasTagAndGoTracking>();
   std::string stats_text =
-      std::format("Mouse: {:.1f}s", tracking.time_as_mouse);
+      std::format("Not It: {:.1f}s", tracking.time_as_not_it);
 
   imm::div(context, mk(parent, 1),
            ComponentConfig{}
@@ -782,7 +781,7 @@ void ScheduleMainMenuUI::render_unknown_stats(UIContext<InputAction> &context,
                .disable_rounded_corners());
 }
 
-std::map<EntityID, int> ScheduleMainMenuUI::get_cat_mouse_rankings(
+std::map<EntityID, int> ScheduleMainMenuUI::get_tag_and_go_rankings(
     const std::vector<OptEntity> &round_players,
     const std::vector<OptEntity> &round_ais) {
   std::map<EntityID, int> rankings;
@@ -791,20 +790,20 @@ std::map<EntityID, int> ScheduleMainMenuUI::get_cat_mouse_rankings(
   std::vector<std::pair<EntityID, float>> player_times;
 
   for (const auto &player : round_players) {
-    if (player->has<HasCatMouseTracking>()) {
+    if (player->has<HasTagAndGoTracking>()) {
       player_times.emplace_back(
-          player->id, player->get<HasCatMouseTracking>().time_as_mouse);
+          player->id, player->get<HasTagAndGoTracking>().time_as_not_it);
     }
   }
 
   for (const auto &ai : round_ais) {
-    if (ai->has<HasCatMouseTracking>()) {
+    if (ai->has<HasTagAndGoTracking>()) {
       player_times.emplace_back(ai->id,
-                                ai->get<HasCatMouseTracking>().time_as_mouse);
+                                ai->get<HasTagAndGoTracking>().time_as_not_it);
     }
   }
 
-  // Sort by mouse time (highest first for cat and mouse - most mouse time wins)
+  // Sort by runner time (highest first - most time not it wins)
   std::sort(player_times.begin(), player_times.end(),
             [](const auto &a, const auto &b) { return a.second > b.second; });
 
@@ -946,8 +945,8 @@ void ScheduleMainMenuUI::render_round_settings_preview(
                  std::format("Total Hippos: {}", s.total_hippos)));
     break;
   }
-  case RoundType::CatAndMouse: {
-    auto &s = RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+  case RoundType::TagAndGo: {
+    auto &s = RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
     std::string time_display;
     switch (s.time_option) {
     case RoundSettings::TimeOptions::Unlimited:
@@ -1177,9 +1176,10 @@ void round_hippo_settings(Entity &entity, UIContext<InputAction> &context) {
           .with_size(ComponentSize{percent(1.f), percent(0.2f)}));
 }
 
-void round_cat_mouse_settings(Entity &entity, UIContext<InputAction> &context) {
+void round_tag_and_go_settings(Entity &entity,
+                               UIContext<InputAction> &context) {
   auto &cm_settings =
-      RoundManager::get().get_active_rt<RoundCatAndMouseSettings>();
+      RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
 
   {
     auto options = magic_enum::enum_names<RoundSettings::TimeOptions>();
@@ -1273,8 +1273,8 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     case RoundType::Hippo:
       round_hippo_settings(settings_group.ent(), context);
       break;
-    case RoundType::CatAndMouse:
-      round_cat_mouse_settings(settings_group.ent(), context);
+    case RoundType::TagAndGo:
+      round_tag_and_go_settings(settings_group.ent(), context);
       break;
     default:
       log_error("You need to add a handler for UI settings for round type {}",
@@ -2056,8 +2056,8 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
   }
 
   std::map<EntityID, int> rankings;
-  if (RoundManager::get().active_round_type == RoundType::CatAndMouse) {
-    rankings = get_cat_mouse_rankings(round_players, round_ais);
+  if (RoundManager::get().active_round_type == RoundType::TagAndGo) {
+    rankings = get_tag_and_go_rankings(round_players, round_ais);
   }
 
   // Render players in a grid layout similar to character creation
@@ -2094,7 +2094,7 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
 
         std::optional<int> ranking;
         if (car.has_value() &&
-            RoundManager::get().active_round_type == RoundType::CatAndMouse) {
+            RoundManager::get().active_round_type == RoundType::TagAndGo) {
           auto it = rankings.find(car->id);
           if (it != rankings.end() && it->second <= 3) {
             ranking = it->second;

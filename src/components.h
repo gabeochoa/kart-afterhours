@@ -282,12 +282,11 @@ struct HasKillCountTracker : BaseComponent {
   HasKillCountTracker(int initial_kills) : kills(initial_kills) {}
 };
 
-struct HasCatMouseTracking : BaseComponent {
-  float time_as_mouse = 0.0f;
-  bool is_cat = false;
-  float last_tag_time =
-      -1.f; // TODO: Consider making this configurable per round
-  HasCatMouseTracking() = default;
+struct HasTagAndGoTracking : BaseComponent {
+  float time_as_not_it = 0.0f;
+  bool is_tagger = false;
+  float last_tag_time = -1.f;
+  HasTagAndGoTracking() = default;
 };
 
 struct HasHippoCollection : BaseComponent {

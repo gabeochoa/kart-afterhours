@@ -95,14 +95,14 @@ void game() {
     systems.register_update_system(std::make_unique<ProcessHippoCollection>());
     systems.register_update_system(std::make_unique<SpawnHippoItems>());
     systems.register_update_system(std::make_unique<CheckHippoWinCondition>());
-    systems.register_update_system(std::make_unique<InitializeCatMouseGame>());
-    systems.register_update_system(std::make_unique<UpdateCatMouseTimers>());
+    systems.register_update_system(std::make_unique<InitializeTagAndGoGame>());
+    systems.register_update_system(std::make_unique<UpdateTagAndGoTimers>());
     systems.register_update_system(std::make_unique<UpdateRoundCountdown>());
     systems.register_update_system(
-        std::make_unique<HandleCatMouseTagTransfer>());
+        std::make_unique<HandleTagAndGoTagTransfer>());
     systems.register_update_system(
-        std::make_unique<CheckCatMouseWinCondition>());
-    systems.register_update_system(std::make_unique<ScaleCatSize>());
+        std::make_unique<CheckTagAndGoWinCondition>());
+    systems.register_update_system(std::make_unique<ScaleTaggerSize>());
 
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
     systems.register_update_system(std::make_unique<UpdateShaderValues>());
@@ -178,7 +178,8 @@ void game() {
       // letterbox/pillar bars so they remain pure black on top.
       systems.register_render_system(
           std::make_unique<BeginShader>("post_processing"));
-      systems.register_render_system(std::make_unique<ConfigureCatSpotlight>());
+      systems.register_render_system(
+          std::make_unique<ConfigureTaggerSpotlight>());
       systems.register_render_system(std::make_unique<RenderRenderTexture>());
       systems.register_render_system(
           std::make_unique<RenderDebugGridOverlay>());
