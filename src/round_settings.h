@@ -16,8 +16,8 @@ constexpr vec2 NORMAL_CAR_SIZE = vec2{15.f, 25.f};
 constexpr float NORMAL_SPRITE_SCALE = 1.0f;
 constexpr float TAG_SPRITE_SCALE = 2.0f;
 constexpr float TAG_SIZE_MULTIPLIER = 2.0f;
-constexpr float CAT_SPRITE_SCALE = 2.4f;
-constexpr float CAT_SIZE_MULTIPLIER = 2.2f;
+constexpr float CAT_SPRITE_SCALE = 2.0f;
+constexpr float CAT_SIZE_MULTIPLIER = 2.0f;
 } // namespace CarSizes
 
 enum struct RoundType : size_t {
