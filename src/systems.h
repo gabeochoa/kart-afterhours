@@ -402,9 +402,45 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   }
 };
 
+struct BeginPostProcessingShader : System<> {
+  virtual void once(float) override {
+    const bool hasBase = ShaderLibrary::get().contains("post_processing");
+    const bool hasTag = ShaderLibrary::get().contains("post_processing_tag");
+    auto &rm = RoundManager::get();
+    bool useTagShader = false;
+    if (rm.active_round_type == RoundType::TagAndGo) {
+      auto &settings = rm.get_active_settings();
+      useTagShader = (settings.state == RoundSettings::GameState::Countdown);
+    }
+    const char *name =
+        (useTagShader && hasTag) ? "post_processing_tag" : "post_processing";
+    if (!ShaderLibrary::get().contains(name)) {
+      return;
+    }
+    const auto &shader = ShaderLibrary::get().get(name);
+    raylib::BeginShaderMode(shader);
+    // Update common uniforms
+    float t = static_cast<float>(raylib::GetTime());
+    int timeLoc = raylib::GetShaderLocation(shader, "time");
+    if (timeLoc != -1) {
+      raylib::SetShaderValue(shader, timeLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
+    }
+    auto *rez = EntityHelper::get_singleton_cmp<
+        window_manager::ProvidesCurrentResolution>();
+    if (rez) {
+      vec2 r = {static_cast<float>(rez->current_resolution.width),
+                static_cast<float>(rez->current_resolution.height)};
+      int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+      if (rezLoc != -1) {
+        raylib::SetShaderValue(shader, rezLoc, &r, raylib::SHADER_UNIFORM_VEC2);
+      }
+    }
+  }
+};
+
 struct ConfigureTaggerSpotlight : System<> {
   virtual void once(float) override {
-    if (!ShaderLibrary::get().contains("post_processing")) {
+    if (!ShaderLibrary::get().contains("post_processing_tag")) {
       return;
     }
     // Always update common uniforms
@@ -457,7 +493,7 @@ struct ConfigureTaggerSpotlight : System<> {
   }
 
   void set_enabled(bool on) const {
-    const auto &shader = ShaderLibrary::get().get("post_processing");
+    const auto &shader = ShaderLibrary::get().get("post_processing_tag");
     float enabled = on ? 1.0f : 0.0f;
     int loc = raylib::GetShaderLocation(shader, "spotlightEnabled");
     if (loc != -1) {
@@ -468,7 +504,7 @@ struct ConfigureTaggerSpotlight : System<> {
 
   void set_values(bool on, vec2 pos, float radius, float softness, float dim,
                   float desat) const {
-    const auto &shader = ShaderLibrary::get().get("post_processing");
+    const auto &shader = ShaderLibrary::get().get("post_processing_tag");
     float enabled = on ? 1.0f : 0.0f;
     int locEnabled = raylib::GetShaderLocation(shader, "spotlightEnabled");
     if (locEnabled != -1) {
@@ -502,20 +538,44 @@ struct ConfigureTaggerSpotlight : System<> {
   }
 
   void set_common_uniforms() const {
-    const auto &shader = ShaderLibrary::get().get("post_processing");
-    float t = static_cast<float>(raylib::GetTime());
-    int timeLoc = raylib::GetShaderLocation(shader, "time");
-    if (timeLoc != -1) {
-      raylib::SetShaderValue(shader, timeLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
+    if (ShaderLibrary::get().contains("post_processing")) {
+      const auto &shader = ShaderLibrary::get().get("post_processing");
+      float t = static_cast<float>(raylib::GetTime());
+      int timeLoc = raylib::GetShaderLocation(shader, "time");
+      if (timeLoc != -1) {
+        raylib::SetShaderValue(shader, timeLoc, &t,
+                               raylib::SHADER_UNIFORM_FLOAT);
+      }
+      auto *rez = EntityHelper::get_singleton_cmp<
+          window_manager::ProvidesCurrentResolution>();
+      if (rez) {
+        vec2 r = {static_cast<float>(rez->current_resolution.width),
+                  static_cast<float>(rez->current_resolution.height)};
+        int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+        if (rezLoc != -1) {
+          raylib::SetShaderValue(shader, rezLoc, &r,
+                                 raylib::SHADER_UNIFORM_VEC2);
+        }
+      }
     }
-    auto *rez = EntityHelper::get_singleton_cmp<
-        window_manager::ProvidesCurrentResolution>();
-    if (rez) {
-      vec2 r = {static_cast<float>(rez->current_resolution.width),
-                static_cast<float>(rez->current_resolution.height)};
-      int rezLoc = raylib::GetShaderLocation(shader, "resolution");
-      if (rezLoc != -1) {
-        raylib::SetShaderValue(shader, rezLoc, &r, raylib::SHADER_UNIFORM_VEC2);
+    if (ShaderLibrary::get().contains("post_processing_tag")) {
+      const auto &shader = ShaderLibrary::get().get("post_processing_tag");
+      float t = static_cast<float>(raylib::GetTime());
+      int timeLoc = raylib::GetShaderLocation(shader, "time");
+      if (timeLoc != -1) {
+        raylib::SetShaderValue(shader, timeLoc, &t,
+                               raylib::SHADER_UNIFORM_FLOAT);
+      }
+      auto *rez = EntityHelper::get_singleton_cmp<
+          window_manager::ProvidesCurrentResolution>();
+      if (rez) {
+        vec2 r = {static_cast<float>(rez->current_resolution.width),
+                  static_cast<float>(rez->current_resolution.height)};
+        int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+        if (rezLoc != -1) {
+          raylib::SetShaderValue(shader, rezLoc, &r,
+                                 raylib::SHADER_UNIFORM_VEC2);
+        }
       }
     }
   }
