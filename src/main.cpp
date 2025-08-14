@@ -102,7 +102,8 @@ void game() {
         std::make_unique<HandleTagAndGoTagTransfer>());
     systems.register_update_system(
         std::make_unique<CheckTagAndGoWinCondition>());
-    systems.register_update_system(std::make_unique<ScaleTaggerSize>());
+    systems.register_update_system(std::make_unique<ComputeTagAndGoEntityScale>());
+    systems.register_update_system(std::make_unique<ApplyEntityScale>());
 
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
     systems.register_update_system(std::make_unique<UpdateShaderValues>());
@@ -162,6 +163,7 @@ void game() {
           std::make_unique<RenderAnimationsWithShaders>());
       //
       systems.register_render_system(std::make_unique<RenderPlayerHUD>());
+      systems.register_render_system(std::make_unique<TagAndGoVisualSystem>());
       systems.register_render_system(std::make_unique<RenderLabels>());
       systems.register_render_system(std::make_unique<RenderWeaponCooldown>());
       systems.register_render_system(std::make_unique<RenderOOB>());

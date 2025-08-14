@@ -289,6 +289,26 @@ struct HasTagAndGoTracking : BaseComponent {
   HasTagAndGoTracking() = default;
 };
 
+struct TaggerIndicatorStyle : BaseComponent {
+  float crown_size = 15.f;
+  float crown_y_offset = 20.f;
+  raylib::Color crown_color = raylib::GOLD;
+  int crown_points = 3;
+  float jewel_radius = 2.f;
+  raylib::Color jewel_color = raylib::RED;
+
+  float shield_size = 12.f;
+  float shield_y_offset = 35.f;
+  raylib::Color shield_color = raylib::SKYBLUE;
+  raylib::Color shield_border_color = raylib::WHITE;
+};
+
+struct HasEntityScale : BaseComponent {
+  bool enabled = false;
+  float size_multiplier = 1.0f;    // Applied to NORMAL_CAR_SIZE
+  float sprite_scale = 1.0f;       // Renderer-specific scale factor
+};
+
 struct HasHippoCollection : BaseComponent {
   int hippos_collected = 0;
 
