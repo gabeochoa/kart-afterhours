@@ -11,14 +11,14 @@ What this does
 - Optionally renders SVG and writes a simple HTML viewer
 
 Quick start
-- Generate graphs and JSON summary into build/:
-  $ python3 tools/dependency_graph.py --src src --main src/main.cpp --outdir build
+- Generate graphs and JSON summary into output/:
+  $ python3 tools/dependency_graph.py --src src --main src/main.cpp --outdir output
 
 - Also render SVGs (requires Graphviz 'dot'):
-  $ python3 tools/dependency_graph.py --outdir build  # dot is auto-detected
+  $ python3 tools/dependency_graph.py --outdir output  # dot is auto-detected
 
 - Serve artifacts over HTTP and view in a browser:
-  $ (cd build && python3 -m http.server 8080)
+  $ (cd output && python3 -m http.server 8080)
   Then open http://localhost:8080/ in a browser. If SVGs exist, open:
     - systems_components.svg
     - system_conflicts.svg
@@ -57,7 +57,7 @@ Example dep_config.json
 
 CI integration (suggested)
 - Create a baseline once:
-  $ python3 tools/dependency_graph.py --outdir build && cp build/dependency_summary.json tools/dependency_baseline.json
+  $ python3 tools/dependency_graph.py --outdir output && cp output/dependency_summary.json tools/dependency_baseline.json
 - In CI, regenerate and compare against the baseline to fail on changes.
 
 """
@@ -67,9 +67,11 @@ import os
 import re
 import json
 import shutil
+import concurrent.futures
 import subprocess
 from collections import defaultdict, namedtuple
 from typing import List, Dict, Tuple, Set
+import time
 
 # ------------------- Helpers -------------------
 
@@ -557,51 +559,278 @@ def emit_system_subscription_dot(system: SystemModel, out_path: str):
 
 def write_html_systems(outdir: str, systems: List[SystemModel]):
     subdir = os.path.join(outdir, 'systems_subscriptions')
-    items = []
-    for s in sorted(systems, key=lambda x: x.name):
-        svg_path = os.path.join(subdir, f'{s.name}.svg')
-        dot_rel = os.path.relpath(os.path.join(subdir, f'{s.name}.dot'), start=outdir)
-        if os.path.exists(svg_path):
-            try:
-                with open(svg_path, 'r', encoding='utf-8', errors='ignore') as fsvg:
-                    svg = fsvg.read()
-            except Exception:
-                svg = '<p>(failed to load svg)</p>'
-        else:
-            comps = sorted({normalize_type(c) for c in s.declared_components if c})
-            li = ''.join(f'<li>{c}</li>' for c in comps) if comps else '<li>(none)</li>'
-            svg = f'<ul>{li}</ul>'
-        items.append(f"""
-<details>
-  <summary><strong>{s.name}</strong></summary>
-  <div style=\"padding:8px 0\">{svg}</div>
-  <p>DOT: <a href=\"{dot_rel}\">{s.name}.dot</a></p>
-</details>
-""")
+    # Load JSON summary to power UI interactions
+    summary_path = os.path.join(outdir, 'dependency_summary.json')
+    try:
+        with open(summary_path, 'r', encoding='utf-8') as f:
+            summary = json.load(f)
+    except Exception:
+        summary = { 'systems': [], 'batches_by_stage': {} }
 
     html = """<!doctype html>
 <html lang=\"en\">
 <meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <title>System Subscriptions</title>
-<style>body{font-family:sans-serif;margin:20px} details{border:1px solid #ddd;border-radius:6px;padding:8px;margin:8px 0;background:#fafafa} summary{cursor:pointer;font-size:16px} .controls{margin:8px 0} .controls input{padding:6px 8px;border:1px solid #ccc;border-radius:4px;min-width:260px}</style>
+<style>
+  body{font-family:sans-serif;margin:20px}
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+  .panel{border:1px solid #ddd;border-radius:6px;background:#fafafa}
+  .panel h2{margin:0;padding:10px 12px;border-bottom:1px solid #ddd;font-size:16px}
+  .panel .content{padding:10px 12px}
+  .sections{display:grid;grid-template-rows:repeat(4,minmax(0,1fr));gap:10px;height:70vh}
+  .section{display:flex;flex-direction:column;min-height:0}
+  .list{flex:1;overflow:auto}
+  .system{padding:6px 8px;border-radius:4px;cursor:pointer}
+  .system:hover{background:#eee}
+  .system.active{background:#dfefff}
+  .badge{display:inline-block;font-size:11px;padding:2px 6px;border-radius:10px;background:#eaeaea;margin-left:6px}
+  .controls{display:flex;gap:8px}
+  .controls input{flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:4px}
+  .graph-wrap{height:70vh}
+  .graph{width:100%;height:100%;border:1px solid #ddd;background:#fff}
+</style>
 <h1>System Subscriptions</h1>
-<p>Each chart shows a system and edges to the components it subscribes to (declared as template parameters).</p>
-<div class=\"controls\"><input id=\"search\" type=\"text\" placeholder=\"Search system (Enter to toggle)\"/></div>
-<div id=\"list\">[[ITEMS]]</div>
+<div class=\"layout\">
+  <div class=\"panel\">
+    <h2>Systems</h2>
+    <div class=\"content\">
+      <div class=\"controls\">
+        <input id=\"search-sys\" type=\"text\" placeholder=\"Filter systems\" />
+      </div>
+      <div class=\"sections\">
+        <div class=\"section\">
+          <div class=\"badge\">fixed_update</div>
+          <div id=\"systems-fixed_update\" class=\"list\"></div>
+        </div>
+        <div class=\"section\">
+          <div class=\"badge\">update</div>
+          <div id=\"systems-update\" class=\"list\"></div>
+        </div>
+        <div class=\"section\">
+          <div class=\"badge\">render</div>
+          <div id=\"systems-render\" class=\"list\"></div>
+        </div>
+        <div class=\"section\">
+          <div class=\"badge\">unknown</div>
+          <div id=\"systems-unknown\" class=\"list\"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class=\"panel\">
+    <h2 id=\"detail-title\">Details</h2>
+    <div class=\"content\"> 
+      <div class=\"graph-wrap\">
+        <svg id=\"graph\" class=\"graph\"></svg>
+      </div>
+    </div>
+  </div>
+</div>
+<script src=\"https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js\"></script>
 <script>
-const input = document.getElementById('search');
-input && input.addEventListener('keydown', (e)=>{
-  if(e.key !== 'Enter') return;
-  const q = input.value.trim().toLowerCase();
-  if(!q) return;
-  const details = Array.from(document.querySelectorAll('details'));
-  const match = details.find(d => (d.querySelector('summary')?.textContent||'').toLowerCase().includes(q));
-  if(match){ match.open = true; match.scrollIntoView({behavior:'smooth', block:'center'}); }
+const summary = [[SUMMARY_JSON]];
+// Build quick indexes
+const systems = summary.systems.map(s => ({
+  name: s.name,
+  stage: s.stage,
+  order: s.order,
+  declared: s.declared_components,
+  reads: new Set(s.reads),
+  writes: new Set(s.writes)
+}));
+const byStage = systems.reduce((acc, s) => { (acc[s.stage] ||= []).push(s); return acc; }, {});
+for(const st of Object.keys(byStage)) byStage[st].sort((a,b)=>a.order-b.order);
+
+const containers = {
+  'fixed_update': document.getElementById('systems-fixed_update'),
+  'update': document.getElementById('systems-update'),
+  'render': document.getElementById('systems-render'),
+  'unknown': document.getElementById('systems-unknown')
+};
+const detailTitle = document.getElementById('detail-title');
+const svg = d3.select('#graph');
+const g = svg.append('g');
+const defs = svg.append('defs');
+defs.append('marker').attr('id','arrow-black').attr('viewBox','0 0 10 10').attr('refX',10).attr('refY',5).attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto-start-reverse')
+  .append('path').attr('d','M 0 0 L 10 5 L 0 10 z').attr('fill','#000');
+defs.append('marker').attr('id','arrow-red').attr('viewBox','0 0 10 10').attr('refX',10).attr('refY',5).attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto-start-reverse')
+  .append('path').attr('d','M 0 0 L 10 5 L 0 10 z').attr('fill','#c00');
+
+function drawSystemGraph(s){
+  // Layout constants
+  const width = svg.node().clientWidth || 800;
+  const height = svg.node().clientHeight || 500;
+  svg.attr('viewBox', `0 0 ${width} ${height}`);
+  g.selectAll('*').remove();
+  const margin = 40;
+  const sysW = 180, sysH = 70;
+  const centerX = width/2, centerY = height/2;
+  const leftX = margin + 100;
+  const rightX = width - margin - 100;
+  const bottomY = height - margin - 60;
+  const vGap = 48;      // vertical spacing between stacked nodes
+  const hGap = 180;     // horizontal spacing for south nodes
+  const nodeR = 16;
+
+  const allComps = new Set([...s.reads, ...s.writes]);
+  const reads = [...allComps].filter(c => s.reads.has(c) && !s.writes.has(c)).sort();
+  const writes = [...allComps].filter(c => s.writes.has(c) && !s.reads.has(c)).sort();
+  const both = [...allComps].filter(c => s.reads.has(c) && s.writes.has(c)).sort();
+
+  // Build nodes with target positions
+  const nodes = [];
+  nodes.push({ id: s.name, type: 'system', x: centerX, y: centerY, fx: centerX, fy: centerY, tx: centerX, ty: centerY });
+  const leftStartY = centerY - ((reads.length-1) * vGap)/2;
+  reads.forEach((c,i)=> nodes.push({ id: c, type: 'read', x: leftX, y: leftStartY + i*vGap, tx: leftX, ty: leftStartY + i*vGap }));
+  const rightStartY = centerY - ((writes.length-1) * vGap)/2;
+  writes.forEach((c,i)=> nodes.push({ id: c, type: 'write', x: rightX, y: rightStartY + i*vGap, tx: rightX, ty: rightStartY + i*vGap }));
+  const bottomStartX = centerX - ((both.length-1) * hGap)/2;
+  both.forEach((c,i)=> nodes.push({ id: c, type: 'both', x: bottomStartX + i*hGap, y: bottomY, tx: bottomStartX + i*hGap, ty: bottomY }));
+
+  const nodeById = new Map(nodes.map(n => [n.id, n]));
+
+  // Render static system box
+  g.append('rect')
+    .attr('x', centerX - sysW/2)
+    .attr('y', centerY - sysH/2)
+    .attr('width', sysW)
+    .attr('height', sysH)
+    .attr('rx', 8).attr('ry', 8)
+    .attr('fill', '#eee').attr('stroke', '#999');
+  g.append('text')
+    .attr('x', centerX)
+    .attr('y', centerY)
+    .attr('text-anchor', 'middle')
+    .attr('dominant-baseline', 'middle')
+    .attr('font-size', 14)
+    .text(s.name);
+
+  // Create link data for rendering (respecting read/write directions)
+  const linksRender = [];
+  reads.forEach(c => linksRender.push({ from: c, to: s.name, color: '#000', dir: 'in' }));
+  writes.forEach(c => linksRender.push({ from: s.name, to: c, color: '#c00', dir: 'out' }));
+  both.forEach(c => { linksRender.push({ from: c, to: s.name, color: '#000', dir: 'in' }); linksRender.push({ from: s.name, to: c, color: '#c00', dir: 'out' }); });
+
+  // Links for simulation (undirected, unique pairs)
+  const pairKey = (a,b) => a < b ? a+'__'+b : b+'__'+a;
+  const pairs = new Set();
+  const linksSim = [];
+  [...reads, ...writes, ...both].forEach(c => {
+    const key = pairKey(c, s.name);
+    if(!pairs.has(key)){
+      pairs.add(key);
+      linksSim.push({ source: c, target: s.name, distance: 140 });
+    }
+  });
+
+  // Create SVG elements for components
+  const compNodes = nodes.filter(n => n.type !== 'system');
+  const nodeSel = g.selectAll('g.node').data(compNodes, d=>d.id).enter().append('g').attr('class','node').call(d3.drag()
+    .on('start', (event,d)=>{ d.fx = d.x; d.fy = d.y; })
+    .on('drag', (event,d)=>{ d.fx = event.x; d.fy = event.y; })
+    .on('end', (event,d)=>{ d.fx = null; d.fy = null; }));
+  nodeSel.append('circle')
+    .attr('r', nodeR)
+    .attr('fill', '#f7f7f7')
+    .attr('stroke', d => d.type==='write' ? '#c00' : (d.type==='read' ? '#000' : '#555'));
+  nodeSel.append('text')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', 12);
+
+  // Link paths
+  const linkSel = g.selectAll('path.link').data(linksRender).enter().append('path')
+    .attr('class','link')
+    .attr('fill','none')
+    .attr('stroke', d => d.color)
+    .attr('stroke-width', 2)
+    .attr('stroke-linecap','round')
+    .attr('marker-end', d => d.color === '#c00' ? 'url(#arrow-red)' : 'url(#arrow-black)');
+
+  function edgePoints(l){
+    const a = nodeById.get(l.from), b = nodeById.get(l.to);
+    if(!a || !b) return null;
+    let x1=a.x, y1=a.y, x2=b.x, y2=b.y;
+    if(l.dir === 'in'){ x2 = centerX - sysW/2; y2 = centerY; }
+    if(l.dir === 'out'){ x1 = centerX + sysW/2; y1 = centerY; }
+    return { x1,y1,x2,y2 };
+  }
+
+  function updateLinks(){
+    linkSel.attr('d', d => {
+      const p = edgePoints(d); if(!p) return '';
+      const dx = p.x2 - p.x1; const dy = p.y2 - p.y1;
+      const midx = p.x1 + dx * 0.5;
+      let curvature = Math.min(80, Math.abs(dx) / 3);
+      if (d.color === '#000') curvature = -curvature;
+      const c1y = p.y1 + dy * 0.25 + curvature;
+      const c2y = p.y2 - dy * 0.25 + curvature;
+      return `M ${p.x1} ${p.y1} C ${midx} ${c1y}, ${midx} ${c2y}, ${p.x2} ${p.y2}`;
+    });
+  }
+
+  function updateNodes(){
+    nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
+    nodeSel.selectAll('text')
+      .attr('y', d => d.type === 'both' ? (nodeR + 14) : (-nodeR - 10))
+      .text(d => d.id);
+  }
+
+  const simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(linksSim).id(d=>d.id).distance(l => l.distance || 140).strength(0.05))
+    .force('charge', d3.forceManyBody().strength(-220))
+    .force('collide', d3.forceCollide().radius(nodeR + 10).iterations(2))
+    .force('x', d3.forceX().x(d => d.tx || d.x).strength(0.2))
+    .force('y', d3.forceY().y(d => d.ty || d.y).strength(0.2))
+    .alpha(1)
+    .alphaDecay(0.05)
+    .on('tick', () => { updateNodes(); updateLinks(); });
+
+  updateNodes();
+  updateLinks();
+}
+
+function renderSystemList(filter=''){
+  const stages = ['fixed_update','update','render','unknown'];
+  const filtered = systems.filter(s => s.name.toLowerCase().includes(filter));
+  for(const stage of stages){
+    const parent = containers[stage];
+    if(!parent) continue;
+    parent.innerHTML='';
+    const arr = filtered.filter(s => s.stage===stage).sort((a,b)=>a.order-b.order);
+    arr.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'system';
+      div.dataset.name = s.name;
+      div.textContent = `${s.order >= 0 ? s.order.toString().padStart(2,'0')+': ' : ''}${s.name}`;
+      div.addEventListener('click', ()=> selectSystem(s.name));
+      parent.appendChild(div);
+    });
+  }
+}
+
+function selectSystem(name){
+  const s = systems.find(x => x.name===name);
+  if(!s) return;
+  detailTitle.textContent = `Details — ${s.name}`;
+  drawSystemGraph(s);
+  // highlight selection
+  document.querySelectorAll('.system').forEach(el => {
+    el.classList.toggle('active', el.dataset.name === name);
+  });
+}
+
+document.getElementById('search-sys').addEventListener('input', (e)=>{
+  renderSystemList(e.target.value.trim().toLowerCase());
 });
+
+renderSystemList('');
+// Select the first system by default for quick preview
+const first = systems.slice().sort((a,b)=> (a.stage.localeCompare(b.stage)) || (a.order-b.order))[0];
+if(first) selectSystem(first.name);
 </script>
 </html>
 """
-    html = html.replace('[[ITEMS]]', '\n'.join(items))
+    html = html.replace('[[SUMMARY_JSON]]', json.dumps(summary))
     with open(os.path.join(outdir, 'systems.html'), 'w', encoding='utf-8') as f:
         f.write(html)
 
@@ -857,11 +1086,12 @@ def main():
     parser = argparse.ArgumentParser(description='Analyze ECS system/component dependencies and emit graphs.')
     parser.add_argument('--src', default='src', help='Source root directory (default: src)')
     parser.add_argument('--main', default='src/main.cpp', help='Path to main.cpp (default: src/main.cpp)')
-    parser.add_argument('--outdir', default='build', help='Output directory (default: build)')
+    parser.add_argument('--outdir', default='output', help='Output directory (default: output)')
     parser.add_argument('--no-svg', action='store_true', help='Do not attempt to render SVG via dot')
     parser.add_argument('--config', default=None, help='Optional JSON config file to constrain resource modes (r/w/rw)')
     parser.add_argument('--write-html', action='store_true', help='Emit a simple index.html in outdir')
     parser.add_argument('--print-rw', action='store_true', help='Print a concise per-system read/write summary')
+    parser.add_argument('--jobs', type=int, default=0, help='Parse source files in parallel with N workers (0 = serial)')
     args = parser.parse_args()
 
     src_root = os.path.abspath(args.src)
@@ -874,18 +1104,29 @@ def main():
 
     systems: List[SystemModel] = []
 
-    for fp in iter_sources(src_root):
+    source_files = iter_sources(src_root)
+
+    def parse_one(fp: str) -> List[SystemModel]:
+        models: List[SystemModel] = []
         try:
             text = read_text(fp)
         except Exception:
-            continue
+            return models
         structs = find_structs_with_system_bases(text, fp)
         for st in structs:
             sys = SystemModel(name=st.name, file_path=st.file_path, base_type=st.base_type,
                               declared_components=st.template_args, body=st.body)
-            # Assign stage if known
             sys.stage = stage_by_system.get(sys.name, 'unknown')
-            systems.append(sys)
+            models.append(sys)
+        return models
+
+    if args.jobs and args.jobs > 0:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as ex:
+            for res in ex.map(parse_one, source_files):
+                systems.extend(res)
+    else:
+        for fp in source_files:
+            systems.extend(parse_one(fp))
 
     # Apply optional config constraints
     if args.config and os.path.exists(args.config):
@@ -960,6 +1201,8 @@ def main():
 
     if args.print_rw:
         print_read_write_summary(systems)
+
+    # End
 
 
 if __name__ == '__main__':
