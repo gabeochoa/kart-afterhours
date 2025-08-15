@@ -4,6 +4,7 @@
 
 #include "components.h"
 #include "round_settings.h"
+#include "tags.h"
 
 using afterhours::texture_manager::HasAnimation;
 using afterhours::texture_manager::idx_to_sprite_frame;
@@ -214,7 +215,8 @@ void make_bullet(Entity &parent, const ProjectileConfig &cfg,
       CollisionAbsorber::AbsorberType::Absorbed, parent.id);
   bullet.addComponent<HasLifetime>(cfg.life_time_seconds);
 
-  auto wrap_padding = cfg.can_wrap_around ? 0.f : std::numeric_limits<float>::max();
+  auto wrap_padding =
+      cfg.can_wrap_around ? 0.f : std::numeric_limits<float>::max();
   bullet.addComponent<CanWrapAround>(wrap_padding);
 
   bullet.addComponent<HasEntityIDBasedColor>(
@@ -316,7 +318,7 @@ Entity &make_obstacle(raylib::Rectangle rect, const raylib::Color color,
   entity.addComponent<HasColor>(color);
   entity.addComponent<CollisionAbsorber>(
       CollisionAbsorber::AbsorberType::Absorber);
-  entity.addComponent<MapGenerated>();
+  entity.enableTag(GameTag::MapGenerated);
   // TODO create a rock or other random obstacle sprite
   // entity.addComponent<afterhours::texture_manager::HasSprite>(
   //     transform.position, transform.size, transform.angle,
@@ -395,9 +397,9 @@ Entity &make_oil_slick(raylib::Rectangle rect, float steering_multiplier,
                       .restitution = 0.f};
 
   entity.addComponent<CanWrapAround>();
-  entity.addComponent<MapGenerated>();
+  entity.enableTag(GameTag::MapGenerated);
   entity.addComponent<HasColor>(darker_oil);
-  entity.addComponent<IsFloorOverlay>();
+  entity.enableTag(GameTag::FloorOverlay);
   entity.addComponent<SteeringAffector>(steering_multiplier);
   entity.addComponent<AccelerationAffector>(acceleration_multiplier);
   entity.addComponent<SteeringIncrementor>(steering_sensitivity_increment);
@@ -420,9 +422,9 @@ Entity &make_sticky_goo(raylib::Rectangle rect) {
                       .restitution = 0.f};
 
   entity.addComponent<CanWrapAround>();
-  entity.addComponent<MapGenerated>();
+  entity.enableTag(GameTag::MapGenerated);
   entity.addComponent<HasColor>(goo);
-  entity.addComponent<IsFloorOverlay>();
+  entity.enableTag(GameTag::FloorOverlay);
   entity.addComponent<SpeedAffector>(0.95f);
 
   return entity;

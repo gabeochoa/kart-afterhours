@@ -3,6 +3,7 @@
 #include "components.h"
 #include "library.h"
 #include "round_settings.h"
+#include "tags.h"
 #include <afterhours/ah.h>
 #include <optional>
 
@@ -38,13 +39,13 @@ struct GameStateManager {
 
   void end_game(const afterhours::RefEntities &winners = {}) {
     for (Entity &existing_winner : EntityQuery({.ignore_temp_warning = true})
-                                       .whereHasComponent<WasWinnerLastRound>()
+                                       .whereHasTag(GameTag::IsLastRoundsWinner)
                                        .gen()) {
-      existing_winner.removeComponentIfExists<WasWinnerLastRound>();
+      existing_winner.disableTag(GameTag::IsLastRoundsWinner);
     }
 
     for (auto &winner : winners) {
-      winner.get().addComponentIfMissing<WasWinnerLastRound>();
+      winner.get().enableTag(GameTag::IsLastRoundsWinner);
     }
 
     for (Entity &e : EntityQuery({.ignore_temp_warning = true})
