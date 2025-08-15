@@ -7,6 +7,7 @@
 #include "game_state_manager.h"
 #include "query.h"
 #include "settings.h"
+#include "navigation.h"
 
 #include "round_settings.h"
 
@@ -89,14 +90,11 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                 // eventually std::observer_ptr?
   std::vector<std::string> resolution_strs;
   size_t resolution_index{0};
-  bool ui_visible{true};
 
   // character creators
   std::vector<RefEntity> players;
   std::vector<RefEntity> ais;
   input::PossibleInputCollector<InputAction> inpc;
-
-  std::vector<Screen> navigation_stack;
 
   void update_resolution_cache();
   void character_selector_column(Entity &parent,
@@ -124,8 +122,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                const OptEntity &car, raylib::Color bg_color);
   void render_unknown_stats(UIContext<InputAction> &context, Entity &parent,
                             const OptEntity &car, raylib::Color bg_color);
-  void navigate_back();
-  void navigate_to_screen(Screen screen);
   void start_game_with_random_animation();
 
   Screen character_creation(Entity &entity, UIContext<InputAction> &context);

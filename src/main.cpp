@@ -20,6 +20,7 @@ backward::SignalHandling sh;
 #include "ui_key.h"
 #include "ui_slide_in.h"
 #include "ui_systems.h"
+#include "navigation.h"
 #include <afterhours/src/plugins/animation.h>
 #include <afterhours/src/plugins/ui/systems.h>
 
@@ -148,6 +149,7 @@ void game() {
       systems.register_update_system(
           std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
 #endif
+      systems.register_update_system(std::make_unique<NavigationSystem>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
       systems.register_update_system(std::make_unique<ScheduleDebugUI>());
       systems.register_update_system(std::make_unique<SchedulePauseUI>());
