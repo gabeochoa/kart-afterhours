@@ -12,6 +12,7 @@
 #include "shader_library.h"
 #include "sound_library.h"
 #include <fmt/format.h>
+#include "tags.h"
 #include <afterhours/ah.h>
 
 // Hippo game constants
@@ -58,11 +59,10 @@ struct UpdateAnimationTransform
   }
 };
 
-// System to add SkipTextureManagerRendering to entities with shaders
 struct MarkEntitiesWithShaders : System<HasShader> {
   virtual void for_each_with(Entity &entity, HasShader &, float) override {
-    if (!entity.has<SkipTextureManagerRendering>()) {
-      entity.addComponent<SkipTextureManagerRendering>();
+    if (!entity.hasTag(GameTag::SkipTextureRendering)) {
+      entity.enableTag(GameTag::SkipTextureRendering);
       log_info("Marked entity {} to skip texture_manager rendering", entity.id);
     }
   }
@@ -1243,12 +1243,12 @@ struct UpdateCollidingEntities : PausableSystem<Transform> {
       return;
     }
 
-    if (entity.has<IsFloorOverlay>()) {
+    if (entity.hasTag(GameTag::FloorOverlay)) {
       return;
     }
 
     auto can_collide = EQ().whereHasComponent<Transform>()
-                           .whereMissingComponent<IsFloorOverlay>()
+                           .whereHasNoTags<GameTag::FloorOverlay>()
                            .whereNotID(entity.id)
                            .whereOverlaps(transform.rect())
                            .gen();
@@ -1834,13 +1834,11 @@ private:
   }
 };
 
-struct ApplyWinnerShader : System<WasWinnerLastRound, HasShader> {
-  virtual void for_each_with(Entity &entity, WasWinnerLastRound &,
-                             HasShader &hasShader, float) override {
-    // Apply the car_winner shader to the winner
+struct ApplyWinnerShader
+    : System<tags::All<GameTag::IsLastRoundsWinner>, HasShader> {
+  virtual void for_each_with(Entity &entity, HasShader &hasShader,
+                             float) override {
     hasShader.shader_name = "car_winner";
-
-    // Remove the winner marker component since we've applied the shader
-    entity.removeComponent<WasWinnerLastRound>();
+    entity.disableTag(GameTag::IsLastRoundsWinner);
   }
 };

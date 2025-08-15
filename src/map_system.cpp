@@ -3,6 +3,7 @@
 #include "makers.h"
 #include "rl.h"
 #include "round_settings.h"
+#include "tags.h"
 
 // Map preview constants
 namespace {
@@ -81,7 +82,7 @@ void MapManager::generate_map_preview(int map_index) {
   vec2 preview_offset = get_preview_offset(map_index);
 
   auto map_entities = EntityQuery({.force_merge = true})
-                          .whereHasComponent<MapGenerated>()
+                          .whereHasTag(GameTag::MapGenerated)
                           .gen();
 
   for (auto &entity : map_entities) {

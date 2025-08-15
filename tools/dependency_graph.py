@@ -361,18 +361,44 @@ class SystemModel:
 
 # ------------------- Stage parsing -------------------
 
-def parse_stages(main_text: str) -> Dict[str, str]:
+def _normalize_system_token(tok: str) -> str:
+    # Remove namespaces and template args: ui_game::Foo<Bar> -> Foo
+    tok = tok.strip()
+    tok = tok.split('::')[-1]
+    tok = tok.split('<')[0]
+    return tok
+
+
+def parse_stage_orders(main_text: str) -> Tuple[Dict[str, str], Dict[str, int]]:
     stage_by_system: Dict[str, str] = {}
-    # Fixed update
-    for m in re.finditer(r'register_fixed_update_system\s*\(\s*std::make_unique<\s*([A-Za-z_][\w:]*)\s*>\s*\(', main_text):
-        stage_by_system[m.group(1).split('::')[-1]] = 'fixed_update'
-    # Update
-    for m in re.finditer(r'register_update_system\s*\(\s*std::make_unique<\s*([A-Za-z_][\w:]*)\s*>\s*\(', main_text):
-        stage_by_system[m.group(1).split('::')[-1]] = 'update'
-    # Render
-    for m in re.finditer(r'register_render_system\s*\(\s*std::make_unique<\s*([A-Za-z_][\w:]*)\s*>\s*\(', main_text):
-        stage_by_system[m.group(1).split('::')[-1]] = 'render'
-    return stage_by_system
+    order_by_system: Dict[str, int] = {}
+
+    patterns = [
+        ('fixed_update', r'register_fixed_update_system\s*\(\s*std::make_unique<\s*([A-Za-z_][\w:<>]*)\s*>\s*\('),
+        ('update', r'register_update_system\s*\(\s*std::make_unique<\s*([A-Za-z_][\w:<>]*)\s*>\s*\('),
+        ('render', r'register_render_system\s*\(\s*std::make_unique<\s*([A-Za-z_][\w:<>]*)\s*>\s*\('),
+    ]
+
+    # Walk the file in order; collect matches and sort by their start to preserve registration order
+    matches: List[Tuple[int, str, str]] = []  # (pos, stage, token)
+    for stage, pat in patterns:
+        for m in re.finditer(pat, main_text):
+            pos = m.start()
+            tok = m.group(1)
+            matches.append((pos, stage, tok))
+    matches.sort(key=lambda x: x[0])
+
+    counters = {'fixed_update': 0, 'update': 0, 'render': 0}
+    for _, stage, tok in matches:
+        name = _normalize_system_token(tok)
+        # Only set the first occurrence to keep earliest registration index
+        if name not in stage_by_system:
+            stage_by_system[name] = stage
+        if name not in order_by_system:
+            order_by_system[name] = counters[stage]
+            counters[stage] += 1
+
+    return stage_by_system, order_by_system
 
 
 # ------------------- Conflict graph -------------------
@@ -511,6 +537,73 @@ def emit_system_conflict_dot(systems: List[SystemModel], conflicts: Dict[Tuple[s
     lines.append('}')
     with open(out_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
+
+
+def emit_system_subscription_dot(system: SystemModel, out_path: str):
+    lines = []
+    lines.append('digraph G {')
+    lines.append('  rankdir=LR;')
+    lines.append(f'  "{system.name}" [shape=box, style=filled, fillcolor="lightgray"];')
+    comps = sorted({normalize_type(c) for c in system.declared_components if c})
+    for c in comps:
+        lines.append(f'  "comp:{c}" [label="{c}", shape=ellipse, color=darkgreen];')
+    for c in comps:
+        lines.append(f'  "{system.name}" -> "comp:{c}" [color=black, label="sub"];')
+    lines.append('}')
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines))
+
+
+def write_html_systems(outdir: str, systems: List[SystemModel]):
+    subdir = os.path.join(outdir, 'systems_subscriptions')
+    items = []
+    for s in sorted(systems, key=lambda x: x.name):
+        svg_path = os.path.join(subdir, f'{s.name}.svg')
+        dot_rel = os.path.relpath(os.path.join(subdir, f'{s.name}.dot'), start=outdir)
+        if os.path.exists(svg_path):
+            try:
+                with open(svg_path, 'r', encoding='utf-8', errors='ignore') as fsvg:
+                    svg = fsvg.read()
+            except Exception:
+                svg = '<p>(failed to load svg)</p>'
+        else:
+            comps = sorted({normalize_type(c) for c in s.declared_components if c})
+            li = ''.join(f'<li>{c}</li>' for c in comps) if comps else '<li>(none)</li>'
+            svg = f'<ul>{li}</ul>'
+        items.append(f"""
+<details>
+  <summary><strong>{s.name}</strong></summary>
+  <div style=\"padding:8px 0\">{svg}</div>
+  <p>DOT: <a href=\"{dot_rel}\">{s.name}.dot</a></p>
+</details>
+""")
+
+    html = """<!doctype html>
+<html lang=\"en\">
+<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+<title>System Subscriptions</title>
+<style>body{font-family:sans-serif;margin:20px} details{border:1px solid #ddd;border-radius:6px;padding:8px;margin:8px 0;background:#fafafa} summary{cursor:pointer;font-size:16px} .controls{margin:8px 0} .controls input{padding:6px 8px;border:1px solid #ccc;border-radius:4px;min-width:260px}</style>
+<h1>System Subscriptions</h1>
+<p>Each chart shows a system and edges to the components it subscribes to (declared as template parameters).</p>
+<div class=\"controls\"><input id=\"search\" type=\"text\" placeholder=\"Search system (Enter to toggle)\"/></div>
+<div id=\"list\">[[ITEMS]]</div>
+<script>
+const input = document.getElementById('search');
+input && input.addEventListener('keydown', (e)=>{
+  if(e.key !== 'Enter') return;
+  const q = input.value.trim().toLowerCase();
+  if(!q) return;
+  const details = Array.from(document.querySelectorAll('details'));
+  const match = details.find(d => (d.querySelector('summary')?.textContent||'').toLowerCase().includes(q));
+  if(match){ match.open = true; match.scrollIntoView({behavior:'smooth', block:'center'}); }
+});
+</script>
+</html>
+"""
+    html = html.replace('[[ITEMS]]', '\n'.join(items))
+    with open(os.path.join(outdir, 'systems.html'), 'w', encoding='utf-8') as f:
+        f.write(html)
 
 
 def apply_config_constraints(systems: List[SystemModel], config: Dict):
@@ -777,7 +870,7 @@ def main():
     os.makedirs(outdir, exist_ok=True)
 
     main_text = read_text(main_path) if os.path.exists(main_path) else ''
-    stage_by_system = parse_stages(main_text)
+    stage_by_system, order_by_system = parse_stage_orders(main_text)
 
     systems: List[SystemModel] = []
 
@@ -813,6 +906,11 @@ def main():
     emit_system_component_dot(systems, sys_comp_path)
     emit_system_conflict_dot(systems, conflicts, sys_conf_path)
 
+    # Emit per-system subscription DOTs
+    subs_dir = os.path.join(outdir, 'systems_subscriptions')
+    for s in systems:
+        emit_system_subscription_dot(s, os.path.join(subs_dir, f'{s.name}.dot'))
+
     # Also write JSON summary
     summary = []
     for s in sorted(systems, key=lambda s: s.name):
@@ -820,6 +918,7 @@ def main():
             'name': s.name,
             'file': os.path.relpath(s.file_path, start=src_root),
             'stage': s.stage,
+            'order': order_by_system.get(s.name, -1),
             'declared_components': sorted(s.declared_components),
             'reads': sorted(s.read_components),
             'writes': sorted(s.write_components),
@@ -833,7 +932,15 @@ def main():
 
     # Try to render SVGs
     if not args.no_svg and shutil.which('dot'):
-        for dot_file in [sys_comp_path, sys_conf_path]:
+        all_dot_files = [sys_comp_path, sys_conf_path]
+        # add per-system subscription dots
+        try:
+            for fn in os.listdir(subs_dir):
+                if fn.endswith('.dot'):
+                    all_dot_files.append(os.path.join(subs_dir, fn))
+        except Exception:
+            pass
+        for dot_file in all_dot_files:
             svg_out = dot_file.replace('.dot', '.svg')
             try:
                 subprocess.run(['dot', '-Tsvg', dot_file, '-o', svg_out], check=True)
@@ -842,6 +949,7 @@ def main():
 
     if args.write_html:
         write_html_index(outdir)
+        write_html_systems(outdir, systems)
 
     # Print batch summary
     print('Safe parallel batches per stage (heuristic):')

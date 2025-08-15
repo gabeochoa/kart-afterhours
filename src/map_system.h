@@ -4,6 +4,7 @@
 #include "makers.h"
 #include "rl.h"
 #include "round_settings.h"
+#include "tags.h"
 #include <bitset>
 #include <functional>
 #include <magic_enum/magic_enum.hpp>
@@ -49,7 +50,7 @@ struct MapManager {
 
   void cleanup_map_generated_entities() {
     auto map_generated_entities = EntityQuery({.force_merge = true})
-                                      .whereHasComponent<MapGenerated>()
+                                      .whereHasTag(GameTag::MapGenerated)
                                       .gen();
     for (auto &entity : map_generated_entities) {
       entity.get().cleanup = true;
