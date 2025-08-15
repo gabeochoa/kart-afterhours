@@ -217,46 +217,63 @@ static void parse_for_each_params(const std::string &body, SystemModel &sys) {
   }
 }
 
-static void analyze_dynamic_component_usage(const std::string &body, SystemModel &sys) {
+static void analyze_dynamic_component_usage(const std::string &body,
+                                            SystemModel &sys) {
   auto add_read = [&](const std::string &raw) {
     std::string t = normalize_type(raw);
-    if (!t.empty()) sys.read_components.insert(t);
+    if (!t.empty())
+      sys.read_components.insert(t);
   };
   auto add_write = [&](const std::string &raw) {
     std::string t = normalize_type(raw);
-    if (!t.empty()) sys.write_components.insert(t);
+    if (!t.empty())
+      sys.write_components.insert(t);
   };
 
   // Reads via queries and getters
   {
     std::regex re(R"(whereHasComponent<\s*([^>]+)\s*>)");
-    for (auto it = std::sregex_iterator(body.begin(), body.end(), re); it != std::sregex_iterator(); ++it) add_read((*it)[1]);
+    for (auto it = std::sregex_iterator(body.begin(), body.end(), re);
+         it != std::sregex_iterator(); ++it)
+      add_read((*it)[1]);
   }
   {
     std::regex re(R"(whereMissingComponent<\s*([^>]+)\s*>)");
-    for (auto it = std::sregex_iterator(body.begin(), body.end(), re); it != std::sregex_iterator(); ++it) add_read((*it)[1]);
+    for (auto it = std::sregex_iterator(body.begin(), body.end(), re);
+         it != std::sregex_iterator(); ++it)
+      add_read((*it)[1]);
   }
   {
     std::regex re(R"(\.has<\s*([^>]+)\s*>\s*\()");
-    for (auto it = std::sregex_iterator(body.begin(), body.end(), re); it != std::sregex_iterator(); ++it) add_read((*it)[1]);
+    for (auto it = std::sregex_iterator(body.begin(), body.end(), re);
+         it != std::sregex_iterator(); ++it)
+      add_read((*it)[1]);
   }
   {
     std::regex re(R"(\.get_with_child<\s*([^>]+)\s*>)");
-    for (auto it = std::sregex_iterator(body.begin(), body.end(), re); it != std::sregex_iterator(); ++it) add_read((*it)[1]);
+    for (auto it = std::sregex_iterator(body.begin(), body.end(), re);
+         it != std::sregex_iterator(); ++it)
+      add_read((*it)[1]);
   }
   {
     std::regex re(R"(\.get<\s*([^>]+)\s*>\s*\()");
-    for (auto it = std::sregex_iterator(body.begin(), body.end(), re); it != std::sregex_iterator(); ++it) add_read((*it)[1]);
+    for (auto it = std::sregex_iterator(body.begin(), body.end(), re);
+         it != std::sregex_iterator(); ++it)
+      add_read((*it)[1]);
   }
 
   // Writes via add/remove
   {
     std::regex re(R"(\.addComponent(?:IfMissing)?<\s*([^>]+)\s*>)");
-    for (auto it = std::sregex_iterator(body.begin(), body.end(), re); it != std::sregex_iterator(); ++it) add_write((*it)[1]);
+    for (auto it = std::sregex_iterator(body.begin(), body.end(), re);
+         it != std::sregex_iterator(); ++it)
+      add_write((*it)[1]);
   }
   {
     std::regex re(R"(\.removeComponent<\s*([^>]+)\s*>)");
-    for (auto it = std::sregex_iterator(body.begin(), body.end(), re); it != std::sregex_iterator(); ++it) add_write((*it)[1]);
+    for (auto it = std::sregex_iterator(body.begin(), body.end(), re);
+         it != std::sregex_iterator(); ++it)
+      add_write((*it)[1]);
   }
 }
 
@@ -334,6 +351,9 @@ static std::string systems_html_template() {
   .system{padding:6px 8px;border-radius:4px;cursor:pointer}
   .system:hover{background:#eee}
   .system.active{background:#dfefff}
+  .count{font-size:12px;margin-left:4px}
+  .count.read{color:#000}
+  .count.write{color:#c00}
   .badge{display:inline-block;font-size:11px;padding:2px 6px;border-radius:10px;background:#eaeaea;margin-left:6px}
   .controls{display:flex;gap:8px}
   .controls input{flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:4px}
@@ -398,9 +418,27 @@ function renderSystemList(filter=''){
   for(const stage of stages){
     const parent = containers[stage]; if(!parent) continue; parent.innerHTML='';
     filtered.filter(s => s.stage===stage).sort((a,b)=>a.order-b.order).forEach(s=>{
-      const div = document.createElement('div'); div.className='system'; div.dataset.name=s.name; div.textContent = `${s.order>=0?String(s.order).padStart(2,'0')+': ':''}${s.name}`; div.addEventListener('click',()=>selectSystem(s.name)); parent.appendChild(div);
+      const div = document.createElement('div'); div.className='system'; div.dataset.name=s.name;
+      const prefix = s.order>=0?String(s.order).padStart(2,'0')+': ':'';
+      const reads = (s.reads && s.reads.size) ? s.reads.size : 0;
+      const writes = (s.writes && s.writes.size) ? s.writes.size : 0;
+      div.innerHTML = `${prefix}${s.name} <span class="count read">(${reads})</span><span class="count write">(${writes})</span>`;
+      div.addEventListener('click',()=>selectSystem(s.name)); parent.appendChild(div);
     });
   }
+}
+
+// Load template from external file if available, fallback to embedded
+static std::string load_template_html(const fs::path &template_path) {
+  std::string html = read_text_file(template_path);
+  if (!html.empty()) return html;
+  // Try relative to repo root tools/
+  html = read_text_file(fs::path("template.html"));
+  if (!html.empty()) return html;
+  html = read_text_file(fs::path("tools") / "template.html");
+  if (!html.empty()) return html;
+  // Fallback to embedded template
+  return systems_html_template();
 }
 function selectSystem(name){
   const s = systems.find(x=>x.name===name); if(!s) return; detailTitle.textContent = `Details — ${s.name}`;
@@ -429,6 +467,22 @@ function drawSystemGraph(s){
   function edgePoints(l){ const a=nodeById.get(l.from), b=nodeById.get(l.to); if(!a||!b) return null; let x1=a.x,y1=a.y,x2=b.x,y2=b.y; if(l.dir==='in'){x2=centerX-sysW/2;y2=centerY;} if(l.dir==='out'){x1=centerX+sysW/2;y1=centerY;} return {x1,y1,x2,y2}; }
   function updateLinks(){ linkSel.attr('d', d=>{ const p=edgePoints(d); if(!p) return ''; const dx=p.x2-p.x1, dy=p.y2-p.y1, midx=p.x1+dx*0.5; let curv=Math.min(80.0, Math.abs(dx)/3.0); if(d.color==='#000') curv=-curv; const c1y=p.y1+dy*0.25+curv; const c2y=p.y2-dy*0.25+curv; return `M ${p.x1} ${p.y1} C ${midx} ${c1y}, ${midx} ${c2y}, ${p.x2} ${p.y2}`; }); }
   function updateNodes(){ nodeSel.attr('transform', d=>`translate(${d.x},${d.y})`); nodeSel.selectAll('text').attr('y', d=> d.type==='both' ? (16+14) : (-16-10)).text(d=>d.id); }
+  // Drag to reposition
+  nodeSel.call(d3.drag()
+    .on('start', (event,d)=>{ d.fx = d.x; d.fy = d.y; if (simulation) simulation.alphaTarget(0.2).restart(); })
+    .on('drag', (event,d)=>{ d.fx = event.x; d.fy = event.y; })
+    .on('end', (event,d)=>{ d.fx = null; d.fy = null; if (simulation) simulation.alphaTarget(0); }));
+
+  // Force simulation for floaty behavior
+  const simulation = d3.forceSimulation(compNodes)
+    .force('x', d3.forceX(d=>d.tx).strength(0.08))
+    .force('y', d3.forceY(d=>d.ty).strength(0.08))
+    .force('charge', d3.forceManyBody().strength(-180))
+    .force('collide', d3.forceCollide().radius(26).iterations(2))
+    .alpha(1)
+    .alphaDecay(0.08)
+    .on('tick', ()=>{ updateNodes(); updateLinks(); });
+
   updateNodes(); updateLinks();
 }
 document.getElementById('search-sys').addEventListener('input', e=>{ renderSystemList(e.target.value.trim().toLowerCase()); });
@@ -441,6 +495,7 @@ int main(int argc, char **argv) {
   fs::path src = "src";
   fs::path main_cpp = "src/main.cpp";
   fs::path outdir = "output";
+  fs::path template_path = "template.html";
   for (int i = 1; i < argc; ++i) {
     std::string a = argv[i];
     auto next = [&](fs::path &p) {
@@ -454,6 +509,8 @@ int main(int argc, char **argv) {
       next(main_cpp);
     else if (a == "--outdir")
       next(outdir);
+    else if (a == "--template")
+      next(template_path);
   }
 
   std::unordered_map<std::string, std::string> stage;
@@ -528,7 +585,13 @@ int main(int argc, char **argv) {
   write_file(outdir / "dependency_summary.json", summary.dump(2));
 
   // Write systems.html
-  std::string html = systems_html_template();
+  std::string html = read_text_file(template_path);
+  if (html.empty()) {
+    html = read_text_file("tools/template.html");
+    if (html.empty()) {
+      html = systems_html_template();
+    }
+  }
   std::string placeholder = "[[SUMMARY_JSON]]";
   std::string json_str = summary.dump();
   if (auto pos = html.find(placeholder); pos != std::string::npos) {
