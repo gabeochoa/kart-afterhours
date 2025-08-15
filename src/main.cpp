@@ -20,6 +20,7 @@ backward::SignalHandling sh;
 #include "ui_key.h"
 #include "ui_slide_in.h"
 #include "ui_systems.h"
+#include "navigation.h"
 #include <afterhours/src/plugins/animation.h>
 
 // TODO add honking
@@ -143,6 +144,7 @@ void game() {
           std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
       systems.register_update_system(
           std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
+      systems.register_update_system(std::make_unique<NavigationSystem>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
       systems.register_update_system(std::make_unique<ScheduleDebugUI>());
       systems.register_update_system(std::make_unique<SchedulePauseUI>());
