@@ -105,12 +105,12 @@ struct ShaderPassRegistry {
     
     // Add a new shader pass
     void add_pass(const ShaderPass& pass) {
-        passes.push_back(pass);
-        // Keep sorted by priority
-        std::sort(passes.begin(), passes.end(), 
-                  [](const auto& a, const auto& b) {
-                      return static_cast<int>(a.priority) < static_cast<int>(b.priority);
-                  });
+        // Insert in sorted position to maintain priority order
+        auto insert_pos = std::lower_bound(passes.begin(), passes.end(), pass,
+                                         [](const ShaderPass& a, const ShaderPass& b) {
+                                             return static_cast<int>(a.priority) < static_cast<int>(b.priority);
+                                         });
+        passes.insert(insert_pos, pass);
     }
     
     // Get all enabled passes in priority order
