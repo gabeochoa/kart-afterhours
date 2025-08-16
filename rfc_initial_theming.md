@@ -120,12 +120,18 @@ After analyzing the current `ComponentConfig` structure, I believe **partial int
 struct ComponentConfig {
     // Existing fields...
     
-    // New: Theme inheritance control
-    bool inherit_size = true;
-    bool inherit_padding = true;
-    bool inherit_margin = true;
-    bool inherit_font = true;
-    bool inherit_colors = true;
+    // New: Theme inheritance control using bit flags
+    enum class InheritFlags : uint8_t {
+        None = 0,
+        Size = 1 << 0,
+        Padding = 1 << 1,
+        Margin = 1 << 2,
+        Font = 1 << 3,
+        Colors = 1 << 4,
+        All = Size | Padding | Margin | Font | Colors
+    };
+
+    InheritFlags inherit_from_theme = InheritFlags::All;
     
     // New: Auto-sizing hints
     enum class AutoSize {
@@ -143,6 +149,7 @@ struct ComponentConfig {
     ComponentConfig& with_auto_size(AutoSize x, AutoSize y);
     ComponentConfig& without_theme_inheritance();
     ComponentConfig& inherit_only_size(); // Only inherit size, not other properties
+    ComponentConfig& with_inheritance(InheritFlags flags);
 };
 ```
 
@@ -188,12 +195,18 @@ Modify `ComponentConfig` to automatically inherit from theme defaults:
 struct ComponentConfig {
     // Existing fields...
     
-    // New: Theme inheritance control
-    bool inherit_size = true;
-    bool inherit_padding = true;
-    bool inherit_margin = true;
-    bool inherit_font = true;
-    bool inherit_colors = true;
+    // New: Theme inheritance control using bit flags
+    enum class InheritFlags : uint8_t {
+        None = 0,
+        Size = 1 << 0,
+        Padding = 1 << 1,
+        Margin = 1 << 2,
+        Font = 1 << 3,
+        Colors = 1 << 4,
+        All = Size | Padding | Margin | Font | Colors
+    };
+
+    InheritFlags inherit_from_theme = InheritFlags::All;
     
     // New: Auto-sizing hints
     enum class AutoSize {
@@ -211,6 +224,7 @@ struct ComponentConfig {
     ComponentConfig& with_auto_size(AutoSize x, AutoSize y);
     ComponentConfig& without_theme_inheritance();
     ComponentConfig& inherit_only_size(); // Only inherit size, not other properties
+    ComponentConfig& with_inheritance(InheritFlags flags);
 };
 ```
 
