@@ -169,19 +169,31 @@ struct HasShader : BaseComponent {
     RenderPriority render_priority = RenderPriority::Entities;  // When to render
     bool enabled = true;
     
+    // Cache for fast shader lookups (mutable for const methods)
+    mutable std::optional<std::unordered_set<ShaderType>> shader_set_cache;
+    
     // Easy debugging
     std::string get_debug_info() const {
-        std::string info = "Shaders: ";
+        if (shaders.empty()) return "No shaders";
+        
+        std::string info;
+        info.reserve(shaders.size() * 10);  // Pre-allocate space
+        info += "Shaders: ";
         for (const auto& shader : shaders) {
-            info += ShaderUtils::to_string(shader) + " ";
+            info += ShaderUtils::to_string(shader);
+            info += " ";
         }
         info += "Priority: " + std::to_string(static_cast<int>(render_priority));
         return info;
     }
     
-    // Validation
+    // Fast shader validation using cached set
     bool has_shader(ShaderType shader) const {
-        return std::find(shaders.begin(), shaders.end(), shader) != shaders.end();
+        // Rebuild cache if shaders changed
+        if (!shader_set_cache.has_value()) {
+            shader_set_cache = std::unordered_set<ShaderType>(shaders.begin(), shaders.end());
+        }
+        return shader_set_cache->contains(shader);
     }
     
     // Constructor helpers
@@ -191,6 +203,25 @@ struct HasShader : BaseComponent {
     // Backward compatibility constructors
     HasShader(const std::string& name) : shaders{ShaderUtils::from_string(name)} {}
     HasShader(const char* name) : shaders{ShaderUtils::from_string(std::string(name))} {}
+    
+    // Methods to modify shaders (invalidate cache)
+    void add_shader(ShaderType shader) {
+        shaders.push_back(shader);
+        shader_set_cache.reset();  // Invalidate cache
+    }
+    
+    void remove_shader(ShaderType shader) {
+        auto it = std::find(shaders.begin(), shaders.end(), shader);
+        if (it != shaders.end()) {
+            shaders.erase(it);
+            shader_set_cache.reset();  // Invalidate cache
+        }
+    }
+    
+    void clear_shaders() {
+        shaders.clear();
+        shader_set_cache.reset();  // Invalidate cache
+    }
 };
 ```
 
@@ -212,8 +243,18 @@ struct ShaderPassRegistry {
     
     std::vector<ShaderPass> passes;
     
+    // Constructor with space reservation
+    ShaderPassRegistry() {
+        passes.reserve(20);  // Reserve space for typical number of passes
+    }
+    
     // Add a new shader pass
     void add_pass(const ShaderPass& pass) {
+        // Reserve more space if needed to avoid reallocation
+        if (passes.size() == passes.capacity()) {
+            passes.reserve(passes.size() + 10);
+        }
+        
         // Insert in sorted position to maintain priority order
         auto insert_pos = std::lower_bound(passes.begin(), passes.end(), pass,
                                          [](const ShaderPass& a, const ShaderPass& b) {
@@ -587,6 +628,73 @@ struct ShaderDebugger {
         raylib::DrawText(entity_info.c_str(), 10, 50, 16, raylib::YELLOW);
     }
 };
+```
+
+## Performance Optimizations
+
+### 1. Cached Uniform Locations
+**Biggest performance win for minimal complexity**
+
+- **Before**: `GetShaderLocation(shader, "time")` called every frame for every uniform
+- **After**: Uniform locations cached at shader load time, O(1) lookup
+- **Result**: Eliminates repeated GPU driver calls, significant CPU savings
+
+```cpp
+// Uniform locations cached once at load time
+int time_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::Time);
+if (time_loc != -1) {
+    raylib::SetShaderValue(shader, time_loc, &time, raylib::SHADER_UNIFORM_FLOAT);
+}
+```
+
+### 2. Enum-Based Shader Lookup
+**Eliminates string conversions in hot path**
+
+- **Before**: `ShaderLibrary::get("car")` with string operations every frame
+- **After**: `ShaderLibrary::get(ShaderType::Car)` direct enum lookup
+- **Result**: O(1) hash map access instead of string operations
+
+```cpp
+// Direct enum lookup - no string operations
+const auto& shader = ShaderLibrary::get().get(ShaderType::Car);
+```
+
+### 3. Cached Shader Set for has_shader()
+**Better for entities with multiple shaders**
+
+- **Before**: O(n) linear search through shader vector every time
+- **After**: O(1) hash set lookup with automatic cache invalidation
+- **Result**: Fast lookups for entities with multiple shaders
+
+```cpp
+// Fast lookup using cached set
+bool has_shader(ShaderType shader) const {
+    if (!shader_set_cache.has_value()) {
+        shader_set_cache = std::unordered_set<ShaderType>(shaders.begin(), shaders.end());
+    }
+    return shader_set_cache->contains(shader);
+}
+```
+
+### 4. Vector Space Reservation
+**Simple memory optimization**
+
+- **Before**: Vector reallocates and copies elements when growing
+- **After**: Pre-allocated space prevents reallocation during insertion
+- **Result**: Eliminates memory allocations and element copying
+
+```cpp
+// Reserve space to avoid reallocation
+ShaderPassRegistry() {
+    passes.reserve(20);  // Reserve space for typical number of passes
+}
+
+void add_pass(const ShaderPass& pass) {
+    if (passes.size() == passes.capacity()) {
+        passes.reserve(passes.size() + 10);  // Reserve more space as needed
+    }
+    // ... insert pass
+}
 ```
 
 ## Implementation Details
