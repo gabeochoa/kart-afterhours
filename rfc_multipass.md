@@ -115,6 +115,28 @@ namespace ShaderUtils {
     }
 }
 
+// Note: Shader file names must match the enum names exactly
+// Current files: car.fs, car_winner.fs, entity_enhanced.fs, etc.
+// Should be renamed to: Car.fs, CarWinner.fs, EntityEnhanced.fs, etc.
+// Or use lowercase conversion in get_filename() if keeping current names
+
+// Pre-defined uniform names to avoid magic_enum overhead at load time
+namespace UniformNames {
+    constexpr const char* TIME = "time";
+    constexpr const char* RESOLUTION = "resolution";
+    constexpr const char* ENTITY_COLOR = "entityColor";
+    constexpr const char* SPEED = "speed";
+    constexpr const char* WINNER_RAINBOW = "winnerRainbow";
+    constexpr const char* SPOTLIGHT_ENABLED = "spotlightEnabled";
+    constexpr const char* SPOTLIGHT_POS = "spotlightPos";
+    constexpr const char* SPOTLIGHT_RADIUS = "spotlightRadius";
+    constexpr const char* SPOTLIGHT_SOFTNESS = "spotlightSoftness";
+    constexpr const char* DIM_AMOUNT = "dimAmount";
+    constexpr const char* DESATURATE_AMOUNT = "desaturateAmount";
+    constexpr const char* UV_MIN = "uvMin";
+    constexpr const char* UV_MAX = "uvMax";
+}
+
 // Helper functions for uniform enums
 namespace UniformUtils {
     // Convert enum to string for shader lookup using magic_enum
@@ -141,15 +163,18 @@ struct HasShader : BaseComponent {
     std::string get_debug_info() const {
         if (shaders.empty()) return "No shaders";
         
-        std::string info;
-        info.reserve(shaders.size() * 10);  // Pre-allocate space
-        info += "Shaders: ";
+        // Use thread_local buffer to avoid allocations every frame
+        static thread_local std::string buffer;
+        buffer.clear();
+        buffer.reserve(shaders.size() * 15);
+        
+        buffer += "Shaders: ";
         for (const auto& shader : shaders) {
-            info += std::string(magic_enum::enum_name(shader));
-            info += " ";
+            buffer += magic_enum::enum_name(shader);  // No string allocation
+            buffer += " ";
         }
-        info += "Priority: " + std::to_string(static_cast<int>(render_priority));
-        return info;
+        buffer += "Priority: " + std::to_string(static_cast<int>(render_priority));
+        return buffer;
     }
     
     // Fast shader validation using cached set
@@ -226,6 +251,23 @@ struct ShaderPassRegistry {
                                              return static_cast<int>(a.priority) < static_cast<int>(b.priority);
                                          });
         passes.insert(insert_pos, pass);
+    }
+    
+    // Batch add multiple passes (more efficient than individual adds)
+    void add_passes(const std::vector<ShaderPass>& new_passes) {
+        if (new_passes.empty()) return;
+        
+        // Reserve space for all new passes
+        passes.reserve(passes.size() + new_passes.size());
+        
+        // Insert all passes
+        for (const auto& pass : new_passes) {
+            auto insert_pos = std::lower_bound(passes.begin(), passes.end(), pass,
+                                             [](const ShaderPass& a, const ShaderPass& b) {
+                                                 return static_cast<int>(a.priority) < static_cast<int>(b.priority);
+                                             });
+            passes.insert(insert_pos, pass);
+        }
     }
     
     // Get all enabled passes in priority order using views (no copying)
@@ -354,20 +396,20 @@ private:
     void cache_uniform_locations(ShaderType type, const raylib::Shader& shader) {
         auto& locations = uniform_locations[type];
         
-        // Cache all possible uniform locations
-        locations[UniformLocation::Time] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::Time));
-        locations[UniformLocation::Resolution] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::Resolution));
-        locations[UniformLocation::EntityColor] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::EntityColor));
-        locations[UniformLocation::Speed] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::Speed));
-        locations[UniformLocation::WinnerRainbow] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::WinnerRainbow));
-        locations[UniformLocation::SpotlightEnabled] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::SpotlightEnabled));
-        locations[UniformLocation::SpotlightPos] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::SpotlightPos));
-        locations[UniformLocation::SpotlightRadius] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::SpotlightRadius));
-        locations[UniformLocation::SpotlightSoftness] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::SpotlightSoftness));
-        locations[UniformLocation::DimAmount] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::DimAmount));
-        locations[UniformLocation::DesaturateAmount] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::DesaturateAmount));
-        locations[UniformLocation::UvMin] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::UvMin));
-        locations[UniformLocation::UvMax] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::UvMax));
+        // Cache all possible uniform locations using pre-defined names
+        locations[UniformLocation::Time] = raylib::GetShaderLocation(shader, UniformNames::TIME);
+        locations[UniformLocation::Resolution] = raylib::GetShaderLocation(shader, UniformNames::RESOLUTION);
+        locations[UniformLocation::EntityColor] = raylib::GetShaderLocation(shader, UniformNames::ENTITY_COLOR);
+        locations[UniformLocation::Speed] = raylib::GetShaderLocation(shader, UniformNames::SPEED);
+        locations[UniformLocation::WinnerRainbow] = raylib::GetShaderLocation(shader, UniformNames::WINNER_RAINBOW);
+        locations[UniformLocation::SpotlightEnabled] = raylib::GetShaderLocation(shader, UniformNames::SPOTLIGHT_ENABLED);
+        locations[UniformLocation::SpotlightPos] = raylib::GetShaderLocation(shader, UniformNames::SPOTLIGHT_POS);
+        locations[UniformLocation::SpotlightRadius] = raylib::GetShaderLocation(shader, UniformNames::SPOTLIGHT_RADIUS);
+        locations[UniformLocation::SpotlightSoftness] = raylib::GetShaderLocation(shader, UniformNames::SPOTLIGHT_SOFTNESS);
+        locations[UniformLocation::DimAmount] = raylib::GetShaderLocation(shader, UniformNames::DIM_AMOUNT);
+        locations[UniformLocation::DesaturateAmount] = raylib::GetShaderLocation(shader, UniformNames::DESATURATE_AMOUNT);
+        locations[UniformLocation::UvMin] = raylib::GetShaderLocation(shader, UniformNames::UV_MIN);
+        locations[UniformLocation::UvMax] = raylib::GetShaderLocation(shader, UniformNames::UV_MAX);
     }
 };
 ```
