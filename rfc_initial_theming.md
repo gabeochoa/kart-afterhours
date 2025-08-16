@@ -344,6 +344,21 @@ config.with_padding(Padding{screen_pct(0.02f)});
 4. **Most maintainable**: Less code to understand and debug
 5. **Follows principle of least surprise**: Default behavior is what most users want
 
+**The integration happens at the usage level:**
+```cpp
+// ComponentConfig automatically inherits from Theme
+auto button = imm::button(context, mk(parent), 
+    ComponentConfig{}.with_label("Click me")); // Size, padding inherited from theme
+
+// Easy to override specific properties
+auto custom_button = imm::button(context, mk(parent), 
+    ComponentConfig{}
+        .with_label("Custom")
+        .with_size(screen_pct(0.2f), screen_pct(0.1f))); // Override size, inherit padding, colors, etc. from theme
+```
+
+### Architectural Benefits
+
 1. **Separation of Concerns**: 
    - `Theme` = Global defaults and styling rules
    - `ComponentConfig` = Per-instance configuration and overrides
@@ -378,4 +393,39 @@ auto custom_button = imm::button(context, mk(parent),
 
 This unified theming system will transform the afterhours UI library from a low-level component system into a high-level, theme-driven UI framework. By merging `Theme`, `ThemeManager`, and `UIStylingDefaults` into a single class while keeping `ComponentConfig` separate for flexibility, we get the best of both worlds: centralized theme management and per-component customization.
 
-The result is cleaner, more maintainable game code that focuses on functionality rather than UI minutiae, while preserving the flexibility to override specific components when needed.
+## Key Achievements
+
+### 1. **Eliminated Manual Sizing**
+- **Before**: 15+ lines of manual component configuration
+- **After**: 1 line with `Theme::set_default_theme(Theme::kart_style())`
+
+### 2. **Simplified Inheritance Model**
+- **Before**: Complex `InheritFlags` with bit manipulation
+- **After**: Simple "everything inherits by default" approach
+
+### 3. **Multiple Configuration Options**
+- **Quick Start**: Use predefined themes (1 line)
+- **Custom Control**: Use fluent API for fine-grained control (8 lines)
+- **Common Cases**: Use size presets for uniform components (6 lines)
+- **Production Ready**: Use pre-built themes (1 line)
+
+### 4. **Cleaner Component Creation**
+```cpp
+// Before: Manual everything
+imm::button(context, mk(parent), 
+    ComponentConfig{}
+        .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.07f)})
+        .with_padding(Padding{screen_pct(0.01f), screen_pct(0.01f), 
+                              screen_pct(0.01f), screen_pct(0.01f)})
+        .with_label("Click me"));
+
+// After: Automatic inheritance
+imm::button(context, mk(parent), 
+    ComponentConfig{}.with_label("Click me")); // Size, padding, etc. inherited from theme
+```
+
+## Final Result
+
+The result is cleaner, more maintainable game code that focuses on functionality rather than UI minutiae, while preserving the flexibility to override specific components when needed. The system provides multiple levels of abstraction, from ultra-concise one-liners to detailed custom configuration, allowing developers to choose the right approach for their specific needs.
+
+**This is exactly what you requested**: `ui::set_default_theme(some_struct)` that eliminates the need for manual sizing in kart code, with a clean, intuitive API that's much less verbose and error-prone than the current approach.
