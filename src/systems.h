@@ -10,6 +10,7 @@
 #include "query.h"
 #include "round_settings.h"
 #include "shader_library.h"
+#include "multipass_shader_system.h"
 #include "sound_library.h"
 #include "tags.h"
 #include <afterhours/ah.h>
@@ -67,7 +68,7 @@ struct MarkEntitiesWithShaders : System<HasShader> {
   }
 };
 
-// System to render sprites with per-entity shaders
+// System to render sprites with per-entity shaders using multipass system
 struct RenderSpritesWithShaders
     : System<Transform, afterhours::texture_manager::HasSprite, HasShader,
              HasColor> {
@@ -120,9 +121,8 @@ struct RenderSpritesWithShaders
         vec2{dest_width / 2.f, dest_height / 2.f}, transform.angle,
         hasColor.color());
 #else
-    // Original shader rendering for non-Windows platforms
-    if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
-      log_warn("Shader not found: {}", hasShader.shader_name);
+    // New multipass shader rendering for non-Windows platforms
+    if (!hasShader.enabled || hasShader.shaders.empty()) {
       return;
     }
 
@@ -148,104 +148,126 @@ struct RenderSpritesWithShaders
     float dest_width = source_frame.width * hasSprite.scale;
     float dest_height = source_frame.height * hasSprite.scale;
 
-    // Apply shader and render
-    const auto &shader = ShaderLibrary::get().get(hasShader.shader_name);
-    raylib::BeginShaderMode(shader);
-
-    // winnerRainbow toggle: on for car_winner, off otherwise
-    int rainbowLoc = raylib::GetShaderLocation(shader, "winnerRainbow");
-    if (rainbowLoc != -1) {
-      float rainbowOn =
-          (hasShader.shader_name == std::string("car_winner")) ? 1.0f : 0.0f;
-      raylib::SetShaderValue(shader, rainbowLoc, &rainbowOn,
-                             raylib::SHADER_UNIFORM_FLOAT);
-    }
-
-    // Pass the entity's color to the shader
-    raylib::Color entityColor = hasColor.color();
-    float entityColorF[4] = {
-        entityColor.r / 255.0f,
-        entityColor.g / 255.0f,
-        entityColor.b / 255.0f,
-        entityColor.a / 255.0f,
-    };
-    raylib::SetShaderValue(shader,
-                           raylib::GetShaderLocation(shader, "entityColor"),
-                           entityColorF, raylib::SHADER_UNIFORM_VEC4);
-
-    // Update common uniforms if present
-    float shaderTime = static_cast<float>(raylib::GetTime());
-    int timeLoc = raylib::GetShaderLocation(shader, "time");
-    if (timeLoc != -1) {
-      raylib::SetShaderValue(shader, timeLoc, &shaderTime,
-                             raylib::SHADER_UNIFORM_FLOAT);
-    }
-    auto rezCmp = EntityHelper::get_singleton_cmp<
-        window_manager::ProvidesCurrentResolution>();
-    if (rezCmp) {
-      vec2 rez = {static_cast<float>(rezCmp->current_resolution.width),
-                  static_cast<float>(rezCmp->current_resolution.height)};
-      int rezLoc = raylib::GetShaderLocation(shader, "resolution");
-      if (rezLoc != -1) {
-        raylib::SetShaderValue(shader, rezLoc, &rez,
-                               raylib::SHADER_UNIFORM_VEC2);
+    // Apply each shader in order
+    for (const auto& shader_type : hasShader.shaders) {
+      if (!ShaderLibrary::get().contains(shader_type)) {
+        log_warn("Shader not found for type: {}", static_cast<int>(shader_type));
+        continue;
       }
+
+      const auto& shader = ShaderLibrary::get().get(shader_type);
+      raylib::BeginShaderMode(shader);
+
+      // Update common uniforms using cached locations
+      update_common_uniforms(shader, shader_type);
+      
+      // Update entity-specific uniforms
+      update_entity_uniforms(shader, shader_type, entity, hasShader, transform);
+
+      // Fine-tuned offset for perfect sprite alignment
+      float offset_x = SPRITE_OFFSET_X;
+      float offset_y = SPRITE_OFFSET_Y;
+
+      float rotated_x = offset_x * cosf(transform.angle * M_PI / 180.f) -
+                        offset_y * sinf(transform.angle * M_PI / 180.f);
+      float rotated_y = offset_x * sinf(transform.angle * M_PI / 180.f) +
+                        offset_y * cosf(transform.angle * M_PI / 180.f);
+
+      raylib::DrawTexturePro(
+          sheet, source_frame,
+          Rectangle{
+              transform.position.x + transform.size.x / 2.f + rotated_x,
+              transform.position.y + transform.size.y / 2.f + rotated_y,
+              dest_width,
+              dest_height,
+          },
+          vec2{dest_width / 2.f, dest_height / 2.f}, transform.angle,
+          raylib::WHITE);
+
+      raylib::EndShaderMode();
     }
-
-    // Provide source frame UV bounds so shaders can clamp sampling
-    float uvMin[2] = {source_frame.x / static_cast<float>(sheet.width),
-                      source_frame.y / static_cast<float>(sheet.height)};
-    float uvMax[2] = {(source_frame.x + source_frame.width) /
-                          static_cast<float>(sheet.width),
-                      (source_frame.y + source_frame.height) /
-                          static_cast<float>(sheet.height)};
-    int uvMinLoc = raylib::GetShaderLocation(shader, "uvMin");
-    if (uvMinLoc != -1) {
-      raylib::SetShaderValue(shader, uvMinLoc, uvMin,
-                             raylib::SHADER_UNIFORM_VEC2);
-    }
-    int uvMaxLoc = raylib::GetShaderLocation(shader, "uvMax");
-    if (uvMaxLoc != -1) {
-      raylib::SetShaderValue(shader, uvMaxLoc, uvMax,
-                             raylib::SHADER_UNIFORM_VEC2);
-    }
-
-    // Pass speed percentage uniform for car shader
-    if (hasShader.shader_name == "car") {
-      float speedPercent = transform.speed() / Config::get().max_speed.data;
-      int speedLocation = raylib::GetShaderLocation(shader, "speed");
-      if (speedLocation != -1) {
-        raylib::SetShaderValue(shader, speedLocation, &speedPercent,
-                               raylib::SHADER_UNIFORM_FLOAT);
-      }
-    }
-
-    // Fine-tuned offset for perfect sprite alignment
-    float offset_x = SPRITE_OFFSET_X;
-    float offset_y = SPRITE_OFFSET_Y;
-
-    float rotated_x = offset_x * cosf(transform.angle * M_PI / 180.f) -
-                      offset_y * sinf(transform.angle * M_PI / 180.f);
-    float rotated_y = offset_x * sinf(transform.angle * M_PI / 180.f) +
-                      offset_y * cosf(transform.angle * M_PI / 180.f);
-
-    raylib::DrawTexturePro(
-        sheet, source_frame,
-        Rectangle{
-            transform.position.x + transform.size.x / 2.f + rotated_x,
-            transform.position.y + transform.size.y / 2.f + rotated_y,
-            dest_width,
-            dest_height,
-        },
-        vec2{dest_width / 2.f, dest_height / 2.f}, transform.angle,
-        raylib::WHITE);
-
-    raylib::EndShaderMode();
 #endif
+  }
+
+private:
+  void update_common_uniforms(const raylib::Shader& shader, ShaderType shader_type) const {
+    // Time uniform
+    float time = static_cast<float>(raylib::GetTime());
+    int time_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::Time);
+    if (time_loc != -1) {
+      raylib::SetShaderValue(shader, time_loc, &time, raylib::SHADER_UNIFORM_FLOAT);
+    }
+    
+    // Resolution uniform
+    auto* rez_cmp = EntityHelper::get_singleton_cmp<window_manager::ProvidesCurrentResolution>();
+    if (rez_cmp) {
+      vec2 rez = {static_cast<float>(rez_cmp->current_resolution.width),
+                  static_cast<float>(rez_cmp->current_resolution.height)};
+      int rez_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::Resolution);
+      if (rez_loc != -1) {
+        raylib::SetShaderValue(shader, rez_loc, &rez, raylib::SHADER_UNIFORM_VEC2);
+      }
+    }
+  }
+  
+  void update_entity_uniforms(const raylib::Shader& shader, ShaderType shader_type, const Entity& entity, 
+                             const HasShader& hasShader, const Transform& transform) const {
+    // Entity color
+    if (entity.has<HasColor>()) {
+      auto& hasColor = entity.get<HasColor>();
+      raylib::Color entityColor = hasColor.color();
+      float color_array[4] = {
+        entityColor.r / 255.0f, entityColor.g / 255.0f,
+        entityColor.b / 255.0f, entityColor.a / 255.0f
+      };
+      int color_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::EntityColor);
+      if (color_loc != -1) {
+        raylib::SetShaderValue(shader, color_loc, color_array, raylib::SHADER_UNIFORM_VEC4);
+      }
+    }
+    
+    // Car-specific uniforms
+    if (shader_type == ShaderType::Car) {
+      float speed_percent = transform.speed() / Config::get().max_speed.data;
+      int speed_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::Speed);
+      if (speed_loc != -1) {
+        raylib::SetShaderValue(shader, speed_loc, &speed_percent, raylib::SHADER_UNIFORM_FLOAT);
+      }
+    }
+    
+    // Winner effects
+    if (shader_type == ShaderType::CarWinner) {
+      float rainbow_on = 1.0f;
+      int rainbow_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::WinnerRainbow);
+      if (rainbow_loc != -1) {
+        raylib::SetShaderValue(shader, rainbow_loc, &rainbow_on, raylib::SHADER_UNIFORM_FLOAT);
+      }
+    }
+    
+    // UV bounds (used by sprite-based shaders)
+    auto* spritesheet_component = EntityHelper::get_singleton_cmp<afterhours::texture_manager::HasSpritesheet>();
+    if (spritesheet_component) {
+      raylib::Texture2D sheet = spritesheet_component->texture;
+      Rectangle source_frame = afterhours::texture_manager::idx_to_sprite_frame(0, 1);
+      
+      float uvMin[2] = {source_frame.x / static_cast<float>(sheet.width),
+                        source_frame.y / static_cast<float>(sheet.height)};
+      float uvMax[2] = {(source_frame.x + source_frame.width) / static_cast<float>(sheet.width),
+                        (source_frame.y + source_frame.height) / static_cast<float>(sheet.height)};
+      
+      int uvMinLoc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::UvMin);
+      if (uvMinLoc != -1) {
+        raylib::SetShaderValue(shader, uvMinLoc, uvMin, raylib::SHADER_UNIFORM_VEC2);
+      }
+      int uvMaxLoc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::UvMax);
+      if (uvMaxLoc != -1) {
+        raylib::SetShaderValue(shader, uvMaxLoc, uvMax, raylib::SHADER_UNIFORM_VEC2);
+      }
+    }
   }
 };
 
-// System to render animations with per-entity shaders
+// System to render animations with per-entity shaders using multipass system
 struct RenderAnimationsWithShaders
     : System<Transform, afterhours::texture_manager::HasAnimation, HasShader,
              HonkState> {
@@ -253,28 +275,33 @@ struct RenderAnimationsWithShaders
                              const afterhours::texture_manager::HasAnimation &,
                              const HasShader &hasShader, const HonkState &honk,
                              float) const override {
-    if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
-      log_warn("Shader not found: {}", hasShader.shader_name);
+    if (!hasShader.enabled || hasShader.shaders.empty()) {
       return;
     }
 
-    // Apply shader
-    const auto &shader = ShaderLibrary::get().get(hasShader.shader_name);
-    raylib::BeginShaderMode(shader);
+    // Apply each shader in order
+    for (const auto& shader_type : hasShader.shaders) {
+      if (!ShaderLibrary::get().contains(shader_type)) {
+        log_warn("Shader not found for type: {}", static_cast<int>(shader_type));
+        continue;
+      }
 
-    // Render animation entities as SKYBLUE for visual distinction
-    raylib::DrawRectanglePro(
-        Rectangle{
-            transform.center().x,
-            transform.center().y,
-            transform.size.x,
-            transform.size.y,
-        },
-        vec2{transform.size.x / 2.f, transform.size.y / 2.f}, transform.angle,
-        raylib::SKYBLUE);
+      const auto& shader = ShaderLibrary::get().get(shader_type);
+      raylib::BeginShaderMode(shader);
 
-    // End shader
-    raylib::EndShaderMode();
+      // Render animation entities as SKYBLUE for visual distinction
+      raylib::DrawRectanglePro(
+          Rectangle{
+              transform.center().x,
+              transform.center().y,
+              transform.size.x,
+              transform.size.y,
+          },
+          vec2{transform.size.x / 2.f, transform.size.y / 2.f}, transform.angle,
+          raylib::SKYBLUE);
+
+      raylib::EndShaderMode();
+    }
   }
 };
 
@@ -656,58 +683,8 @@ struct RenderDebugGridOverlay
   }
 };
 
-struct RenderEntities : System<Transform> {
-
-  virtual void for_each_with(const Entity &entity, const Transform &transform,
-                             float) const override {
-    if (entity.has<afterhours::texture_manager::HasSpritesheet>())
-      return;
-    if (entity.has<afterhours::texture_manager::HasAnimation>())
-      return;
-
-    // Check if entity has a shader and apply it
-    bool has_shader = entity.has<HasShader>();
-    raylib::Color render_color;
-
-    if (has_shader) {
-      const auto &shader_component = entity.get<HasShader>();
-
-      if (ShaderLibrary::get().contains(shader_component.shader_name)) {
-
-        const auto &shader =
-            ShaderLibrary::get().get(shader_component.shader_name);
-        raylib::BeginShaderMode(shader);
-        render_color = raylib::MAGENTA;
-      } else {
-        log_warn("Shader not found in library: {}",
-                 shader_component.shader_name);
-        has_shader = false;
-        render_color = entity.has_child_of<HasColor>()
-                           ? entity.get_with_child<HasColor>().color()
-                           : raylib::RAYWHITE;
-      }
-    } else {
-      render_color = entity.has_child_of<HasColor>()
-                         ? entity.get_with_child<HasColor>().color()
-                         : raylib::RAYWHITE;
-    }
-
-    raylib::DrawRectanglePro(
-        Rectangle{
-            transform.center().x,
-            transform.center().y,
-            transform.size.x,
-            transform.size.y,
-        },
-        vec2{transform.size.x / 2.f, transform.size.y / 2.f}, transform.angle,
-        render_color);
-
-    // End shader mode if we started it
-    if (has_shader) {
-      raylib::EndShaderMode();
-    }
-  }
-};
+// RenderEntities system removed - replaced by RenderSpritesWithShaders and RenderAnimationsWithShaders
+// which provide better shader support through the multipass system
 
 struct UpdateColorBasedOnEntityID : System<HasEntityIDBasedColor> {
 
@@ -980,7 +957,7 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
     const vec2 markPosition = transform.center();
     const bool useWinnerColors =
         entity.has<HasShader>() &&
-        (entity.get<HasShader>().shader_name == std::string("car_winner"));
+        entity.get<HasShader>().has_shader(ShaderType::CarWinner);
     const float markHue = useWinnerColors ? tire.rolling_hue : 0.0f;
     tire.add_mark(markPosition, !tire.added_last_frame, markHue);
     tire.added_last_frame = true;
@@ -1017,7 +994,7 @@ struct RenderSkid : System<Transform, TireMarkComponent> {
                              float) const override {
     const bool useWinnerColors =
         entity.has<HasShader>() &&
-        (entity.get<HasShader>().shader_name == std::string("car_winner"));
+        entity.get<HasShader>().has_shader(ShaderType::CarWinner);
     const float offsetX = 7.f;
     const float offsetY = 4.f;
     render_single_tire(tire, vec2{offsetX, offsetY}, useWinnerColors);
@@ -1838,7 +1815,8 @@ struct ApplyWinnerShader
     : System<tags::All<GameTag::IsLastRoundsWinner>, HasShader> {
   virtual void for_each_with(Entity &entity, HasShader &hasShader,
                              float) override {
-    hasShader.shader_name = "car_winner";
+    hasShader.clear_shaders();
+    hasShader.add_shader(ShaderType::CarWinner);
     entity.disableTag(GameTag::IsLastRoundsWinner);
   }
 };

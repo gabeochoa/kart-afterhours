@@ -5,6 +5,7 @@
 #include "components.h"
 #include "round_settings.h"
 #include "tags.h"
+#include "multipass_shader_system.h"
 
 using afterhours::texture_manager::HasAnimation;
 using afterhours::texture_manager::idx_to_sprite_frame;
@@ -267,7 +268,7 @@ Entity &make_car(size_t id) {
       transform.position, transform.size, transform.angle,
       idx_to_sprite_frame(0, 1), 1.f, entity.get<HasColor>().color());
 
-  entity.addComponent<HasShader>("car");
+  entity.addComponent<HasShader>(ShaderType::Car);
 
   auto &enabled_weapons = RoundManager::get().get_enabled_weapons();
   auto &can_shoot = entity.addComponent<CanShoot>();

@@ -70,36 +70,8 @@ Preload &Preload::init(const char *title) {
       Files::get().fetch_resource_path("sounds", "replace/cobolt.mp3").c_str(),
       "menu_music");
 
-  // TODO add load folder for shaders
-
-  ShaderLibrary::get().load(
-      Files::get().fetch_resource_path("shaders", "post_processing.fs").c_str(),
-      "post_processing");
-
-  ShaderLibrary::get().load(
-      Files::get()
-          .fetch_resource_path("shaders", "post_processing_tag.fs")
-          .c_str(),
-      "post_processing_tag");
-
-  ShaderLibrary::get().load(
-      Files::get().fetch_resource_path("shaders", "entity_test.fs").c_str(),
-      "entity_test");
-
-  ShaderLibrary::get().load(
-      Files::get().fetch_resource_path("shaders", "car.fs").c_str(), "car");
-
-  ShaderLibrary::get().load(
-      Files::get().fetch_resource_path("shaders", "car.fs").c_str(),
-      "car_winner");
-
-  ShaderLibrary::get().load(
-      Files::get().fetch_resource_path("shaders", "entity_enhanced.fs").c_str(),
-      "entity_enhanced");
-
-  ShaderLibrary::get().load(
-      Files::get().fetch_resource_path("shaders", "text_mask.fs").c_str(),
-      "text_mask");
+  // Shaders are now automatically loaded by the multipass shader system
+  // at startup using ShaderLibrary::get().load_all_shaders()
 
   // TODO how safe is the path combination here esp for mac vs windows
   Files::get().for_resources_in_folder(
