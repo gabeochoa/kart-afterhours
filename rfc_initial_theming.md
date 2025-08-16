@@ -82,6 +82,12 @@ public:
     std::optional<ComponentConfig> get_component_default(ComponentType type) const;
     ComponentConfig merge_with_defaults(ComponentType type, const ComponentConfig& overrides) const;
     
+    // Convenience methods for common patterns
+    Theme& with_component_size(ComponentType type, float width, float height);
+    Theme& with_standard_sizes(float width, float height); // All components get same size
+    Theme& with_default_padding(float padding);
+    Theme& with_default_font_size(float size);
+    
     // Theme switching and management
     void switch_to(const std::string& theme_name);
     void register_variant(const std::string& name, const Theme& variant);
@@ -89,6 +95,9 @@ public:
     // Global theme setting (replaces UIStylingDefaults::get())
     static void set_default_theme(const Theme& theme);
     static const Theme& get_default_theme();
+    
+    // Pre-built themes
+    static Theme kart_style(); // Pre-configured for kart games
     
 private:
     static Theme* default_theme_instance;
@@ -135,28 +144,39 @@ void setup_default_theme() {
     // Option 1: Use a predefined theme
     afterhours::ui::Theme::set_default_theme(afterhours::ui::Theme::compact());
     
-    // Option 2: Create a custom theme
-    afterhours::ui::Theme kart_theme;
-    kart_theme.set_component_default(ComponentType::Button, 
-        ComponentConfig{}.with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.07f)}));
-    kart_theme.set_component_default(ComponentType::Slider,
-        ComponentConfig{}.with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.07f)}));
-    kart_theme.default_padding = Padding{screen_pct(0.01f)};
-    kart_theme.default_font_size = 24.0f;
+    // Option 2: Create a custom theme with fluent API
+    afterhours::ui::Theme kart_theme = afterhours::ui::Theme::compact()
+        .with_component_size(ComponentType::Button, screen_pct(0.15f), screen_pct(0.07f))
+        .with_component_size(ComponentType::Slider, screen_pct(0.15f), screen_pct(0.07f))
+        .with_component_size(ComponentType::Checkbox, screen_pct(0.15f), screen_pct(0.07f))
+        .with_default_padding(screen_pct(0.01f))
+        .with_default_font_size(24.0f);
     
     afterhours::ui::Theme::set_default_theme(kart_theme);
 }
 
-// Or even simpler with the new fluent API:
-void setup_default_theme_simple() {
+// Option 3: Even more concise with size presets
+void setup_default_theme_concise() {
     afterhours::ui::Theme::set_default_theme(
         afterhours::ui::Theme::compact()
-            .set_component_default(ComponentType::Button, 
-                ComponentConfig{}.with_size(screen_pct(0.15f), screen_pct(0.07f)))
-            .set_component_default(ComponentType::Slider,
-                ComponentConfig{}.with_size(screen_pct(0.15f), screen_pct(0.07f)))
+            .with_standard_sizes(screen_pct(0.15f), screen_pct(0.07f)) // All components get same size
+            .with_default_padding(screen_pct(0.01f))
+            .with_default_font_size(24.0f)
     );
 }
+
+// Option 4: Ultra-concise with theme presets
+void setup_default_theme_ultra_concise() {
+    afterhours::ui::Theme::set_default_theme(afterhours::ui::Theme::kart_style());
+}
+
+// Summary: From verbose to ultra-concise
+// 
+// Before (current approach): 15+ lines of manual configuration
+// Option 1 (predefined):    1 line
+// Option 2 (fluent API):    8 lines, more readable
+// Option 3 (size presets):  6 lines, less repetition
+// Option 4 (theme preset):  1 line, zero configuration needed
 ```
 
 ### 4. Enhanced ComponentConfig with Theme Inheritance
