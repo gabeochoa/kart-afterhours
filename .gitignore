@@ -31,3 +31,6 @@ settings.json
 TODO.md 
 resources/sounds/possibles/*
 tools/dependency_graph
+
+# Profiling data files
+*.spall
