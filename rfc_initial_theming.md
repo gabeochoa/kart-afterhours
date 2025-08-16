@@ -133,23 +133,22 @@ struct ComponentConfig {
 
     InheritFlags inherit_from_theme = InheritFlags::All;
     
-    // New: Auto-sizing hints
-    enum class AutoSize {
-        None,
-        Theme,      // Use theme default
-        Content,    // Size based on content
-        Parent,     // Size based on parent container
-        Screen      // Size based on screen dimensions
-    };
-    
-    AutoSize auto_size_x = AutoSize::Theme;
-    AutoSize auto_size_y = AutoSize::Theme;
-    
     // Enhanced builder methods
-    ComponentConfig& with_auto_size(AutoSize x, AutoSize y);
-    ComponentConfig& without_theme_inheritance();
-    ComponentConfig& inherit_only_size(); // Only inherit size, not other properties
     ComponentConfig& with_inheritance(InheritFlags flags);
+    
+    // Convenience methods for common inheritance patterns
+    ComponentConfig& inherit_only_size() { 
+        inherit_from_theme = InheritFlags::Size; 
+        return *this; 
+    }
+    ComponentConfig& inherit_size_and_padding() { 
+        inherit_from_theme = InheritFlags::Size | InheritFlags::Padding; 
+        return *this; 
+    }
+    ComponentConfig& without_theme_inheritance() { 
+        inherit_from_theme = InheritFlags::None; 
+        return *this; 
+    }
 };
 ```
 
@@ -208,23 +207,22 @@ struct ComponentConfig {
 
     InheritFlags inherit_from_theme = InheritFlags::All;
     
-    // New: Auto-sizing hints
-    enum class AutoSize {
-        None,
-        Theme,      // Use theme default (default)
-        Content,    // Size based on content
-        Parent,     // Size based on parent container
-        Screen      // Size based on screen dimensions
-    };
-    
-    AutoSize auto_size_x = AutoSize::Theme;
-    AutoSize auto_size_y = AutoSize::Theme;
-    
     // Enhanced builder methods
-    ComponentConfig& with_auto_size(AutoSize x, AutoSize y);
-    ComponentConfig& without_theme_inheritance();
-    ComponentConfig& inherit_only_size(); // Only inherit size, not other properties
     ComponentConfig& with_inheritance(InheritFlags flags);
+    
+    // Convenience methods for common inheritance patterns
+    ComponentConfig& inherit_only_size() { 
+        inherit_from_theme = InheritFlags::Size; 
+        return *this; 
+    }
+    ComponentConfig& inherit_size_and_padding() { 
+        inherit_from_theme = InheritFlags::Size | InheritFlags::Padding; 
+        return *this; 
+    }
+    ComponentConfig& without_theme_inheritance() { 
+        inherit_from_theme = InheritFlags::None; 
+        return *this; 
+    }
 };
 ```
 
@@ -349,6 +347,36 @@ void create_main_menu() {
 **Why not merge ComponentConfig with Theme?**
 
 After careful analysis, keeping `ComponentConfig` separate from `Theme` is the right architectural choice:
+
+### Bit Flags vs Boolean Approach
+
+**Before (verbose boolean approach):**
+```cpp
+ComponentConfig config;
+config.inherit_size = true;
+config.inherit_padding = false;  // Don't inherit padding
+config.inherit_margin = true;
+config.inherit_font = false;     // Don't inherit font
+config.inherit_colors = true;
+```
+
+**After (clean bit flag approach):**
+```cpp
+ComponentConfig config;
+config.with_inheritance(InheritFlags::Size | InheritFlags::Margin | InheritFlags::Colors);
+
+// Or use convenience methods:
+config.inherit_size_and_padding();  // Only inherit size and padding
+config.inherit_only_size();         // Only inherit size
+config.without_theme_inheritance(); // Inherit nothing
+```
+
+**Benefits of bit flags:**
+1. **Less verbose**: One line instead of 5 boolean assignments
+2. **Less error-prone**: Can't accidentally forget to set a flag
+3. **More readable**: Intent is clear from the method name
+4. **Composable**: Easy to combine different inheritance patterns
+5. **Type-safe**: Compile-time checking of valid combinations
 
 1. **Separation of Concerns**: 
    - `Theme` = Global defaults and styling rules
