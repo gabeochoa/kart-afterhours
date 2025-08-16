@@ -117,24 +117,9 @@ namespace ShaderUtils {
 
 // Helper functions for uniform enums
 namespace UniformUtils {
-    // Convert enum to string for shader lookup
+    // Convert enum to string for shader lookup using magic_enum
     constexpr const char* to_string(UniformLocation uniform) {
-        switch (uniform) {
-            case UniformLocation::Time: return "time";
-            case UniformLocation::Resolution: return "resolution";
-            case UniformLocation::EntityColor: return "entityColor";
-            case UniformLocation::Speed: return "speed";
-            case UniformLocation::WinnerRainbow: return "winnerRainbow";
-            case UniformLocation::SpotlightEnabled: return "spotlightEnabled";
-            case UniformLocation::SpotlightPos: return "spotlightPos";
-            case UniformLocation::SpotlightRadius: return "spotlightRadius";
-            case UniformLocation::SpotlightSoftness: return "spotlightSoftness";
-            case UniformLocation::DimAmount: return "dimAmount";
-            case UniformLocation::DesaturateAmount: return "desaturateAmount";
-            case UniformLocation::UvMin: return "uvMin";
-            case UniformLocation::UvMax: return "uvMax";
-            default: return "unknown";
-        }
+        return magic_enum::enum_name(uniform).data();
     }
 }
 ```
