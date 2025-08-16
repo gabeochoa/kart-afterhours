@@ -54,34 +54,93 @@ namespace PriorityUtils {
 
 ### 2. Enhanced Entity Shader System
 
+#### Shader Enum Definition
+
+```cpp
+// Define all available shaders as an enum
+enum class ShaderType {
+    // Entity shaders
+    Car,
+    CarWinner,
+    EntityEnhanced,
+    EntityTest,
+    
+    // Post-processing shaders
+    PostProcessing,
+    PostProcessingTag,
+    
+    // Special effects
+    TextMask,
+    
+    // Add new shaders here as needed
+};
+
+// Helper functions for shader enums
+namespace ShaderUtils {
+    // Convert enum to string for debugging
+    constexpr const char* to_string(ShaderType shader) {
+        switch (shader) {
+            case ShaderType::Car: return "car";
+            case ShaderType::CarWinner: return "car_winner";
+            case ShaderType::EntityEnhanced: return "entity_enhanced";
+            case ShaderType::EntityTest: return "entity_test";
+            case ShaderType::PostProcessing: return "post_processing";
+            case ShaderType::PostProcessingTag: return "post_processing_tag";
+            case ShaderType::TextMask: return "text_mask";
+            default: return "unknown";
+        }
+    }
+    
+    // Convert string to enum (for backward compatibility)
+    constexpr ShaderType from_string(const std::string& name) {
+        if (name == "car") return ShaderType::Car;
+        if (name == "car_winner") return ShaderType::CarWinner;
+        if (name == "entity_enhanced") return ShaderType::EntityEnhanced;
+        if (name == "entity_test") return ShaderType::EntityTest;
+        if (name == "post_processing") return ShaderType::PostProcessing;
+        if (name == "post_processing_tag") return ShaderType::PostProcessingTag;
+        if (name == "text_mask") return ShaderType::TextMask;
+        return ShaderType::Car; // Default fallback
+    }
+    
+    // Get shader filename from enum
+    constexpr const char* get_filename(ShaderType shader) {
+        return to_string(shader);
+    }
+}
+```
+
 #### Improved Component Design
 
 ```cpp
 // Replace simple HasShader with better capabilities
 struct HasShader : BaseComponent {
-    std::vector<std::string> shader_names;  // Multiple shaders per entity
+    std::vector<ShaderType> shaders;  // Multiple shaders per entity using enums
     RenderPriority render_priority = RenderPriority::Entities;  // When to render
     bool enabled = true;
     
     // Easy debugging
     std::string get_debug_info() const {
         std::string info = "Shaders: ";
-        for (const auto& name : shader_names) {
-            info += name + " ";
+        for (const auto& shader : shaders) {
+            info += ShaderUtils::to_string(shader) + " ";
         }
         info += "Priority: " + std::to_string(static_cast<int>(render_priority));
         return info;
     }
     
     // Validation
-    bool has_shader(const std::string& name) const {
-        return std::find(shader_names.begin(), shader_names.end(), name) != shader_names.end();
+    bool has_shader(ShaderType shader) const {
+        return std::find(shaders.begin(), shaders.end(), shader) != shaders.end();
     }
     
     // Constructor helpers
-    HasShader(const std::string& name) : shader_names{name} {}
-    HasShader(const std::vector<std::string>& names) : shader_names(names) {}
-    HasShader(const char* name) : shader_names{std::string(name)} {}
+    HasShader(ShaderType shader) : shaders{shader} {}
+    HasShader(const std::vector<ShaderType>& shader_list) : shaders(shader_list) {}
+    
+    // Backward compatibility constructors
+    HasShader(const std::string& name) : shaders{ShaderUtils::from_string(name)} {}
+    HasShader(const char* name) : shaders{ShaderUtils::from_string(std::string(name))} {}
 };
 ```
 
@@ -92,7 +151,7 @@ struct HasShader : BaseComponent {
 ```cpp
 struct ShaderPass {
     std::string name;
-    std::string shader_name;
+    ShaderType shader_type;  // Use enum instead of string
     RenderPriority priority;
     bool enabled = true;
     std::vector<std::string> tags;  // For filtering and debugging
@@ -148,7 +207,7 @@ struct ShaderPassRegistry {
         std::string info = "Active Shader Passes:\n";
         for (const auto& pass : passes) {
             if (pass.enabled) {
-                info += "  " + pass.name + " (" + pass.shader_name + ") - Priority " + 
+                info += "  " + pass.name + " (" + ShaderUtils::to_string(pass.shader_type) + ") - Priority " + 
                        std::to_string(static_cast<int>(pass.priority)) + "\n";
             }
         }
@@ -168,7 +227,8 @@ struct ApplyEntityShaders : System<HasShader, Transform> {
         if (!hasShader.enabled) return;
         
         // Apply each shader in order
-        for (const auto& shader_name : hasShader.shader_names) {
+        for (const auto& shader_type : hasShader.shaders) {
+            const std::string shader_name = ShaderUtils::to_string(shader_type);
             if (!ShaderLibrary::get().contains(shader_name)) {
                 log_warn("Shader not found: {}", shader_name);
                 continue;
@@ -228,7 +288,7 @@ private:
         }
         
         // Car-specific uniforms
-        if (hasShader.shader_name == "car") {
+        if (shader_type == ShaderType::Car) {
             float speed_percent = transform.speed() / Config::get().max_speed.data;
             int speed_loc = raylib::GetShaderLocation(shader, "speed");
             if (speed_loc != -1) {
@@ -237,7 +297,7 @@ private:
         }
         
         // Winner effects
-        if (hasShader.shader_name == "car_winner") {
+        if (shader_type == ShaderType::CarWinner) {
             float rainbow_on = 1.0f;
             int rainbow_loc = raylib::GetShaderLocation(shader, "winnerRainbow");
             if (rainbow_loc != -1) {
@@ -310,7 +370,7 @@ void configure_default_passes() {
     // Background passes
     registry.add_pass({
         .name = "background_rendering",
-        .shader_name = "background",
+        .shader_type = ShaderType::EntityEnhanced,  // Use existing shader for now
         .priority = RenderPriority::Background,
         .tags = {"background", "map"}
     });
@@ -318,7 +378,7 @@ void configure_default_passes() {
     // Entity passes
     registry.add_pass({
         .name = "entity_shaders",
-        .shader_name = "entity_default",
+        .shader_type = ShaderType::Car,  // Default entity shader
         .priority = RenderPriority::Entities,
         .tags = {"entity", "per_object"}
     });
@@ -326,14 +386,14 @@ void configure_default_passes() {
     // Post-processing passes
     registry.add_pass({
         .name = "global_post_processing",
-        .shader_name = "post_processing",
+        .shader_type = ShaderType::PostProcessing,
         .priority = RenderPriority::PostProcess,
         .tags = {"post_processing", "global"}
     });
     
     registry.add_pass({
         .name = "bloom_effect",
-        .shader_name = "bloom",
+        .shader_type = ShaderType::PostProcessing,  // Use same shader for now
         .priority = RenderPriority::PostProcess,
         .tags = {"bloom", "post_processing"}
     });
