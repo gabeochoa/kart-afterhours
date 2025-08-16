@@ -120,35 +120,8 @@ After analyzing the current `ComponentConfig` structure, I believe **partial int
 struct ComponentConfig {
     // Existing fields...
     
-    // New: Theme inheritance control using bit flags
-    enum class InheritFlags : uint8_t {
-        None = 0,
-        Size = 1 << 0,
-        Padding = 1 << 1,
-        Margin = 1 << 2,
-        Font = 1 << 3,
-        Colors = 1 << 4,
-        All = Size | Padding | Margin | Font | Colors
-    };
-
-    InheritFlags inherit_from_theme = InheritFlags::All;
-    
-    // Enhanced builder methods
-    ComponentConfig& with_inheritance(InheritFlags flags);
-    
-    // Convenience methods for common inheritance patterns
-    ComponentConfig& inherit_only_size() { 
-        inherit_from_theme = InheritFlags::Size; 
-        return *this; 
-    }
-    ComponentConfig& inherit_size_and_padding() { 
-        inherit_from_theme = InheritFlags::Size | InheritFlags::Padding; 
-        return *this; 
-    }
-    ComponentConfig& without_theme_inheritance() { 
-        inherit_from_theme = InheritFlags::None; 
-        return *this; 
-    }
+    // Theme inheritance: everything inherits by default unless explicitly set
+    // Just set the values you want to override, everything else comes from theme
 };
 ```
 
@@ -194,35 +167,8 @@ Modify `ComponentConfig` to automatically inherit from theme defaults:
 struct ComponentConfig {
     // Existing fields...
     
-    // New: Theme inheritance control using bit flags
-    enum class InheritFlags : uint8_t {
-        None = 0,
-        Size = 1 << 0,
-        Padding = 1 << 1,
-        Margin = 1 << 2,
-        Font = 1 << 3,
-        Colors = 1 << 4,
-        All = Size | Padding | Margin | Font | Colors
-    };
-
-    InheritFlags inherit_from_theme = InheritFlags::All;
-    
-    // Enhanced builder methods
-    ComponentConfig& with_inheritance(InheritFlags flags);
-    
-    // Convenience methods for common inheritance patterns
-    ComponentConfig& inherit_only_size() { 
-        inherit_from_theme = InheritFlags::Size; 
-        return *this; 
-    }
-    ComponentConfig& inherit_size_and_padding() { 
-        inherit_from_theme = InheritFlags::Size | InheritFlags::Padding; 
-        return *this; 
-    }
-    ComponentConfig& without_theme_inheritance() { 
-        inherit_from_theme = InheritFlags::None; 
-        return *this; 
-    }
+    // Theme inheritance: everything inherits by default unless explicitly set
+    // Just set the values you want to override, everything else comes from theme
 };
 ```
 
@@ -339,6 +285,12 @@ void create_main_menu() {
         ComponentConfig{}.with_label("Volume"));
     
     // All components automatically sized and styled according to theme
+    
+    // Only override what you need:
+    auto custom_button = imm::button(context, mk(parent), 
+        ComponentConfig{}
+            .with_label("Custom Size")
+            .with_size(screen_pct(0.25f), screen_pct(0.1f))); // Override size, inherit everything else
 }
 ```
 
@@ -348,35 +300,29 @@ void create_main_menu() {
 
 After careful analysis, keeping `ComponentConfig` separate from `Theme` is the right architectural choice:
 
-### Bit Flags vs Boolean Approach
+### Simple Inheritance by Default
 
-**Before (verbose boolean approach):**
+**The clean approach:**
 ```cpp
+// Everything inherits from theme by default
 ComponentConfig config;
-config.inherit_size = true;
-config.inherit_padding = false;  // Don't inherit padding
-config.inherit_margin = true;
-config.inherit_font = false;     // Don't inherit font
-config.inherit_colors = true;
+config.with_label("Click me"); // Only set what you want to override
+
+// If you want to override size:
+config.with_size(screen_pct(0.2f), screen_pct(0.1f));
+
+// If you want to override padding:
+config.with_padding(Padding{screen_pct(0.02f)});
+
+// Everything else (margin, font, colors) automatically comes from theme
 ```
 
-**After (clean bit flag approach):**
-```cpp
-ComponentConfig config;
-config.with_inheritance(InheritFlags::Size | InheritFlags::Margin | InheritFlags::Colors);
-
-// Or use convenience methods:
-config.inherit_size_and_padding();  // Only inherit size and padding
-config.inherit_only_size();         // Only inherit size
-config.without_theme_inheritance(); // Inherit nothing
-```
-
-**Benefits of bit flags:**
-1. **Less verbose**: One line instead of 5 boolean assignments
-2. **Less error-prone**: Can't accidentally forget to set a flag
-3. **More readable**: Intent is clear from the method name
-4. **Composable**: Easy to combine different inheritance patterns
-5. **Type-safe**: Compile-time checking of valid combinations
+**Benefits of this approach:**
+1. **Simplest possible**: No inheritance flags or complex configuration
+2. **Least error-prone**: Can't accidentally disable inheritance
+3. **Most readable**: Intent is clear - set what you want, inherit the rest
+4. **Most maintainable**: Less code to understand and debug
+5. **Follows principle of least surprise**: Default behavior is what most users want
 
 1. **Separation of Concerns**: 
    - `Theme` = Global defaults and styling rules
