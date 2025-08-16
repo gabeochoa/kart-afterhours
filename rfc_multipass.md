@@ -103,35 +103,15 @@ enum class UniformLocation {
 
 // Helper functions for shader enums
 namespace ShaderUtils {
-    // Convert enum to string for debugging
-    constexpr const char* to_string(ShaderType shader) {
-        switch (shader) {
-            case ShaderType::Car: return "car";
-            case ShaderType::CarWinner: return "car_winner";
-            case ShaderType::EntityEnhanced: return "entity_enhanced";
-            case ShaderType::EntityTest: return "entity_test";
-            case ShaderType::PostProcessing: return "post_processing";
-            case ShaderType::PostProcessingTag: return "post_processing_tag";
-            case ShaderType::TextMask: return "text_mask";
-            default: return "unknown";
-        }
-    }
-    
-    // Convert string to enum (for backward compatibility)
+    // Convert string to enum (for backward compatibility) using magic_enum
     constexpr ShaderType from_string(const std::string& name) {
-        if (name == "car") return ShaderType::Car;
-        if (name == "car_winner") return ShaderType::CarWinner;
-        if (name == "entity_enhanced") return ShaderType::EntityEnhanced;
-        if (name == "entity_test") return ShaderType::EntityTest;
-        if (name == "post_processing") return ShaderType::PostProcessing;
-        if (name == "post_processing_tag") return ShaderType::PostProcessingTag;
-        if (name == "text_mask") return ShaderType::TextMask;
-        return ShaderType::Car; // Default fallback
+        auto result = magic_enum::enum_cast<ShaderType>(name);
+        return result.value_or(ShaderType::Car); // Default fallback
     }
     
-    // Get shader filename from enum
+    // Get shader filename from enum using magic_enum
     constexpr const char* get_filename(ShaderType shader) {
-        return to_string(shader);
+        return magic_enum::enum_name(shader).data();
     }
 }
 
@@ -180,7 +160,7 @@ struct HasShader : BaseComponent {
         info.reserve(shaders.size() * 10);  // Pre-allocate space
         info += "Shaders: ";
         for (const auto& shader : shaders) {
-            info += ShaderUtils::to_string(shader);
+            info += std::string(magic_enum::enum_name(shader));
             info += " ";
         }
         info += "Priority: " + std::to_string(static_cast<int>(render_priority));
