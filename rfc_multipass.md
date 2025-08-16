@@ -697,6 +697,56 @@ void add_pass(const ShaderPass& pass) {
 }
 ```
 
+### 5. Magic Enum Integration
+**Automatic shader loading and maintenance**
+
+- **Before**: Manual shader loading list that needs updating
+- **After**: Automatic loading of all enum values using `magic_enum::enum_values<ShaderType>()`
+- **Result**: Zero maintenance when adding/removing shaders
+
+```cpp
+// Automatically loads all shader types
+void load_all_shaders() {
+    constexpr auto shader_types = magic_enum::enum_values<ShaderType>();
+    for (auto shader_type : shader_types) {
+        load_shader(shader_type);
+    }
+}
+```
+
+### 6. Optimized Debug String Building
+**Eliminates string allocations in debug info**
+
+- **Before**: New string allocated every frame for debug info
+- **After**: Thread-local buffer reused across frames
+- **Result**: No string allocations in rendering loop
+
+```cpp
+// Use thread_local buffer to avoid allocations every frame
+std::string get_debug_info() const {
+    static thread_local std::string buffer;
+    buffer.clear();
+    buffer.reserve(shaders.size() * 15);
+    // ... build debug info
+    return buffer;
+}
+```
+
+### 7. Pre-defined Uniform Names
+**Avoids magic_enum overhead at load time**
+
+- **Before**: `magic_enum::enum_name(uniform)` called during shader loading
+- **After**: Pre-defined string constants for uniform names
+- **Result**: Faster shader loading, no runtime enum-to-string conversion
+
+```cpp
+namespace UniformNames {
+    constexpr const char* TIME = "time";
+    constexpr const char* RESOLUTION = "resolution";
+    // ... etc
+}
+```
+
 ## Implementation Details
 
 ### 1. Migration Strategy
