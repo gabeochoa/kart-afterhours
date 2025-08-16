@@ -1,0 +1,53 @@
+#pragma once
+
+#include "../ui_systems.h"
+
+using namespace afterhours;
+
+namespace ui_reusable_components {
+
+// Reusable player card component
+ElementResult create_player_card(
+    UIContext<InputAction> &context, Entity &parent, const std::string &label,
+    raylib::Color bg_color, bool is_ai = false,
+    std::optional<int> ranking = std::nullopt,
+    std::optional<std::string> stats_text = std::nullopt,
+    std::function<void()> on_next_color = nullptr,
+    std::function<void()> on_remove = nullptr, bool show_add_ai = false,
+    std::function<void()> on_add_ai = nullptr,
+    std::optional<AIDifficulty::Difficulty> ai_difficulty = std::nullopt,
+    std::function<void(AIDifficulty::Difficulty)> on_difficulty_change =
+        nullptr);
+
+// Reusable styled button component
+ElementResult create_styled_button(UIContext<InputAction> &context,
+                                   Entity &parent, const std::string &label,
+                                   std::function<void()> on_click,
+                                   int index = 0);
+
+// Reusable volume slider component
+ElementResult create_volume_slider(UIContext<InputAction> &context,
+                                   Entity &parent, const std::string &label,
+                                   float &volume,
+                                   std::function<void(float)> on_change,
+                                   int index = 0);
+
+// Reusable screen container component
+ElementResult create_screen_container(UIContext<InputAction> &context,
+                                      Entity &parent,
+                                      const std::string &debug_name);
+
+// Reusable control group component
+ElementResult create_control_group(UIContext<InputAction> &context,
+                                   Entity &parent,
+                                   const std::string &debug_name);
+
+ElementResult create_top_left_container(UIContext<InputAction> &context,
+                                        Entity &parent,
+                                        const std::string &debug_name,
+                                        int index);
+
+// Animation helper function
+void apply_slide_mods(afterhours::Entity &ent, float slide_v);
+
+} // namespace ui_reusable_components

@@ -8,8 +8,8 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "game_state_manager.h"
-#include "ui_key.h"
+#include "../game_state_manager.h"
+#include "animation_key.h"
 
 namespace ui_game {
 
