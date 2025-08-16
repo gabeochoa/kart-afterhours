@@ -6,13 +6,13 @@
   .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 16px;
+    padding: 0 0px;
   }
   
   body {
     font-family: sans-serif;
     margin: 0;
-    padding: 16px 0;
+    padding: 0px 0;
     background: #f5f5f5;
   }
   
@@ -57,7 +57,7 @@
   
   .sections {
     display: grid;
-    grid-template-rows: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(4, 1fr);
     gap: 12px;
     height: 100%;
   }
@@ -334,43 +334,147 @@ const byStage = systems.reduce((a,s)=>{(a[s.stage] ||= []).push(s);return a;},{}
 for(const st of Object.keys(byStage)) byStage[st].sort((a,b)=>a.order-b.order);
 const containers = { 'fixed_update':document.getElementById('systems-fixed_update'), 'update':document.getElementById('systems-update'), 'render':document.getElementById('systems-render'), 'unknown':document.getElementById('systems-unknown') };
 const detailTitle = document.getElementById('detail-title');
-const svg = d3.select('#graph'); const g = svg.append('g'); const defs = svg.append('defs');
-defs.append('marker').attr('id','arrow-black').attr('viewBox','0 0 10 10').attr('refX',10).attr('refY',5).attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto-start-reverse').append('path').attr('d','M 0 0 L 10 5 L 0 10 z').attr('fill','#000');
-defs.append('marker').attr('id','arrow-red').attr('viewBox','0 0 10 10').attr('refX',10).attr('refY',5).attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto-start-reverse').append('path').attr('d','M 0 0 L 10 5 L 0 10 z').attr('fill','#c00');
+const svg = d3.select('#graph'); 
+const g = svg.append('g'); 
+const defs = svg.append('defs');
 
-function renderSystemList(filter=''){
-  const stages = ['fixed_update','update','render','unknown'];
+defs.append('marker')
+  .attr('id','arrow-black')
+  .attr('viewBox','0 0 10 10')
+  .attr('refX',10)
+  .attr('refY',5)
+  .attr('markerWidth',6)
+  .attr('markerHeight',6)
+  .attr('orient','auto-start-reverse')
+  .append('path')
+  .attr('d','M 0 0 L 10 5 L 0 10 z')
+  .attr('fill','#000');
+
+defs.append('marker')
+  .attr('id','arrow-red')
+  .attr('viewBox','0 0 10 10')
+  .attr('refX',10)
+  .attr('refY',5)
+  .attr('markerWidth',6)
+  .attr('markerHeight',6)
+  .attr('orient','auto-start-reverse')
+  .append('path')
+  .attr('d','M 0 0 L 10 5 L 0 10 z')
+  .attr('fill','#c00');
+
+// Reusable node creation functions
+function makeSystemNode(g, x, y, name, color = '#000') {
+  const node = g.append('g').attr('class', 'system-node');
+  node.append('rect')
+    .attr('x', -40).attr('y', -25)
+    .attr('width', 80).attr('height', 50)
+    .attr('rx', 6).attr('ry', 6)
+    .attr('fill', '#f5f5f5')
+    .attr('stroke', color)
+    .attr('stroke-width', 2);
+  
+  const text = node.append('text')
+    .attr('x', 0).attr('y', 0)
+    .attr('text-anchor', 'middle')
+    .attr('dominant-baseline', 'middle')
+    .attr('font-size', 12)
+    .text(name);
+  
+  // Fit text to node
+  let fontSize = 12;
+  while (text.node().getComputedTextLength() > 70 && fontSize > 8) {
+    fontSize--;
+    text.attr('font-size', fontSize);
+  }
+  
+  return node;
+}
+
+function makeComponentNode(g, x, y, name, color = '#000') {
+  const node = g.append('g').attr('class', 'component-node');
+  node.append('circle')
+    .attr('cx', 0).attr('cy', 0).attr('r', 20)
+    .attr('fill', '#f7f7f7')
+    .attr('stroke', color)
+    .attr('stroke-width', 2);
+  
+  const text = node.append('text')
+    .attr('x', 0).attr('y', 0)
+    .attr('text-anchor', 'middle')
+    .attr('dominant-baseline', 'middle')
+    .attr('font-size', 12)
+    .text(name);
+  
+  // Fit text to node
+  let fontSize = 12;
+  while (text.node().getComputedTextLength() > 35 && fontSize > 8) {
+    fontSize--;
+    text.attr('font-size', fontSize);
+  }
+  
+  return node;
+}
+
+function renderSystemList(filter = '') {
+  const stages = ['fixed_update', 'update', 'render', 'unknown'];
   const filtered = systems.filter(s => s.name.toLowerCase().includes(filter));
-  for(const stage of stages){
-    const parent = containers[stage]; if(!parent) continue; parent.innerHTML='';
-    filtered.filter(s => s.stage===stage).sort((a,b)=>a.order-b.order).forEach(s=>{
-      const div = document.createElement('div'); div.className='system'; div.dataset.name=s.name;
-      const prefix = s.order>=0?String(s.order).padStart(2,'0')+': ':'';
-      const reads = s.reads.size || 0; const writes = s.writes.size || 0;
-      div.innerHTML = `${prefix}${s.name} <span class="count read">(${reads})</span><span class=\"count write\">(${writes})</span>`;
-      div.addEventListener('click',()=>selectSystem(s.name)); parent.appendChild(div);
-    });
+  
+  for (const stage of stages) {
+    const parent = containers[stage];
+    if (!parent) continue;
+    
+    parent.innerHTML = '';
+    
+    filtered
+      .filter(s => s.stage === stage)
+      .sort((a, b) => a.order - b.order)
+      .forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'system';
+        div.dataset.name = s.name;
+        
+        const prefix = s.order >= 0 ? String(s.order).padStart(2, '0') + ': ' : '';
+        const reads = s.reads.size || 0;
+        const writes = s.writes.size || 0;
+        
+        div.innerHTML = `${prefix}${s.name} <span class="count read">(${reads})</span><span class="count write">(${writes})</span>`;
+        div.addEventListener('click', () => selectSystem(s.name));
+        
+        parent.appendChild(div);
+      });
   }
 }
 
-function selectSystem(name){
-  const s = systems.find(x=>x.name===name); if(!s) return; detailTitle.textContent = `Details — ${s.name}`;
+function selectSystem(name) {
+  const s = systems.find(x => x.name === name);
+  if (!s) return;
+  
+  detailTitle.textContent = `Details — ${s.name}`;
   drawSystemGraph(s);
-  document.querySelectorAll('.system').forEach(el=> el.classList.toggle('active', el.dataset.name===name));
+  
+  document.querySelectorAll('.system').forEach(el => 
+    el.classList.toggle('active', el.dataset.name === name)
+  );
 }
 
-// Build bottom components row
+// Build components row
 const components = Array.from(new Set(systems.flatMap(s => [...s.reads, ...s.writes]))).sort();
 const compRow = document.getElementById('comp-row');
+
 components.forEach(c => {
-  const chip = document.createElement('span'); chip.className='chip'; chip.textContent=c;
-  chip.addEventListener('click', ()=> showComponentUsage(c));
+  const chip = document.createElement('span');
+  chip.className = 'chip';
+  chip.textContent = c;
+  chip.addEventListener('click', () => showComponentUsage(c));
   compRow.appendChild(chip);
 });
 
-function showComponentUsage(component){
-  const writers = systems.filter(s => s.writes.has(component)).sort((a,b)=> a.stage===b.stage ? a.order-b.order : a.stage.localeCompare(b.stage));
-  const readers = systems.filter(s => s.reads.has(component)).sort((a,b)=> a.stage===b.stage ? a.order-b.order : a.stage.localeCompare(b.stage));
+function showComponentUsage(component) {
+  const writers = systems.filter(s => s.writes.has(component))
+    .sort((a, b) => a.stage === b.stage ? a.order - b.order : a.stage.localeCompare(b.stage));
+  
+  const readers = systems.filter(s => s.reads.has(component))
+    .sort((a, b) => a.stage === b.stage ? a.order - b.order : a.stage.localeCompare(b.stage));
   
   // Update the middle panel to show component usage
   detailTitle.textContent = `Component — ${component}`;
@@ -384,8 +488,8 @@ function showComponentUsage(component){
 
 function drawSystemGraph(s){
   const container = document.querySelector('.graph-wrap');
-  const width = container.clientWidth || 800;
-  const height = container.clientHeight || 500;
+  const width = container.clientWidth;
+  const height = container.clientHeight;
   
   svg.attr('width', width).attr('height', height).attr('viewBox',`0 0 ${width} ${height}`);
   g.selectAll('*').remove();
@@ -403,9 +507,14 @@ function drawSystemGraph(s){
   g.append('text').attr('x',centerX).attr('y',centerY).attr('text-anchor','middle').attr('dominant-baseline','middle').attr('font-size',14).text(s.name);
   const links=[]; reads.forEach(c=>links.push({from:c,to:s.name,color:'#000',dir:'in'})); writes.forEach(c=>links.push({from:s.name,to:c,color:'#c00',dir:'out'})); both.forEach(c=>{links.push({from:c,to:s.name,color:'#000',dir:'in'});links.push({from:s.name,to:c,color:'#c00',dir:'out'});});
   const linkSel=g.selectAll('path.link').data(links).enter().append('path').attr('class','link').attr('fill','none').attr('stroke',d=>d.color).attr('stroke-width',2).attr('stroke-linecap','round').attr('marker-end',d=>d.color==='#c00'?'url(#arrow-red)':'url(#arrow-black)');
-  const compNodes=nodes.filter(n=>n.type!=='system'); const nodeSel=g.selectAll('g.node').data(compNodes, d=>d.id).enter().append('g').attr('class','node');
-  nodeSel.append('circle').attr('r',16).attr('fill','#f7f7f7').attr('stroke',d=>d.type==='write'?'#c00':(d.type==='read'?'#000':'#555'));
-  nodeSel.append('text').attr('text-anchor','middle').attr('font-size',12);
+  const compNodes = nodes.filter(n => n.type !== 'system'); 
+  const nodeSel = g.selectAll('g.node').data(compNodes, d => d.id).enter().append('g').attr('class', 'node');
+  
+  // Create component nodes using the reusable function
+  nodeSel.each(function(d) {
+    const color = d.type === 'write' ? '#c00' : (d.type === 'read' ? '#000' : '#555');
+    makeComponentNode(d3.select(this), d.x, d.y, d.id, color);
+  });
   function edgePoints(l){ const a=nodeById.get(l.from), b=nodeById.get(l.to); if(!a||!b) return null; let x1=a.x,y1=a.y,x2=b.x,y2=b.y; if(l.dir==='in'){x2=centerX-sysW/2;y2=centerY;} if(l.dir==='out'){x1=centerX+sysW/2;y1=centerY;} return {x1,y1,x2,y2}; }
   function updateLinks(){ linkSel.attr('d', d=>{ const p=edgePoints(d); if(!p) return ''; const dx=p.x2-p.x1, dy=p.y2-p.y1, midx=p.x1+dx*0.5; let curv=Math.min(80.0, Math.abs(dx)/3.0); if(d.color==='#000') curv=-curv; const c1y=p.y1+dy*0.25+curv; const c2y=p.y2-dy*0.25+curv; return `M ${p.x1} ${p.y1} C ${midx} ${c1y}, ${midx} ${c2y}, ${p.x2} ${p.y2}`; }); }
   function updateNodes(){ nodeSel.attr('transform', d=>`translate(${d.x},${d.y})`); nodeSel.selectAll('text').attr('y', d=> d.type==='both' ? (16+14) : (-16-10)).text(d=>d.id); }
@@ -430,8 +539,8 @@ function drawSystemGraph(s){
 
 function drawComponentGraph(component, writers, readers){
   const container = document.querySelector('.graph-wrap');
-  const width = container.clientWidth || 800;
-  const height = container.clientHeight || 500;
+  const width = container.clientWidth;
+  const height = container.clientHeight;
   
   svg.attr('width', width).attr('height', height).attr('viewBox',`0 0 ${width} ${height}`);
   g.selectAll('*').remove();
@@ -449,7 +558,7 @@ function drawComponentGraph(component, writers, readers){
   const nodeById=new Map(nodes.map(n=>[n.id,n]));
   
   // Draw component in center
-  g.append('rect').attr('x',centerX-compW/2).attr('y',centerY-compH/2).attr('width',compW).attr('height',compH).attr('rx',10).attr('ry',10).attr('fill','#e8f5e8').attr('stroke','#4caf50').attr('stroke-width',2);
+  g.append('circle').attr('cx',centerX).attr('cy',centerY).attr('r',40).attr('fill','#e8f5e8').attr('stroke','#4caf50').attr('stroke-width',2);
   g.append('text').attr('x',centerX).attr('y',centerY).attr('text-anchor','middle').attr('dominant-baseline','middle').attr('font-size',16).attr('font-weight','bold').text(component);
   
   // Create links
@@ -462,15 +571,18 @@ function drawComponentGraph(component, writers, readers){
   const sysNodes=nodes.filter(n=>n.type!=='component'); 
   const nodeSel=g.selectAll('g.node').data(sysNodes, d=>d.id).enter().append('g').attr('class','node');
   
-  nodeSel.append('rect').attr('x',-40).attr('y',-25).attr('width',80).attr('height',50).attr('rx',6).attr('ry',6).attr('fill',d=>d.type==='writer'?'#ffebee':'#f5f5f5').attr('stroke',d=>d.type==='writer'?'#d32f2f':'#000').attr('stroke-width',2);
-  nodeSel.append('text').attr('x',0).attr('y',0).attr('text-anchor','middle').attr('dominant-baseline','middle').attr('font-size',12).text(d=>d.id);
+  // Create system nodes using the reusable function
+  nodeSel.each(function(d) {
+    const color = d.type==='writer' ? '#d32f2f' : '#000';
+    makeSystemNode(d3.select(this), d.x, d.y, d.id, color);
+  });
   
   function edgePoints(l){ 
     const a=nodeById.get(l.from), b=nodeById.get(l.to); 
     if(!a||!b) return null; 
     let x1=a.x,y1=a.y,x2=b.x,y2=b.y; 
-    if(l.dir==='to'){x2=centerX-compW/2;y2=centerY;} 
-    if(l.dir==='from'){x1=centerX+compW/2;y1=centerY;} 
+    if(l.dir==='to'){x2=centerX-40;y2=centerY;} 
+    if(l.dir==='from'){x1=centerX+40;y1=centerY;} 
     return {x1,y1,x2,y2}; 
   }
   

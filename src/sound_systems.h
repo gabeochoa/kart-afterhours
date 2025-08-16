@@ -134,14 +134,15 @@ struct BackgroundMusic : System<> {
     if (!started && GameStateManager::get().is_menu_active()) {
       auto &music = MusicLibrary::get().get("menu_music");
       music.looping = true;
-      TODO when we change the music, we should change this back to 0
-      raylib::SeekMusicStream(music, 3.0f);
+
       raylib::PlayMusicStream(music);
       started = true;
     }
 
     auto &music = MusicLibrary::get().get("menu_music");
-    raylib::UpdateMusicStream(music);
+    if (raylib::IsMusicStreamPlaying(music)) {
+      raylib::UpdateMusicStream(music);
+    }
 #endif
   }
 
