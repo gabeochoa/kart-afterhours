@@ -77,26 +77,26 @@ enum class ShaderType {
 
 // Define all uniform locations as an enum
 enum class UniformLocation {
-    // Common uniforms
-    Time,
-    Resolution,
-    EntityColor,
+    // Common uniforms (used by most shaders)
+    Time,           // Used by: Car, CarWinner, PostProcessing, PostProcessingTag
+    Resolution,     // Used by: Car, CarWinner, PostProcessing, PostProcessingTag
+    EntityColor,    // Used by: Car, CarWinner, EntityEnhanced, EntityTest
     
     // Car-specific uniforms
-    Speed,
-    WinnerRainbow,
+    Speed,          // Used by: Car
+    WinnerRainbow,  // Used by: CarWinner
     
     // Post-processing uniforms
-    SpotlightEnabled,
-    SpotlightPos,
-    SpotlightRadius,
-    SpotlightSoftness,
-    DimAmount,
-    DesaturateAmount,
+    SpotlightEnabled,    // Used by: PostProcessingTag
+    SpotlightPos,        // Used by: PostProcessingTag
+    SpotlightRadius,     // Used by: PostProcessingTag
+    SpotlightSoftness,   // Used by: PostProcessingTag
+    DimAmount,           // Used by: PostProcessingTag
+    DesaturateAmount,    // Used by: PostProcessingTag
     
-    // UV bounds
-    UvMin,
-    UvMax,
+    // UV bounds (used by sprite-based shaders)
+    UvMin,          // Used by: Car, CarWinner, EntityEnhanced, EntityTest
+    UvMax,          // Used by: Car, CarWinner, EntityEnhanced, EntityTest
     
     // Add new uniforms here as needed
 };
