@@ -54,7 +54,7 @@ namespace PriorityUtils {
 
 ### 2. Enhanced Entity Shader System
 
-#### Shader Enum Definition
+#### Shader and Uniform Enum Definitions
 
 ```cpp
 // Define all available shaders as an enum
@@ -73,6 +73,32 @@ enum class ShaderType {
     TextMask,
     
     // Add new shaders here as needed
+};
+
+// Define all uniform locations as an enum
+enum class UniformLocation {
+    // Common uniforms
+    Time,
+    Resolution,
+    EntityColor,
+    
+    // Car-specific uniforms
+    Speed,
+    WinnerRainbow,
+    
+    // Post-processing uniforms
+    SpotlightEnabled,
+    SpotlightPos,
+    SpotlightRadius,
+    SpotlightSoftness,
+    DimAmount,
+    DesaturateAmount,
+    
+    // UV bounds
+    UvMin,
+    UvMax,
+    
+    // Add new uniforms here as needed
 };
 
 // Helper functions for shader enums
@@ -108,6 +134,30 @@ namespace ShaderUtils {
         return to_string(shader);
     }
 }
+
+// Helper functions for uniform enums
+namespace UniformUtils {
+    // Convert enum to string for shader lookup
+    constexpr const char* to_string(UniformLocation uniform) {
+        switch (uniform) {
+            case UniformLocation::Time: return "time";
+            case UniformLocation::Resolution: return "resolution";
+            case UniformLocation::EntityColor: return "entityColor";
+            case UniformLocation::Speed: return "speed";
+            case UniformLocation::WinnerRainbow: return "winnerRainbow";
+            case UniformLocation::SpotlightEnabled: return "spotlightEnabled";
+            case UniformLocation::SpotlightPos: return "spotlightPos";
+            case UniformLocation::SpotlightRadius: return "spotlightRadius";
+            case UniformLocation::SpotlightSoftness: return "spotlightSoftness";
+            case UniformLocation::DimAmount: return "dimAmount";
+            case UniformLocation::DesaturateAmount: return "desaturateAmount";
+            case UniformLocation::UvMin: return "uvMin";
+            case UniformLocation::UvMax: return "uvMax";
+            default: return "unknown";
+        }
+    }
+}
+```
 ```
 
 #### Improved Component Design
@@ -216,7 +266,107 @@ struct ShaderPassRegistry {
 };
 ```
 
-### 4. Improved Rendering System
+### 4. Updated Shader Library
+
+#### Enum-Based Shader Management
+
+```cpp
+// Updated ShaderLibrary that works with enums
+struct ShaderLibrary {
+    SINGLETON(ShaderLibrary)
+    
+    // Store shaders by enum type for fast lookup
+    std::unordered_map<ShaderType, raylib::Shader> shaders_by_type;
+    
+    // Cache uniform locations for each shader
+    std::unordered_map<ShaderType, std::unordered_map<UniformLocation, int>> uniform_locations;
+    
+    // Load all shaders at startup
+    void load_all_shaders() {
+        // Load each shader and cache its uniform locations
+        load_shader(ShaderType::Car);
+        load_shader(ShaderType::CarWinner);
+        load_shader(ShaderType::EntityEnhanced);
+        load_shader(ShaderType::EntityTest);
+        load_shader(ShaderType::PostProcessing);
+        load_shader(ShaderType::PostProcessingTag);
+        load_shader(ShaderType::TextMask);
+    }
+    
+    // Get shader by enum type (fast lookup)
+    const raylib::Shader& get(ShaderType type) const {
+        auto it = shaders_by_type.find(type);
+        if (it == shaders_by_type.end()) {
+            log_error("Shader not found for type: {}", static_cast<int>(type));
+            // Return a default shader or throw
+            static raylib::Shader default_shader = raylib::LoadShader("", "");
+            return default_shader;
+        }
+        return it->second;
+    }
+    
+    // Get uniform location (cached)
+    int get_uniform_location(ShaderType shader_type, UniformLocation uniform) const {
+        auto shader_it = uniform_locations.find(shader_type);
+        if (shader_it == uniform_locations.end()) return -1;
+        
+        auto uniform_it = shader_it->second.find(uniform);
+        if (uniform_it == shader_it->second.end()) return -1;
+        
+        return uniform_it->second;
+    }
+    
+    // Check if shader exists
+    bool contains(ShaderType type) const {
+        return shaders_by_type.find(type) != shaders_by_type.end();
+    }
+    
+    // Backward compatibility
+    const raylib::Shader& get(const std::string& name) const {
+        ShaderType type = ShaderUtils::from_string(name);
+        return get(type);
+    }
+    
+    bool contains(const std::string& name) const {
+        ShaderType type = ShaderUtils::from_string(name);
+        return contains(type);
+    }
+    
+private:
+    void load_shader(ShaderType type) {
+        const char* filename = ShaderUtils::get_filename(type);
+        std::string vert_path = "resources/shaders/base.vs";
+        std::string frag_path = std::string("resources/shaders/") + filename + ".fs";
+        
+        raylib::Shader shader = raylib::LoadShader(vert_path.c_str(), frag_path.c_str());
+        shaders_by_type[type] = shader;
+        
+        // Cache uniform locations for this shader
+        cache_uniform_locations(type, shader);
+    }
+    
+    void cache_uniform_locations(ShaderType type, const raylib::Shader& shader) {
+        auto& locations = uniform_locations[type];
+        
+        // Cache all possible uniform locations
+        locations[UniformLocation::Time] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::Time));
+        locations[UniformLocation::Resolution] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::Resolution));
+        locations[UniformLocation::EntityColor] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::EntityColor));
+        locations[UniformLocation::Speed] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::Speed));
+        locations[UniformLocation::WinnerRainbow] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::WinnerRainbow));
+        locations[UniformLocation::SpotlightEnabled] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::SpotlightEnabled));
+        locations[UniformLocation::SpotlightPos] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::SpotlightPos));
+        locations[UniformLocation::SpotlightRadius] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::SpotlightRadius));
+        locations[UniformLocation::SpotlightSoftness] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::SpotlightSoftness));
+        locations[UniformLocation::DimAmount] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::DimAmount));
+        locations[UniformLocation::DesaturateAmount] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::DesaturateAmount));
+        locations[UniformLocation::UvMin] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::UvMin));
+        locations[UniformLocation::UvMax] = raylib::GetShaderLocation(shader, UniformUtils::to_string(UniformLocation::UvMax));
+    }
+};
+```
+
+### 5. Improved Rendering System
 
 #### Enhanced Entity Shader Application
 
@@ -228,20 +378,19 @@ struct ApplyEntityShaders : System<HasShader, Transform> {
         
         // Apply each shader in order
         for (const auto& shader_type : hasShader.shaders) {
-            const std::string shader_name = ShaderUtils::to_string(shader_type);
-            if (!ShaderLibrary::get().contains(shader_name)) {
-                log_warn("Shader not found: {}", shader_name);
+            if (!ShaderLibrary::get().contains(shader_type)) {
+                log_warn("Shader not found for type: {}", static_cast<int>(shader_type));
                 continue;
             }
             
-            const auto& shader = ShaderLibrary::get().get(shader_name);
+            const auto& shader = ShaderLibrary::get().get(shader_type);
             raylib::BeginShaderMode(shader);
             
             // Update common uniforms
-            update_common_uniforms(shader);
+            update_common_uniforms(shader, shader_type);
             
             // Update entity-specific uniforms
-            update_entity_uniforms(shader, entity, hasShader, transform);
+            update_entity_uniforms(shader, shader_type, entity, hasShader, transform);
             
             // Render entity (delegated to existing rendering systems)
             render_entity_with_shader(entity, shader);
@@ -251,10 +400,10 @@ struct ApplyEntityShaders : System<HasShader, Transform> {
     }
     
 private:
-    void update_common_uniforms(raylib::Shader& shader) {
+    void update_common_uniforms(raylib::Shader& shader, ShaderType shader_type) {
         // Time uniform
         float time = static_cast<float>(raylib::GetTime());
-        int time_loc = raylib::GetShaderLocation(shader, "time");
+        int time_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::Time);
         if (time_loc != -1) {
             raylib::SetShaderValue(shader, time_loc, &time, raylib::SHADER_UNIFORM_FLOAT);
         }
@@ -264,14 +413,14 @@ private:
         if (rez_cmp) {
             vec2 rez = {static_cast<float>(rez_cmp->current_resolution.width),
                         static_cast<float>(rez_cmp->current_resolution.height)};
-            int rez_loc = raylib::GetShaderLocation(shader, "resolution");
+            int rez_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::Resolution);
             if (rez_loc != -1) {
                 raylib::SetShaderValue(shader, rez_loc, &rez, raylib::SHADER_UNIFORM_VEC2);
             }
         }
     }
     
-    void update_entity_uniforms(raylib::Shader& shader, const Entity& entity, 
+    void update_entity_uniforms(raylib::Shader& shader, ShaderType shader_type, const Entity& entity, 
                                const HasShader& hasShader, const Transform& transform) {
         // Entity color
         if (entity.has<HasColor>()) {
@@ -281,7 +430,7 @@ private:
                 entityColor.r / 255.0f, entityColor.g / 255.0f,
                 entityColor.b / 255.0f, entityColor.a / 255.0f
             };
-            int color_loc = raylib::GetShaderLocation(shader, "entityColor");
+            int color_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::EntityColor);
             if (color_loc != -1) {
                 raylib::SetShaderValue(shader, color_loc, color_array, raylib::SHADER_UNIFORM_VEC4);
             }
@@ -290,7 +439,7 @@ private:
         // Car-specific uniforms
         if (shader_type == ShaderType::Car) {
             float speed_percent = transform.speed() / Config::get().max_speed.data;
-            int speed_loc = raylib::GetShaderLocation(shader, "speed");
+            int speed_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::Speed);
             if (speed_loc != -1) {
                 raylib::SetShaderValue(shader, speed_loc, &speed_percent, raylib::SHADER_UNIFORM_FLOAT);
             }
@@ -299,7 +448,7 @@ private:
         // Winner effects
         if (shader_type == ShaderType::CarWinner) {
             float rainbow_on = 1.0f;
-            int rainbow_loc = raylib::GetShaderLocation(shader, "winnerRainbow");
+            int rainbow_loc = ShaderLibrary::get().get_uniform_location(shader_type, UniformLocation::WinnerRainbow);
             if (rainbow_loc != -1) {
                 raylib::SetShaderValue(shader, rainbow_loc, &rainbow_on, raylib::SHADER_UNIFORM_FLOAT);
             }
@@ -370,7 +519,7 @@ void configure_default_passes() {
     // Background passes
     registry.add_pass({
         .name = "background_rendering",
-        .shader_type = ShaderType::EntityEnhanced,  // Use existing shader for now
+        .shader_type = ShaderType::EntityEnhanced,
         .priority = RenderPriority::Background,
         .tags = {"background", "map"}
     });
@@ -378,7 +527,7 @@ void configure_default_passes() {
     // Entity passes
     registry.add_pass({
         .name = "entity_shaders",
-        .shader_type = ShaderType::Car,  // Default entity shader
+        .shader_type = ShaderType::Car,
         .priority = RenderPriority::Entities,
         .tags = {"entity", "per_object"}
     });
@@ -393,7 +542,7 @@ void configure_default_passes() {
     
     registry.add_pass({
         .name = "bloom_effect",
-        .shader_type = ShaderType::PostProcessing,  // Use same shader for now
+        .shader_type = ShaderType::PostProcessing,
         .priority = RenderPriority::PostProcess,
         .tags = {"bloom", "post_processing"}
     });
