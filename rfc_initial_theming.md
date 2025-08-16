@@ -32,13 +32,16 @@ This approach has several issues:
 
 ## Proposed Solution
 
-### 1. Theme Structure
+### 1. Unified Theme Structure
 
-Create a comprehensive `Theme` struct that includes both colors and sizing information:
+Merge `Theme`, `ThemeManager`, and `UIStylingDefaults` into a single, comprehensive `Theme` class:
 
 ```cpp
-struct Theme {
-    // Colors (existing)
+namespace afterhours::ui {
+
+class Theme {
+public:
+    // Colors (existing from current Theme)
     Color font;
     Color darkfont;
     Color background;
@@ -47,29 +50,23 @@ struct Theme {
     Color accent;
     Color error;
     
-    // New: Component sizing defaults
-    ComponentSize button_size;
-    ComponentSize slider_size;
-    ComponentSize checkbox_size;
-    ComponentSize dropdown_size;
-    ComponentSize navigation_bar_size;
+    // Component sizing defaults (from UIStylingDefaults)
+    std::map<ComponentType, ComponentConfig> component_defaults;
     
-    // New: Spacing and typography
+    // Global styling defaults
     Padding default_padding;
     Margin default_margin;
     float default_font_size;
     std::string default_font_name;
-    
-    // New: Layout defaults
     float default_component_spacing;
     float default_section_spacing;
     
-    // New: Responsive breakpoints
-    std::vector<float> breakpoints; // screen widths where theme changes
-    
-    // New: Theme variants
+    // Theme metadata
     std::string name;
     std::string variant; // "light", "dark", "compact", "spacious"
+    
+    // Singleton pattern (from UIStylingDefaults)
+    static Theme& get();
     
     // Constructor with sensible defaults
     Theme();
@@ -79,44 +76,74 @@ struct Theme {
     static Theme dark();
     static Theme compact();
     static Theme spacious();
-};
-```
-
-### 2. Global Theme Management
-
-Add a global theme manager to the afterhours UI library:
-
-```cpp
-namespace afterhours::ui {
-
-class ThemeManager {
-public:
-    static ThemeManager& get();
     
-    // Set the default theme for the entire application
-    void set_default_theme(const Theme& theme);
+    // Component configuration methods (from UIStylingDefaults)
+    Theme& set_component_default(ComponentType type, const ComponentConfig& config);
+    std::optional<ComponentConfig> get_component_default(ComponentType type) const;
+    ComponentConfig merge_with_defaults(ComponentType type, const ComponentConfig& overrides) const;
     
-    // Get the current default theme
-    const Theme& get_default_theme() const;
+    // Theme switching and management
+    void switch_to(const std::string& theme_name);
+    void register_variant(const std::string& name, const Theme& variant);
     
-    // Set theme for specific component types
-    void set_component_theme(ComponentType type, const ComponentConfig& config);
-    
-    // Get merged component config with theme defaults
-    ComponentConfig get_component_config(ComponentType type, 
-                                       const ComponentConfig& overrides = {}) const;
-    
-    // Theme switching
-    void switch_theme(const std::string& theme_name);
-    void register_theme(const std::string& name, const Theme& theme);
+    // Global theme setting (replaces UIStylingDefaults::get())
+    static void set_default_theme(const Theme& theme);
+    static const Theme& get_default_theme();
     
 private:
-    Theme default_theme;
-    std::map<std::string, Theme> registered_themes;
-    std::map<ComponentType, ComponentConfig> component_overrides;
+    static Theme* default_theme_instance;
+    std::map<std::string, Theme> registered_variants;
 };
 
 } // namespace afterhours::ui
+```
+
+### 2. ComponentConfig Integration Analysis
+
+**Question: Should ComponentConfig be merged with Theme?**
+
+After analyzing the current `ComponentConfig` structure, I believe **partial integration** is better than full merger:
+
+**Keep ComponentConfig separate because:**
+1. **Different lifecycle**: ComponentConfig is per-component instance, Theme is global
+2. **Different scope**: ComponentConfig has instance-specific data (label, disabled state, etc.)
+3. **Builder pattern**: ComponentConfig's fluent interface is valuable for component creation
+4. **Performance**: ComponentConfig is lightweight and copied frequently
+
+**Integrate where it makes sense:**
+1. **Theme inheritance**: ComponentConfig automatically inherits from Theme defaults
+2. **Smart defaults**: ComponentConfig can be created with minimal configuration
+3. **Auto-sizing**: ComponentConfig can defer sizing decisions to Theme
+
+**Proposed ComponentConfig enhancements:**
+```cpp
+struct ComponentConfig {
+    // Existing fields...
+    
+    // New: Theme inheritance control
+    bool inherit_size = true;
+    bool inherit_padding = true;
+    bool inherit_margin = true;
+    bool inherit_font = true;
+    bool inherit_colors = true;
+    
+    // New: Auto-sizing hints
+    enum class AutoSize {
+        None,
+        Theme,      // Use theme default
+        Content,    // Size based on content
+        Parent,     // Size based on parent container
+        Screen      // Size based on screen dimensions
+    };
+    
+    AutoSize auto_size_x = AutoSize::Theme;
+    AutoSize auto_size_y = AutoSize::Theme;
+    
+    // Enhanced builder methods
+    ComponentConfig& with_auto_size(AutoSize x, AutoSize y);
+    ComponentConfig& without_theme_inheritance();
+    ComponentConfig& inherit_only_size(); // Only inherit size, not other properties
+};
 ```
 
 ### 3. New API for Setting Default Theme
@@ -126,20 +153,30 @@ Replace the current manual configuration with a simple theme setting:
 ```cpp
 // In kart code, replace SetupGameStylingDefaults with:
 void setup_default_theme() {
-    auto& theme_manager = afterhours::ui::ThemeManager::get();
-    
     // Option 1: Use a predefined theme
-    theme_manager.set_default_theme(afterhours::ui::Theme::compact());
+    afterhours::ui::Theme::set_default_theme(afterhours::ui::Theme::compact());
     
     // Option 2: Create a custom theme
     afterhours::ui::Theme kart_theme;
-    kart_theme.button_size = ComponentSize{screen_pct(0.15f), screen_pct(0.07f)};
-    kart_theme.slider_size = ComponentSize{screen_pct(0.15f), screen_pct(0.07f)};
-    kart_theme.default_padding = Padding{screen_pct(0.01f), screen_pct(0.01f), 
-                                        screen_pct(0.01f), screen_pct(0.01f)};
+    kart_theme.set_component_default(ComponentType::Button, 
+        ComponentConfig{}.with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.07f)}));
+    kart_theme.set_component_default(ComponentType::Slider,
+        ComponentConfig{}.with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.07f)}));
+    kart_theme.default_padding = Padding{screen_pct(0.01f)};
     kart_theme.default_font_size = 24.0f;
     
-    theme_manager.set_default_theme(kart_theme);
+    afterhours::ui::Theme::set_default_theme(kart_theme);
+}
+
+// Or even simpler with the new fluent API:
+void setup_default_theme_simple() {
+    afterhours::ui::Theme::set_default_theme(
+        afterhours::ui::Theme::compact()
+            .set_component_default(ComponentType::Button, 
+                ComponentConfig{}.with_size(screen_pct(0.15f), screen_pct(0.07f)))
+            .set_component_default(ComponentType::Slider,
+                ComponentConfig{}.with_size(screen_pct(0.15f), screen_pct(0.07f)))
+    );
 }
 ```
 
@@ -152,31 +189,28 @@ struct ComponentConfig {
     // Existing fields...
     
     // New: Theme inheritance control
-    bool inherit_from_theme = true;
     bool inherit_size = true;
     bool inherit_padding = true;
     bool inherit_margin = true;
     bool inherit_font = true;
-    
-    // New: Responsive sizing
-    std::map<float, ComponentSize> responsive_sizes; // breakpoint -> size
+    bool inherit_colors = true;
     
     // New: Auto-sizing hints
     enum class AutoSize {
         None,
-        Content,        // Size based on content
-        Parent,         // Size based on parent container
-        Screen,         // Size based on screen dimensions
-        Adaptive        // Smart sizing based on context
+        Theme,      // Use theme default (default)
+        Content,    // Size based on content
+        Parent,     // Size based on parent container
+        Screen      // Size based on screen dimensions
     };
     
-    AutoSize auto_size_x = AutoSize::None;
-    AutoSize auto_size_y = AutoSize::None;
+    AutoSize auto_size_x = AutoSize::Theme;
+    AutoSize auto_size_y = AutoSize::Theme;
     
     // Enhanced builder methods
     ComponentConfig& with_auto_size(AutoSize x, AutoSize y);
-    ComponentConfig& with_responsive_size(float breakpoint, const ComponentSize& size);
     ComponentConfig& without_theme_inheritance();
+    ComponentConfig& inherit_only_size(); // Only inherit size, not other properties
 };
 ```
 
@@ -234,22 +268,22 @@ imm::button(context, mk(parent),
 
 ## Implementation Plan
 
-### Phase 1: Core Theme System
-1. Implement `Theme` struct with sizing defaults
-2. Create `ThemeManager` singleton
-3. Modify `ComponentConfig` to support theme inheritance
-4. Update `UIStylingDefaults` to use the new theme system
+### Phase 1: Unified Theme System
+1. Merge `Theme`, `ThemeManager`, and `UIStylingDefaults` into single `Theme` class
+2. Modify `ComponentConfig` to support theme inheritance
+3. Update existing `UIStylingDefaults::get()` calls to use `Theme::get()`
+4. Implement fluent API for theme configuration
 
 ### Phase 2: Auto-layout Integration
 1. Enhance autolayout system with smart sizing
-2. Implement responsive breakpoints
+2. Implement theme-based default sizing
 3. Add auto-sizing algorithms for different component types
 
 ### Phase 3: Advanced Features
 1. Theme variants and switching
-2. Responsive design support
-3. Performance optimizations
-4. Documentation and examples
+2. Performance optimizations
+3. Documentation and examples
+4. Migration tools for existing code
 
 ## Benefits
 
@@ -262,10 +296,10 @@ imm::button(context, mk(parent),
 
 ## Migration Path
 
-1. **Immediate**: Add new theme system alongside existing `UIStylingDefaults`
-2. **Short term**: Update kart code to use `ui::set_default_theme()`
+1. **Immediate**: Merge existing classes into unified `Theme` class
+2. **Short term**: Update kart code to use `Theme::set_default_theme()`
 3. **Medium term**: Remove manual component configuration from kart code
-4. **Long term**: Deprecate old `UIStylingDefaults` API
+4. **Long term**: Remove old `UIStylingDefaults` API entirely
 
 ## Example Usage
 
@@ -273,11 +307,14 @@ imm::button(context, mk(parent),
 // In kart main.cpp or initialization
 void initialize_ui_theme() {
     // Set a comprehensive default theme
-    afterhours::ui::ThemeManager::get().set_default_theme(
+    afterhours::ui::Theme::set_default_theme(
         afterhours::ui::Theme::compact()
-            .with_button_size(screen_pct(0.15f), screen_pct(0.07f))
-            .with_default_padding(screen_pct(0.01f))
-            .with_default_font_size(24.0f)
+            .set_component_default(ComponentType::Button, 
+                ComponentConfig{}.with_size(screen_pct(0.15f), screen_pct(0.07f)))
+            .set_component_default(ComponentType::Slider,
+                ComponentConfig{}.with_size(screen_pct(0.15f), screen_pct(0.07f)))
+            .set_component_default(ComponentType::Checkbox,
+                ComponentConfig{}.with_size(screen_pct(0.15f), screen_pct(0.07f)))
     );
 }
 
@@ -293,6 +330,44 @@ void create_main_menu() {
 }
 ```
 
+## ComponentConfig Integration Decision
+
+**Why not merge ComponentConfig with Theme?**
+
+After careful analysis, keeping `ComponentConfig` separate from `Theme` is the right architectural choice:
+
+1. **Separation of Concerns**: 
+   - `Theme` = Global defaults and styling rules
+   - `ComponentConfig` = Per-instance configuration and overrides
+
+2. **Performance**: 
+   - `ComponentConfig` is copied frequently during component creation
+   - `Theme` is read-only and shared across all components
+
+3. **Flexibility**: 
+   - Components can selectively inherit from theme (size but not padding, etc.)
+   - Easy to override specific properties without affecting others
+
+4. **Builder Pattern**: 
+   - `ComponentConfig`'s fluent interface is valuable for component creation
+   - Theme inheritance happens automatically in the background
+
+**The integration happens at the usage level:**
+```cpp
+// ComponentConfig automatically inherits from Theme
+auto button = imm::button(context, mk(parent), 
+    ComponentConfig{}.with_label("Click me")); // Size, padding inherited from theme
+
+// Easy to override specific properties
+auto custom_button = imm::button(context, mk(parent), 
+    ComponentConfig{}
+        .with_label("Custom")
+        .with_size(screen_pct(0.2f), screen_pct(0.1f)) // Override theme size
+        .inherit_only_size()); // Still inherit padding, colors, etc. from theme
+```
+
 ## Conclusion
 
-This theming system will transform the afterhours UI library from a low-level component system into a high-level, theme-driven UI framework. It eliminates the need for manual sizing while providing flexibility for custom designs. The result is cleaner, more maintainable game code that focuses on functionality rather than UI minutiae.
+This unified theming system will transform the afterhours UI library from a low-level component system into a high-level, theme-driven UI framework. By merging `Theme`, `ThemeManager`, and `UIStylingDefaults` into a single class while keeping `ComponentConfig` separate for flexibility, we get the best of both worlds: centralized theme management and per-component customization.
+
+The result is cleaner, more maintainable game code that focuses on functionality rather than UI minutiae, while preserving the flexibility to override specific components when needed.
