@@ -264,7 +264,7 @@ struct IntroScreens
       raylib::EndTextureMode();
 
       // Apply mask shader
-      raylib::Shader maskShader = ShaderLibrary::get().get("text_mask");
+      raylib::Shader maskShader = ShaderLibrary::get().get(ShaderType::TextMask);
       int maskTextureLoc = raylib::GetShaderLocation(maskShader, "maskTexture");
       int timeLoc = raylib::GetShaderLocation(maskShader, "time");
       int resolutionLoc = raylib::GetShaderLocation(maskShader, "resolution");

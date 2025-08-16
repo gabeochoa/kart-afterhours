@@ -16,6 +16,7 @@ backward::SignalHandling sh;
 #include "sound_systems.h"
 #include "systems.h"
 #include "systems_ai.h"
+#include "multipass_shader_system.h"
 #include "ui_button_wiggle.h"
 #include "ui_key.h"
 #include "ui_slide_in.h"
@@ -158,6 +159,16 @@ void game() {
     systems.register_update_system(std::make_unique<UIClickSounds>());
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
+    
+    // Initialize multipass shader system
+    systems.register_update_system([](float) {
+      static bool initialized = false;
+      if (!initialized) {
+        ShaderLibrary::get().load_all_shaders();
+        configure_default_passes();
+        initialized = true;
+      }
+    });
   }
 
   // renders
@@ -169,7 +180,6 @@ void game() {
     });
     {
       systems.register_render_system(std::make_unique<RenderSkid>());
-      systems.register_render_system(std::make_unique<RenderEntities>());
       texture_manager::register_render_systems(systems);
       systems.register_render_system(
           std::make_unique<RenderSpritesWithShaders>());
@@ -193,25 +203,25 @@ void game() {
       raylib::ClearBackground(raylib::BLANK);
       // bind tag shader if available; spotlight enabled is controlled via
       // uniforms
-      bool useTagShader = ShaderLibrary::get().contains("post_processing_tag");
+      bool useTagShader = ShaderLibrary::get().contains(ShaderType::PostProcessingTag);
       if (useTagShader) {
-        const auto &shader = ShaderLibrary::get().get("post_processing_tag");
+        const auto &shader = ShaderLibrary::get().get(ShaderType::PostProcessingTag);
         raylib::BeginShaderMode(shader);
+        
+        // Update common uniforms using cached locations
         float t = static_cast<float>(raylib::GetTime());
-        int timeLoc = raylib::GetShaderLocation(shader, "time");
+        int timeLoc = ShaderLibrary::get().get_uniform_location(ShaderType::PostProcessingTag, UniformLocation::Time);
         if (timeLoc != -1) {
-          raylib::SetShaderValue(shader, timeLoc, &t,
-                                 raylib::SHADER_UNIFORM_FLOAT);
+          raylib::SetShaderValue(shader, timeLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
         }
         auto *rez = EntityHelper::get_singleton_cmp<
             window_manager::ProvidesCurrentResolution>();
         if (rez) {
           vec2 r = {static_cast<float>(rez->current_resolution.width),
                     static_cast<float>(rez->current_resolution.height)};
-          int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+          int rezLoc = ShaderLibrary::get().get_uniform_location(ShaderType::PostProcessingTag, UniformLocation::Resolution);
           if (rezLoc != -1) {
-            raylib::SetShaderValue(shader, rezLoc, &r,
-                                   raylib::SHADER_UNIFORM_VEC2);
+            raylib::SetShaderValue(shader, rezLoc, &r, raylib::SHADER_UNIFORM_VEC2);
           }
         }
       }
@@ -233,24 +243,24 @@ void game() {
     // pass 3: draw to screen with base post-processing shader
     systems.register_render_system([&](float) { raylib::BeginDrawing(); });
     systems.register_render_system([&](float) {
-      if (ShaderLibrary::get().contains("post_processing")) {
-        const auto &shader = ShaderLibrary::get().get("post_processing");
+      if (ShaderLibrary::get().contains(ShaderType::PostProcessing)) {
+        const auto &shader = ShaderLibrary::get().get(ShaderType::PostProcessing);
         raylib::BeginShaderMode(shader);
+        
+        // Update common uniforms using cached locations
         float t = static_cast<float>(raylib::GetTime());
-        int timeLoc = raylib::GetShaderLocation(shader, "time");
+        int timeLoc = ShaderLibrary::get().get_uniform_location(ShaderType::PostProcessing, UniformLocation::Time);
         if (timeLoc != -1) {
-          raylib::SetShaderValue(shader, timeLoc, &t,
-                                 raylib::SHADER_UNIFORM_FLOAT);
+          raylib::SetShaderValue(shader, timeLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
         }
         auto *rez = EntityHelper::get_singleton_cmp<
             window_manager::ProvidesCurrentResolution>();
         if (rez) {
           vec2 r = {static_cast<float>(rez->current_resolution.width),
                     static_cast<float>(rez->current_resolution.height)};
-          int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+          int rezLoc = ShaderLibrary::get().get_uniform_location(ShaderType::PostProcessing, UniformLocation::Resolution);
           if (rezLoc != -1) {
-            raylib::SetShaderValue(shader, rezLoc, &r,
-                                   raylib::SHADER_UNIFORM_VEC2);
+            raylib::SetShaderValue(shader, rezLoc, &r, raylib::SHADER_UNIFORM_VEC2);
           }
         }
       }
