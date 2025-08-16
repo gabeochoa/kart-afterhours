@@ -18,6 +18,7 @@ The current shader system in Kart Afterhours has several limitations that make i
 2. **Render Order Complexity**: Manual management of shader begin/end pairs
 3. **Limited Flexibility**: Can't easily add new rendering passes or effects
 4. **Magic Numbers**: Unclear render priorities (what does priority 150 vs 200 mean?)
+5. **Single Shader Limit**: Entities can only have one shader at a time
 
 ## Proposed Solution
 
