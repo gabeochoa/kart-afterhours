@@ -108,11 +108,6 @@ namespace ShaderUtils {
         auto result = magic_enum::enum_cast<ShaderType>(name);
         return result.value_or(ShaderType::Car); // Default fallback
     }
-    
-    // Get shader filename from enum using magic_enum
-    constexpr const char* get_filename(ShaderType shader) {
-        return magic_enum::enum_name(shader).data();
-    }
 }
 
 // Note: Shader file names must match the enum names exactly
@@ -329,23 +324,20 @@ struct ShaderLibrary {
     // Cache uniform locations for each shader
     std::unordered_map<ShaderType, std::unordered_map<UniformLocation, int>> uniform_locations;
     
-    // Load all shaders at startup
+    // Load all shaders at startup using magic_enum
     void load_all_shaders() {
-        // Load each shader and cache its uniform locations
-        load_shader(ShaderType::Car);
-        load_shader(ShaderType::CarWinner);
-        load_shader(ShaderType::EntityEnhanced);
-        load_shader(ShaderType::EntityTest);
-        load_shader(ShaderType::PostProcessing);
-        load_shader(ShaderType::PostProcessingTag);
-        load_shader(ShaderType::TextMask);
+        // Use magic_enum to automatically load all shader types
+        constexpr auto shader_types = magic_enum::enum_values<ShaderType>();
+        for (auto shader_type : shader_types) {
+            load_shader(shader_type);
+        }
     }
     
     // Get shader by enum type (fast lookup)
     const raylib::Shader& get(ShaderType type) const {
         auto it = shaders_by_type.find(type);
         if (it == shaders_by_type.end()) {
-            log_error("Shader not found for type: {}", static_cast<int>(type));
+            log_error("Shader not found for type: {}", magic_enum::enum_name(type));
             // Return a default shader or throw
             static raylib::Shader default_shader = raylib::LoadShader("", "");
             return default_shader;
@@ -382,9 +374,10 @@ struct ShaderLibrary {
     
 private:
     void load_shader(ShaderType type) {
-        const char* filename = ShaderUtils::get_filename(type);
+        // Use magic_enum to get shader name and filename
+        std::string_view shader_name = magic_enum::enum_name(type);
         std::string vert_path = "resources/shaders/base.vs";
-        std::string frag_path = std::string("resources/shaders/") + filename + ".fs";
+        std::string frag_path = std::string("resources/shaders/") + std::string(shader_name) + ".fs";
         
         raylib::Shader shader = raylib::LoadShader(vert_path.c_str(), frag_path.c_str());
         shaders_by_type[type] = shader;
