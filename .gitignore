@@ -30,3 +30,4 @@ settings.json
 .watchman*
 TODO.md 
 resources/sounds/possibles/*
+tools/dependency_graph
