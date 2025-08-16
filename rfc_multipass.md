@@ -113,28 +113,24 @@ struct ShaderPassRegistry {
         passes.insert(insert_pos, pass);
     }
     
-    // Get all enabled passes in priority order
-    std::vector<ShaderPass*> get_enabled_passes() {
-        std::vector<ShaderPass*> enabled;
-        for (auto& pass : passes) {
-            if (pass.enabled) {
-                enabled.push_back(&pass);
-            }
-        }
-        return enabled;
+    // Get all enabled passes in priority order using views (no copying)
+    auto get_enabled_passes() {
+        return passes | std::views::filter([](const ShaderPass& pass) {
+            return pass.enabled;
+        }) | std::views::transform([](const ShaderPass& pass) -> const ShaderPass* {
+            return &pass;
+        });
     }
     
-    // Get passes by priority range
-    std::vector<ShaderPass*> get_passes_by_priority(RenderPriority min_priority, RenderPriority max_priority) {
-        std::vector<ShaderPass*> result;
-        for (auto& pass : passes) {
-            if (pass.enabled && 
-                static_cast<int>(pass.priority) >= static_cast<int>(min_priority) &&
-                static_cast<int>(pass.priority) <= static_cast<int>(max_priority)) {
-                result.push_back(&pass);
-            }
-        }
-        return result;
+    // Get passes by priority range using views (no copying)
+    auto get_passes_by_priority(RenderPriority min_priority, RenderPriority max_priority) {
+        return passes | std::views::filter([min_priority, max_priority](const ShaderPass& pass) {
+            return pass.enabled && 
+                   static_cast<int>(pass.priority) >= static_cast<int>(min_priority) &&
+                   static_cast<int>(pass.priority) <= static_cast<int>(max_priority);
+        }) | std::views::transform([](const ShaderPass& pass) -> const ShaderPass* {
+            return &pass;
+        });
     }
     
     // Enable/disable passes
