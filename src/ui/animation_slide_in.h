@@ -1,8 +1,8 @@
 #pragma once
-#include "game.h"
+#include "../game.h"
 
-#include "game_state_manager.h"
-#include "ui_key.h"
+#include "../game_state_manager.h"
+#include "animation_key.h"
 
 namespace ui_game {
 

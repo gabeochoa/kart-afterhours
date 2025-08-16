@@ -8,10 +8,13 @@
 #include "log.h"
 #include "makers.h"
 #include "map_system.h"
+#include "navigation.h"
+#include "preload.h" // FontID
+#include "texture_library.h"
+#include "ui/animation_key.h"
 #include "math_util.h"
 #include "max_health.h"
 #include "music_library.h"
-#include "preload.h"
 #include "query.h"
 #include "resources.h"
 #include "rl.h"
@@ -23,19 +26,15 @@
 #include "systems.h"
 #include "systems_ai.h"
 #include "systems_roundtypes.h"
-#include "texture_library.h"
-#include "ui_button_wiggle.h"
-#include "ui_key.h"
-#include "ui_slide_in.h"
+#include "ui/animation_button_wiggle.h"
+#include "ui/animation_key.h"
+#include "ui/animation_slide_in.h"
 #include "utils.h"
 #include "weapons.h"
-#include "navigation.h"
 #include <fmt/format.h>
 #include <afterhours/src/plugins/animation.h>
 
 using namespace afterhours;
-
-#include "ui_systems.h"
 
 ScheduleMainMenuUI::~ScheduleMainMenuUI() = default;
 ScheduleDebugUI::~ScheduleDebugUI() = default;
@@ -60,9 +59,7 @@ static inline void apply_slide_mods(afterhours::Entity &ent, float slide_v) {
 }
 #endif
 
-#include "game_state_manager.h"
-#include "makers.h" // make_ai()
-#include "round_settings.h"
+
 
 // Reusable UI component functions
 namespace ui_helpers {
@@ -386,9 +383,11 @@ void ScheduleMainMenuUI::once(float) {
 }
 
 bool ScheduleMainMenuUI::should_run(float) {
-  // Visibility managed by NavigationSystem; render if menu active and UI visible
+  // Visibility managed by NavigationSystem; render if menu active and UI
+  // visible
   auto *nav = EntityHelper::get_singleton_cmp<MenuNavigationStack>();
-  return GameStateManager::get().is_menu_active() && (nav ? nav->ui_visible : true);
+  return GameStateManager::get().is_menu_active() &&
+         (nav ? nav->ui_visible : true);
 }
 
 void ScheduleMainMenuUI::character_selector_column(
@@ -810,15 +809,10 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
   ui_helpers::create_styled_button(
       context, top_left.ent(), "round settings",
-      []() { navigation::to(GameStateManager::Screen::RoundSettings); },
-      0);
+      []() { navigation::to(GameStateManager::Screen::RoundSettings); }, 0);
 
   ui_helpers::create_styled_button(
-      context, top_left.ent(), "back",
-      []() {
-        navigation::back();
-      },
-      1);
+      context, top_left.ent(), "back", []() { navigation::back(); }, 1);
 
   size_t num_slots = players.size() + ais.size() + 1;
   // 0-4 => 1, 5->8 -> 2
@@ -1202,12 +1196,9 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                      .with_absolute_position()
                      .with_debug_name("round_settings_top_left"));
 
-      ui_helpers::create_styled_button(
-      context, settings_group.ent(), "select map",
-      []() {
-          navigation::to(GameStateManager::Screen::MapSelection);
-        },
-      0);
+    ui_helpers::create_styled_button(
+        context, settings_group.ent(), "select map",
+        []() { navigation::to(GameStateManager::Screen::MapSelection); }, 0);
 
     {
       auto win_condition_div =
@@ -1263,8 +1254,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     }
 
     ui_helpers::create_styled_button(
-        context, settings_group.ent(), "back", []() { navigation::back(); },
-        2);
+        context, settings_group.ent(), "back", []() { navigation::back(); }, 2);
   }
 
   return GameStateManager::get().next_screen.value_or(
@@ -1612,10 +1602,7 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
   // Play button
   ui_helpers::create_styled_button(
       context, top_left.ent(), "play",
-      []() {
-        navigation::to(GameStateManager::Screen::CharacterCreation);
-      },
-      0);
+      []() { navigation::to(GameStateManager::Screen::CharacterCreation); }, 0);
 
   // About button
   ui_helpers::create_styled_button(
@@ -1646,7 +1633,9 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
         context, top_left.ent(), "back",
         []() {
           Settings::get().update_resolution(
-              EntityHelper::get_singleton_cmp<window_manager::ProvidesCurrentResolution>()->current_resolution);
+              EntityHelper::get_singleton_cmp<
+                  window_manager::ProvidesCurrentResolution>()
+                  ->current_resolution);
           navigation::back();
         },
         0);

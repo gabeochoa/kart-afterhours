@@ -11,16 +11,16 @@ backward::SignalHandling sh;
 #include "argh.h"
 #include "intro.h"
 #include "map_system.h"
+#include "navigation.h"
 #include "preload.h"
 #include "settings.h"
 #include "sound_systems.h"
 #include "systems.h"
 #include "systems_ai.h"
-#include "ui_button_wiggle.h"
-#include "ui_key.h"
-#include "ui_slide_in.h"
+#include "ui/animation_button_wiggle.h"
+#include "ui/animation_key.h"
+#include "ui/animation_slide_in.h"
 #include "ui_systems.h"
-#include "navigation.h"
 #include <afterhours/src/plugins/animation.h>
 #include <afterhours/src/plugins/ui/systems.h>
 
@@ -100,7 +100,8 @@ void game() {
     systems.register_update_system(std::make_unique<ProjectileSpawnSystem>());
     systems.register_update_system(std::make_unique<WeaponRecoilSystem>());
     systems.register_update_system(std::make_unique<WeaponSoundSystem>());
-    systems.register_update_system(std::make_unique<WeaponFiredCleanupSystem>());
+    systems.register_update_system(
+        std::make_unique<WeaponFiredCleanupSystem>());
     systems.register_update_system(std::make_unique<DrainLife>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
     systems.register_update_system(std::make_unique<CheckLivesWinCondition>());
