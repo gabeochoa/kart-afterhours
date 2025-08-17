@@ -43,51 +43,70 @@ struct MultipassRenderer {
   // Render all passes in priority order
   template <typename EntityContainer>
   void render_all_passes(const EntityContainer &entities) {
-    ShaderPassRegistry &registry = ShaderPassRegistry::get();
-    ShaderLibrary &shader_lib = ShaderLibrary::get();
-
     for (const PassConfig &pass_config : pass_configs) {
-      if (!registry.is_pass_enabled(pass_config.priority)) {
+      if (!is_pass_enabled(pass_config.priority)) {
         continue;
       }
 
-      // Clear before pass if configured
-      if (pass_config.clear_before) {
-        raylib::ClearBackground(pass_config.clear_color);
-      }
+      render_single_pass(entities, pass_config);
+    }
+  }
 
-      // Render this pass
-      render_pass(entities, pass_config.priority);
+private:
+  // Check if a pass is enabled
+  bool is_pass_enabled(RenderPriority priority) const {
+    return ShaderPassRegistry::get().is_pass_enabled(priority);
+  }
 
-      // Clear after pass if configured
-      if (pass_config.clear_after) {
-        raylib::ClearBackground(pass_config.clear_color);
-      }
+  // Render a single pass with its configuration
+  template <typename EntityContainer>
+  void render_single_pass(const EntityContainer &entities, const PassConfig &pass_config) {
+    // Clear before pass if configured
+    if (pass_config.clear_before) {
+      raylib::ClearBackground(pass_config.clear_color);
+    }
+
+    // Render this pass
+    render_pass(entities, pass_config.priority);
+
+    // Clear after pass if configured
+    if (pass_config.clear_after) {
+      raylib::ClearBackground(pass_config.clear_color);
     }
   }
 
   // Render a specific pass
   template <typename EntityContainer>
   void render_pass(const EntityContainer &entities, RenderPriority priority) {
-    ShaderPassRegistry &registry = ShaderPassRegistry::get();
-    ShaderLibrary &shader_lib = ShaderLibrary::get();
-
     // Get entities for this pass
     RefEntities pass_entities =
-        registry.get_entities_for_pass(entities, priority);
+        ShaderPassRegistry::get().get_entities_for_pass(entities, priority);
 
     // Render each entity in this pass
+    render_pass_entities(pass_entities);
+  }
+
+private:
+  // Render all entities in a pass
+  void render_pass_entities(const RefEntities &pass_entities) {
     for (const RefEntity &entity_ref : pass_entities) {
-      if (!entity_ref.has<HasShader>())
+      if (!should_render_entity(entity_ref)) {
         continue;
+      }
 
       const HasShader &shader_comp = entity_ref.get<HasShader>();
-      if (!shader_comp.enabled)
-        continue;
-
-      // Render entity with its shaders
       render_entity(entity_ref, shader_comp);
     }
+  }
+
+  // Check if an entity should be rendered
+  bool should_render_entity(const RefEntity &entity_ref) const {
+    if (!entity_ref.has<HasShader>()) {
+      return false;
+    }
+
+    const HasShader &shader_comp = entity_ref.get<HasShader>();
+    return shader_comp.enabled;
   }
 
   // Render a single entity with its shaders
@@ -228,3 +247,4 @@ struct MultipassRenderer {
     return result;
   }
 };
+
