@@ -24,18 +24,20 @@ struct ShaderPassRegistry {
   // Pre-defined render passes
   constexpr static std::vector<RenderPass> render_passes = {
       {RenderPriority::Background},
-      {RenderPriority::Entities, {
-          ShaderType::car,
-          ShaderType::car_winner,
-          ShaderType::entity_enhanced,
-          ShaderType::entity_test,
-      }},
+      {RenderPriority::Entities,
+       {
+           ShaderType::car,
+           ShaderType::car_winner,
+           ShaderType::entity_enhanced,
+           ShaderType::entity_test,
+       }},
       {RenderPriority::Particles},
       {RenderPriority::UI},
-      {RenderPriority::PostProcess, {
-          ShaderType::post_processing,
-          ShaderType::post_processing_tag,
-      }},
+      {RenderPriority::PostProcess,
+       {
+           ShaderType::post_processing,
+           ShaderType::post_processing_tag,
+       }},
       {RenderPriority::Debug},
   };
 
@@ -45,6 +47,7 @@ struct ShaderPassRegistry {
                                     RenderPriority priority) const {
     RefEntities result;
 
+    // Filter entities by render priority and enabled state
     for (Entity &entity : entities) {
       if (entity.has<HasShader>()) {
         const HasShader &shader_comp = entity.get<HasShader>();
@@ -54,7 +57,8 @@ struct ShaderPassRegistry {
       }
     }
 
-    // Sort by priority (lower numbers first)
+    // Sort entities by their shader priority to ensure consistent rendering order
+    // Lower priority numbers are rendered first (background before entities, etc.)
     std::sort(result.begin(), result.end(),
               [](const RefEntity a, const RefEntity b) {
                 const HasShader &shader_a = a.get<HasShader>();

@@ -114,7 +114,7 @@ private:
   void render_entity(const RefEntity &entity, const HasShader &shader_comp) {
     auto &shader_lib = ShaderLibrary::get();
 
-    // Apply each shader in order
+    // Apply each shader in order (multiple shaders can be stacked)
     for (const auto &shader_type : shader_comp.shaders) {
       if (!shader_lib.contains(shader_type)) {
         log_warn("Shader not found for type: {}",
@@ -124,17 +124,17 @@ private:
 
       const auto &shader = shader_lib.get(shader_type);
 
-      // Begin shader mode
+      // Begin shader mode - this activates the shader for all subsequent rendering
       raylib::BeginShaderMode(shader);
 
-      // Set common uniforms
+      // Set common uniforms that this shader expects (time, resolution, etc.)
       set_common_uniforms(shader_type, shader);
 
-      // Render the entity (this will be handled by existing rendering systems)
-      // The shader is now active and will be used for subsequent rendering
-      // calls
+      // Note: The actual entity rendering is handled by existing rendering systems
+      // The shader is now active and will be applied to any rendering calls made
+      // until EndShaderMode() is called
 
-      // End shader mode
+      // End shader mode - deactivates the current shader
       raylib::EndShaderMode();
     }
   }
