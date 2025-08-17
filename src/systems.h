@@ -72,7 +72,7 @@ struct RenderSpritesWithShaders
     : System<Transform, afterhours::texture_manager::HasSprite, HasShader,
              HasColor> {
   virtual void
-  for_each_with(const Entity &entity, const Transform &transform,
+  for_each_with(const Entity &, const Transform &transform,
                 const afterhours::texture_manager::HasSprite &hasSprite,
                 const HasShader &hasShader, const HasColor &hasColor,
                 float) const override {
@@ -249,9 +249,9 @@ struct RenderSpritesWithShaders
 struct RenderAnimationsWithShaders
     : System<Transform, afterhours::texture_manager::HasAnimation, HasShader,
              HonkState> {
-  virtual void for_each_with(const Entity &entity, const Transform &transform,
+  virtual void for_each_with(const Entity &, const Transform &transform,
                              const afterhours::texture_manager::HasAnimation &,
-                             const HasShader &hasShader, const HonkState &honk,
+                             const HasShader &hasShader, const HonkState &,
                              float) const override {
     if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
       log_warn("Shader not found: {}", hasShader.shader_name);
@@ -388,10 +388,9 @@ compute_letterbox_layout(const int window_width, const int window_height,
 
 struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderRenderTexture() {}
-  virtual void for_each_with(
-      const Entity &entity,
-      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
-      float) const override {
+  virtual void for_each_with(const Entity &,
+                             const window_manager::ProvidesCurrentResolution &,
+                             float) const override {
     const int window_w = raylib::GetScreenWidth();
     const int window_h = raylib::GetScreenHeight();
     const int content_w = mainRT.texture.width;
@@ -409,6 +408,7 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
 struct BeginPostProcessingShader : System<> {
   virtual void once(float) override {
     const bool hasBase = ShaderLibrary::get().contains("post_processing");
+    (void)hasBase; // Suppress unused variable warning
     const bool hasTag = ShaderLibrary::get().contains("post_processing_tag");
     auto &rm = RoundManager::get();
     bool useTagShader = false;
@@ -587,10 +587,9 @@ struct ConfigureTaggerSpotlight : System<> {
 
 struct RenderLetterboxBars : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderLetterboxBars() {}
-  virtual void for_each_with(
-      const Entity &entity,
-      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
-      float) const override {
+  virtual void for_each_with(const Entity &,
+                             const window_manager::ProvidesCurrentResolution &,
+                             float) const override {
     const int window_w = raylib::GetScreenWidth();
     const int window_h = raylib::GetScreenHeight();
     const int content_w = mainRT.texture.width;
@@ -862,7 +861,7 @@ struct ProjectileSpawnSystem : System<WeaponFired, Transform> {
 };
 
 struct WeaponRecoilSystem : System<WeaponFired, Transform> {
-  virtual void for_each_with(Entity &entity, WeaponFired &evt, Transform &t,
+  virtual void for_each_with(Entity &, WeaponFired &evt, Transform &t,
                              float) override {
     const float knockback_amt = evt.recoil.knockback_amt;
     vec2 recoil = {std::cos(t.as_rad()), std::sin(t.as_rad())};
@@ -1271,8 +1270,8 @@ struct UpdateCollidingEntities : PausableSystem<Transform> {
 struct VelFromInput
     : PausableSystem<PlayerID, Transform, HonkState, HasShader> {
   virtual void for_each_with(Entity &entity, PlayerID &playerID,
-                             Transform &transform, HonkState &honk,
-                             HasShader &hasShader, float dt) override {
+                             Transform &transform, HonkState &honk, HasShader &,
+                             float dt) override {
     input::PossibleInputCollector<InputAction> inpc =
         input::get_input_collector<InputAction>();
     if (!inpc.has_value()) {

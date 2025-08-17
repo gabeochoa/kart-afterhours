@@ -39,7 +39,7 @@ struct UpdateUIButtonWiggle
   virtual void for_each_with_derived(afterhours::Entity &entity,
                                      afterhours::ui::UIComponent &component,
                                      afterhours::ui::HasClickListener &,
-                                     float) {
+                                     float) override {
     if (!component.was_rendered_to_screen)
       return;
     const auto &cfg = button_wiggle_config();
