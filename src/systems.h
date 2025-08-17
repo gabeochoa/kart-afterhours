@@ -844,7 +844,10 @@ struct ProjectileSpawnSystem : System<WeaponFired, Transform> {
     case Weapon::Type::Shotgun:
       cfg.angle_offsets = {-15.f, -5.f, 5.f, 15.f};
       break;
-    default:
+    case Weapon::Type::Cannon:
+    case Weapon::Type::Sniper:
+    case Weapon::Type::MachineGun:
+      // These weapons don't need special angle offsets
       break;
     }
 
@@ -1309,7 +1312,20 @@ struct VelFromInput
       case InputAction::Honk:
         honk_down = true;
         break;
-      default:
+      case InputAction::ShootLeft:
+      case InputAction::ShootRight:
+      case InputAction::WidgetRight:
+      case InputAction::WidgetLeft:
+      case InputAction::WidgetNext:
+      case InputAction::WidgetPress:
+      case InputAction::WidgetMod:
+      case InputAction::WidgetBack:
+      case InputAction::MenuBack:
+      case InputAction::PauseButton:
+      case InputAction::ToggleUIDebug:
+      case InputAction::ToggleUILayoutDebug:
+      case InputAction::None:
+        // These actions don't affect car movement
         break;
       }
     }
@@ -1345,7 +1361,20 @@ struct VelFromInput
               "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
         }
       } break;
-      default:
+      case InputAction::ShootLeft:
+      case InputAction::ShootRight:
+      case InputAction::WidgetRight:
+      case InputAction::WidgetLeft:
+      case InputAction::WidgetNext:
+      case InputAction::WidgetPress:
+      case InputAction::WidgetMod:
+      case InputAction::WidgetBack:
+      case InputAction::MenuBack:
+      case InputAction::PauseButton:
+      case InputAction::ToggleUIDebug:
+      case InputAction::ToggleUILayoutDebug:
+      case InputAction::None:
+        // These actions don't affect car movement
         break;
       }
     }
@@ -1710,10 +1739,11 @@ struct RenderPlayerHUD : System<Transform, HasHealth> {
     case RoundType::Kills:
       render_kills(entity, transform, color);
       break;
+    case RoundType::Hippo:
+      // Hippo round doesn't need special rendering above health bar
+      break;
     case RoundType::TagAndGo:
       render_tagger_indicator(entity, transform, color);
-      break;
-    default:
       break;
     }
   }
