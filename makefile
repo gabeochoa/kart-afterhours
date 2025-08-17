@@ -38,7 +38,7 @@ ifeq ($(OS),Windows_NT)
 else
 	mkdir_cmd = mkdir -p output/resources/
 	cp_lib_cmd = cp vendor/raylib/*.dll output/
-	cp_resources_cmd = cp resources/* output/resources/
+	cp_resources_cmd = cp -r resources/* output/resources/
 	run_cmd := ./${OUTPUT_EXE}
 	sign_cmd := && codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
 	# CXX := /Users/gabeochoa/homebrew/Cellar/gcc/14.2.0_1/bin/g++-14
@@ -100,6 +100,27 @@ countall:
 
 cppcheck:
 	cppcheck src/ -Ivendor/afterhours --enable=all --std=c++23 --language=c++ --suppress=noConstructor --suppress=noExplicitConstructor --suppress=useStlAlgorithm --suppress=unusedStructMember --suppress=useInitializationList --suppress=duplicateCondition --suppress=nullPointerRedundantCheck --suppress=cstyleCast
+
+prof:
+	$(mkdir_cmd)
+	$(cp_resources_cmd)
+	codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
+	rm -rf recording.trace/
+	xctrace record --template 'Time Profiler' --output 'recording.trace' --launch $(OUTPUT_EXE)
+
+leak:
+	$(mkdir_cmd)
+	$(cp_resources_cmd)
+	codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
+	rm -rf recording.trace/
+	xctrace record --template 'Leaks' --output 'recording.trace' --launch $(OUTPUT_EXE)
+
+alloc:
+	$(mkdir_cmd)
+	$(cp_resources_cmd)
+	codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
+	rm -rf recording.trace/
+	xctrace record --template 'Allocations' --output 'recording.trace' --launch $(OUTPUT_EXE)
 
 
 getxm: 

@@ -194,9 +194,11 @@ void game() {
       raylib::ClearBackground(raylib::BLANK);
       // bind tag shader if available; spotlight enabled is controlled via
       // uniforms
-      bool useTagShader = ShaderLibrary::get().contains("post_processing_tag");
+      bool useTagShader =
+          ShaderLibrary::get().contains(ShaderType::post_processing_tag);
       if (useTagShader) {
-        const auto &shader = ShaderLibrary::get().get("post_processing_tag");
+        const auto &shader =
+            ShaderLibrary::get().get(ShaderType::post_processing_tag);
         raylib::BeginShaderMode(shader);
         float t = static_cast<float>(raylib::GetTime());
         int timeLoc = raylib::GetShaderLocation(shader, "time");
@@ -234,8 +236,9 @@ void game() {
     // pass 3: draw to screen with base post-processing shader
     systems.register_render_system([&](float) { raylib::BeginDrawing(); });
     systems.register_render_system([&](float) {
-      if (ShaderLibrary::get().contains("post_processing")) {
-        const auto &shader = ShaderLibrary::get().get("post_processing");
+      if (ShaderLibrary::get().contains(ShaderType::post_processing)) {
+        const auto &shader =
+            ShaderLibrary::get().get(ShaderType::post_processing);
         raylib::BeginShaderMode(shader);
         float t = static_cast<float>(raylib::GetTime());
         int timeLoc = raylib::GetShaderLocation(shader, "time");
