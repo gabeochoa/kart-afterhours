@@ -45,7 +45,10 @@ struct ShaderPassRegistry {
   template <typename EntityContainer>
   RefEntities get_entities_for_pass(const EntityContainer &entities,
                                     RenderPriority priority) const {
+    // Pre-allocate result vector to avoid multiple reallocations
+    // Estimate size based on typical entity counts
     RefEntities result;
+    result.reserve(entities.size() / 4); // Assume ~25% of entities have shaders
 
     // Filter entities by render priority and enabled state
     for (Entity &entity : entities) {
@@ -57,8 +60,9 @@ struct ShaderPassRegistry {
       }
     }
 
-    // Sort entities by their shader priority to ensure consistent rendering order
-    // Lower priority numbers are rendered first (background before entities, etc.)
+    // Sort entities by their shader priority to ensure consistent rendering
+    // order Lower priority numbers are rendered first (background before
+    // entities, etc.)
     std::sort(result.begin(), result.end(),
               [](const RefEntity a, const RefEntity b) {
                 const HasShader &shader_a = a.get<HasShader>();
