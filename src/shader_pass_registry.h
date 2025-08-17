@@ -22,31 +22,22 @@ struct ShaderPassRegistry {
   };
 
   // Pre-defined render passes
-  constexpr static std::vector<RenderPass> render_passes = //
-      {{
-           RenderPriority::Background,
-       },
-       {RenderPriority::Entities,
-        {
-            ShaderType::car,
-            ShaderType::car_winner,
-            ShaderType::entity_enhanced,
-            ShaderType::entity_test,
-        }},
-       {
-           RenderPriority::Particles,
-       },
-       {
-           RenderPriority::UI,
-       },
-       {RenderPriority::PostProcess,
-        {
-            ShaderType::post_processing,
-            ShaderType::post_processing_tag,
-        }},
-       {
-           RenderPriority::Debug,
-       }};
+  constexpr static std::vector<RenderPass> render_passes = {
+      {RenderPriority::Background},
+      {RenderPriority::Entities, {
+          ShaderType::car,
+          ShaderType::car_winner,
+          ShaderType::entity_enhanced,
+          ShaderType::entity_test,
+      }},
+      {RenderPriority::Particles},
+      {RenderPriority::UI},
+      {RenderPriority::PostProcess, {
+          ShaderType::post_processing,
+          ShaderType::post_processing_tag,
+      }},
+      {RenderPriority::Debug},
+  };
 
   // Get all entities for a specific render pass
   template <typename EntityContainer>
