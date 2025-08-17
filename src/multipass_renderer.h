@@ -124,15 +124,16 @@ private:
 
       const auto &shader = shader_lib.get(shader_type);
 
-      // Begin shader mode - this activates the shader for all subsequent rendering
+      // Begin shader mode - this activates the shader for all subsequent
+      // rendering
       raylib::BeginShaderMode(shader);
 
       // Set common uniforms that this shader expects (time, resolution, etc.)
       set_common_uniforms(shader_type, shader);
 
-      // Note: The actual entity rendering is handled by existing rendering systems
-      // The shader is now active and will be applied to any rendering calls made
-      // until EndShaderMode() is called
+      // Note: The actual entity rendering is handled by existing rendering
+      // systems The shader is now active and will be applied to any rendering
+      // calls made until EndShaderMode() is called
 
       // End shader mode - deactivates the current shader
       raylib::EndShaderMode();
