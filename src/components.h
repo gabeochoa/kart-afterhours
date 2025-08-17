@@ -441,22 +441,21 @@ struct HasShader : BaseComponent {
 
   // Easy debugging
   std::string get_debug_info() const {
-    if (shaders.empty())
+    if (shaders.empty()) {
       return "No shaders";
-
-    // Use thread_local buffer to avoid allocations every frame
-    static thread_local std::string buffer;
-    buffer.clear();
-    buffer.reserve(shaders.size() * 15);
-
-    buffer += "Shaders: ";
-    for (const auto &shader : shaders) {
-      buffer +=
-          std::string(ShaderUtils::to_string(shader)); // No string allocation
-      buffer += " ";
     }
-    buffer += "Priority: " + std::to_string(static_cast<int>(render_priority));
-    return buffer;
+
+    // Build debug info with minimal allocations
+    std::string result = "Shaders: ";
+    result.reserve(shaders.size() * 15 + 20); // Estimate size needed
+
+    for (const auto &shader : shaders) {
+      result += ShaderUtils::to_string(shader);
+      result += " ";
+    }
+
+    result += "Priority: " + std::to_string(static_cast<int>(render_priority));
+    return result;
   }
 
   // Fast shader validation using cached set

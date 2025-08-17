@@ -60,7 +60,8 @@ private:
 
   // Render a single pass with its configuration
   template <typename EntityContainer>
-  void render_single_pass(const EntityContainer &entities, const PassConfig &pass_config) {
+  void render_single_pass(const EntityContainer &entities,
+                          const PassConfig &pass_config) {
     // Clear before pass if configured
     if (pass_config.clear_before) {
       raylib::ClearBackground(pass_config.clear_color);
@@ -237,14 +238,14 @@ private:
     result += ShaderPassRegistry::get().get_debug_info();
     result += "\nPass Configurations:\n";
 
+    // Build pass configuration info
     for (const auto &config : pass_configs) {
-      result += "  " + std::to_string(static_cast<int>(config.priority)) +
-                " - Clear Before: " + (config.clear_before ? "true" : "false") +
-                ", Clear After: " + (config.clear_after ? "true" : "false") +
-                "\n";
+      result += "  " + std::to_string(static_cast<int>(config.priority));
+      result += " - Clear Before: " + (config.clear_before ? "true" : "false");
+      result += ", Clear After: " + (config.clear_after ? "true" : "false");
+      result += "\n";
     }
 
     return result;
   }
 };
-
