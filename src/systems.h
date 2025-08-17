@@ -849,16 +849,14 @@ struct ProjectileSpawnSystem : System<WeaponFired, Transform> {
       break;
     }
 
-    const float base_angle = entity.get<Transform>().angle;
-
     make_poof_anim(entity,
                    static_cast<Weapon::FiringDirection>(evt.firing_direction),
-                   base_angle, 0.f);
+                   entity.get<Transform>().angle, 0.f);
 
     for (float ao : cfg.angle_offsets) {
       make_bullet(entity, cfg,
                   static_cast<Weapon::FiringDirection>(evt.firing_direction),
-                  base_angle, ao);
+                  ao);
     }
   }
 };
