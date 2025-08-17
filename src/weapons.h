@@ -85,7 +85,9 @@ struct Cannon : Weapon {
                    .cooldownReset = 1.f,
                    .knockback_amt = 0.25f,
                    .base_damage = kill_shots_to_base_dmg(3),
-                   .sound = SoundConfig{.name = sound_file_to_str(SoundFile::Weapon_Canon_Shot), .has_multiple = false},
+                   .sound = SoundConfig{.name = sound_file_to_str(
+                                            SoundFile::Weapon_Canon_Shot),
+                                        .has_multiple = false},
                },
                fd) {}
 };
@@ -98,7 +100,9 @@ struct Sniper : Weapon {
                    .cooldownReset = 3.f,
                    .knockback_amt = 0.50f,
                    .base_damage = kill_shots_to_base_dmg(1),
-                   .sound = SoundConfig{.name = sound_file_to_str(SoundFile::Weapon_Sniper_Shot), .has_multiple = false},
+                   .sound = SoundConfig{.name = sound_file_to_str(
+                                            SoundFile::Weapon_Sniper_Shot),
+                                        .has_multiple = false},
                },
                fd) {}
 };
@@ -111,7 +115,9 @@ struct Shotgun : Weapon {
                    .cooldownReset = 3.f,
                    .knockback_amt = 0.50f,
                    .base_damage = kill_shots_to_base_dmg(4),
-                   .sound = SoundConfig{.name = sound_file_to_str(SoundFile::Weapon_Shotgun_Shot), .has_multiple = false},
+                   .sound = SoundConfig{.name = sound_file_to_str(
+                                            SoundFile::Weapon_Shotgun_Shot),
+                                        .has_multiple = false},
                },
                fd) {}
 };
@@ -121,17 +127,21 @@ struct MachineGun : Weapon {
   MachineGun(const Weapon::FiringDirection &fd)
       : Weapon(
             Weapon::Type::MachineGun, //
-            Weapon::Config{.cooldownReset = 0.2f,
-                           .knockback_amt = 0.1f,
-                           .base_damage = kill_shots_to_base_dmg(12),
-                           .size = vec2{10., 10.f},
-                           .speed = ::Config::get().machine_gun_fire_rate.data,
-                           .acceleration = 2.f,
-                           .life_time_seconds = 1.f,
-                           .spread = 1.f,
-                           .can_wrap_around = false,
-                           .render_out_of_bounds = false,
-                           .sound = SoundConfig{.name = "SPAS-12_-_FIRING_-_Pump_Action_-_Take_1_-_20m_In_Front_-_AB_-_MKH8020_", .has_multiple = true}},
+            Weapon::Config{
+                .cooldownReset = 0.2f,
+                .knockback_amt = 0.1f,
+                .base_damage = kill_shots_to_base_dmg(12),
+                .size = vec2{10., 10.f},
+                .speed = ::Config::get().machine_gun_fire_rate.data,
+                .acceleration = 2.f,
+                .life_time_seconds = 1.f,
+                .spread = 1.f,
+                .can_wrap_around = false,
+                .render_out_of_bounds = false,
+                .sound =
+                    SoundConfig{.name = "SPAS-12_-_FIRING_-_Pump_Action_-_Take_"
+                                        "1_-_20m_In_Front_-_AB_-_MKH8020_",
+                                .has_multiple = true}},
             fd) {}
 };
 
@@ -171,7 +181,7 @@ struct CanShoot : BaseComponent {
     return weapons[action]->pass_time(dt);
   }
 
-  bool fire(Entity &parent, InputAction action, float dt) {
+  bool fire(Entity &, InputAction action, float dt) {
     if (!weapons.contains(action))
       return false;
     if (weapons[action]->fire(dt)) {
