@@ -5,6 +5,9 @@
 #include <string_view>
 
 // Render priority system to replace magic numbers
+// Priority gaps allow for future insertion of new render passes without
+// renumbering existing ones. This maintains ABI stability and makes it
+// easier to add passes between existing ones.
 enum class RenderPriority {
   Background = 0,    // Sky, terrain, map background
   Entities = 100,    // Cars, items, game objects
