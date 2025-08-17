@@ -52,7 +52,7 @@ struct GameStateManager {
                          .whereHasComponent<HasShader>()
                          .gen()) {
       auto &shader = e.get<HasShader>();
-      if (shader.shader_name != std::string("car_winner")) {
+      if (!shader.has_shader(ShaderType::CarWinner)) {
         continue;
       }
       bool is_new_winner = false;
@@ -63,7 +63,7 @@ struct GameStateManager {
         }
       }
       if (!is_new_winner) {
-        shader.shader_name = "car";
+        shader.set_shader_name("car");
       }
     }
 

@@ -121,8 +121,8 @@ struct RenderSpritesWithShaders
         hasColor.color());
 #else
     // Original shader rendering for non-Windows platforms
-    if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
-      log_warn("Shader not found: {}", hasShader.shader_name);
+    if (!ShaderLibrary::get().contains(hasShader.get_shader_name())) {
+      log_warn("Shader not found: {}", hasShader.get_shader_name());
       return;
     }
 
@@ -149,14 +149,14 @@ struct RenderSpritesWithShaders
     float dest_height = source_frame.height * hasSprite.scale;
 
     // Apply shader and render
-    const auto &shader = ShaderLibrary::get().get(hasShader.shader_name);
+    const auto &shader = ShaderLibrary::get().get(hasShader.get_shader_name());
     raylib::BeginShaderMode(shader);
 
     // winnerRainbow toggle: on for car_winner, off otherwise
     int rainbowLoc = raylib::GetShaderLocation(shader, "winnerRainbow");
     if (rainbowLoc != -1) {
       float rainbowOn =
-          (hasShader.shader_name == std::string("car_winner")) ? 1.0f : 0.0f;
+          (hasShader.has_shader(ShaderType::CarWinner)) ? 1.0f : 0.0f;
       raylib::SetShaderValue(shader, rainbowLoc, &rainbowOn,
                              raylib::SHADER_UNIFORM_FLOAT);
     }
@@ -211,7 +211,7 @@ struct RenderSpritesWithShaders
     }
 
     // Pass speed percentage uniform for car shader
-    if (hasShader.shader_name == "car") {
+    if (hasShader.has_shader(ShaderType::Car)) {
       float speedPercent = transform.speed() / Config::get().max_speed.data;
       int speedLocation = raylib::GetShaderLocation(shader, "speed");
       if (speedLocation != -1) {
@@ -253,13 +253,13 @@ struct RenderAnimationsWithShaders
                              const afterhours::texture_manager::HasAnimation &,
                              const HasShader &hasShader, const HonkState &honk,
                              float) const override {
-    if (!ShaderLibrary::get().contains(hasShader.shader_name)) {
-      log_warn("Shader not found: {}", hasShader.shader_name);
+    if (!ShaderLibrary::get().contains(hasShader.get_shader_name())) {
+      log_warn("Shader not found: {}", hasShader.get_shader_name());
       return;
     }
 
     // Apply shader
-    const auto &shader = ShaderLibrary::get().get(hasShader.shader_name);
+    const auto &shader = ShaderLibrary::get().get(hasShader.get_shader_name());
     raylib::BeginShaderMode(shader);
 
     // Render animation entities as SKYBLUE for visual distinction
@@ -672,15 +672,15 @@ struct RenderEntities : System<Transform> {
     if (has_shader) {
       const auto &shader_component = entity.get<HasShader>();
 
-      if (ShaderLibrary::get().contains(shader_component.shader_name)) {
+          if (ShaderLibrary::get().contains(shader_component.get_shader_name())) {
 
-        const auto &shader =
-            ShaderLibrary::get().get(shader_component.shader_name);
-        raylib::BeginShaderMode(shader);
-        render_color = raylib::MAGENTA;
-      } else {
-        log_warn("Shader not found in library: {}",
-                 shader_component.shader_name);
+      const auto &shader =
+          ShaderLibrary::get().get(shader_component.get_shader_name());
+      raylib::BeginShaderMode(shader);
+      render_color = raylib::MAGENTA;
+    } else {
+      log_warn("Shader not found in library: {}",
+               shader_component.get_shader_name());
         has_shader = false;
         render_color = entity.has_child_of<HasColor>()
                            ? entity.get_with_child<HasColor>().color()
@@ -980,7 +980,7 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
     const vec2 markPosition = transform.center();
     const bool useWinnerColors =
         entity.has<HasShader>() &&
-        (entity.get<HasShader>().shader_name == std::string("car_winner"));
+        (entity.get<HasShader>().has_shader(ShaderType::CarWinner));
     const float markHue = useWinnerColors ? tire.rolling_hue : 0.0f;
     tire.add_mark(markPosition, !tire.added_last_frame, markHue);
     tire.added_last_frame = true;
@@ -1017,7 +1017,7 @@ struct RenderSkid : System<Transform, TireMarkComponent> {
                              float) const override {
     const bool useWinnerColors =
         entity.has<HasShader>() &&
-        (entity.get<HasShader>().shader_name == std::string("car_winner"));
+        (entity.get<HasShader>().has_shader(ShaderType::CarWinner));
     const float offsetX = 7.f;
     const float offsetY = 4.f;
     render_single_tire(tire, vec2{offsetX, offsetY}, useWinnerColors);
@@ -1838,7 +1838,7 @@ struct ApplyWinnerShader
     : System<tags::All<GameTag::IsLastRoundsWinner>, HasShader> {
   virtual void for_each_with(Entity &entity, HasShader &hasShader,
                              float) override {
-    hasShader.shader_name = "car_winner";
+    hasShader.set_shader_name("car_winner");
     entity.disableTag(GameTag::IsLastRoundsWinner);
   }
 };
