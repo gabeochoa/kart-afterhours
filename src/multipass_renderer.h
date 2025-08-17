@@ -20,9 +20,9 @@ struct MultipassRenderer {
     bool clear_after = false;
     raylib::Color clear_color = raylib::BLACK;
 
-    PassConfig(RenderPriority p, bool clear_before = false,
-               bool clear_after = false,
-               raylib::Color clear_color = raylib::BLACK)
+    constexpr PassConfig(RenderPriority p, bool clear_before = false,
+                         bool clear_after = false,
+                         raylib::Color clear_color = raylib::BLACK)
         : priority(p), clear_before(clear_before), clear_after(clear_after),
           clear_color(clear_color) {}
   };
@@ -43,10 +43,10 @@ struct MultipassRenderer {
   // Render all passes in priority order
   template <typename EntityContainer>
   void render_all_passes(EntityContainer &entities) {
-    auto &registry = ShaderPassRegistry::get();
-    auto &shader_lib = ShaderLibrary::get();
+    ShaderPassRegistry &registry = ShaderPassRegistry::get();
+    ShaderLibrary &shader_lib = ShaderLibrary::get();
 
-    for (const auto &pass_config : pass_configs) {
+    for (const PassConfig &pass_config : pass_configs) {
       if (!registry.is_pass_enabled(pass_config.priority)) {
         continue;
       }
@@ -69,28 +69,29 @@ struct MultipassRenderer {
   // Render a specific pass
   template <typename EntityContainer>
   void render_pass(EntityContainer &entities, RenderPriority priority) {
-    auto &registry = ShaderPassRegistry::get();
-    auto &shader_lib = ShaderLibrary::get();
+    ShaderPassRegistry &registry = ShaderPassRegistry::get();
+    ShaderLibrary &shader_lib = ShaderLibrary::get();
 
     // Get entities for this pass
-    auto pass_entities = registry.get_entities_for_pass(entities, priority);
+    RefEntities pass_entities =
+        registry.get_entities_for_pass(entities, priority);
 
     // Render each entity in this pass
-    for (Entity *entity : pass_entities) {
-      if (!entity->has<HasShader>())
+    for (const RefEntity &entity_ref : pass_entities) {
+      if (!entity_ref.has<HasShader>())
         continue;
 
-      const auto &shader_comp = entity->get<HasShader>();
+      const HasShader &shader_comp = entity_ref.get<HasShader>();
       if (!shader_comp.enabled)
         continue;
 
       // Render entity with its shaders
-      render_entity(*entity, shader_comp);
+      render_entity(entity_ref, shader_comp);
     }
   }
 
   // Render a single entity with its shaders
-  void render_entity(const Entity &entity, const HasShader &shader_comp) {
+  void render_entity(const RefEntity &entity, const HasShader &shader_comp) {
     auto &shader_lib = ShaderLibrary::get();
 
     // Apply each shader in order
@@ -193,7 +194,7 @@ struct MultipassRenderer {
   }
 
   // Get pass configuration
-  const PassConfig *get_pass_config(RenderPriority priority) const {
+  constexpr const PassConfig *get_pass_config(RenderPriority priority) const {
     for (const auto &config : pass_configs) {
       if (config.priority == priority) {
         return &config;

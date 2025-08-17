@@ -52,7 +52,7 @@ struct GameStateManager {
                          .whereHasComponent<HasShader>()
                          .gen()) {
       auto &shader = e.get<HasShader>();
-      if (!shader.has_shader(ShaderType::CarWinner)) {
+      if (!shader.has_shader(ShaderType::car_winner)) {
         continue;
       }
       bool is_new_winner = false;
@@ -63,7 +63,9 @@ struct GameStateManager {
         }
       }
       if (!is_new_winner) {
-        shader.set_shader_name("car");
+        shader.shaders.clear();
+        shader.shaders.push_back(ShaderType::car);
+        shader.shader_set_cache.reset();
       }
     }
 

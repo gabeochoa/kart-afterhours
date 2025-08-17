@@ -49,7 +49,7 @@ private:
     renderer.configure_pass(RenderPriority::Debug, false, true, raylib::BLACK);
   }
 
-  bool should_show_debug_info() const {
+  constexpr bool should_show_debug_info() const {
     // Example: Show debug info when F3 is pressed or in debug mode
     // This is just a placeholder - implement based on your input system
     return false; // Change this based on your debug key or game state
@@ -100,8 +100,8 @@ struct MultipassUniformSystem : System<> {
 
     // Example: Update entity uniforms based on game state
     for (const auto &shader_type : shader_comp.shaders) {
-      if (shader_type == ShaderType::Car ||
-          shader_type == ShaderType::CarWinner) {
+      if (shader_type == ShaderType::car ||
+          shader_type == ShaderType::car_winner) {
         // This is a car shader, set car-specific uniforms
         update_car_uniforms(entity, shader_type);
       }

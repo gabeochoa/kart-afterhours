@@ -2,13 +2,13 @@
 #pragma once
 
 #include "shader_types.h"
+#include <algorithm>
 #include <map>
 #include <memory>
-#include <string>
-#include <vector>
-#include <unordered_set>
 #include <optional>
-#include <algorithm>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 #include "input_mapping.h"
 #include "math_util.h"
@@ -432,78 +432,65 @@ struct SpeedAffector : CarAffector {
 };
 
 struct HasShader : BaseComponent {
-  std::vector<ShaderType> shaders;  // Multiple shaders per entity using enums
-  RenderPriority render_priority = RenderPriority::Entities;  // When to render
+  std::vector<ShaderType> shaders; // Multiple shaders per entity using enums
+  RenderPriority render_priority = RenderPriority::Entities; // When to render
   bool enabled = true;
-  
+
   // Cache for fast shader lookups (mutable for const methods)
   mutable std::optional<std::unordered_set<ShaderType>> shader_set_cache;
-  
+
   // Easy debugging
   std::string get_debug_info() const {
-    if (shaders.empty()) return "No shaders";
-    
+    if (shaders.empty())
+      return "No shaders";
+
     // Use thread_local buffer to avoid allocations every frame
     static thread_local std::string buffer;
     buffer.clear();
     buffer.reserve(shaders.size() * 15);
-    
+
     buffer += "Shaders: ";
-    for (const auto& shader : shaders) {
-      buffer += std::string(ShaderUtils::to_string(shader));  // No string allocation
+    for (const auto &shader : shaders) {
+      buffer +=
+          std::string(ShaderUtils::to_string(shader)); // No string allocation
       buffer += " ";
     }
     buffer += "Priority: " + std::to_string(static_cast<int>(render_priority));
     return buffer;
   }
-  
+
   // Fast shader validation using cached set
   bool has_shader(ShaderType shader) const {
     // Rebuild cache if shaders changed
     if (!shader_set_cache.has_value()) {
-      shader_set_cache = std::unordered_set<ShaderType>(shaders.begin(), shaders.end());
+      shader_set_cache =
+          std::unordered_set<ShaderType>(shaders.begin(), shaders.end());
     }
     return shader_set_cache->contains(shader);
   }
-  
+
   // Constructor helpers
   HasShader(ShaderType shader) : shaders{shader} {}
-  HasShader(const std::vector<ShaderType>& shader_list) : shaders(shader_list) {}
-  
-  // Backward compatibility constructors
-  HasShader(const std::string& name) : shaders{ShaderUtils::from_string(name)} {}
-  HasShader(const char* name) : shaders{ShaderUtils::from_string(std::string(name))} {}
-  
+  HasShader(const std::vector<ShaderType> &shader_list)
+      : shaders(shader_list) {}
+
   // Methods to modify shaders (invalidate cache)
   void add_shader(ShaderType shader) {
     shaders.push_back(shader);
-    shader_set_cache.reset();  // Invalidate cache
+    shader_set_cache.reset(); // Invalidate cache
   }
-  
+
   void remove_shader(ShaderType shader) {
     auto it = std::find(shaders.begin(), shaders.end(), shader);
     if (it != shaders.end()) {
       shaders.erase(it);
-      shader_set_cache.reset();  // Invalidate cache
+      shader_set_cache.reset(); // Invalidate cache
     }
   }
-  
+
   void clear_shaders() {
     shaders.clear();
-    shader_set_cache.reset();  // Invalidate cache
-  }
-  
-  // Backward compatibility - get first shader name
-  std::string get_shader_name() const {
-    if (shaders.empty()) return "";
-    return std::string(ShaderUtils::to_string(shaders[0]));
-  }
-  
-  // Backward compatibility - set single shader
-  void set_shader_name(const std::string& name) {
-    shaders.clear();
-    shaders.push_back(ShaderUtils::from_string(name));
-    shader_set_cache.reset();
+    shader_set_cache.reset(); // Invalidate cache
   }
 };
 
@@ -512,8 +499,6 @@ struct WantsBoost : BaseComponent {};
 struct HonkState : BaseComponent {
   bool was_down = false;
 };
-
-
 
 struct SoundEmitter : BaseComponent {
   int default_alias_copies = 4;

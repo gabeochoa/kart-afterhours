@@ -121,8 +121,14 @@ struct RenderSpritesWithShaders
         hasColor.color());
 #else
     // Original shader rendering for non-Windows platforms
-    if (!ShaderLibrary::get().contains(hasShader.get_shader_name())) {
-      log_warn("Shader not found: {}", hasShader.get_shader_name());
+    if (hasShader.shaders.empty()) {
+      log_warn("No shaders found in HasShader component");
+      return;
+    }
+
+    ShaderType primary_shader = hasShader.shaders[0];
+    if (!ShaderLibrary::get().contains(primary_shader)) {
+      log_warn("Shader not found: {}", static_cast<int>(primary_shader));
       return;
     }
 
@@ -149,14 +155,14 @@ struct RenderSpritesWithShaders
     float dest_height = source_frame.height * hasSprite.scale;
 
     // Apply shader and render
-    const auto &shader = ShaderLibrary::get().get(hasShader.get_shader_name());
+    const auto &shader = ShaderLibrary::get().get(primary_shader);
     raylib::BeginShaderMode(shader);
 
     // winnerRainbow toggle: on for car_winner, off otherwise
     int rainbowLoc = raylib::GetShaderLocation(shader, "winnerRainbow");
     if (rainbowLoc != -1) {
       float rainbowOn =
-          (hasShader.has_shader(ShaderType::CarWinner)) ? 1.0f : 0.0f;
+          (hasShader.has_shader(ShaderType::car_winner)) ? 1.0f : 0.0f;
       raylib::SetShaderValue(shader, rainbowLoc, &rainbowOn,
                              raylib::SHADER_UNIFORM_FLOAT);
     }
@@ -211,7 +217,7 @@ struct RenderSpritesWithShaders
     }
 
     // Pass speed percentage uniform for car shader
-    if (hasShader.has_shader(ShaderType::Car)) {
+    if (hasShader.has_shader(ShaderType::car)) {
       float speedPercent = transform.speed() / Config::get().max_speed.data;
       int speedLocation = raylib::GetShaderLocation(shader, "speed");
       if (speedLocation != -1) {
@@ -253,13 +259,19 @@ struct RenderAnimationsWithShaders
                              const afterhours::texture_manager::HasAnimation &,
                              const HasShader &hasShader, const HonkState &honk,
                              float) const override {
-    if (!ShaderLibrary::get().contains(hasShader.get_shader_name())) {
-      log_warn("Shader not found: {}", hasShader.get_shader_name());
+    if (hasShader.shaders.empty()) {
+      log_warn("No shaders found in HasShader component");
+      return;
+    }
+
+    ShaderType primary_shader = hasShader.shaders[0];
+    if (!ShaderLibrary::get().contains(primary_shader)) {
+      log_warn("Shader not found: {}", static_cast<int>(primary_shader));
       return;
     }
 
     // Apply shader
-    const auto &shader = ShaderLibrary::get().get(hasShader.get_shader_name());
+    const auto &shader = ShaderLibrary::get().get(primary_shader);
     raylib::BeginShaderMode(shader);
 
     // Render animation entities as SKYBLUE for visual distinction
@@ -408,8 +420,10 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
 
 struct BeginPostProcessingShader : System<> {
   virtual void once(float) override {
-    const bool hasBase = ShaderLibrary::get().contains("post_processing");
-    const bool hasTag = ShaderLibrary::get().contains("post_processing_tag");
+    const bool hasBase =
+        ShaderLibrary::get().contains(ShaderType::post_processing);
+    const bool hasTag =
+        ShaderLibrary::get().contains(ShaderType::post_processing_tag);
     auto &rm = RoundManager::get();
     bool useTagShader = false;
     if (rm.active_round_type == RoundType::TagAndGo) {
@@ -418,10 +432,11 @@ struct BeginPostProcessingShader : System<> {
     }
     const char *name =
         (useTagShader && hasTag) ? "post_processing_tag" : "post_processing";
-    if (!ShaderLibrary::get().contains(name)) {
+    if (!ShaderLibrary::get().contains(ShaderType::post_processing_tag)) {
       return;
     }
-    const auto &shader = ShaderLibrary::get().get(name);
+    const auto &shader =
+        ShaderLibrary::get().get(ShaderType::post_processing_tag);
     raylib::BeginShaderMode(shader);
     // Update common uniforms
     float t = static_cast<float>(raylib::GetTime());
@@ -444,7 +459,7 @@ struct BeginPostProcessingShader : System<> {
 
 struct ConfigureTaggerSpotlight : System<> {
   virtual void once(float) override {
-    if (!ShaderLibrary::get().contains("post_processing_tag")) {
+    if (!ShaderLibrary::get().contains(ShaderType::post_processing_tag)) {
       return;
     }
     // Always update common uniforms
@@ -497,7 +512,8 @@ struct ConfigureTaggerSpotlight : System<> {
   }
 
   void set_enabled(bool on) const {
-    const auto &shader = ShaderLibrary::get().get("post_processing_tag");
+    const auto &shader =
+        ShaderLibrary::get().get(ShaderType::post_processing_tag);
     float enabled = on ? 1.0f : 0.0f;
     int loc = raylib::GetShaderLocation(shader, "spotlightEnabled");
     if (loc != -1) {
@@ -508,7 +524,8 @@ struct ConfigureTaggerSpotlight : System<> {
 
   void set_values(bool on, vec2 pos, float radius, float softness, float dim,
                   float desat) const {
-    const auto &shader = ShaderLibrary::get().get("post_processing_tag");
+    const auto &shader =
+        ShaderLibrary::get().get(ShaderType::post_processing_tag);
     float enabled = on ? 1.0f : 0.0f;
     int locEnabled = raylib::GetShaderLocation(shader, "spotlightEnabled");
     if (locEnabled != -1) {
@@ -542,8 +559,9 @@ struct ConfigureTaggerSpotlight : System<> {
   }
 
   void set_common_uniforms() const {
-    if (ShaderLibrary::get().contains("post_processing")) {
-      const auto &shader = ShaderLibrary::get().get("post_processing");
+    if (ShaderLibrary::get().contains(ShaderType::post_processing)) {
+      const auto &shader =
+          ShaderLibrary::get().get(ShaderType::post_processing);
       float t = static_cast<float>(raylib::GetTime());
       int timeLoc = raylib::GetShaderLocation(shader, "time");
       if (timeLoc != -1) {
@@ -562,8 +580,9 @@ struct ConfigureTaggerSpotlight : System<> {
         }
       }
     }
-    if (ShaderLibrary::get().contains("post_processing_tag")) {
-      const auto &shader = ShaderLibrary::get().get("post_processing_tag");
+    if (ShaderLibrary::get().contains(ShaderType::post_processing_tag)) {
+      const auto &shader =
+          ShaderLibrary::get().get(ShaderType::post_processing_tag);
       float t = static_cast<float>(raylib::GetTime());
       int timeLoc = raylib::GetShaderLocation(shader, "time");
       if (timeLoc != -1) {
@@ -672,41 +691,42 @@ struct RenderEntities : System<Transform> {
     if (has_shader) {
       const auto &shader_component = entity.get<HasShader>();
 
-          if (ShaderLibrary::get().contains(shader_component.get_shader_name())) {
-
-      const auto &shader =
-          ShaderLibrary::get().get(shader_component.get_shader_name());
-      raylib::BeginShaderMode(shader);
-      render_color = raylib::MAGENTA;
-    } else {
-      log_warn("Shader not found in library: {}",
-               shader_component.get_shader_name());
-        has_shader = false;
+      if (!shader_component.shaders.empty()) {
+        ShaderType primary_shader = shader_component.shaders[0];
+        if (ShaderLibrary::get().contains(primary_shader)) {
+          const auto &shader = ShaderLibrary::get().get(primary_shader);
+          raylib::BeginShaderMode(shader);
+          render_color = raylib::MAGENTA;
+        } else {
+          log_warn("Shader not found in library: {}",
+                   static_cast<int>(primary_shader));
+          has_shader = false;
+          render_color = entity.has_child_of<HasColor>()
+                             ? entity.get_with_child<HasColor>().color()
+                             : raylib::RAYWHITE;
+        }
+      } else {
         render_color = entity.has_child_of<HasColor>()
                            ? entity.get_with_child<HasColor>().color()
                            : raylib::RAYWHITE;
       }
-    } else {
-      render_color = entity.has_child_of<HasColor>()
-                         ? entity.get_with_child<HasColor>().color()
-                         : raylib::RAYWHITE;
-    }
 
-    raylib::DrawRectanglePro(
-        Rectangle{
-            transform.center().x,
-            transform.center().y,
-            transform.size.x,
-            transform.size.y,
-        },
-        vec2{transform.size.x / 2.f, transform.size.y / 2.f}, transform.angle,
-        render_color);
+      raylib::DrawRectanglePro(
+          Rectangle{
+              transform.center().x,
+              transform.center().y,
+              transform.size.x,
+              transform.size.y,
+          },
+          vec2{transform.size.x / 2.f, transform.size.y / 2.f}, transform.angle,
+          render_color);
 
-    // End shader mode if we started it
-    if (has_shader) {
-      raylib::EndShaderMode();
+      // End shader mode if we started it
+      if (has_shader) {
+        raylib::EndShaderMode();
+      }
     }
-  }
+  };
 };
 
 struct UpdateColorBasedOnEntityID : System<HasEntityIDBasedColor> {
@@ -980,7 +1000,7 @@ struct SkidMarks : System<Transform, TireMarkComponent> {
     const vec2 markPosition = transform.center();
     const bool useWinnerColors =
         entity.has<HasShader>() &&
-        (entity.get<HasShader>().has_shader(ShaderType::CarWinner));
+        (entity.get<HasShader>().has_shader(ShaderType::car_winner));
     const float markHue = useWinnerColors ? tire.rolling_hue : 0.0f;
     tire.add_mark(markPosition, !tire.added_last_frame, markHue);
     tire.added_last_frame = true;
@@ -1017,7 +1037,7 @@ struct RenderSkid : System<Transform, TireMarkComponent> {
                              float) const override {
     const bool useWinnerColors =
         entity.has<HasShader>() &&
-        (entity.get<HasShader>().has_shader(ShaderType::CarWinner));
+        (entity.get<HasShader>().has_shader(ShaderType::car_winner));
     const float offsetX = 7.f;
     const float offsetY = 4.f;
     render_single_tire(tire, vec2{offsetX, offsetY}, useWinnerColors);
@@ -1209,7 +1229,8 @@ struct UpdateCollidingEntities : PausableSystem<Transform> {
     vec2 relativeVelocity = b.velocity - a.velocity;
     float velocityAlongNormal = vec_dot(relativeVelocity, collisionNormal);
 
-    // Prevent objects from "sticking" or resolving collisions when moving apart
+    // Prevent objects from "sticking" or resolving collisions when moving
+    // apart
     if (velocityAlongNormal > 0.0f)
       return 0.0f;
 
@@ -1517,8 +1538,8 @@ struct ProcessCollisionAbsorption : System<Transform, CollisionAbsorber> {
   virtual void for_each_with(Entity &entity, Transform &transform,
                              CollisionAbsorber &collision_absorber,
                              float) override {
-    // We let the absorbed things (e.g. bullets) manage cleaning themselves up,
-    // rather than the other way around.
+    // We let the absorbed things (e.g. bullets) manage cleaning themselves
+    // up, rather than the other way around.
     if (collision_absorber.absorber_type ==
         CollisionAbsorber::AbsorberType::Absorber) {
       return;
@@ -1642,8 +1663,8 @@ struct RenderLabels : System<Transform, HasLabels> {
     const auto width = transform.rect().width;
     const auto height = transform.rect().height;
 
-    // Makes the label percentages scale from top-left of the object rect as (0,
-    // 0)
+    // Makes the label percentages scale from top-left of the object rect as
+    // (0, 0)
     const auto base_x_offset = transform.pos().x - width;
     const auto base_y_offset = transform.pos().y - height;
 
@@ -1838,7 +1859,9 @@ struct ApplyWinnerShader
     : System<tags::All<GameTag::IsLastRoundsWinner>, HasShader> {
   virtual void for_each_with(Entity &entity, HasShader &hasShader,
                              float) override {
-    hasShader.set_shader_name("car_winner");
+    hasShader.shaders.clear();
+    hasShader.shaders.push_back(ShaderType::car_winner);
+    hasShader.shader_set_cache.reset();
     entity.disableTag(GameTag::IsLastRoundsWinner);
   }
 };

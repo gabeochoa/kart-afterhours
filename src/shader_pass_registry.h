@@ -14,49 +14,60 @@ struct ShaderPassRegistry {
   // Pass configuration for different render priorities
   struct RenderPass {
     RenderPriority priority;
-    std::string name;
     std::vector<ShaderType> required_shaders;
     bool enabled = true;
 
-    RenderPass(RenderPriority p, const std::string &n,
-               std::vector<ShaderType> shaders = {})
-        : priority(p), name(n), required_shaders(std::move(shaders)) {}
+    constexpr RenderPass(RenderPriority p, std::vector<ShaderType> shaders = {})
+        : priority(p), required_shaders(std::move(shaders)) {}
   };
 
   // Pre-defined render passes
-  std::vector<RenderPass> render_passes = {
-      {RenderPriority::Background, "Background"},
-      {RenderPriority::Entities,
-       "Entities",
-       {ShaderType::Car, ShaderType::CarWinner, ShaderType::EntityEnhanced,
-        ShaderType::EntityTest}},
-      {RenderPriority::Particles, "Particles"},
-      {RenderPriority::UI, "UI"},
-      {RenderPriority::PostProcess,
-       "PostProcess",
-       {ShaderType::PostProcessing, ShaderType::PostProcessingTag}},
-      {RenderPriority::Debug, "Debug"}};
+  constexpr static std::vector<RenderPass> render_passes = //
+      {{
+           RenderPriority::Background,
+       },
+       {RenderPriority::Entities,
+        {
+            ShaderType::car,
+            ShaderType::car_winner,
+            ShaderType::entity_enhanced,
+            ShaderType::entity_test,
+        }},
+       {
+           RenderPriority::Particles,
+       },
+       {
+           RenderPriority::UI,
+       },
+       {RenderPriority::PostProcess,
+        {
+            ShaderType::post_processing,
+            ShaderType::post_processing_tag,
+        }},
+       {
+           RenderPriority::Debug,
+       }};
 
   // Get all entities for a specific render pass
   template <typename EntityContainer>
-  std::vector<Entity *> get_entities_for_pass(EntityContainer &entities,
-                                              RenderPriority priority) const {
-    std::vector<Entity *> result;
+  RefEntities get_entities_for_pass(EntityContainer &entities,
+                                    RenderPriority priority) const {
+    RefEntities result;
 
-    for (auto &entity : entities) {
+    for (Entity &entity : entities) {
       if (entity.has<HasShader>()) {
-        const auto &shader_comp = entity.get<HasShader>();
+        const HasShader &shader_comp = entity.get<HasShader>();
         if (shader_comp.render_priority == priority && shader_comp.enabled) {
-          result.push_back(&entity);
+          result.push_back(entity);
         }
       }
     }
 
     // Sort by priority (lower numbers first)
     std::sort(result.begin(), result.end(),
-              [](const Entity *a, const Entity *b) {
-                const auto &shader_a = a->get<HasShader>();
-                const auto &shader_b = b->get<HasShader>();
+              [](const RefEntity a, const RefEntity b) {
+                const HasShader &shader_a = a.get<HasShader>();
+                const HasShader &shader_b = b.get<HasShader>();
                 return static_cast<int>(shader_a.render_priority) <
                        static_cast<int>(shader_b.render_priority);
               });
@@ -65,7 +76,7 @@ struct ShaderPassRegistry {
   }
 
   // Get all render passes in priority order
-  const std::vector<RenderPass> &get_render_passes() const {
+  constexpr const std::vector<RenderPass> &get_render_passes() const {
     return render_passes;
   }
 
@@ -109,9 +120,9 @@ struct ShaderPassRegistry {
   }
 
   // Add custom render pass
-  void add_custom_pass(RenderPriority priority, const std::string &name,
+  void add_custom_pass(RenderPriority priority,
                        std::vector<ShaderType> shaders = {}) {
-    render_passes.emplace_back(priority, name, std::move(shaders));
+    render_passes.emplace_back(priority, std::move(shaders));
 
     // Re-sort by priority
     std::sort(render_passes.begin(), render_passes.end(),
@@ -135,9 +146,9 @@ struct ShaderPassRegistry {
   std::string get_debug_info() const {
     std::string result = "Render Passes:\n";
     for (const auto &pass : render_passes) {
-      result += "  " + pass.name + " (Priority: " +
+      result += "  Priority " +
                 std::to_string(static_cast<int>(pass.priority)) +
-                ", Enabled: " + (pass.enabled ? "true" : "false") + ")\n";
+                " (Enabled: " + (pass.enabled ? "true" : "false") + ")\n";
     }
     return result;
   }
