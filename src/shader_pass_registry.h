@@ -50,7 +50,7 @@ struct ShaderPassRegistry {
 
   // Get all entities for a specific render pass
   template <typename EntityContainer>
-  RefEntities get_entities_for_pass(EntityContainer &entities,
+  RefEntities get_entities_for_pass(const EntityContainer &entities,
                                     RenderPriority priority) const {
     RefEntities result;
 

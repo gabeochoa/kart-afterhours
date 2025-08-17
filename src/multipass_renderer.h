@@ -42,7 +42,7 @@ struct MultipassRenderer {
 
   // Render all passes in priority order
   template <typename EntityContainer>
-  void render_all_passes(EntityContainer &entities) {
+  void render_all_passes(const EntityContainer &entities) {
     ShaderPassRegistry &registry = ShaderPassRegistry::get();
     ShaderLibrary &shader_lib = ShaderLibrary::get();
 
@@ -68,7 +68,7 @@ struct MultipassRenderer {
 
   // Render a specific pass
   template <typename EntityContainer>
-  void render_pass(EntityContainer &entities, RenderPriority priority) {
+  void render_pass(const EntityContainer &entities, RenderPriority priority) {
     ShaderPassRegistry &registry = ShaderPassRegistry::get();
     ShaderLibrary &shader_lib = ShaderLibrary::get();
 
