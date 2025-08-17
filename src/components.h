@@ -1,13 +1,20 @@
 
 #pragma once
 
+#include "shader_types.h"
+#include <algorithm>
 #include <map>
 #include <memory>
+#include <optional>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 #include "input_mapping.h"
 #include "math_util.h"
 #include "max_health.h"
 #include "rl.h"
+#include "sound_library.h"
 
 // Note: This must be included after std includes
 #include "config.h"
@@ -425,10 +432,65 @@ struct SpeedAffector : CarAffector {
 };
 
 struct HasShader : BaseComponent {
-  std::string shader_name;
+  std::vector<ShaderType> shaders; // Multiple shaders per entity using enums
+  RenderPriority render_priority = RenderPriority::Entities; // When to render
+  bool enabled = true;
 
-  HasShader(const std::string &name) : shader_name(name) {}
-  HasShader(const char *name) : shader_name(name) {}
+  // Cache for fast shader lookups (mutable for const methods)
+  mutable std::optional<std::unordered_set<ShaderType>> shader_set_cache;
+
+  // Easy debugging
+  std::string get_debug_info() const {
+    if (shaders.empty()) {
+      return "No shaders";
+    }
+
+    // Build debug info with minimal allocations
+    std::string result = "Shaders: ";
+    result.reserve(shaders.size() * 15 + 20); // Estimate size needed
+
+    for (const auto &shader : shaders) {
+      result += ShaderUtils::to_string(shader);
+      result += " ";
+    }
+
+    result += "Priority: " + std::to_string(static_cast<int>(render_priority));
+    return result;
+  }
+
+  // Fast shader validation using cached set
+  bool has_shader(ShaderType shader) const {
+    // Rebuild cache if shaders changed
+    if (!shader_set_cache.has_value()) {
+      shader_set_cache =
+          std::unordered_set<ShaderType>(shaders.begin(), shaders.end());
+    }
+    return shader_set_cache->contains(shader);
+  }
+
+  // Constructor helpers
+  HasShader(ShaderType shader) : shaders{shader} {}
+  HasShader(const std::vector<ShaderType> &shader_list)
+      : shaders(shader_list) {}
+
+  // Methods to modify shaders (invalidate cache)
+  void add_shader(ShaderType shader) {
+    shaders.push_back(shader);
+    shader_set_cache.reset(); // Invalidate cache
+  }
+
+  void remove_shader(ShaderType shader) {
+    auto it = std::find(shaders.begin(), shaders.end(), shader);
+    if (it != shaders.end()) {
+      shaders.erase(it);
+      shader_set_cache.reset(); // Invalidate cache
+    }
+  }
+
+  void clear_shaders() {
+    shaders.clear();
+    shader_set_cache.reset(); // Invalidate cache
+  }
 };
 
 struct WantsBoost : BaseComponent {};
@@ -436,10 +498,6 @@ struct WantsBoost : BaseComponent {};
 struct HonkState : BaseComponent {
   bool was_down = false;
 };
-
-#include "sound_library.h"
-#include <string>
-#include <vector>
 
 struct SoundEmitter : BaseComponent {
   int default_alias_copies = 4;

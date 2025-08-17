@@ -269,7 +269,7 @@ Entity &make_car(size_t id) {
       transform.position, transform.size, transform.angle,
       idx_to_sprite_frame(0, 1), 1.f, entity.get<HasColor>().color());
 
-  entity.addComponent<HasShader>("car");
+  entity.addComponent<HasShader>(ShaderType::car);
 
   auto &enabled_weapons = RoundManager::get().get_enabled_weapons();
   auto &can_shoot = entity.addComponent<CanShoot>();
