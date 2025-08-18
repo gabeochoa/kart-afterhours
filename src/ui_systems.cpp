@@ -1353,11 +1353,11 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                ComponentConfig{}
                    .with_size(ComponentSize{percent(1.f), percent(0.5f)})
                    .with_margin(Margin{.top = screen_pct(0.01f)})
-                   .with_flex_direction(FlexDirection::Column)
+                   .with_flex_direction(FlexDirection::Row)
                    .with_debug_name("map_list"));
 
   auto map_grid_button_size =
-      ComponentSize{screen_pct(200.f / 1280.f), screen_pct(100.f / 720.f)};
+      ComponentSize{percent(0.48f), screen_pct(100.f / 720.f)};
 
   {
     float inner_margin = 0.01f;
@@ -1371,7 +1371,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                                 .bottom = percent(inner_margin),
                                 .left = percent(inner_margin),
                                 .right = percent(inner_margin)})
-
+            .with_flex_direction(FlexDirection::Row)
             .with_opacity(0.0f)
             .with_translate(-2000.0f, 0.0f)
             .with_debug_name("map_card_random"));
@@ -1478,7 +1478,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                                             .bottom = percent(inner_margin),
                                             .left = percent(inner_margin),
                                             .right = percent(inner_margin)})
-
+                        .with_flex_direction(FlexDirection::Row)
                         .with_opacity(0.0f)
                         .with_translate(-2000.0f, 0.0f)
                         .with_debug_name("map_card"));
