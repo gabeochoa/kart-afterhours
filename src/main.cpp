@@ -130,8 +130,8 @@ void game() {
           std::make_unique<SetupGameStylingDefaults>());
       systems.register_update_system(
           std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
-      systems.register_update_system(
-          std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
+      // systems.register_update_system(
+      //     std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
       systems.register_update_system(std::make_unique<ScheduleDebugUI>());
       systems.register_update_system(std::make_unique<SchedulePauseUI>());

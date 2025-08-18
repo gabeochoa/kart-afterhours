@@ -1,11 +1,5 @@
 #pragma once
-
-#include <afterhours/src/plugins/animation.h>
-#include <afterhours/src/plugins/ui/components.h>
-#include <afterhours/src/plugins/ui/context.h>
-#include <afterhours/src/plugins/ui/systems.h>
-#include <afterhours/src/plugins/window_manager.h>
-#include <algorithm>
+#include "game.h"
 
 #include "ui_key.h"
 
