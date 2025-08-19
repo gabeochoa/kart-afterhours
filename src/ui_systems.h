@@ -71,6 +71,8 @@ struct SetupGameStylingDefaults
 };
 
 struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
+  ScheduleMainMenuUI();
+  virtual ~ScheduleMainMenuUI() override;
 
   Screen get_active_screen() { return GameStateManager::get().active_screen; }
 
@@ -152,6 +154,8 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 };
 
 struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
+  ScheduleDebugUI();
+  virtual ~ScheduleDebugUI() override;
   bool enabled = false;
   float enableCooldown = 0.f;
   float enableCooldownReset = 0.2f;
@@ -163,6 +167,8 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
 };
 
 struct SchedulePauseUI : System<afterhours::ui::UIContext<InputAction>> {
+  SchedulePauseUI();
+  virtual ~SchedulePauseUI() override;
   input::PossibleInputCollector<InputAction> inpc;
 
   void exit_game() { running = false; }

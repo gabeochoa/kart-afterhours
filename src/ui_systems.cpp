@@ -33,6 +33,16 @@
 
 using namespace afterhours;
 
+#include "ui_systems.h"
+
+ScheduleMainMenuUI::~ScheduleMainMenuUI() = default;
+ScheduleDebugUI::~ScheduleDebugUI() = default;
+SchedulePauseUI::~SchedulePauseUI() = default;
+
+ScheduleMainMenuUI::ScheduleMainMenuUI() = default;
+ScheduleDebugUI::ScheduleDebugUI() = default;
+SchedulePauseUI::SchedulePauseUI() = default;
+
 #if 1
 static inline void apply_slide_mods(afterhours::Entity &ent, float slide_v) {
   if (!ent.has<afterhours::ui::UIComponent>())

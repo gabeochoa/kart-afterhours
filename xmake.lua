@@ -48,6 +48,6 @@ target("kart")
         add_ldflags("$(shell pkg-config --libs raylib)")
     end
 
-    after_build(function(target)
-        os.exec("./output/kart.exe")
-    end)
+    -- after_build(function(target)
+    --     os.exec("./output/kart.exe")
+    -- end)
