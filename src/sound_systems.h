@@ -125,11 +125,15 @@ struct BackgroundMusic : System<> {
   virtual void once(float) override {
     if (!raylib::IsAudioDeviceReady())
       return;
-
+#ifdef _WIN32
+  //  TODO something about the Music Library 
+  // breaks the linker 
+    return;
+#else 
     if (!started && GameStateManager::get().is_menu_active()) {
       auto &music = MusicLibrary::get().get("menu_music");
       music.looping = true;
-      // TODO when we change the music, we should change this back to 0
+      TODO when we change the music, we should change this back to 0
       raylib::SeekMusicStream(music, 3.0f);
       raylib::PlayMusicStream(music);
       started = true;
@@ -137,6 +141,7 @@ struct BackgroundMusic : System<> {
 
     auto &music = MusicLibrary::get().get("menu_music");
     raylib::UpdateMusicStream(music);
+#endif
   }
 
   virtual void for_each_with(Entity &, float) override {}

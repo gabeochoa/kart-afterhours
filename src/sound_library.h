@@ -60,7 +60,7 @@ struct SoundLibrary {
   }
 
   void play(SoundFile file) { play(sound_file_to_str(file)); }
-  void play(const char *const name) { PlaySound(get(name)); }
+  void play(const char *const name) { raylib::PlaySound(get(name)); }
 
   void play_random_match(const std::string &prefix) {
     impl.get_random_match(prefix).transform(raylib::PlaySound);

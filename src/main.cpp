@@ -135,15 +135,19 @@ void game() {
           std::make_unique<SetupGameStylingDefaults>());
       systems.register_update_system(
           std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
-      // systems.register_update_system(
-      //     std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
+#ifdef _WIN32
+      // TODO  - disable animation slide in on windows due to linker issues
+#else
+      systems.register_update_system(
+          std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
+#endif
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
       systems.register_update_system(std::make_unique<ScheduleDebugUI>());
       systems.register_update_system(std::make_unique<SchedulePauseUI>());
     }
     ui::register_after_ui_updates<InputAction>(systems);
 
-    // systems.register_update_system(std::make_unique<BackgroundMusic>());
+    systems.register_update_system(std::make_unique<BackgroundMusic>());
 
     systems.register_update_system(std::make_unique<UISoundBindingSystem>());
     systems.register_update_system(std::make_unique<SoundPlaybackSystem>());
