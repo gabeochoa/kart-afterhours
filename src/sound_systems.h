@@ -64,11 +64,11 @@ struct UIClickSounds
   virtual void once(float) override {
     context = afterhours::EntityHelper::get_singleton_cmp<
         afterhours::ui::UIContext<InputAction>>();
-    this->include_derived_children = true;
+    // this->include_derived_children = true;  // Commented out - derived children feature removed
   }
 
   virtual void
-  for_each_with_derived(Entity &entity, afterhours::ui::UIComponent &component,
+  for_each_with(Entity &entity, afterhours::ui::UIComponent &component,
                         afterhours::ui::HasClickListener &hasClickListener,
                         float) {
     if (!GameStateManager::get().is_menu_active()) {
@@ -83,6 +83,23 @@ struct UIClickSounds
       SoundLibrary::get().play(SoundFile::UI_Select);
     }
   }
+
+  // virtual void
+  // for_each_with_derived(Entity &entity, afterhours::ui::UIComponent &component,
+  //                       afterhours::ui::HasClickListener &hasClickListener,
+  //                       float) {
+  //   if (!GameStateManager::get().is_menu_active()) {
+  //     return;
+  //   }
+  //   if (!component.was_rendered_to_screen) {
+  //     return;
+  //   }
+
+  //   // If this element registered a click this frame, play the UI_Select sound
+  //   if (hasClickListener.down) {
+  //     SoundLibrary::get().play(SoundFile::UI_Select);
+  //   }
+  // }
 };
 
 struct BackgroundMusic : System<> {

@@ -34,7 +34,7 @@ struct UpdateUIButtonWiggle
   virtual void once(float) override {
     this->context = afterhours::EntityHelper::get_singleton_cmp<
         afterhours::ui::UIContext<InputAction>>();
-    this->include_derived_children = true;
+    // this->include_derived_children = true;
   }
   virtual void for_each_with_derived(afterhours::Entity &entity,
                                      afterhours::ui::UIComponent &component,
