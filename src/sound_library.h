@@ -59,11 +59,14 @@ struct SoundLibrary {
     impl.load(filename, name);
   }
 
-  void play(SoundFile file) { play(sound_file_to_str(file)); }
-  void play(const char *const name) { raylib::PlaySound(get(name)); }
+  inline void play(SoundFile file) { play(sound_file_to_str(file)); }
+  inline void play(const char *const name) { raylib::PlaySound(get(name)); }
 
-  void play_random_match(const std::string &prefix) {
-    impl.get_random_match(prefix).transform(raylib::PlaySound);
+  inline void play_random_match(const std::string &prefix) {
+    auto sound = impl.get_random_match(prefix);
+    if (sound.has_value()) {
+      raylib::PlaySound(sound.value());
+    }
   }
 
   void play_if_none_playing(const std::string &prefix) {

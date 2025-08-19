@@ -528,7 +528,7 @@ struct IntroScreens
   }
 };
 
-void intro() {
+inline void intro() {
   SystemManager systems;
 
   window_manager::register_update_systems(systems);
