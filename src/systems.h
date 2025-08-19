@@ -10,6 +10,7 @@
 #include "round_settings.h"
 #include "shader_library.h"
 #include "sound_library.h"
+#include <fmt/format.h>
 #include <afterhours/ah.h>
 
 // Hippo game constants
@@ -643,13 +644,13 @@ struct RenderDebugGridOverlay
 
     for (int x = 0; x <= resolution.width; x += step) {
       raylib::DrawLine(x, 0, x, resolution.height, line_color);
-      std::string label = std::to_string(x);
+      std::string label = fmt::format("{}", x);
       raylib::DrawText(label.c_str(), x + 4, 6, 12, text_color);
     }
 
     for (int y = 0; y <= resolution.height; y += step) {
       raylib::DrawLine(0, y, resolution.width, y, line_color);
-      std::string label = std::to_string(y);
+      std::string label = fmt::format("{}", y);
       raylib::DrawText(label.c_str(), 6, y + 4, 12, text_color);
     }
   }
@@ -1640,9 +1641,9 @@ struct RenderLabels : System<Transform, HasLabels> {
         return label_info_in.label_text;
       case LabelInfo::LabelType::VelocityText:
         return (transform_in.is_reversing() ? "-" : "") +
-               std::to_string(transform_in.speed()) + label_info_in.label_text;
+               fmt::format("{}", transform_in.speed()) + label_info_in.label_text;
       case LabelInfo::LabelType::AccelerationText:
-        return std::to_string(transform_in.accel * transform_in.accel_mult) +
+        return fmt::format("{}", transform_in.accel * transform_in.accel_mult) +
                label_info_in.label_text;
       }
 
@@ -1755,8 +1756,7 @@ private:
       return;
 
     const auto &hasKillCountTracker = entity.get<HasKillCountTracker>();
-    std::string kills_text =
-        std::to_string(hasKillCountTracker.kills) + " kills";
+    std::string kills_text = fmt::format("{} kills", hasKillCountTracker.kills);
     float text_size = 12.f;
 
     raylib::DrawText(

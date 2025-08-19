@@ -8,6 +8,7 @@
 #include "query.h"
 #include "sound_library.h"
 #include "weapons.h"
+#include <fmt/format.h>
 // afterhours UI
 #include <afterhours/src/plugins/ui/components.h>
 #include <afterhours/src/plugins/ui/context.h>
@@ -186,7 +187,7 @@ struct SoundPlaybackSystem : System<PlaySoundRequest> {
     std::vector<std::string> names;
     names.reserve(static_cast<size_t>(copies));
     for (int i = 0; i < copies; ++i) {
-      names.push_back(base + std::string("_a") + std::to_string(i));
+      names.push_back(base + std::string("_a") + fmt::format("{}", i));
     }
     emitter->alias_names_by_base[base] = std::move(names);
     emitter->next_alias_index_by_base[base] = 0;

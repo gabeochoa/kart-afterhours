@@ -5,6 +5,7 @@
 #include "components.h"
 #include "round_settings.h"
 #include <chrono>
+#include <fmt/format.h>
 
 using afterhours::texture_manager::HasAnimation;
 using afterhours::texture_manager::idx_to_sprite_frame;
@@ -330,7 +331,7 @@ void make_player(input::GamepadID id) {
   entity.addComponent<PlayerID>(id);
   entity.addComponent<HonkState>();
 
-  const auto player_id_text = "[Player " + std::to_string(id) + "]";
+  const auto player_id_text = "[Player " + fmt::format("{}", id) + "]";
   const auto player_label_pos_offset = vec2{-.1f, 0.f};
   LabelInfo player_text_label_info(player_id_text, player_label_pos_offset,
                                    LabelInfo::LabelType::StaticText);

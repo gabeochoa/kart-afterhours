@@ -171,7 +171,7 @@ constexpr static void load_sounds() {
   const char *mg_prefix =
       "SPAS-12_-_FIRING_-_Pump_Action_-_Take_1_-_20m_In_Front_-_AB_-_MKH8020_";
   for (int i = 1; i <= 5; ++i) {
-    std::string stem = std::string(mg_prefix) + std::to_string(i);
+    std::string stem = std::string(mg_prefix) + fmt::format("{}", i);
     std::string path = std::string("gdc/") + stem + ".wav";
     SoundLibrary::get().load(
         Files::get().fetch_resource_path("sounds", path).c_str(), stem.c_str());
@@ -180,7 +180,7 @@ constexpr static void load_sounds() {
   // Preload boost variations for random selection by prefix
   const char *boost_prefix = "AIRBrst_Steam_Release_Short_03_JSE_SG_Mono_";
   for (int i = 1; i <= 6; ++i) {
-    std::string stem = std::string(boost_prefix) + std::to_string(i);
+    std::string stem = std::string(boost_prefix) + fmt::format("{}", i);
     std::string path = std::string("gdc/") + stem + ".wav";
     SoundLibrary::get().load(
         Files::get().fetch_resource_path("sounds", path).c_str(), stem.c_str());
@@ -215,13 +215,13 @@ constexpr static void load_sounds() {
   const char *horn_prefix =
       "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
   for (int i = 1; i <= 6; ++i) {
-    std::string stem = std::string(horn_prefix) + std::to_string(i);
+    std::string stem = std::string(horn_prefix) + fmt::format("{}", i);
     std::string path = std::string("gdc/") + stem + ".wav";
     SoundLibrary::get().load(
         Files::get().fetch_resource_path("sounds", path).c_str(), stem.c_str());
     // Load additional aliases to allow overlapping playback
     for (int copy = 1; copy <= 3; ++copy) {
-      std::string alias = stem + std::string("_a") + std::to_string(copy);
+      std::string alias = stem + std::string("_a") + fmt::format("{}", copy);
       SoundLibrary::get().load(
           Files::get().fetch_resource_path("sounds", path).c_str(),
           alias.c_str());
