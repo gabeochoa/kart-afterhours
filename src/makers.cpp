@@ -6,6 +6,7 @@
 #include "round_settings.h"
 #include <chrono>
 #include <fmt/format.h>
+#include <random>
 #include "tags.h"
 
 using afterhours::texture_manager::HasAnimation;

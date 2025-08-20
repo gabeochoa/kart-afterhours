@@ -1834,11 +1834,12 @@ private:
   }
 };
 
-struct ApplyWinnerShader
-    : System<tags::All<GameTag::IsLastRoundsWinner>, HasShader> {
+struct ApplyWinnerShader : System<HasShader> {
   virtual void for_each_with(Entity &entity, HasShader &hasShader,
                              float) override {
-    hasShader.shader_name = "car_winner";
-    entity.disableTag(GameTag::IsLastRoundsWinner);
+    if (entity.hasTag(GameTag::IsLastRoundsWinner)) {
+      hasShader.shader_name = "car_winner";
+      entity.disableTag(GameTag::IsLastRoundsWinner);
+    }
   }
 };
