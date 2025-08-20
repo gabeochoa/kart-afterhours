@@ -9,6 +9,16 @@
 
 using namespace afterhours;
 
+// Missing constructors and destructors
+ScheduleMainMenuUI::ScheduleMainMenuUI() = default;
+ScheduleMainMenuUI::~ScheduleMainMenuUI() = default;
+
+ScheduleDebugUI::ScheduleDebugUI() = default;
+ScheduleDebugUI::~ScheduleDebugUI() = default;
+
+SchedulePauseUI::SchedulePauseUI() = default;
+SchedulePauseUI::~SchedulePauseUI() = default;
+
 #if 1
 static inline void apply_slide_mods(afterhours::Entity &ent, float slide_v) {
   if (!ent.has<afterhours::ui::UIComponent>())

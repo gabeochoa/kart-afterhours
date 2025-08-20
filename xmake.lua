@@ -38,6 +38,7 @@ target("kart")
     set_targetdir("output")
     --
     add_files("src/*.cpp")
+    add_files("src/ui/*.cpp")
     --
     add_includedirs("vendor")
 
