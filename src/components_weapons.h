@@ -85,13 +85,6 @@ inline ProjectileConfig::Builder ProjectileConfig::builder() {
   return Builder{};
 }
 
-struct WeaponSoundInfo : BaseComponent {
-  std::string name;
-  bool has_multiple{false};
-  
-  WeaponSoundInfo() = default;
-};
-
 struct WantsWeaponFire : BaseComponent {
   InputAction action;
   WantsWeaponFire() = default;
@@ -105,15 +98,13 @@ struct WeaponFired : BaseComponent {
   int firing_direction{0};
   ProjectileConfig projectile;
   RecoilConfig recoil;
-  WeaponSoundInfo sound;
   InputAction action{};
 
   WeaponFired() = default;
   WeaponFired(WeaponFired&&) = default;
   WeaponFired& operator=(WeaponFired&&) = default;
   WeaponFired(InputAction act, int weapon_type_in, int firing_direction_in,
-              ProjectileConfig proj, RecoilConfig rec, WeaponSoundInfo snd)
+              ProjectileConfig proj, RecoilConfig rec)
       : weapon_type(weapon_type_in), firing_direction(firing_direction_in),
-        projectile(std::move(proj)), recoil(std::move(rec)),
-        sound(std::move(snd)), action(act) {}
+        projectile(std::move(proj)), recoil(std::move(rec)), action(act) {}
 };

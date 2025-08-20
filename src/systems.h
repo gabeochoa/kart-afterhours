@@ -824,14 +824,11 @@ struct WeaponFireSystem : PausableSystem<WantsWeaponFire, CanShoot, Transform> {
               .build();
 
       RecoilConfig rec{weapon.config.knockback_amt};
-      WeaponSoundInfo snd{};
-      snd.name = weapon.config.sound.name;
-      snd.has_multiple = weapon.config.sound.has_multiple;
 
       entity.addComponent<WeaponFired>(
           WeaponFired{want.action, static_cast<int>(weapon.type),
                       static_cast<int>(weapon.firing_direction),
-                      std::move(proj), std::move(rec), std::move(snd)});
+                      std::move(proj), std::move(rec)});
     }
     entity.removeComponent<WantsWeaponFire>();
   }
@@ -867,6 +864,7 @@ struct ProjectileSpawnSystem : System<WeaponFired, Transform> {
 struct WeaponRecoilSystem : System<WeaponFired, Transform> {
   virtual void for_each_with(Entity &entity, WeaponFired &evt, Transform &t,
                              float) override {
+    (void)entity;
     const float knockback_amt = evt.recoil.knockback_amt;
     vec2 recoil = {std::cos(t.as_rad()), std::sin(t.as_rad())};
     recoil = vec_norm(vec2{-recoil.y, recoil.x});
@@ -1288,6 +1286,7 @@ struct VelFromInput
   virtual void for_each_with(Entity &entity, PlayerID &playerID,
                              Transform &transform, HonkState &honk,
                              HasShader &hasShader, float dt) override {
+    (void)hasShader;
     input::PossibleInputCollector<InputAction> inpc =
         input::get_input_collector<InputAction>();
     if (!inpc.has_value()) {
@@ -1794,7 +1793,7 @@ private:
       // Crown points (3 triangles)
       float point_width = crown_size / 3.f;
       for (int i = 0; i < 3; i++) {
-        float x = crown_pos.x + (i * point_width);
+        float x = crown_pos.x + (static_cast<float>(i) * point_width);
         raylib::DrawTriangle(
             vec2{x, crown_pos.y},
             vec2{x + point_width / 2.f, crown_pos.y - crown_size / 2.f},
