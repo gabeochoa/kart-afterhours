@@ -11,9 +11,9 @@
 #include "round_settings.h"
 #include "shader_library.h"
 #include "sound_library.h"
-#include <fmt/format.h>
 #include "tags.h"
 #include <afterhours/ah.h>
+#include <fmt/format.h>
 
 // Hippo game constants
 constexpr float HIPPO_SPAWN_INTERVAL = 0.8f;
@@ -1376,8 +1376,9 @@ struct VelFromInput
             opt.valid()) {
           auto &ent = opt.asE();
           auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-          req.policy = honk.was_down ? PlaySoundRequest::Policy::PrefixIfNonePlaying
-                                     : PlaySoundRequest::Policy::PrefixFirstAvailable;
+          req.policy = honk.was_down
+                           ? PlaySoundRequest::Policy::PrefixIfNonePlaying
+                           : PlaySoundRequest::Policy::PrefixFirstAvailable;
           req.prefix =
               "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
         }
@@ -1409,8 +1410,9 @@ struct VelFromInput
           opt.valid()) {
         auto &ent = opt.asE();
         auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-        req.policy = honk.was_down ? PlaySoundRequest::Policy::PrefixIfNonePlaying
-                                   : PlaySoundRequest::Policy::PrefixFirstAvailable;
+        req.policy = honk.was_down
+                         ? PlaySoundRequest::Policy::PrefixIfNonePlaying
+                         : PlaySoundRequest::Policy::PrefixFirstAvailable;
         req.prefix = horn_prefix;
       }
     }
@@ -1676,7 +1678,8 @@ struct RenderLabels : System<Transform, HasLabels> {
         return label_info_in.label_text;
       case LabelInfo::LabelType::VelocityText:
         return (transform_in.is_reversing() ? "-" : "") +
-               fmt::format("{}", transform_in.speed()) + label_info_in.label_text;
+               fmt::format("{}", transform_in.speed()) +
+               label_info_in.label_text;
       case LabelInfo::LabelType::AccelerationText:
         return fmt::format("{}", transform_in.accel * transform_in.accel_mult) +
                label_info_in.label_text;
@@ -1881,11 +1884,26 @@ private:
 };
 
 struct ApplyWinnerShader : System<HasShader> {
+  GameStateManager::Screen last_screen = GameStateManager::Screen::None;
+
   virtual void for_each_with(Entity &entity, HasShader &hasShader,
                              float) override {
-    hasShader.shaders.clear();
-    hasShader.shaders.push_back(ShaderType::car_winner);
-    hasShader.shader_set_cache.reset();
-    entity.disableTag(GameTag::IsLastRoundsWinner);
+    auto current_screen = GameStateManager::get().active_screen;
+
+    if (current_screen != last_screen) {
+      hasShader.shaders.clear();
+
+      if (entity.hasTag(GameTag::IsLastRoundsWinner)) {
+        hasShader.shaders.push_back(ShaderType::car_winner);
+      } else {
+        hasShader.shaders.push_back(ShaderType::car);
+      }
+
+      hasShader.shader_set_cache.reset();
+    }
+  }
+
+  virtual void once(float) override {
+    last_screen = GameStateManager::get().active_screen;
   }
 };
