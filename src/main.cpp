@@ -144,8 +144,12 @@ void game() {
           std::make_unique<SetupGameStylingDefaults>());
       systems.register_update_system(
           std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
+#ifdef _WIN32
+  // TODO linker errors
+#else
       systems.register_update_system(
           std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
+#endif
       systems.register_update_system(std::make_unique<NavigationSystem>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
       systems.register_update_system(std::make_unique<ScheduleDebugUI>());
@@ -153,7 +157,11 @@ void game() {
     }
     ui::register_after_ui_updates<InputAction>(systems);
 
+#ifdef _WIN32
+    // TODO linker errors
+#else
     systems.register_update_system(std::make_unique<BackgroundMusic>());
+#endif
 
     systems.register_update_system(std::make_unique<UISoundBindingSystem>());
     systems.register_update_system(std::make_unique<SoundPlaybackSystem>());
@@ -241,10 +249,13 @@ void game() {
       // letterbox/pillar bars so they remain pure black on top.
       systems.register_render_system(
           std::make_unique<BeginPostProcessingShader>());
-#if 1
+#ifdef _WIN32
+      // TODO linker errors
+#else
       systems.register_render_system(
           std::make_unique<ConfigureTaggerSpotlight>());
 #endif
+
       systems.register_render_system(std::make_unique<RenderRenderTexture>());
       systems.register_render_system(
           std::make_unique<RenderDebugGridOverlay>());
