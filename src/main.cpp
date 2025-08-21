@@ -144,12 +144,8 @@ void game() {
           std::make_unique<SetupGameStylingDefaults>());
       systems.register_update_system(
           std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
-#ifdef _WIN32
-      // TODO  - disable animation slide in on windows due to linker issues
-#else
       systems.register_update_system(
           std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
-#endif
       systems.register_update_system(std::make_unique<NavigationSystem>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
       systems.register_update_system(std::make_unique<ScheduleDebugUI>());
@@ -243,8 +239,10 @@ void game() {
       // letterbox/pillar bars so they remain pure black on top.
       systems.register_render_system(
           std::make_unique<BeginPostProcessingShader>());
-      // systems.register_render_system(
-      //     std::make_unique<ConfigureTaggerSpotlight>());
+#if 1
+      systems.register_render_system(
+          std::make_unique<ConfigureTaggerSpotlight>());
+#endif
       systems.register_render_system(std::make_unique<RenderRenderTexture>());
       systems.register_render_system(
           std::make_unique<RenderDebugGridOverlay>());
