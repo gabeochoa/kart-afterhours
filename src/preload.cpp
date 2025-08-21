@@ -5,11 +5,11 @@
 
 #include "input_mapping.h"
 #include "music_library.h"
+#include "navigation.h"
 #include "settings.h"
 #include "shader_library.h"
 #include "sound_library.h"
 #include "texture_library.h"
-#include "navigation.h"
 
 using namespace afterhours;
 // for HasTexture

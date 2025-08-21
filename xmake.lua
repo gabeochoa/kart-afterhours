@@ -15,6 +15,19 @@ add_cxxflags([[
     -fmax-errors=10 
     -Wall -Wextra -Wpedantic
     -Wuninitialized -Wshadow -Wconversion
+    -Wcast-qual -Wchar-subscripts
+    -Wcomment -Wdisabled-optimization -Wformat=2
+    -Wformat-nonliteral -Wformat-security -Wformat-y2k
+    -Wimport -Winit-self -Winline -Winvalid-pch
+    -Wlong-long -Wmissing-format-attribute
+    -Wmissing-include-dirs
+    -Wpacked -Wpointer-arith
+    -Wreturn-type -Wsequence-point
+    -Wstrict-overflow=5 -Wswitch -Wswitch-default
+    -Wswitch-enum -Wtrigraphs 
+    -Wunused-label -Wunused-parameter -Wunused-value
+    -Wunused-variable -Wvariadic-macros -Wvolatile-register-var
+    -Wwrite-strings -Warray-bounds
     -pipe
     -fno-stack-protector
     -fno-common
@@ -24,8 +37,17 @@ add_cxxflags([[
     -Wno-deprecated-volatile -Wno-missing-field-initializers
     -Wno-c99-extensions -Wno-unused-function -Wno-sign-conversion 
     -Wno-implicit-int-float-conversion -Wno-implicit-float-conversion
+    -Wno-format-nonliteral -Wno-format-security -Wno-format-y2k
+    -Wno-import -Wno-inline -Wno-invalid-pch
+    -Wno-long-long -Wno-missing-format-attribute
+    -Wno-missing-noreturn -Wno-packed -Wno-redundant-decls
+    -Wno-sequence-point -Wno-trigraphs -Wno-variadic-macros
+    -Wno-volatile-register-var
 ]]
 )
+
+-- Suppress warnings from vendor directories (third-party code)
+add_cxxflags("-isystem vendor")
 
 if is_host("macosx") then
     set_extension(".exe")

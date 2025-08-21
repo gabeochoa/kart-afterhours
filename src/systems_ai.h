@@ -398,8 +398,8 @@ struct AIVelocity : PausableSystem<AIControlled, Transform, AIParams> {
 
 struct AIShoot : PausableSystem<AIControlled, Transform, AIParams, CanShoot> {
   virtual void for_each_with(Entity &entity, AIControlled &,
-                             Transform &transform, AIParams &params,
-                             CanShoot &canShoot, float dt) override {
+                             Transform &transform, AIParams &params, CanShoot &,
+                             float) override {
     const auto &settings = RoundManager::get().get_active_settings();
     if (settings.state != RoundSettings::GameState::InGame) {
       return;
