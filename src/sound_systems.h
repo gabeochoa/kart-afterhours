@@ -49,11 +49,11 @@ struct UIClickSounds
     // If this element registered a click this frame, play the UI_Select sound
     if (hasClickListener.down) {
       auto opt = EntityQuery({.force_merge = true})
-                     .whereHasComponent<SoundEmitter>()
+                     .template whereHasComponent<SoundEmitter>()
                      .gen_first();
       if (opt.valid()) {
-        auto &ent = opt.asE();
-        auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+        Entity &ent = opt.asE();
+        PlaySoundRequest &req = ent.addComponentIfMissing<PlaySoundRequest>();
         req.policy = PlaySoundRequest::Policy::Enum;
         req.file = SoundFile::UI_Select;
       }
@@ -68,6 +68,7 @@ struct BackgroundMusic : System<> {
     if (!raylib::IsAudioDeviceReady())
       return;
 
+#if __APPLE__
     if (!started && GameStateManager::get().is_menu_active()) {
       auto &music = MusicLibrary::get().get("menu_music");
       music.looping = true;
@@ -79,6 +80,7 @@ struct BackgroundMusic : System<> {
     if (raylib::IsMusicStreamPlaying(music)) {
       raylib::UpdateMusicStream(music);
     }
+#endif 
   }
 
   virtual void for_each_with(Entity &, float) override {}
@@ -197,11 +199,11 @@ struct UISoundBindingSystem : System<> {
                          actions_done.action == InputAction::WidgetBack;
     if (is_move) {
       auto opt = EntityQuery({.force_merge = true})
-                     .whereHasComponent<SoundEmitter>()
+                     .template whereHasComponent<SoundEmitter>()
                      .gen_first();
       if (opt.valid()) {
-        auto &ent = opt.asE();
-        auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
+        Entity &ent = opt.asE();
+        PlaySoundRequest &req = ent.addComponentIfMissing<PlaySoundRequest>();
         req.policy = PlaySoundRequest::Policy::Enum;
         req.file = SoundFile::UI_Move;
       }

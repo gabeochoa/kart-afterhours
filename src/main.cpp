@@ -136,15 +136,19 @@ void game() {
 
     ui::register_before_ui_updates<InputAction>(systems);
     {
+#if __APPLE__
       afterhours::animation::register_update_systems<UIKey>(systems);
       afterhours::animation::register_update_systems<
           afterhours::animation::CompositeKey>(systems);
+#endif
       systems.register_update_system(
           std::make_unique<SetupGameStylingDefaults>());
+#if __APPLE__
       systems.register_update_system(
-          std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
+      std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
       systems.register_update_system(
-          std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
+      std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
+#endif 
       systems.register_update_system(std::make_unique<NavigationSystem>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
       systems.register_update_system(std::make_unique<ScheduleDebugUI>());
@@ -152,12 +156,14 @@ void game() {
     }
     ui::register_after_ui_updates<InputAction>(systems);
 
+#if __APPLE__
     systems.register_update_system(std::make_unique<BackgroundMusic>());
 
     systems.register_update_system(std::make_unique<UISoundBindingSystem>());
     systems.register_update_system(std::make_unique<SoundPlaybackSystem>());
     systems.register_update_system(std::make_unique<UIClickSounds>());
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
+#endif
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
   }
 
@@ -168,6 +174,7 @@ void game() {
       raylib::BeginTextureMode(mainRT);
       raylib::ClearBackground(raylib::DARKGRAY);
     });
+
     {
       systems.register_render_system(std::make_unique<RenderSkid>());
       systems.register_render_system(std::make_unique<RenderEntities>());
@@ -276,6 +283,7 @@ void game() {
     systems.register_render_system(std::make_unique<RenderRoundTimer>());
     systems.register_render_system(std::make_unique<RenderFPS>());
     systems.register_render_system(std::make_unique<RenderDebugWindowInfo>());
+
     systems.register_render_system([&](float) { raylib::EndDrawing(); });
     //
   }

@@ -46,9 +46,6 @@ add_cxxflags([[
 ]]
 )
 
--- Suppress warnings from vendor directories (third-party code)
-add_cxxflags("-isystem vendor")
-
 if is_host("macosx") then
     set_extension(".exe")
     add_cxxflags("-DBACKWARD")

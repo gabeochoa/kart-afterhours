@@ -1,16 +1,17 @@
 #include "ui_systems.h"
 
+#include <afterhours/ah.h>
+
+//
 #include "config.h"
 #include "map_system.h"
 #include "navigation.h"
 #include "preload.h" // FontID
 #include "texture_library.h"
 #include "ui/animation_key.h"
-#include <afterhours/src/plugins/animation.h>
 
 using namespace afterhours;
 
-#if 1
 static inline void apply_slide_mods(afterhours::Entity &ent, float slide_v) {
   if (!ent.has<afterhours::ui::UIComponent>())
     return;
@@ -23,7 +24,6 @@ static inline void apply_slide_mods(afterhours::Entity &ent, float slide_v) {
   ent.addComponentIfMissing<afterhours::ui::HasOpacity>().value =
       std::clamp(slide_v, 0.0f, 1.0f);
 }
-#endif
 
 #include "game_state_manager.h"
 #include "makers.h" // make_ai()
