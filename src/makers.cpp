@@ -172,8 +172,7 @@ void make_poof_anim(Entity &parent, Weapon::FiringDirection dir,
 }
 
 void make_bullet(Entity &parent, const ProjectileConfig &cfg,
-                 Weapon::FiringDirection dir, float base_angle,
-                 float angle_offset) {
+                 Weapon::FiringDirection dir, float angle_offset) {
   const Transform &transform = parent.get<Transform>();
 
   auto angle = 0.f;

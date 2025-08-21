@@ -72,7 +72,7 @@ struct RenderSpritesWithShaders
     : System<Transform, afterhours::texture_manager::HasSprite, HasShader,
              HasColor> {
   virtual void
-  for_each_with(const Entity &entity, const Transform &transform,
+  for_each_with(const Entity &, const Transform &transform,
                 const afterhours::texture_manager::HasSprite &hasSprite,
                 const HasShader &hasShader, const HasColor &hasColor,
                 float) const override {
@@ -255,9 +255,9 @@ struct RenderSpritesWithShaders
 struct RenderAnimationsWithShaders
     : System<Transform, afterhours::texture_manager::HasAnimation, HasShader,
              HonkState> {
-  virtual void for_each_with(const Entity &entity, const Transform &transform,
+  virtual void for_each_with(const Entity &, const Transform &transform,
                              const afterhours::texture_manager::HasAnimation &,
-                             const HasShader &hasShader, const HonkState &honk,
+                             const HasShader &hasShader, const HonkState &,
                              float) const override {
     if (hasShader.shaders.empty()) {
       log_warn("No shaders found in HasShader component");
@@ -400,10 +400,9 @@ compute_letterbox_layout(const int window_width, const int window_height,
 
 struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderRenderTexture() {}
-  virtual void for_each_with(
-      const Entity &entity,
-      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
-      float) const override {
+  virtual void for_each_with(const Entity &,
+                             const window_manager::ProvidesCurrentResolution &,
+                             float) const override {
     const int window_w = raylib::GetScreenWidth();
     const int window_h = raylib::GetScreenHeight();
     const int content_w = mainRT.texture.width;
@@ -606,10 +605,9 @@ struct ConfigureTaggerSpotlight : System<> {
 
 struct RenderLetterboxBars : System<window_manager::ProvidesCurrentResolution> {
   virtual ~RenderLetterboxBars() {}
-  virtual void for_each_with(
-      const Entity &entity,
-      const window_manager::ProvidesCurrentResolution &pCurrentResolution,
-      float) const override {
+  virtual void for_each_with(const Entity &,
+                             const window_manager::ProvidesCurrentResolution &,
+                             float) const override {
     const int window_w = raylib::GetScreenWidth();
     const int window_h = raylib::GetScreenHeight();
     const int content_w = mainRT.texture.width;
@@ -865,26 +863,27 @@ struct ProjectileSpawnSystem : System<WeaponFired, Transform> {
     case Weapon::Type::Shotgun:
       cfg.angle_offsets = {-15.f, -5.f, 5.f, 15.f};
       break;
-    default:
+    case Weapon::Type::Cannon:
+    case Weapon::Type::Sniper:
+    case Weapon::Type::MachineGun:
+      // These weapons don't need special angle offsets
       break;
     }
 
-    const float base_angle = entity.get<Transform>().angle;
-
     make_poof_anim(entity,
                    static_cast<Weapon::FiringDirection>(evt.firing_direction),
-                   base_angle, 0.f);
+                   entity.get<Transform>().angle, 0.f);
 
     for (float ao : cfg.angle_offsets) {
       make_bullet(entity, cfg,
                   static_cast<Weapon::FiringDirection>(evt.firing_direction),
-                  base_angle, ao);
+                  ao);
     }
   }
 };
 
 struct WeaponRecoilSystem : System<WeaponFired, Transform> {
-  virtual void for_each_with(Entity &entity, WeaponFired &evt, Transform &t,
+  virtual void for_each_with(Entity &, WeaponFired &evt, Transform &t,
                              float) override {
     const float knockback_amt = evt.recoil.knockback_amt;
     vec2 recoil = {std::cos(t.as_rad()), std::sin(t.as_rad())};
@@ -1294,8 +1293,8 @@ struct UpdateCollidingEntities : PausableSystem<Transform> {
 struct VelFromInput
     : PausableSystem<PlayerID, Transform, HonkState, HasShader> {
   virtual void for_each_with(Entity &entity, PlayerID &playerID,
-                             Transform &transform, HonkState &honk,
-                             HasShader &hasShader, float dt) override {
+                             Transform &transform, HonkState &honk, HasShader &,
+                             float dt) override {
     input::PossibleInputCollector<InputAction> inpc =
         input::get_input_collector<InputAction>();
     if (!inpc.has_value()) {
@@ -1333,7 +1332,20 @@ struct VelFromInput
       case InputAction::Honk:
         honk_down = true;
         break;
-      default:
+      case InputAction::ShootLeft:
+      case InputAction::ShootRight:
+      case InputAction::WidgetRight:
+      case InputAction::WidgetLeft:
+      case InputAction::WidgetNext:
+      case InputAction::WidgetPress:
+      case InputAction::WidgetMod:
+      case InputAction::WidgetBack:
+      case InputAction::MenuBack:
+      case InputAction::PauseButton:
+      case InputAction::ToggleUIDebug:
+      case InputAction::ToggleUILayoutDebug:
+      case InputAction::None:
+        // These actions don't affect car movement
         break;
       }
     }
@@ -1369,7 +1381,20 @@ struct VelFromInput
               "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
         }
       } break;
-      default:
+      case InputAction::ShootLeft:
+      case InputAction::ShootRight:
+      case InputAction::WidgetRight:
+      case InputAction::WidgetLeft:
+      case InputAction::WidgetNext:
+      case InputAction::WidgetPress:
+      case InputAction::WidgetMod:
+      case InputAction::WidgetBack:
+      case InputAction::MenuBack:
+      case InputAction::PauseButton:
+      case InputAction::ToggleUIDebug:
+      case InputAction::ToggleUILayoutDebug:
+      case InputAction::None:
+        // These actions don't affect car movement
         break;
       }
     }
@@ -1734,10 +1759,11 @@ struct RenderPlayerHUD : System<Transform, HasHealth> {
     case RoundType::Kills:
       render_kills(entity, transform, color);
       break;
+    case RoundType::Hippo:
+      // Hippo round doesn't need special rendering above health bar
+      break;
     case RoundType::TagAndGo:
       render_tagger_indicator(entity, transform, color);
-      break;
-    default:
       break;
     }
   }

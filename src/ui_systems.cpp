@@ -1453,19 +1453,6 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
         auto &ent = opt_ent.asE();
         if (ent.has<afterhours::ui::UIComponent>()) {
           auto rect = ent.get<afterhours::ui::UIComponent>().rect();
-          float mod_x = rect.x;
-          float mod_y = rect.y;
-          float comp_tx = 0.0f;
-          float comp_ty = 0.0f;
-          if (ent.has<afterhours::ui::HasUIModifiers>()) {
-            const auto &mods = ent.get<afterhours::ui::HasUIModifiers>();
-            comp_tx = mods.translate_x;
-            comp_ty = mods.translate_y;
-            auto mod_rect = mods.apply_modifier(rect);
-            mod_x = mod_rect.x;
-            mod_y = mod_rect.y;
-          }
-
           auto mp = context.mouse_pos;
           if (mp.x >= rect.x && mp.x <= rect.x + rect.width && mp.y >= rect.y &&
               mp.y <= rect.y + rect.height) {
@@ -1500,14 +1487,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
   }
   last_effective_preview_index = effective_preview_index;
 
-  auto selected_map_it =
-      std::find_if(compatible_maps.begin(), compatible_maps.end(),
-                   [effective_preview_index](const auto &pair) {
-                     return pair.first == effective_preview_index;
-                   });
-
-  auto maybe_shuffle =
-      afterhours::animation::manager<UIKey>().get_value(UIKey::MapShuffle);
+  // selected_map_it and maybe_shuffle were unused, removed
   bool overriding_preview = effective_preview_index != selected_map_index;
   render_map_preview(context, preview_box.ent(), effective_preview_index,
                      selected_map_index, compatible_maps, overriding_preview,

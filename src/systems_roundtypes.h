@@ -127,7 +127,7 @@ struct UpdateTagAndGoTimers : PausableSystem<HasTagAndGoTracking> {
 };
 
 struct HandleTagAndGoTagTransfer : System<Transform, HasTagAndGoTracking> {
-  virtual void for_each_with(Entity &entity, Transform &transform,
+  virtual void for_each_with(Entity &, Transform &transform,
                              HasTagAndGoTracking &taggerTracking,
                              float) override {
     if (!GameStateManager::get().is_game_active()) {
@@ -291,7 +291,7 @@ struct CheckKillsWinCondition : PausableSystem<> {
 
 struct CheckHippoWinCondition : PausableSystem<> {
 
-  void cleanup_remaining_hippos(RoundHippoSettings &hippo_settings) {
+  void cleanup_remaining_hippos(RoundHippoSettings &) {
     auto remaining_hippos = EQ().whereHasComponent<HippoItem>().gen();
     for (const auto &hippo_ref : remaining_hippos) {
       hippo_ref.get().cleanup = true;
