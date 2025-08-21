@@ -2,6 +2,7 @@
 #pragma once
 
 #include <afterhours/src/singleton.h>
+#include <algorithm>
 
 SINGLETON_FWD(Config)
 struct Config {
@@ -9,23 +10,23 @@ struct Config {
 
   template <typename T> struct ValueInRange {
     T data;
-    T min;
-    T max;
+    T mn;
+    T mx;
 
     ValueInRange(T default_, T min_, T max_)
-        : data(default_), min(min_), max(max_) {}
+        : data(default_), mn(min_), mx(max_) {}
 
     void operator=(const ValueInRange<T> &new_value) { set(new_value.data); }
 
-    void set(const T &nv) { data = std::min(max, std::max(min, nv)); }
+    void set(const T &nv) { data = std::min(mx, std::max(mn, nv)); }
 
     void set_pct(const float &pct) {
       // lerp
-      T nv = min + pct * (max - min);
+      T nv = mn + pct * (mx - mn);
       set(nv);
     }
 
-    float get_pct() const { return (data - min) / (max - min); }
+    float get_pct() const { return (data - mn) / (mx - mn); }
 
     operator T() { return data; }
 
