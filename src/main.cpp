@@ -148,11 +148,11 @@ void game() {
       std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
       systems.register_update_system(
       std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
+#endif 
       systems.register_update_system(std::make_unique<NavigationSystem>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
-      systems.register_update_system(std::make_unique<ScheduleDebugUI>());
       systems.register_update_system(std::make_unique<SchedulePauseUI>());
-#endif 
+      systems.register_update_system(std::make_unique<ScheduleDebugUI>());
     }
     ui::register_after_ui_updates<InputAction>(systems);
 
@@ -161,9 +161,9 @@ void game() {
 #if __APPLE__
     systems.register_update_system(std::make_unique<UISoundBindingSystem>());
     systems.register_update_system(std::make_unique<SoundPlaybackSystem>());
+#endif
     systems.register_update_system(std::make_unique<UIClickSounds>());
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
-#endif
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
   }
 
