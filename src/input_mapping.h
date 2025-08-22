@@ -26,12 +26,24 @@ enum class InputAction {
   Honk,
 };
 
+inline int to_int(InputAction action) {
+  return static_cast<int>(action);
+}
+
+inline InputAction from_int(int value) {
+  return static_cast<InputAction>(value);
+}
+
+inline bool action_matches(int action, InputAction expected) {
+  return from_int(action) == expected;
+}
+
 using afterhours::input;
 
 inline auto get_mapping() {
-  std::map<InputAction, input::ValidInputs> mapping;
+  std::map<int, input::ValidInputs> mapping;
 
-  mapping[InputAction::Accel] = {
+  mapping[to_int(InputAction::Accel)] = {
       raylib::KEY_UP,
       input::GamepadAxisWithDir{
           .axis = raylib::GAMEPAD_AXIS_RIGHT_Y,
@@ -39,7 +51,7 @@ inline auto get_mapping() {
       },
   };
 
-  mapping[InputAction::Brake] = {
+  mapping[to_int(InputAction::Brake)] = {
       raylib::KEY_DOWN,
       input::GamepadAxisWithDir{
           .axis = raylib::GAMEPAD_AXIS_RIGHT_Y,
@@ -47,7 +59,7 @@ inline auto get_mapping() {
       },
   };
 
-  mapping[InputAction::Left] = {
+  mapping[to_int(InputAction::Left)] = {
       raylib::KEY_LEFT,
       input::GamepadAxisWithDir{
           .axis = raylib::GAMEPAD_AXIS_LEFT_X,
@@ -55,7 +67,7 @@ inline auto get_mapping() {
       },
   };
 
-  mapping[InputAction::Right] = {
+  mapping[to_int(InputAction::Right)] = {
       raylib::KEY_RIGHT,
       input::GamepadAxisWithDir{
           .axis = raylib::GAMEPAD_AXIS_LEFT_X,
@@ -63,62 +75,62 @@ inline auto get_mapping() {
       },
   };
 
-  mapping[InputAction::ShootLeft] = {
+  mapping[to_int(InputAction::ShootLeft)] = {
       raylib::KEY_Q,
       raylib::GAMEPAD_BUTTON_LEFT_TRIGGER_1,
   };
 
-  mapping[InputAction::ShootRight] = {
+  mapping[to_int(InputAction::ShootRight)] = {
       raylib::KEY_E,
       raylib::GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
   };
 
-  mapping[InputAction::WidgetLeft] = {
+  mapping[to_int(InputAction::WidgetLeft)] = {
       raylib::KEY_LEFT,
       raylib::GAMEPAD_BUTTON_LEFT_FACE_LEFT,
   };
 
-  mapping[InputAction::WidgetRight] = {
+  mapping[to_int(InputAction::WidgetRight)] = {
       raylib::KEY_RIGHT,
       raylib::GAMEPAD_BUTTON_LEFT_FACE_RIGHT,
   };
 
-  mapping[InputAction::WidgetBack] = {
+  mapping[to_int(InputAction::WidgetBack)] = {
       raylib::GAMEPAD_BUTTON_LEFT_FACE_UP,
       raylib::KEY_UP,
   };
 
-  mapping[InputAction::WidgetNext] = {
+  mapping[to_int(InputAction::WidgetNext)] = {
       raylib::KEY_TAB,
       raylib::GAMEPAD_BUTTON_LEFT_FACE_DOWN,
       raylib::KEY_DOWN,
   };
 
-  mapping[InputAction::WidgetPress] = {
+  mapping[to_int(InputAction::WidgetPress)] = {
       raylib::KEY_ENTER,
       raylib::GAMEPAD_BUTTON_RIGHT_FACE_DOWN,
   };
 
-  mapping[InputAction::WidgetMod] = {
+  mapping[to_int(InputAction::WidgetMod)] = {
       raylib::KEY_LEFT_SHIFT,
   };
 
-  mapping[InputAction::MenuBack] = {
+  mapping[to_int(InputAction::MenuBack)] = {
       raylib::KEY_ESCAPE,
   };
 
-  mapping[InputAction::PauseButton] = {raylib::KEY_ESCAPE,
+  mapping[to_int(InputAction::PauseButton)] = {raylib::KEY_ESCAPE,
                                        raylib::GAMEPAD_BUTTON_MIDDLE_RIGHT};
 
-  mapping[InputAction::ToggleUIDebug] = {
+  mapping[to_int(InputAction::ToggleUIDebug)] = {
       raylib::KEY_GRAVE,
   };
 
-  mapping[InputAction::ToggleUILayoutDebug] = {
+  mapping[to_int(InputAction::ToggleUILayoutDebug)] = {
       raylib::KEY_EQUAL,
   };
 
-  mapping[InputAction::Boost] = {
+  mapping[to_int(InputAction::Boost)] = {
       raylib::KEY_SPACE,
       input::GamepadAxisWithDir{
           .axis = raylib::GAMEPAD_AXIS_RIGHT_TRIGGER,
@@ -126,7 +138,7 @@ inline auto get_mapping() {
       },
   };
 
-  mapping[InputAction::Honk] = {
+  mapping[to_int(InputAction::Honk)] = {
       raylib::KEY_H,
       raylib::GAMEPAD_BUTTON_RIGHT_THUMB,
   };

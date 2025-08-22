@@ -22,7 +22,7 @@ void back();
 } // namespace navigation
 
 struct NavigationSystem : System<> {
-  input::PossibleInputCollector<InputAction> inpc;
+  input::PossibleInputCollector inpc;
 
   virtual void once(float) override;
 };

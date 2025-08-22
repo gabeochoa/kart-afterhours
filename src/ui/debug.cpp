@@ -8,12 +8,12 @@ bool ScheduleDebugUI::should_run(float dt) {
 
   if (enableCooldown < 0) {
     enableCooldown = enableCooldownReset;
-    input::PossibleInputCollector<InputAction> inpc =
-        input::get_input_collector<InputAction>();
+      input::PossibleInputCollector inpc =
+      input::get_input_collector();
 
     bool debug_pressed =
         std::ranges::any_of(inpc.inputs(), [](const auto &actions_done) {
-          return actions_done.action == InputAction::ToggleUIDebug;
+          return action_matches(actions_done.action, InputAction::ToggleUIDebug);
         });
     if (debug_pressed) {
       enabled = !enabled;

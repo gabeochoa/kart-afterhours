@@ -130,7 +130,7 @@ Preload &Preload::make_singleton() {
   // sophie
   auto &sophie = EntityHelper::createEntity();
   {
-    input::add_singleton_components<InputAction>(sophie, get_mapping());
+    input::add_singleton_components(sophie, get_mapping());
     window_manager::add_singleton_components(sophie, 200);
     ui::add_singleton_components<InputAction>(sophie);
 

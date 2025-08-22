@@ -31,7 +31,7 @@ void back() {
 } // namespace navigation
 
 void NavigationSystem::once(float) {
-	inpc = input::get_input_collector<InputAction>();
+	    inpc = input::get_input_collector();
 
 	// Initialize stack with Main on first run if needed
 	auto &n = nav();
@@ -50,7 +50,7 @@ void NavigationSystem::once(float) {
 
 	// Toggle UI visibility with WidgetMod (start button)
   const bool start_pressed = std::ranges::any_of(
-      inpc.inputs_pressed(), [](const auto &a) { return a.action == InputAction::WidgetMod; });
+      inpc.inputs_pressed(), [](const auto &a) { return action_matches(a.action, InputAction::WidgetMod); });
   if (!n.ui_visible && start_pressed) {
     navigation::to(GameStateManager::Screen::Main);
     n.ui_visible = true;
@@ -60,7 +60,7 @@ void NavigationSystem::once(float) {
 
 	// Back navigation on escape
   const bool escape_pressed = std::ranges::any_of(
-      inpc.inputs_pressed(), [](const auto &a) { return a.action == InputAction::MenuBack; });
+      inpc.inputs_pressed(), [](const auto &a) { return action_matches(a.action, InputAction::MenuBack); });
   if (escape_pressed && n.ui_visible) {
     navigation::back();
   }

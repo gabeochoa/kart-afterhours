@@ -179,22 +179,22 @@ struct SoundPlaybackSystem : System<PlaySoundRequest> {
 
 // Binds UI input to sound requests instead of direct plays
 struct UISoundBindingSystem : System<> {
-  input::PossibleInputCollector<InputAction> inpc;
+  input::PossibleInputCollector inpc;
 
   virtual bool should_run(float) override {
     return GameStateManager::get().is_menu_active();
   }
 
   virtual void once(float) override {
-    inpc = input::get_input_collector<InputAction>();
+    inpc = input::get_input_collector();
   }
 
   template <typename TAction>
   static void enqueue_move_if_any(const TAction &actions_done) {
-    const bool is_move = actions_done.action == InputAction::WidgetLeft ||
-                         actions_done.action == InputAction::WidgetRight ||
-                         actions_done.action == InputAction::WidgetNext ||
-                         actions_done.action == InputAction::WidgetBack;
+    const bool is_move = action_matches(actions_done.action, InputAction::WidgetLeft) ||
+                         action_matches(actions_done.action, InputAction::WidgetRight) ||
+                         action_matches(actions_done.action, InputAction::WidgetNext) ||
+                         action_matches(actions_done.action, InputAction::WidgetBack);
     if (is_move) {
       auto opt = EntityQuery({.force_merge = true})
                      .template whereHasComponent<SoundEmitter>()

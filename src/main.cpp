@@ -44,13 +44,13 @@ void game() {
   {
     window_manager::enforce_singletons(systems);
     ui::enforce_singletons<InputAction>(systems);
-    input::enforce_singletons<InputAction>(systems);
+    input::enforce_singletons(systems);
     texture_manager::enforce_singletons(systems);
   }
 
   // external plugins
   {
-    input::register_update_systems<InputAction>(systems);
+    input::register_update_systems(systems);
     window_manager::register_update_systems(systems);
   }
 

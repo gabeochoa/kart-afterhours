@@ -92,7 +92,7 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   // character creators
   std::vector<RefEntity> players;
   std::vector<RefEntity> ais;
-  input::PossibleInputCollector<InputAction> inpc;
+  input::PossibleInputCollector inpc;
 
   void update_resolution_cache();
   void character_selector_column(Entity &parent,
@@ -159,7 +159,7 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
 };
 
 struct SchedulePauseUI : System<afterhours::ui::UIContext<InputAction>> {
-  input::PossibleInputCollector<InputAction> inpc;
+  input::PossibleInputCollector inpc;
 
   void exit_game() { running = false; }
 

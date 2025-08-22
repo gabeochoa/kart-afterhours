@@ -13,7 +13,7 @@ void SchedulePauseUI::for_each_with(Entity &entity,
                                     UIContext<InputAction> &context, float) {
   const bool pause_pressed =
       std::ranges::any_of(inpc.inputs_pressed(), [](const auto &actions_done) {
-        return actions_done.action == InputAction::PauseButton;
+        return action_matches(actions_done.action, InputAction::PauseButton);
       });
 
   if (pause_pressed) {

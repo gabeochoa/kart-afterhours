@@ -52,7 +52,7 @@ void ScheduleMainMenuUI::once(float) {
   {
     players = EQ().whereHasComponent<PlayerID>().orderByPlayerID().gen();
     ais = EQ().whereHasComponent<AIControlled>().gen();
-    inpc = input::get_input_collector<InputAction>();
+    inpc = input::get_input_collector();
   }
 }
 
@@ -120,7 +120,7 @@ void ScheduleMainMenuUI::character_selector_column(
         continue;
       }
 
-      player_right |= actions_done.action == InputAction::WidgetRight;
+              player_right |= action_matches(actions_done.action, InputAction::WidgetRight);
 
       if (player_right) {
         break;

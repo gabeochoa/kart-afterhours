@@ -347,7 +347,7 @@ void ScheduleMainMenuUI::once(float) {
   {
     players = EQ().whereHasComponent<PlayerID>().orderByPlayerID().gen();
     ais = EQ().whereHasComponent<AIControlled>().gen();
-    inpc = input::get_input_collector<InputAction>();
+    inpc = input::get_input_collector();
   }
 }
 
@@ -419,7 +419,7 @@ void ScheduleMainMenuUI::character_selector_column(
         continue;
       }
 
-      player_right |= actions_done.action == InputAction::WidgetRight;
+      player_right |= action_matches(actions_done.action, InputAction::WidgetRight);
 
       if (player_right) {
         break;
@@ -1693,12 +1693,12 @@ bool ScheduleDebugUI::should_run(float dt) {
 
   if (enableCooldown < 0) {
     enableCooldown = enableCooldownReset;
-    input::PossibleInputCollector<InputAction> inpc =
-        input::get_input_collector<InputAction>();
+    input::PossibleInputCollector inpc =
+        input::get_input_collector();
 
     bool debug_pressed =
         std::ranges::any_of(inpc.inputs(), [](const auto &actions_done) {
-          return actions_done.action == InputAction::ToggleUIDebug;
+          return action_matches(actions_done.action, InputAction::ToggleUIDebug);
         });
     if (debug_pressed) {
       enabled = !enabled;
@@ -1871,7 +1871,7 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
 }
 
 bool SchedulePauseUI::should_run(float) {
-  inpc = input::get_input_collector<InputAction>();
+  inpc = input::get_input_collector();
   return GameStateManager::get().is_game_active() ||
          GameStateManager::get().is_paused();
 }
@@ -1881,7 +1881,7 @@ void SchedulePauseUI::for_each_with(Entity &entity,
   // Handle pause button input
   const bool pause_pressed =
       std::ranges::any_of(inpc.inputs_pressed(), [](const auto &actions_done) {
-        return actions_done.action == InputAction::PauseButton;
+        return action_matches(actions_done.action, InputAction::PauseButton);
       });
 
   if (pause_pressed) {

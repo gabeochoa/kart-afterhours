@@ -304,20 +304,20 @@ struct RenderFPS : System<window_manager::ProvidesCurrentResolution> {
 
 struct RenderDebugWindowInfo
     : System<window_manager::ProvidesCurrentResolution> {
-  input::PossibleInputCollector<InputAction> inpc;
+  input::PossibleInputCollector inpc;
 
   virtual void once(float) override {
-    inpc = input::get_input_collector<InputAction>();
+    inpc = input::get_input_collector();
   }
 
   virtual bool should_run(float) override {
     return true; // @nocommit just for  testing ui scale
-    inpc = input::get_input_collector<InputAction>();
+    inpc = input::get_input_collector();
     if (!inpc.has_value())
       return false;
     bool toggle_pressed =
         std::ranges::any_of(inpc.inputs_pressed(), [](const auto &a) {
-          return a.action == InputAction::ToggleUILayoutDebug;
+          return action_matches(a.action, InputAction::ToggleUILayoutDebug);
         });
     static bool enabled = false;
     if (toggle_pressed)
@@ -632,19 +632,19 @@ struct RenderLetterboxBars : System<window_manager::ProvidesCurrentResolution> {
 
 struct RenderDebugGridOverlay
     : System<window_manager::ProvidesCurrentResolution> {
-  input::PossibleInputCollector<InputAction> inpc;
+  input::PossibleInputCollector inpc;
 
   virtual void once(float) override {
-    inpc = input::get_input_collector<InputAction>();
+    inpc = input::get_input_collector();
   }
 
   virtual bool should_run(float) override {
-    inpc = input::get_input_collector<InputAction>();
+    inpc = input::get_input_collector();
     if (!inpc.has_value())
       return false;
     bool toggle_pressed =
         std::ranges::any_of(inpc.inputs_pressed(), [](const auto &a) {
-          return a.action == InputAction::ToggleUIDebug;
+          return action_matches(a.action, InputAction::ToggleUIDebug);
         });
     static bool enabled = false;
     if (toggle_pressed)
@@ -911,10 +911,10 @@ struct WeaponFiredCleanupSystem : System<WeaponFired> {
 };
 
 struct Shoot : PausableSystem<PlayerID, Transform, CanShoot> {
-  input::PossibleInputCollector<InputAction> inpc;
+  input::PossibleInputCollector inpc;
 
   virtual void once(float) override {
-    inpc = input::get_input_collector<InputAction>();
+    inpc = input::get_input_collector();
   }
   virtual void for_each_with(Entity &entity, PlayerID &playerID, Transform &,
                              CanShoot &, float) override {
@@ -928,7 +928,7 @@ struct Shoot : PausableSystem<PlayerID, Transform, CanShoot> {
         continue;
 
       if (actions_done.amount_pressed > 0.f) {
-        entity.addComponentIfMissing<WantsWeaponFire>(actions_done.action);
+        entity.addComponentIfMissing<WantsWeaponFire>(from_int(actions_done.action));
       }
     }
   }
@@ -1297,8 +1297,8 @@ struct VelFromInput
   virtual void for_each_with(Entity &entity, PlayerID &playerID,
                              Transform &transform, HonkState &honk, HasShader &,
                              float dt) override {
-    input::PossibleInputCollector<InputAction> inpc =
-        input::get_input_collector<InputAction>();
+    input::PossibleInputCollector inpc =
+        input::get_input_collector();
     if (!inpc.has_value()) {
       return;
     }
@@ -1312,7 +1312,7 @@ struct VelFromInput
         continue;
       }
 
-      switch (actions_done.action) {
+      switch (from_int(actions_done.action)) {
       case InputAction::Accel:
         transform.accel = transform.is_reversing()
                               ? -Config::get().breaking_acceleration.data
@@ -1357,7 +1357,7 @@ struct VelFromInput
         continue;
       }
 
-      switch (actions_done.action) {
+      switch (from_int(actions_done.action)) {
       case InputAction::Accel:
         break;
       case InputAction::Brake:
