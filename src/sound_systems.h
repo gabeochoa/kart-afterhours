@@ -68,19 +68,17 @@ struct BackgroundMusic : System<> {
     if (!raylib::IsAudioDeviceReady())
       return;
 
-#if __APPLE__
     if (!started && GameStateManager::get().is_menu_active()) {
       auto &music = MusicLibrary::get().get("menu_music");
       music.looping = true;
       raylib::PlayMusicStream(music);
       started = true;
     }
-
+    
     auto &music = MusicLibrary::get().get("menu_music");
     if (raylib::IsMusicStreamPlaying(music)) {
       raylib::UpdateMusicStream(music);
     }
-#endif 
   }
 
   virtual void for_each_with(Entity &, float) override {}
