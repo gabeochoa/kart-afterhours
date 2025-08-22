@@ -2,6 +2,7 @@
 #include "../preload.h"
 #include "../texture_library.h"
 #include <afterhours/src/plugins/texture_manager.h>
+#include <fmt/format.h>
 
 using namespace afterhours;
 
@@ -70,7 +71,7 @@ ElementResult create_player_card(
   }
 
   if (ranking.has_value() && ranking.value() <= 3) {
-    std::string ranking_label = std::format("#{}", ranking.value());
+    std::string ranking_label = fmt::format("#{}", ranking.value());
 
     imm::div(context, mk(card.ent(), 2),
              ComponentConfig{}

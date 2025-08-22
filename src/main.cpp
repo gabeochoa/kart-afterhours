@@ -136,8 +136,8 @@ void game() {
 
     ui::register_before_ui_updates<InputAction>(systems);
     {
-#if __APPLE__
       afterhours::animation::register_update_systems<UIKey>(systems);
+#if __APPLE__
       afterhours::animation::register_update_systems<
           afterhours::animation::CompositeKey>(systems);
 #endif

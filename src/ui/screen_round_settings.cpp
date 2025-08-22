@@ -2,6 +2,7 @@
 #include "../preload.h"
 #include "../round_settings.h"
 #include "../ui_systems.h"
+#include <fmt/format.h>
 
 using namespace afterhours;
 
@@ -11,7 +12,7 @@ void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
   imm::div(context, mk(entity),
            ComponentConfig{}
                .with_label(
-                   std::format("Num Lives: {}", rl_settings.num_starting_lives))
+                   fmt::format("Num Lives: {}", rl_settings.num_starting_lives))
                .with_size(ComponentSize{percent(1.f), percent(0.2f)})
                .with_margin(Margin{.top = screen_pct(0.01f)}));
 }
@@ -21,7 +22,7 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
 
   imm::div(context, mk(entity),
            ComponentConfig{}
-               .with_label(std::format("Round Length: {}",
+               .with_label(fmt::format("Round Length: {}",
                                        rl_settings.current_round_time))
                .with_size(ComponentSize{screen_pct(0.3f), screen_pct(0.06f)})
                .with_margin(Margin{.top = screen_pct(0.01f)}));
@@ -45,7 +46,7 @@ void round_hippo_settings(Entity &entity, UIContext<InputAction> &context) {
   imm::div(
       context, mk(entity),
       ComponentConfig{}
-          .with_label(std::format("Total Hippos: {}", rl_settings.total_hippos))
+          .with_label(fmt::format("Total Hippos: {}", rl_settings.total_hippos))
           .with_size(ComponentSize{percent(1.f), percent(0.2f)}));
 }
 

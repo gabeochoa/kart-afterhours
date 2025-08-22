@@ -6,6 +6,7 @@
 #include "animation_key.h"
 #include "reusable_components.h"
 #include <afterhours/src/plugins/animation.h>
+#include <fmt/format.h>
 
 using namespace afterhours;
 
@@ -105,8 +106,8 @@ void ScheduleMainMenuUI::character_selector_column(
                    .with_custom_color(bg_color)
                    .disable_rounded_corners());
 
-  std::string label = car.has_value() ? std::format("{} {}", index, car->id)
-                                      : std::format("{} Empty", index);
+  std::string label = car.has_value() ? fmt::format("{} {}", index, car->id)
+                                      : fmt::format("{} Empty", index);
 
   bool player_right = false;
   if (index < players.size()) {
@@ -221,25 +222,25 @@ void ScheduleMainMenuUI::round_end_player_column(
                    .with_opacity(card_v)
                    .disable_rounded_corners());
 
-  std::string player_label = std::format("{} {}", index, car->id);
+  std::string player_label = fmt::format("{} {}", index, car->id);
 
   std::optional<std::string> stats_text;
   switch (RoundManager::get().active_round_type) {
   case RoundType::Lives:
     if (car->has<HasMultipleLives>()) {
-      stats_text = std::format(
+      stats_text = fmt::format(
           "Lives: {}", car->get<HasMultipleLives>().num_lives_remaining);
     }
     break;
   case RoundType::Kills:
     if (car->has<HasKillCountTracker>()) {
       stats_text =
-          std::format("Kills: {}", car->get<HasKillCountTracker>().kills);
+          fmt::format("Kills: {}", car->get<HasKillCountTracker>().kills);
     }
     break;
   case RoundType::Hippo:
     if (car->has<HasHippoCollection>()) {
-      stats_text = std::format(
+      stats_text = fmt::format(
           "Hippos: {}", car->get<HasHippoCollection>().get_hippo_count());
     } else {
       stats_text = "Hippos: 0";
@@ -247,7 +248,7 @@ void ScheduleMainMenuUI::round_end_player_column(
     break;
   case RoundType::TagAndGo:
     if (car->has<HasTagAndGoTracking>()) {
-      stats_text = std::format("Not It: {:.1f}s",
+      stats_text = fmt::format("Not It: {:.1f}s",
                                car->get<HasTagAndGoTracking>().time_as_not_it);
     }
     break;
@@ -268,7 +269,7 @@ void ScheduleMainMenuUI::round_end_player_column(
     if (car->has<HasMultipleLives>()) {
       int final_val = car->get<HasMultipleLives>().num_lives_remaining;
       int shown = static_cast<int>(std::round(score_t * final_val));
-      animated_stats = std::format("Lives: {}", shown);
+      animated_stats = fmt::format("Lives: {}", shown);
     }
     break;
   }
@@ -276,7 +277,7 @@ void ScheduleMainMenuUI::round_end_player_column(
     if (car->has<HasKillCountTracker>()) {
       int final_val = car->get<HasKillCountTracker>().kills;
       int shown = static_cast<int>(std::round(score_t * final_val));
-      animated_stats = std::format("Kills: {}", shown);
+      animated_stats = fmt::format("Kills: {}", shown);
     }
     break;
   }
@@ -285,14 +286,14 @@ void ScheduleMainMenuUI::round_end_player_column(
                         ? car->get<HasHippoCollection>().get_hippo_count()
                         : 0;
     int shown = static_cast<int>(std::round(score_t * final_val));
-    animated_stats = std::format("Hippos: {}", shown);
+          animated_stats = fmt::format("Hippos: {}", shown);
     break;
   }
   case RoundType::TagAndGo: {
     if (car->has<HasTagAndGoTracking>()) {
       float final_val = car->get<HasTagAndGoTracking>().time_as_not_it;
       float shown = std::round(score_t * final_val * 10.0f) / 10.0f;
-      animated_stats = std::format("Not It: {:.1f}s", shown);
+      animated_stats = fmt::format("Not It: {:.1f}s", shown);
     }
     break;
   }
@@ -340,7 +341,7 @@ std::map<EntityID, int> ScheduleMainMenuUI::get_tag_and_go_rankings(
 void ScheduleMainMenuUI::render_round_settings_preview(
     UIContext<InputAction> &context, Entity &parent) {
   imm::div(context, mk(parent),
-           ComponentConfig{}.with_label(std::format(
+           ComponentConfig{}.with_label(fmt::format(
                "Win Condition: {}",
                magic_enum::enum_name(RoundManager::get().active_round_type))));
 
@@ -379,7 +380,7 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     auto &s = RoundManager::get().get_active_rt<RoundLivesSettings>();
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
-                 std::format("Num Lives: {}", s.num_starting_lives)));
+                 fmt::format("Num Lives: {}", s.num_starting_lives)));
     break;
   }
   case RoundType::Kills: {
@@ -401,14 +402,14 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     }
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
-                 std::format("Round Length: {}", time_display)));
+                 fmt::format("Round Length: {}", time_display)));
     break;
   }
   case RoundType::Hippo: {
     auto &s = RoundManager::get().get_active_rt<RoundHippoSettings>();
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
-                 std::format("Total Hippos: {}", s.total_hippos)));
+                 fmt::format("Total Hippos: {}", s.total_hippos)));
     break;
   }
   case RoundType::TagAndGo: {
@@ -430,7 +431,7 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     }
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
-                 std::format("Round Length: {}", time_display)));
+                 fmt::format("Round Length: {}", time_display)));
     break;
   }
   default:
