@@ -2239,18 +2239,14 @@ void register_ui_systems(afterhours::SystemManager &systems) {
   ui::register_before_ui_updates<InputAction>(systems);
   {
     afterhours::animation::register_update_systems<UIKey>(systems);
-#if __APPLE__
     afterhours::animation::register_update_systems<
         afterhours::animation::CompositeKey>(systems);
-#endif
     systems.register_update_system(
         std::make_unique<SetupGameStylingDefaults>());
-#if __APPLE__
     systems.register_update_system(
         std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
     systems.register_update_system(
         std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
-#endif
     systems.register_update_system(std::make_unique<NavigationSystem>());
     systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
     systems.register_update_system(std::make_unique<SchedulePauseUI>());

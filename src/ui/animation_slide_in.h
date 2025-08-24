@@ -40,7 +40,10 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
   virtual void once(float) override {
     this->context = afterhours::EntityHelper::get_singleton_cmp<
         afterhours::ui::UIContext<InputAction>>();
+#if __WIN32 
+#else
     this->include_derived_children = true;
+#endif
 
     if (auto *resEnt = afterhours::EntityHelper::get_singleton_cmp<
             afterhours::window_manager::ProvidesCurrentResolution>()) {
@@ -48,7 +51,11 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
     }
   }
 
+#if __WIN32 
+  virtual void for_each_with(afterhours::Entity &entity,
+#else
   virtual void for_each_with_derived(afterhours::Entity &entity,
+#endif
                                      afterhours::ui::UIComponent &component,
                                      const float) override {
     auto current_screen = GameStateManager::get().active_screen;

@@ -219,11 +219,8 @@ struct UISoundBindingSystem : System<> {
 
 void register_sound_systems(afterhours::SystemManager &systems) {
     systems.register_update_system(std::make_unique<BackgroundMusic>());
-
-#if __APPLE__
     systems.register_update_system(std::make_unique<UISoundBindingSystem>());
     systems.register_update_system(std::make_unique<SoundPlaybackSystem>());
-#endif
     systems.register_update_system(std::make_unique<UIClickSounds>());
     systems.register_render_system(std::make_unique<CarRumble>());
 }
