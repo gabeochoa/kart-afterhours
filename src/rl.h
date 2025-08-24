@@ -40,128 +40,41 @@ namespace raylib {
 #include <rlgl.h>
 #endif
 
-// Only add missing scalar-left multiplication overloads
-inline Vector2 operator*(float s, Vector2 a) { return Vector2Scale(a, s); }
-inline Vector3 operator*(float s, Vector3 a) { return Vector3Scale(a, s); }
+#if defined(BUILT_WITH_XMAKE)
+#else
 
-inline void DrawSplineSegmentLinear(Vector2 p1, Vector2 p2, float thick,
-                                    Color color) {
-  // NOTE: For the linear spline we don't use subdivisions, just a single quad
-
-  Vector2 delta = {p2.x - p1.x, p2.y - p1.y};
-  float length = sqrtf(delta.x * delta.x + delta.y * delta.y);
-
-  if ((length > 0) && (thick > 0)) {
-    float scale = thick / (2 * length);
-
-    Vector2 radius = {-scale * delta.y, scale * delta.x};
-    Vector2 strip[4] = {{p1.x - radius.x, p1.y - radius.y},
-                        {p1.x + radius.x, p1.y + radius.y},
-                        {p2.x - radius.x, p2.y - radius.y},
-                        {p2.x + radius.x, p2.y + radius.y}};
-
-    DrawTriangleStrip(strip, 4, color);
-  }
+// Add missing Vector2 operators
+inline Vector2 operator+(const Vector2& a, const Vector2& b) {
+    return Vector2{a.x + b.x, a.y + b.y};
 }
 
-inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
-                             Color color) {
-  if (pointCount < 2)
-    return;
+inline Vector2 operator-(const Vector2& a, const Vector2& b) {
+    return Vector2{a.x - b.x, a.y - b.y};
+}
 
-#if defined(SUPPORT_SPLINE_MITERS)
-  Vector2 prevNormal =
-      (Vector2){-(points[1].y - points[0].y), (points[1].x - points[0].x)};
-  float prevLength =
-      sqrtf(prevNormal.x * prevNormal.x + prevNormal.y * prevNormal.y);
+inline Vector2 operator/(const Vector2& a, float s) {
+    return Vector2{a.x / s, a.y / s};
+}
 
-  if (prevLength > 0.0f) {
-    prevNormal.x /= prevLength;
-    prevNormal.y /= prevLength;
-  } else {
-    prevNormal.x = 0.0f;
-    prevNormal.y = 0.0f;
-  }
+inline Vector2& operator+=(Vector2& a, const Vector2& b) {
+    a.x += b.x;
+    a.y += b.y;
+    return a;
+}
 
-  Vector2 prevRadius = {0.5f * thick * prevNormal.x,
-                        0.5f * thick * prevNormal.y};
-
-  for (int i = 0; i < pointCount - 1; i++) {
-    Vector2 normal = {0};
-
-    if (i < pointCount - 2) {
-      normal = (Vector2){-(points[i + 2].y - points[i + 1].y),
-                         (points[i + 2].x - points[i + 1].x)};
-      float normalLength = sqrtf(normal.x * normal.x + normal.y * normal.y);
-
-      if (normalLength > 0.0f) {
-        normal.x /= normalLength;
-        normal.y /= normalLength;
-      } else {
-        normal.x = 0.0f;
-        normal.y = 0.0f;
-      }
-    } else {
-      normal = prevNormal;
-    }
-
-    Vector2 radius = {prevNormal.x + normal.x, prevNormal.y + normal.y};
-    float radiusLength = sqrtf(radius.x * radius.x + radius.y * radius.y);
-
-    if (radiusLength > 0.0f) {
-      radius.x /= radiusLength;
-      radius.y /= radiusLength;
-    } else {
-      radius.x = 0.0f;
-      radius.y = 0.0f;
-    }
-
-    float cosTheta = radius.x * normal.x + radius.y * normal.y;
-
-    if (cosTheta != 0.0f) {
-      radius.x *= (thick * 0.5f / cosTheta);
-      radius.y *= (thick * 0.5f / cosTheta);
-    } else {
-      radius.x = 0.0f;
-      radius.y = 0.0f;
-    }
-
-    Vector2 strip[4] = {
-        {points[i].x - prevRadius.x, points[i].y - prevRadius.y},
-        {points[i].x + prevRadius.x, points[i].y + prevRadius.y},
-        {points[i + 1].x - radius.x, points[i + 1].y - radius.y},
-        {points[i + 1].x + radius.x, points[i + 1].y + radius.y}};
-
-    DrawTriangleStrip(strip, 4, color);
-
-    prevRadius = radius;
-    prevNormal = normal;
-  }
-
-#else // !SUPPORT_SPLINE_MITERS
-
-  Vector2 delta = {0};
-  float scale = 0.0f;
-
-  for (int i = 0; i < pointCount - 1; i++) {
-    delta =
-        (Vector2){points[i + 1].x - points[i].x, points[i + 1].y - points[i].y};
-    float length = sqrtf(delta.x * delta.x + delta.y * delta.y);
-
-    if (length > 0)
-      scale = thick / (2 * length);
-
-    Vector2 radius = {-scale * delta.y, scale * delta.x};
-    Vector2 strip[4] = {
-        {points[i].x - radius.x, points[i].y - radius.y},
-        {points[i].x + radius.x, points[i].y + radius.y},
-        {points[i + 1].x - radius.x, points[i + 1].y - radius.y},
-        {points[i + 1].x + radius.x, points[i + 1].y + radius.y}};
-
-    DrawTriangleStrip(strip, 4, color);
-  }
+inline Vector2& operator-=(Vector2& a, const Vector2& b) {
+    a.x -= b.x;
+    a.y -= b.y;
+    return a;
+}
 #endif
-}
+
+inline Vector2 operator*(const float s, const Vector2& a) { return Vector2Scale(a, s); }
+inline Vector3 operator*(const float s, const Vector3& a) { return Vector3Scale(a, s); }
+
+// Add vector * scalar operators for convenience
+inline Vector2 operator*(const Vector2& a, const float s) { return Vector2Scale(a, s); }
+inline Vector3 operator*(const Vector3& a, const float s) { return Vector3Scale(a, s); }
 
 } // namespace raylib
 

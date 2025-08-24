@@ -9,6 +9,7 @@ else
     set_toolset("ld", "clang++")
 end
 set_languages("c++23")
+add_defines("BUILT_WITH_XMAKE")
 
 add_cxxflags([[
     -g
@@ -69,5 +70,5 @@ target("kart")
     end
 
     after_build(function(target)
-        os.exec("./output/kart.exe")
+        os.exec("output/kart.exe")
     end)

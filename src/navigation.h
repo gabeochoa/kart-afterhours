@@ -3,7 +3,6 @@
 #include "std_include.h"
 
 #include "library.h"
-#include "game.h"
 #include "game_state_manager.h"
 #include "input_mapping.h"
 

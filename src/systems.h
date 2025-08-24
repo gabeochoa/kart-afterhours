@@ -825,10 +825,10 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
 
 struct WeaponCooldownSystem : PausableSystem<CanShoot> {
   virtual void for_each_with(Entity &, CanShoot &canShoot, float dt) override {
-    magic_enum::enum_for_each<InputAction>([&](auto val) {
-      constexpr InputAction action = val;
+    for (int i = 0; i < magic_enum::enum_count<InputAction>(); ++i) {
+      InputAction action = magic_enum::enum_value<InputAction>(i);
       canShoot.pass_time(action, dt);
-    });
+    }
   }
 };
 
