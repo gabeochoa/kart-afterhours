@@ -1,9 +1,0 @@
-diff a/src/ui_systems.h b/src/ui_systems.h	(rejected hunks)
-@@ -8,6 +8,7 @@
- #include "query.h"
- #include "settings.h"
- #include "navigation.h"
-+#include "input_mapping.h"
- 
- #include "round_settings.h"
- 

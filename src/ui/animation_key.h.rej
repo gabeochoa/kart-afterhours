@@ -1,9 +1,0 @@
-diff a/src/ui/animation_key.h b/src/ui/animation_key.h	(rejected hunks)
-@@ -1,6 +1,6 @@
- #pragma once
- 
--#include "../vendor/afterhours/src/plugins/animation.h"
-+#include <afterhours/src/plugins/animation.h>
- #include <cstddef>
- 
- enum struct UIKey : size_t {
