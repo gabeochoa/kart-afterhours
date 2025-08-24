@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "components.h"
 #include "library.h"
 #include "rl.h"
 #include <bitset>
@@ -153,6 +154,19 @@ struct RoundTagAndGoSettings : RoundSettings {
 
   float get_tag_cooldown() const {
     return allow_tag_backs ? 0.25f : tag_cooldown_time;
+  }
+
+  void reset_temp_data() override {
+    // Reset all players' tag states when starting a new round
+    auto players_with_tracking = EntityQuery({.ignore_temp_warning = true})
+                                     .whereHasComponent<HasTagAndGoTracking>()
+                                     .gen();
+    for (auto &player_ref : players_with_tracking) {
+      auto &tracking = player_ref.get().get<HasTagAndGoTracking>();
+      tracking.is_tagger = false;
+      tracking.time_as_not_it = 0.0f;
+      tracking.last_tag_time = -1.0f;
+    }
   }
 
   // Override default time option for TagAndGo
