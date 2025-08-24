@@ -143,6 +143,7 @@ void game() {
       systems.register_render_system(std::make_unique<BeginWorldRender>());
 
       {
+        systems.register_render_system(std::make_unique<BeginCameraMode>());
         systems.register_render_system(std::make_unique<RenderSkid>());
         systems.register_render_system(std::make_unique<RenderEntities>());
         texture_manager::register_render_systems(systems);
@@ -156,6 +157,7 @@ void game() {
         systems.register_render_system(
             std::make_unique<RenderWeaponCooldown>());
         systems.register_render_system(std::make_unique<RenderOOB>());
+        systems.register_render_system(std::make_unique<EndCameraMode>());
         // (UI moved to pass 2 so it is after tag shader)
       }
       systems.register_render_system(std::make_unique<EndWorldRender>());

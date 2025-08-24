@@ -1921,6 +1921,24 @@ struct EndWorldRender : System<> {
   }
 };
 
+struct BeginCameraMode : System<HasCamera> {
+  virtual void once(float) override {
+    auto *camera_entity = EntityHelper::get_singleton_cmp<HasCamera>();
+    if (camera_entity) {
+      raylib::BeginMode2D(camera_entity->camera);
+    }
+  }
+};
+
+struct EndCameraMode : System<HasCamera> {
+  virtual void once(float) override {
+    auto *camera_entity = EntityHelper::get_singleton_cmp<HasCamera>();
+    if (camera_entity) {
+      raylib::EndMode2D();
+    }
+  }
+};
+
 struct BeginTagShaderRender : System<> {
   virtual void once(float) override {
     raylib::BeginTextureMode(screenRT);

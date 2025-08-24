@@ -526,3 +526,30 @@ struct PlaySoundRequest : BaseComponent {
 };
 
 #include "components_weapons.h"
+
+struct HasCamera : BaseComponent {
+  raylib::Camera2D camera;
+  
+  HasCamera() {
+    camera.offset = {0.0f, 0.0f};
+    camera.target = {0.0f, 0.0f};
+    camera.rotation = 0.0f;
+    camera.zoom = 0.5f;
+  }
+  
+  void set_position(vec2 position) {
+    camera.target = position;
+  }
+  
+  void set_offset(vec2 offset) {
+    camera.offset = offset;
+  }
+  
+  void set_zoom(float zoom) {
+    camera.zoom = zoom;
+  }
+  
+  void set_rotation(float rotation) {
+    camera.rotation = rotation;
+  }
+};

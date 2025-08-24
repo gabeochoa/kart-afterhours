@@ -167,6 +167,12 @@ Preload &Preload::make_singleton() {
     audio.addComponent<SoundEmitter>();
     EntityHelper::registerSingleton<SoundEmitter>(audio);
   }
+  {
+    // Camera singleton for game world rendering
+    auto &camera = EntityHelper::createEntity();
+    camera.addComponent<HasCamera>();
+    EntityHelper::registerSingleton<HasCamera>(camera);
+  }
   return *this;
 }
 
