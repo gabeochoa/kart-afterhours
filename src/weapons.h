@@ -70,7 +70,7 @@ struct Weapon {
     vec2 recoil = {std::cos(transform.as_rad()), std::sin(transform.as_rad())};
 
     recoil = vec_norm(vec2{-recoil.y, recoil.x});
-    transform.velocity += (recoil * knockback_amt);
+    transform.velocity = transform.velocity + (knockback_amt * recoil);
   }
 };
 

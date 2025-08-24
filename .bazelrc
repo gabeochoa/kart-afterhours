@@ -1,0 +1,12 @@
+﻿# global C++ settings
+build --cxxopt=/std:c++latest
+build --cxxopt=/Zc:__cplusplus
+build --cxxopt=/DNOMINMAX
+build --cxxopt=/DWIN32_LEAN_AND_MEAN
+common --enable_bzlmod
+
+# Visual Studio configuration
+build --repo_env=BAZEL_VC="C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC"
+build --repo_env=BAZEL_VC_FULL_VERSION=14.44.35207
+build --repo_env=BAZEL_WINSDK_ROOT="C:\Program Files (x86)\Windows Kits\10"
+build --repo_env=BAZEL_WINSDK_VERSION=10.0.19041.0

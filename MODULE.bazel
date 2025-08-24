@@ -1,0 +1,5 @@
+module(name = "kart_afterhours")
+
+# Use a custom extension to declare legacy http_archive deps
+ext = use_extension("//tools:deps.bzl", "kart_afterhours_deps")
+use_repo(ext, "raylib", "nlohmann_json", "fmt", "magic_enum")

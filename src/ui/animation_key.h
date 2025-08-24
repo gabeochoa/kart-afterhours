@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../vendor/afterhours/src/plugins/animation.h"
+#include <afterhours/src/plugins/animation.h>
 #include <cstddef>
 
 enum struct UIKey : size_t {

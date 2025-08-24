@@ -15,7 +15,10 @@
 
 using namespace afterhours;
 
-#include "game.h"
+#include "rl.h"
+extern bool running;
+extern raylib::RenderTexture2D mainRT;
+extern raylib::RenderTexture2D screenRT;
 
 #include "components.h"
 #include "game_state_manager.h"

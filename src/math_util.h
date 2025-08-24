@@ -21,10 +21,10 @@ constexpr static float vec_cross(const vec2 &a, const vec2 &b) {
   return a.x * b.y - a.y * b.x;
 }
 
-constexpr static float vec_mag(vec2 v) {
+static float vec_mag(vec2 v) {
   return (float)sqrt(v.x * v.x + v.y * v.y);
 }
-constexpr static vec2 vec_norm(vec2 v) {
+static vec2 vec_norm(vec2 v) {
   float mag = vec_mag(v);
   if (mag == 0)
     return v;

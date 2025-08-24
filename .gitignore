@@ -34,3 +34,7 @@ tools/dependency_graph
 
 # Profiling data files
 *.spall
+
+# Bazel outputs
+bazel-*/
+**/bazel-out/

@@ -63,7 +63,10 @@ struct SoundLibrary {
   void play(const char *const name) { PlaySound(get(name)); }
 
   void play_random_match(const std::string &prefix) {
-    impl.get_random_match(prefix).transform(raylib::PlaySound);
+    auto result = impl.get_random_match(prefix);
+    if (result.has_value()) {
+      raylib::PlaySound(*result);
+    }
   }
 
   void play_if_none_playing(const std::string &prefix) {
@@ -124,9 +127,9 @@ private:
   } impl;
 };
 
-constexpr static void load_sounds() {
-  magic_enum::enum_for_each<SoundFile>([](auto val) {
-    constexpr SoundFile file = val;
+static void load_sounds() {
+  for (int i = (int)SoundFile::UI_Select; i <= (int)SoundFile::Tiny_Gears_Sequence_045; ++i) {
+    SoundFile file = static_cast<SoundFile>(i);
     std::string filename;
     switch (file) {
     case SoundFile::UI_Select:
@@ -155,8 +158,6 @@ constexpr static void load_sounds() {
     case SoundFile::Weapon_Sniper_Shot:
       filename = "gdc/CREAMisc_Heavy_Mechanical_Footsteps_03_DDUMAIS_MCSFX.wav";
       break;
-      //
-
     case SoundFile::Tiny_Gears_Sequence_045:
       filename =
           "gdc/Bluezone_BC0301_tiny_gears_small_mechanism_sequence_045.wav";
@@ -165,7 +166,7 @@ constexpr static void load_sounds() {
     SoundLibrary::get().load(
         Files::get().fetch_resource_path("sounds", filename).c_str(),
         sound_file_to_str(file));
-  });
+  }
 
   // Preload machinegun variations for random selection by prefix
   const char *mg_prefix =
