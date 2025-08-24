@@ -824,10 +824,9 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
 
 struct WeaponCooldownSystem : PausableSystem<CanShoot> {
   virtual void for_each_with(Entity &, CanShoot &canShoot, float dt) override {
-    magic_enum::enum_for_each<InputAction>([&](auto val) {
-      constexpr InputAction action = val;
-      canShoot.pass_time(action, dt);
-    });
+    for (int i = (int)InputAction::None; i <= (int)InputAction::Honk; ++i) {
+      canShoot.pass_time(static_cast<InputAction>(i), dt);
+    }
   }
 };
 
@@ -1084,8 +1083,8 @@ struct RenderSkid : System<Transform, TireMarkComponent> {
       const unsigned char a = static_cast<unsigned char>(255.0f * fade);
       raylib::Color col = useWinnerColors ? rainbow_from_hue(mp0.hue, a)
                                           : raylib::Color(20, 20, 20, a);
-      raylib::DrawSplineSegmentLinear(mp0.position + offset,
-                                      mp1.position + offset, 5.f, col);
+      Vector2Type pts[2] = {mp0.position + offset, mp1.position + offset};
+      raylib::DrawSplineLinear(pts, 2, 5.f, col);
     }
   }
 };

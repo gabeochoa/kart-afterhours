@@ -21,10 +21,10 @@ constexpr static float vec_cross(const vec2 &a, const vec2 &b) {
   return a.x * b.y - a.y * b.x;
 }
 
-constexpr static float vec_mag(vec2 v) {
-  return (float)sqrt(v.x * v.x + v.y * v.y);
+inline static float vec_mag(vec2 v) {
+  return std::sqrt(v.x * v.x + v.y * v.y);
 }
-constexpr static vec2 vec_norm(vec2 v) {
+inline static vec2 vec_norm(vec2 v) {
   float mag = vec_mag(v);
   if (mag == 0)
     return v;
@@ -54,7 +54,7 @@ constexpr static vec2 rect_center(const Rectangle &rect) {
   };
 }
 
-constexpr static vec2 calc(const Rectangle &rect, const vec2 &point) {
+inline static vec2 calc(const Rectangle &rect, const vec2 &point) {
   vec2 center = rect_center(rect);
   float s = (point.y - center.y) / (point.x - center.x);
   float h = rect.height;
@@ -82,7 +82,7 @@ constexpr static int truncate_to_seconds(float total_seconds) {
   return static_cast<int>(total_seconds) % 60;
 }
 
-static vec2 vec_rand_in_box(const Rectangle &rect) {
+inline static vec2 vec_rand_in_box(const Rectangle &rect) {
   return vec2{
       rect.x + static_cast<float>(rand() % static_cast<int>(rect.width)),
       rect.y + static_cast<float>(rand() % static_cast<int>(rect.height)),

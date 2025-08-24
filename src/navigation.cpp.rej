@@ -1,0 +1,10 @@
+diff a/src/navigation.cpp b/src/navigation.cpp	(rejected hunks)
+@@ -2,6 +2,8 @@
+ 
+ #include "query.h"
+ 
++extern bool running;
++
+ static inline MenuNavigationStack &nav() {
+   return *afterhours::EntityHelper::get_singleton_cmp<MenuNavigationStack>();
+ }

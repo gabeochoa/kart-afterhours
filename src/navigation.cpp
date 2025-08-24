@@ -2,6 +2,8 @@
 
 #include "query.h"
 
+extern bool running;
+
 static inline MenuNavigationStack &nav() {
   return *afterhours::EntityHelper::get_singleton_cmp<MenuNavigationStack>();
 }

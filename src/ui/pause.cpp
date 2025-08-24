@@ -1,10 +1,11 @@
 #include "../preload.h"
 #include "../ui_systems.h"
+#include "../input_mapping.h"
 
 using namespace afterhours;
 
 bool SchedulePauseUI::should_run(float) {
-  inpc = input::get_input_collector<InputAction>();
+  inpc = input::get_input_collector();
   return GameStateManager::get().is_game_active() ||
          GameStateManager::get().is_paused();
 }
