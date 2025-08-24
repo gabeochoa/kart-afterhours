@@ -5,9 +5,9 @@
 
 #include "components.h"
 #include "game_state_manager.h"
+#include "navigation.h"
 #include "query.h"
 #include "settings.h"
-#include "navigation.h"
 
 #include "round_settings.h"
 
@@ -168,3 +168,5 @@ struct SchedulePauseUI : System<afterhours::ui::UIContext<InputAction>> {
                              afterhours::ui::UIContext<InputAction> &context,
                              float) override;
 };
+
+void register_ui_systems(afterhours::SystemManager &systems);

@@ -9,7 +9,9 @@
 #include "navigation.h"
 #include "preload.h" // FontID
 #include "texture_library.h"
+#include "ui/animation_button_wiggle.h"
 #include "ui/animation_key.h"
+#include "ui/animation_slide_in.h"
 
 using namespace afterhours;
 
@@ -406,7 +408,7 @@ void ScheduleMainMenuUI::character_selector_column(
 
   // Create player card using helper function
   std::string label = car.has_value() ? fmt::format("{} {}", index, car->id)
-: fmt::format("{} Empty", index);
+                                      : fmt::format("{} Empty", index);
 
   bool player_right = false;
   if (index < players.size()) {
@@ -419,7 +421,8 @@ void ScheduleMainMenuUI::character_selector_column(
         continue;
       }
 
-      player_right |= action_matches(actions_done.action, InputAction::WidgetRight);
+      player_right |=
+          action_matches(actions_done.action, InputAction::WidgetRight);
 
       if (player_right) {
         break;
@@ -591,7 +594,7 @@ void ScheduleMainMenuUI::round_end_player_column(
                         ? car->get<HasHippoCollection>().get_hippo_count()
                         : 0;
     int shown = static_cast<int>(std::round(score_t * final_val));
-          animated_stats = fmt::format("Hippos: {}", shown);
+    animated_stats = fmt::format("Hippos: {}", shown);
     break;
   }
   case RoundType::TagAndGo: {
@@ -1693,12 +1696,12 @@ bool ScheduleDebugUI::should_run(float dt) {
 
   if (enableCooldown < 0) {
     enableCooldown = enableCooldownReset;
-    input::PossibleInputCollector inpc =
-        input::get_input_collector();
+    input::PossibleInputCollector inpc = input::get_input_collector();
 
     bool debug_pressed =
         std::ranges::any_of(inpc.inputs(), [](const auto &actions_done) {
-          return action_matches(actions_done.action, InputAction::ToggleUIDebug);
+          return action_matches(actions_done.action,
+                                InputAction::ToggleUIDebug);
         });
     if (debug_pressed) {
       enabled = !enabled;
@@ -2061,4 +2064,28 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
+}
+
+void register_ui_systems(afterhours::SystemManager &systems) {
+  ui::register_before_ui_updates<InputAction>(systems);
+  {
+    afterhours::animation::register_update_systems<UIKey>(systems);
+#if __APPLE__
+    afterhours::animation::register_update_systems<
+        afterhours::animation::CompositeKey>(systems);
+#endif
+    systems.register_update_system(
+        std::make_unique<SetupGameStylingDefaults>());
+#if __APPLE__
+    systems.register_update_system(
+        std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
+    systems.register_update_system(
+        std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
+#endif
+    systems.register_update_system(std::make_unique<NavigationSystem>());
+    systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
+    systems.register_update_system(std::make_unique<SchedulePauseUI>());
+    systems.register_update_system(std::make_unique<ScheduleDebugUI>());
+  }
+  ui::register_after_ui_updates<InputAction>(systems);
 }
