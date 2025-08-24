@@ -85,6 +85,28 @@ struct SetupGameStylingDefaults
   }
 };
 
+struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
+  bool enabled = false;
+  float enableCooldown = 0.f;
+  float enableCooldownReset = 0.2f;
+
+  virtual bool should_run(float dt) override;
+  virtual void for_each_with(Entity &entity,
+                             afterhours::ui::UIContext<InputAction> &context,
+                             float) override;
+};
+
+struct SchedulePauseUI : System<afterhours::ui::UIContext<InputAction>> {
+  input::PossibleInputCollector inpc;
+
+  void exit_game() { running = false; }
+
+  virtual bool should_run(float) override;
+  virtual void for_each_with(Entity &entity,
+                             afterhours::ui::UIContext<InputAction> &context,
+                             float) override;
+};
+
 struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
   Screen get_active_screen() { return GameStateManager::get().active_screen; }
@@ -160,29 +182,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   virtual void for_each_with(Entity &entity, UIContext<InputAction> &context,
                              float) override;
 };
-
-struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
-  bool enabled = false;
-  float enableCooldown = 0.f;
-  float enableCooldownReset = 0.2f;
-
-  virtual bool should_run(float dt) override;
-  virtual void for_each_with(Entity &entity,
-                             afterhours::ui::UIContext<InputAction> &context,
-                             float) override;
-};
-
-struct SchedulePauseUI : System<afterhours::ui::UIContext<InputAction>> {
-  input::PossibleInputCollector inpc;
-
-  void exit_game() { running = false; }
-
-  virtual bool should_run(float) override;
-  virtual void for_each_with(Entity &entity,
-                             afterhours::ui::UIContext<InputAction> &context,
-                             float) override;
-};
-
 
 static inline void apply_slide_mods(afterhours::Entity &ent, float slide_v) {
   if (!ent.has<afterhours::ui::UIComponent>())
@@ -1246,6 +1245,261 @@ void ScheduleMainMenuUI::for_each_with(Entity &entity,
   }
 }
 
+bool ScheduleDebugUI::should_run(float dt) {
+  enableCooldown -= dt;
+
+  if (enableCooldown < 0) {
+    enableCooldown = enableCooldownReset;
+      input::PossibleInputCollector inpc =
+      input::get_input_collector();
+
+    bool debug_pressed =
+        std::ranges::any_of(inpc.inputs(), [](const auto &actions_done) {
+          return action_matches(actions_done.action, InputAction::ToggleUIDebug);
+        });
+    if (debug_pressed) {
+      enabled = !enabled;
+    }
+  }
+  return enabled;
+}
+
+void ScheduleDebugUI::for_each_with(Entity &entity,
+                                    UIContext<InputAction> &context, float) {
+
+  if (!enabled) {
+    return;
+  }
+
+  struct SliderSpec {
+    const char *debug_name;
+    std::function<std::string()> make_label;
+    std::function<float()> get_pct;
+    std::function<void(float)> set_pct;
+  };
+
+  const std::array<SliderSpec, 11> all_specs{
+      SliderSpec{"max_speed",
+                 []() {
+                   return fmt::format("Max Speed\n {:.2f} m/s",
+                                      Config::get().max_speed.data);
+                 },
+                 []() { return Config::get().max_speed.get_pct(); },
+                 [](float value) { Config::get().max_speed.set_pct(value); }},
+      SliderSpec{"breaking_acceleration",
+                 []() {
+                   return fmt::format("Breaking \nPower \n -{:.2f} m/s^2",
+                                      Config::get().breaking_acceleration.data);
+                 },
+                 []() { return Config::get().breaking_acceleration.get_pct(); },
+                 [](float value) {
+                   Config::get().breaking_acceleration.set_pct(value);
+                 }},
+      SliderSpec{"forward_acceleration",
+                 []() {
+                   return fmt::format("Forward \nAcceleration \n {:.2f} m/s^2",
+                                      Config::get().forward_acceleration.data);
+                 },
+                 []() { return Config::get().forward_acceleration.get_pct(); },
+                 [](float value) {
+                   Config::get().forward_acceleration.set_pct(value);
+                 }},
+      SliderSpec{"reverse_acceleration",
+                 []() {
+                   return fmt::format("Reverse \nAcceleration \n {:.2f} m/s^2",
+                                      Config::get().reverse_acceleration.data);
+                 },
+                 []() { return Config::get().reverse_acceleration.get_pct(); },
+                 [](float value) {
+                   Config::get().reverse_acceleration.set_pct(value);
+                 }},
+      SliderSpec{
+          "boost_acceleration",
+          []() {
+            return fmt::format("Boost \nAcceleration \n {:.2f} m/s^2",
+                               Config::get().boost_acceleration.data);
+          },
+          []() { return Config::get().boost_acceleration.get_pct(); },
+          [](float value) { Config::get().boost_acceleration.set_pct(value); }},
+      SliderSpec{"boost_decay_percent",
+                 []() {
+                   return fmt::format("Boost \nDecay \n {:.2f} decay%/frame",
+                                      Config::get().boost_decay_percent.data);
+                 },
+                 []() { return Config::get().boost_decay_percent.get_pct(); },
+                 [](float value) {
+                   Config::get().boost_decay_percent.set_pct(value);
+                 }},
+      SliderSpec{
+          "skid_threshold",
+          []() {
+            return fmt::format("Skid \nThreshold \n {:.2f} %",
+                               Config::get().skid_threshold.data);
+          },
+          []() { return Config::get().skid_threshold.get_pct(); },
+          [](float value) { Config::get().skid_threshold.set_pct(value); }},
+      SliderSpec{"steering_sensitivity",
+                 []() {
+                   return fmt::format("Steering \nSensitivity \n {:.2f} %",
+                                      Config::get().steering_sensitivity.data);
+                 },
+                 []() { return Config::get().steering_sensitivity.get_pct(); },
+                 [](float value) {
+                   Config::get().steering_sensitivity.set_pct(value);
+                 }},
+      SliderSpec{
+          "minimum_steering_radius",
+          []() {
+            return fmt::format("Min Steering \nSensitivity \n {:.2f} m",
+                               Config::get().minimum_steering_radius.data);
+          },
+          []() { return Config::get().minimum_steering_radius.get_pct(); },
+          [](float value) {
+            Config::get().minimum_steering_radius.set_pct(value);
+          }},
+      SliderSpec{
+          "maximum_steering_radius",
+          []() {
+            return fmt::format("Max Steering \nSensitivity \n {:.2f} m",
+                               Config::get().maximum_steering_radius.data);
+          },
+          []() { return Config::get().maximum_steering_radius.get_pct(); },
+          [](float value) {
+            Config::get().maximum_steering_radius.set_pct(value);
+          }},
+      SliderSpec{
+          "collision_scalar",
+          []() {
+            return fmt::format("Collision \nScalar \n {:.4f}",
+                               Config::get().collision_scalar.data);
+          },
+          []() { return Config::get().collision_scalar.get_pct(); },
+          [](float value) { Config::get().collision_scalar.set_pct(value); }},
+  };
+
+  auto screen_container =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(0.5f)})
+                   .with_absolute_position()
+                   .with_debug_name("debug_screen_container"));
+
+  const int items_per_row = 3;
+  const int num_rows =
+      static_cast<int>((all_specs.size() + items_per_row - 1) / items_per_row);
+  for (int row = 0; row < num_rows; ++row) {
+    const int start = row * items_per_row;
+    const int remaining = static_cast<int>(all_specs.size()) - start;
+    if (remaining <= 0)
+      break;
+    const int count_in_row = std::min(items_per_row, remaining);
+    const float row_height = 1.f / static_cast<float>(num_rows);
+
+    auto row_elem = imm::div(
+        context, mk(screen_container.ent(), row),
+        ComponentConfig{}
+            .with_size(ComponentSize{percent(1.f), percent(row_height)})
+            .with_flex_direction(FlexDirection::Row));
+
+    for (int j = 0; j < count_in_row; ++j) {
+      const auto &spec = all_specs[start + j];
+      float pct = spec.get_pct();
+      auto label = spec.make_label();
+      if (auto result =
+              slider(context, mk(row_elem.ent(), row * items_per_row + j), pct,
+                     ComponentConfig{}
+                         .with_size(ComponentSize{pixels(200.f), pixels(50.f)})
+                         .with_label(std::move(label))
+                         .with_skip_tabbing(true));
+          result) {
+        spec.set_pct(result.as<float>());
+      }
+    }
+  }
+}
+
+bool SchedulePauseUI::should_run(float) {
+  inpc = input::get_input_collector();
+  return GameStateManager::get().is_game_active() ||
+         GameStateManager::get().is_paused();
+}
+
+void SchedulePauseUI::for_each_with(Entity &entity,
+                                    UIContext<InputAction> &context, float) {
+  const bool pause_pressed =
+      std::ranges::any_of(inpc.inputs_pressed(), [](const auto &actions_done) {
+        return action_matches(actions_done.action, InputAction::PauseButton);
+      });
+
+  if (pause_pressed) {
+    if (GameStateManager::get().is_paused()) {
+      GameStateManager::get().unpause_game();
+      return;
+    } else if (GameStateManager::get().is_game_active()) {
+      GameStateManager::get().pause_game();
+      return;
+    }
+  }
+
+  if (!GameStateManager::get().is_paused()) {
+    return;
+  }
+
+  auto elem =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_font(get_font_name(FontID::EQPro), 75.f)
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute_position()
+                   .with_debug_name("pause_screen"));
+
+  auto left_col =
+      imm::div(context, mk(elem.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(0.2f), percent(1.0f)})
+                   .with_padding(Padding{.top = screen_pct(0.02f),
+                                         .left = screen_pct(0.02f)})
+                   .with_flex_direction(FlexDirection::Column)
+                   .with_debug_name("pause_left"));
+
+  imm::div(context, mk(left_col.ent(), 0),
+           ComponentConfig{}
+               .with_label("paused")
+               .with_font(get_font_name(FontID::EQPro), 100.f)
+               .with_skip_tabbing(true)
+               .with_size(ComponentSize{pixels(400.f), pixels(100.f)}));
+
+  if (imm::button(context, mk(left_col.ent(), 1),
+                  ComponentConfig{}
+                      .with_padding(Padding{.top = pixels(5.f),
+                                            .left = pixels(0.f),
+                                            .bottom = pixels(5.f),
+                                            .right = pixels(0.f)})
+                      .with_label("resume"))) {
+    GameStateManager::get().unpause_game();
+  }
+
+  if (imm::button(context, mk(left_col.ent(), 2),
+                  ComponentConfig{}
+                      .with_padding(Padding{.top = pixels(5.f),
+                                            .left = pixels(0.f),
+                                            .bottom = pixels(5.f),
+                                            .right = pixels(0.f)})
+                      .with_label("back to setup"))) {
+    GameStateManager::get().end_game();
+  }
+
+  if (imm::button(context, mk(left_col.ent(), 3),
+                  ComponentConfig{}
+                      .with_padding(Padding{.top = pixels(5.f),
+                                            .left = pixels(0.f),
+                                            .bottom = pixels(5.f),
+                                            .right = pixels(0.f)})
+                      .with_label("exit game"))) {
+    exit_game();
+  }
+}
+
 void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundLivesSettings>();
 
@@ -1858,248 +2112,6 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
   // back button moved to top-left
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
-}
-
-bool ScheduleDebugUI::should_run(float dt) {
-  enableCooldown -= dt;
-
-  if (enableCooldown < 0) {
-    enableCooldown = enableCooldownReset;
-    input::PossibleInputCollector inpc = input::get_input_collector();
-
-    bool debug_pressed =
-        std::ranges::any_of(inpc.inputs(), [](const auto &actions_done) {
-          return action_matches(actions_done.action,
-                                InputAction::ToggleUIDebug);
-        });
-    if (debug_pressed) {
-      enabled = !enabled;
-    }
-  }
-  return enabled;
-}
-
-///////
-///////
-///////
-///////
-///////
-///////
-///////
-///////
-
-void ScheduleDebugUI::for_each_with(Entity &entity,
-                                    UIContext<InputAction> &context, float) {
-
-  if (!enabled) {
-    return;
-  }
-
-  struct SliderSpec {
-    const char *debug_name;
-    std::function<std::string()> make_label;
-    std::function<float()> get_pct;
-    std::function<void(float)> set_pct;
-  };
-
-  const std::array<SliderSpec, 11> all_specs{
-      SliderSpec{"max_speed",
-                 []() {
-                   return fmt::format("Max Speed\n {:.2f} m/s",
-                                      Config::get().max_speed.data);
-                 },
-                 []() { return Config::get().max_speed.get_pct(); },
-                 [](float value) { Config::get().max_speed.set_pct(value); }},
-      SliderSpec{"breaking_acceleration",
-                 []() {
-                   return fmt::format("Breaking \nPower \n -{:.2f} m/s^2",
-                                      Config::get().breaking_acceleration.data);
-                 },
-                 []() { return Config::get().breaking_acceleration.get_pct(); },
-                 [](float value) {
-                   Config::get().breaking_acceleration.set_pct(value);
-                 }},
-      SliderSpec{"forward_acceleration",
-                 []() {
-                   return fmt::format("Forward \nAcceleration \n {:.2f} m/s^2",
-                                      Config::get().forward_acceleration.data);
-                 },
-                 []() { return Config::get().forward_acceleration.get_pct(); },
-                 [](float value) {
-                   Config::get().forward_acceleration.set_pct(value);
-                 }},
-      SliderSpec{"reverse_acceleration",
-                 []() {
-                   return fmt::format("Reverse \nAcceleration \n {:.2f} m/s^2",
-                                      Config::get().reverse_acceleration.data);
-                 },
-                 []() { return Config::get().reverse_acceleration.get_pct(); },
-                 [](float value) {
-                   Config::get().reverse_acceleration.set_pct(value);
-                 }},
-      SliderSpec{
-          "boost_acceleration",
-          []() {
-            return fmt::format("Boost \nAcceleration \n {:.2f} m/s^2",
-                               Config::get().boost_acceleration.data);
-          },
-          []() { return Config::get().boost_acceleration.get_pct(); },
-          [](float value) { Config::get().boost_acceleration.set_pct(value); }},
-      SliderSpec{"boost_decay_percent",
-                 []() {
-                   return fmt::format("Boost \nDecay \n {:.2f} decay%/frame",
-                                      Config::get().boost_decay_percent.data);
-                 },
-                 []() { return Config::get().boost_decay_percent.get_pct(); },
-                 [](float value) {
-                   Config::get().boost_decay_percent.set_pct(value);
-                 }},
-      SliderSpec{
-          "skid_threshold",
-          []() {
-            return fmt::format("Skid \nThreshold \n {:.2f} %",
-                               Config::get().skid_threshold.data);
-          },
-          []() { return Config::get().skid_threshold.get_pct(); },
-          [](float value) { Config::get().skid_threshold.set_pct(value); }},
-      SliderSpec{"steering_sensitivity",
-                 []() {
-                   return fmt::format("Steering \nSensitivity \n {:.2f} %",
-                                      Config::get().steering_sensitivity.data);
-                 },
-                 []() { return Config::get().steering_sensitivity.get_pct(); },
-                 [](float value) {
-                   Config::get().steering_sensitivity.set_pct(value);
-                 }},
-      SliderSpec{
-          "minimum_steering_radius",
-          []() {
-            return fmt::format("Min Steering \nSensitivity \n {:.2f} m",
-                               Config::get().minimum_steering_radius.data);
-          },
-          []() { return Config::get().minimum_steering_radius.get_pct(); },
-          [](float value) {
-            Config::get().minimum_steering_radius.set_pct(value);
-          }},
-      SliderSpec{
-          "maximum_steering_radius",
-          []() {
-            return fmt::format("Max Steering \nSensitivity \n {:.2f} m",
-                               Config::get().maximum_steering_radius.data);
-          },
-          []() { return Config::get().maximum_steering_radius.get_pct(); },
-          [](float value) {
-            Config::get().maximum_steering_radius.set_pct(value);
-          }},
-      SliderSpec{
-          "collision_scalar",
-          []() {
-            return fmt::format("Collision \nScalar \n {:.4f}",
-                               Config::get().collision_scalar.data);
-          },
-          []() { return Config::get().collision_scalar.get_pct(); },
-          [](float value) { Config::get().collision_scalar.set_pct(value); }},
-  };
-
-  auto screen_container =
-      imm::div(context, mk(entity),
-               ComponentConfig{}
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(0.5f)})
-                   .with_absolute_position()
-                   .with_debug_name("debug_screen_container"));
-
-  const int items_per_row = 3;
-  const int num_rows =
-      static_cast<int>((all_specs.size() + items_per_row - 1) / items_per_row);
-  for (int row = 0; row < num_rows; ++row) {
-    const int start = row * items_per_row;
-    const int remaining = static_cast<int>(all_specs.size()) - start;
-    if (remaining <= 0)
-      break;
-    const int count_in_row = std::min(items_per_row, remaining);
-    const float row_height = 1.f / static_cast<float>(num_rows);
-
-    auto row_elem = imm::div(
-        context, mk(screen_container.ent(), row),
-        ComponentConfig{}
-            .with_size(ComponentSize{percent(1.f), percent(row_height)})
-            .with_flex_direction(FlexDirection::Row));
-
-    for (int j = 0; j < count_in_row; ++j) {
-      const auto &spec = all_specs[start + j];
-      float pct = spec.get_pct();
-      auto label = spec.make_label();
-      if (auto result =
-              slider(context, mk(row_elem.ent(), row * items_per_row + j), pct,
-                     ComponentConfig{}
-                         .with_size(ComponentSize{pixels(200.f), pixels(50.f)})
-                         .with_label(std::move(label))
-                         .with_skip_tabbing(true));
-          result) {
-        spec.set_pct(result.as<float>());
-      }
-    }
-  }
-}
-
-bool SchedulePauseUI::should_run(float) {
-  inpc = input::get_input_collector();
-  return GameStateManager::get().is_game_active() ||
-         GameStateManager::get().is_paused();
-}
-
-void SchedulePauseUI::for_each_with(Entity &entity,
-                                    UIContext<InputAction> &context, float) {
-  // Handle pause button input
-  const bool pause_pressed =
-      std::ranges::any_of(inpc.inputs_pressed(), [](const auto &actions_done) {
-        return action_matches(actions_done.action, InputAction::PauseButton);
-      });
-
-  if (pause_pressed) {
-    if (GameStateManager::get().is_paused()) {
-      GameStateManager::get().unpause_game();
-      return;
-    } else if (GameStateManager::get().is_game_active()) {
-      GameStateManager::get().pause_game();
-      return;
-    }
-  }
-
-  // Only show pause UI when paused
-  if (!GameStateManager::get().is_paused()) {
-    return;
-  }
-
-  auto elem =
-      ui_helpers::create_screen_container(context, entity, "pause_screen");
-
-  auto left_col =
-      imm::div(context, mk(elem.ent()),
-               ComponentConfig{}
-                   .with_size(ComponentSize{percent(0.2f), percent(1.0f)})
-                   .with_padding(Padding{.top = screen_pct(0.02f),
-                                         .left = screen_pct(0.02f)})
-                   .with_flex_direction(FlexDirection::Column)
-                   .with_debug_name("pause_left"));
-
-  imm::div(context, mk(left_col.ent(), 0),
-           ComponentConfig{}
-               .with_label("paused")
-               .with_font(get_font_name(FontID::EQPro), 100.f)
-               .with_skip_tabbing(true)
-               .with_size(ComponentSize{pixels(400.f), pixels(100.f)}));
-
-  ui_helpers::create_styled_button(
-      context, left_col.ent(), "resume",
-      []() { GameStateManager::get().unpause_game(); }, 1);
-
-  ui_helpers::create_styled_button(
-      context, left_col.ent(), "back to setup",
-      []() { GameStateManager::get().end_game(); }, 2);
-
-  ui_helpers::create_styled_button(
-      context, left_col.ent(), "exit game", [this]() { exit_game(); }, 3);
 }
 
 Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
