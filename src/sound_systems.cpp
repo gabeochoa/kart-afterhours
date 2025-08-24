@@ -6,7 +6,11 @@
 #include "query.h"
 #include "sound_library.h"
 #include "weapons.h"
+#if __APPLE__
+#include "rl.h"
+#else
 #include "raylib.h"
+#endif
 // afterhours UI
 #include <afterhours/src/plugins/ui/components.h>
 #include <afterhours/src/plugins/ui/context.h>
@@ -26,18 +30,17 @@ struct CarRumble : System<Transform, CanShoot> {
 
 struct UIClickSounds
     : afterhours::ui::SystemWithUIContext<afterhours::ui::HasClickListener> {
-  afterhours::ui::UIContext<InputAction> *context = nullptr;
+  afterhours::ui::UIContext<InputAction> *context;
 
   virtual void once(float) override {
     context = afterhours::EntityHelper::get_singleton_cmp<
         afterhours::ui::UIContext<InputAction>>();
-    this->include_derived_children = true;
+    // this->include_derived_children = true;
   }
 
-  virtual void
-  for_each_with_derived(Entity &, afterhours::ui::UIComponent &component,
-                        afterhours::ui::HasClickListener &hasClickListener,
-                        float) {
+  virtual void for_each_with(Entity &, afterhours::ui::UIComponent &component,
+                             afterhours::ui::HasClickListener &hasClickListener,
+                             float) {
     if (!GameStateManager::get().is_menu_active()) {
       return;
     }
@@ -57,6 +60,50 @@ struct UIClickSounds
         req.file = SoundFile::UI_Select;
       }
     }
+
+    process_derived_children(component);
+  }
+
+private:
+  void process_derived_children(afterhours::ui::UIComponent &parent_component) {
+    for (auto child_id : parent_component.children) {
+      auto child_entity = afterhours::EntityHelper::getEntityForID(child_id);
+      if (!child_entity.has_value()) {
+        continue;
+      }
+
+      Entity &child = child_entity.asE();
+      if (!child.has<afterhours::ui::UIComponent>() ||
+          !child.has<afterhours::ui::HasClickListener>()) {
+        continue;
+      }
+
+      auto &child_component = child.get<afterhours::ui::UIComponent>();
+      auto &child_hasClickListener =
+          child.get<afterhours::ui::HasClickListener>();
+
+      if (!GameStateManager::get().is_menu_active()) {
+        continue;
+      }
+      if (!child_component.was_rendered_to_screen) {
+        continue;
+      }
+
+      // If this element registered a click this frame, play the UI_Select sound
+      if (child_hasClickListener.down) {
+        auto opt = EntityQuery({.force_merge = true})
+                       .template whereHasComponent<SoundEmitter>()
+                       .gen_first();
+        if (opt.valid()) {
+          Entity &ent = opt.asE();
+          PlaySoundRequest &req = ent.addComponentIfMissing<PlaySoundRequest>();
+          req.policy = PlaySoundRequest::Policy::Enum;
+          req.file = SoundFile::UI_Select;
+        }
+      }
+
+      process_derived_children(child_component);
+    }
   }
 };
 
@@ -73,7 +120,7 @@ struct BackgroundMusic : System<> {
       raylib::PlayMusicStream(music);
       started = true;
     }
-    
+
     auto &music = MusicLibrary::get().get("menu_music");
     if (raylib::IsMusicStreamPlaying(music)) {
       raylib::UpdateMusicStream(music);
@@ -184,16 +231,15 @@ struct UISoundBindingSystem : System<> {
     return GameStateManager::get().is_menu_active();
   }
 
-  virtual void once(float) override {
-    inpc = input::get_input_collector();
-  }
+  virtual void once(float) override { inpc = input::get_input_collector(); }
 
   template <typename TAction>
   static void enqueue_move_if_any(const TAction &actions_done) {
-    const bool is_move = action_matches(actions_done.action, InputAction::WidgetLeft) ||
-                         action_matches(actions_done.action, InputAction::WidgetRight) ||
-                         action_matches(actions_done.action, InputAction::WidgetNext) ||
-                         action_matches(actions_done.action, InputAction::WidgetBack);
+    const bool is_move =
+        action_matches(actions_done.action, InputAction::WidgetLeft) ||
+        action_matches(actions_done.action, InputAction::WidgetRight) ||
+        action_matches(actions_done.action, InputAction::WidgetNext) ||
+        action_matches(actions_done.action, InputAction::WidgetBack);
     if (is_move) {
       auto opt = EntityQuery({.force_merge = true})
                      .template whereHasComponent<SoundEmitter>()
@@ -218,9 +264,9 @@ struct UISoundBindingSystem : System<> {
 };
 
 void register_sound_systems(afterhours::SystemManager &systems) {
-    systems.register_update_system(std::make_unique<BackgroundMusic>());
-    systems.register_update_system(std::make_unique<UISoundBindingSystem>());
-    systems.register_update_system(std::make_unique<SoundPlaybackSystem>());
-    systems.register_update_system(std::make_unique<UIClickSounds>());
-    systems.register_render_system(std::make_unique<CarRumble>());
+  systems.register_update_system(std::make_unique<BackgroundMusic>());
+  systems.register_update_system(std::make_unique<UISoundBindingSystem>());
+  systems.register_update_system(std::make_unique<SoundPlaybackSystem>());
+  systems.register_update_system(std::make_unique<UIClickSounds>());
+  systems.register_render_system(std::make_unique<CarRumble>());
 }

@@ -40,9 +40,9 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
   virtual void once(float) override {
     this->context = afterhours::EntityHelper::get_singleton_cmp<
         afterhours::ui::UIContext<InputAction>>();
-#if __WIN32 
+#if __WIN32
 #else
-    this->include_derived_children = true;
+    // this->include_derived_children = true;
 #endif
 
     if (auto *resEnt = afterhours::EntityHelper::get_singleton_cmp<
@@ -51,13 +51,17 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
     }
   }
 
-#if __WIN32 
+#if __WIN32
   virtual void for_each_with(afterhours::Entity &entity,
 #else
-  virtual void for_each_with_derived(afterhours::Entity &entity,
+  virtual void for_each_with(afterhours::Entity &entity,
 #endif
-                                     afterhours::ui::UIComponent &component,
-                                     const float) override {
+                             afterhours::ui::UIComponent &component,
+                             const float) override {
+    if (&component == nullptr) {
+      return;
+    }
+
     auto current_screen = GameStateManager::get().active_screen;
     if (current_screen != last_screen) {
       triggered_ids.clear();
@@ -117,6 +121,89 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
     mods.translate_y = 0.0f;
     entity.addComponentIfMissing<afterhours::ui::HasOpacity>().value =
         std::clamp(slide_v, 0.0f, 1.0f);
+
+    process_derived_children(entity);
+  }
+
+private:
+  void process_derived_children(afterhours::Entity &parent) {
+    if (!parent.has<afterhours::ui::UIComponent>()) {
+      return;
+    }
+
+    auto &parent_component = parent.get<afterhours::ui::UIComponent>();
+    for (auto child_id : parent_component.children) {
+      auto child_entity = afterhours::EntityHelper::getEntityForID(child_id);
+      if (!child_entity.has_value()) {
+        continue;
+      }
+
+      Entity &child = child_entity.asE();
+      if (!child.has<afterhours::ui::UIComponent>()) {
+        continue;
+      }
+
+      auto &child_component = child.get<afterhours::ui::UIComponent>();
+      if (!child_component.was_rendered_to_screen) {
+        continue;
+      }
+
+      auto rect = child_component.rect();
+      float rightEdge = rect.x + rect.width;
+      float limit = resolution.width * 0.25f;
+      if (rightEdge > limit) {
+        continue;
+      }
+
+      float normY = 0.0f;
+      if (resolution.height > 0) {
+        normY = std::clamp(child_component.rect().y /
+                               static_cast<float>(resolution.height),
+                           0.0f, 1.0f);
+      }
+      float baseDelay = 0.02f;
+      float maxExtra = 0.45f;
+      float delay = baseDelay + normY * maxExtra;
+
+      bool newly_triggered = false;
+      if (!triggered_ids.contains(static_cast<size_t>(child.id))) {
+        afterhours::animation::anim(UIKey::SlideInAll,
+                                    static_cast<size_t>(child.id))
+            .from(0.0f)
+            .sequence({
+                {.to_value = 0.0f,
+                 .duration = delay,
+                 .easing = afterhours::animation::EasingType::Hold},
+                {.to_value = 1.1f,
+                 .duration = 0.18f,
+                 .easing = afterhours::animation::EasingType::EaseOutQuad},
+                {.to_value = 1.0f,
+                 .duration = 0.08f,
+                 .easing = afterhours::animation::EasingType::EaseOutQuad},
+            });
+        triggered_ids.insert(static_cast<size_t>(child.id));
+        newly_triggered = true;
+      }
+
+      float slide_v = newly_triggered ? 0.0f : 1.0f;
+      if (auto mv = afterhours::animation::get_value(
+              UIKey::SlideInAll, static_cast<size_t>(child.id));
+          mv.has_value()) {
+        slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
+      }
+
+      auto &mods =
+          child.addComponentIfMissing<afterhours::ui::HasUIModifiers>();
+      auto rect_now = child.get<afterhours::ui::UIComponent>().rect();
+      float off_left = -(rect_now.x + rect_now.width + 20.0f);
+      float tx = (1.0f - std::min(slide_v, 1.0f)) * off_left;
+      mods.translate_x = tx;
+      mods.translate_y = 0.0f;
+      child.addComponentIfMissing<afterhours::ui::HasOpacity>().value =
+          std::clamp(slide_v, 0.0f, 1.0f);
+
+      process_derived_children(child);
+    }
   }
 };
 
