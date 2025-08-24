@@ -133,14 +133,8 @@ void game() {
     });
 
     register_ui_systems(systems);
+    register_sound_systems(systems);
 
-    systems.register_update_system(std::make_unique<BackgroundMusic>());
-
-#if __APPLE__
-    systems.register_update_system(std::make_unique<UISoundBindingSystem>());
-    systems.register_update_system(std::make_unique<SoundPlaybackSystem>());
-#endif
-    systems.register_update_system(std::make_unique<UIClickSounds>());
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
 
@@ -166,7 +160,6 @@ void game() {
         systems.register_render_system(
             std::make_unique<RenderWeaponCooldown>());
         systems.register_render_system(std::make_unique<RenderOOB>());
-        systems.register_render_system(std::make_unique<CarRumble>());
         // (UI moved to pass 2 so it is after tag shader)
       }
       systems.register_render_system([&](float) { raylib::EndTextureMode(); });
