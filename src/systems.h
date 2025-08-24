@@ -6,6 +6,7 @@
 #include "car_affectors.h"
 #include "components.h"
 #include "components_weapons.h"
+#include "game.h"
 #include "game_state_manager.h"
 #include "input_mapping.h"
 #include "makers.h"
@@ -1901,5 +1902,117 @@ struct ApplyWinnerShader
     hasShader.shaders.push_back(ShaderType::car_winner);
     hasShader.shader_set_cache.reset();
     entity.disableTag(GameTag::IsLastRoundsWinner);
+  }
+};
+
+struct BeginWorldRender : System<> {
+  virtual void once(float) override {
+    raylib::BeginTextureMode(mainRT);
+    raylib::ClearBackground(raylib::DARKGRAY);
+  }
+};
+
+struct EndWorldRender : System<> {
+  virtual void once(float) override {
+    raylib::EndTextureMode();
+  }
+};
+
+struct BeginTagShaderRender : System<> {
+  virtual void once(float) override {
+    raylib::BeginTextureMode(screenRT);
+    raylib::ClearBackground(raylib::BLANK);
+    
+    bool useTagShader = ShaderLibrary::get().contains(ShaderType::post_processing_tag);
+    if (useTagShader) {
+      const auto &shader = ShaderLibrary::get().get(ShaderType::post_processing_tag);
+      raylib::BeginShaderMode(shader);
+      float t = static_cast<float>(raylib::GetTime());
+      int timeLoc = raylib::GetShaderLocation(shader, "time");
+      if (timeLoc != -1) {
+        raylib::SetShaderValue(shader, timeLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
+      }
+      auto *rez = EntityHelper::get_singleton_cmp<window_manager::ProvidesCurrentResolution>();
+      if (rez) {
+        vec2 r = {static_cast<float>(rez->current_resolution.width),
+                  static_cast<float>(rez->current_resolution.height)};
+        int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+        if (rezLoc != -1) {
+          raylib::SetShaderValue(shader, rezLoc, &r, raylib::SHADER_UNIFORM_VEC2);
+        }
+      }
+    }
+    
+    const raylib::Rectangle src{0.0f, 0.0f, (float)mainRT.texture.width,
+                                -(float)mainRT.texture.height};
+    const raylib::Rectangle dst{0.0f, 0.0f, (float)screenRT.texture.width,
+                                (float)screenRT.texture.height};
+    raylib::DrawTexturePro(mainRT.texture, src, dst, {0.0f, 0.0f}, 0.0f,
+                           raylib::WHITE);
+    
+    if (useTagShader) {
+      raylib::EndShaderMode();
+    }
+  }
+};
+
+struct EndTagShaderRender : System<> {
+  virtual void once(float) override {
+    raylib::EndTextureMode();
+  }
+};
+
+struct BeginPostProcessingRender : System<> {
+  virtual void once(float) override {
+    raylib::BeginDrawing();
+  }
+};
+
+struct SetupPostProcessingShader : System<> {
+  virtual void once(float) override {
+    if (ShaderLibrary::get().contains(ShaderType::post_processing)) {
+      const auto &shader = ShaderLibrary::get().get(ShaderType::post_processing);
+      raylib::BeginShaderMode(shader);
+      float t = static_cast<float>(raylib::GetTime());
+      int timeLoc = raylib::GetShaderLocation(shader, "time");
+      if (timeLoc != -1) {
+        raylib::SetShaderValue(shader, timeLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
+      }
+      auto *rez = EntityHelper::get_singleton_cmp<window_manager::ProvidesCurrentResolution>();
+      if (rez) {
+        vec2 r = {static_cast<float>(rez->current_resolution.width),
+                  static_cast<float>(rez->current_resolution.height)};
+        int rezLoc = raylib::GetShaderLocation(shader, "resolution");
+        if (rezLoc != -1) {
+          raylib::SetShaderValue(shader, rezLoc, &r, raylib::SHADER_UNIFORM_VEC2);
+        }
+      }
+    }
+  }
+};
+
+struct RenderScreenToWindow : System<> {
+  virtual void once(float) override {
+    const int window_w = raylib::GetScreenWidth();
+    const int window_h = raylib::GetScreenHeight();
+    const int content_w = screenRT.texture.width;
+    const int content_h = screenRT.texture.height;
+    const LetterboxLayout layout = compute_letterbox_layout(window_w, window_h, content_w, content_h);
+    const raylib::Rectangle src{0.0f, 0.0f, (float)screenRT.texture.width,
+                                -(float)screenRT.texture.height};
+    raylib::DrawTexturePro(screenRT.texture, src, layout.dst, {0.0f, 0.0f},
+                           0.0f, raylib::WHITE);
+  }
+};
+
+struct EndPostProcessingShader : System<> {
+  virtual void once(float) override {
+    raylib::EndShaderMode();
+  }
+};
+
+struct EndDrawing : System<> {
+  virtual void once(float) override {
+    raylib::EndDrawing();
   }
 };
