@@ -534,7 +534,7 @@ struct HasCamera : BaseComponent {
     camera.offset = {0.0f, 0.0f};
     camera.target = {0.0f, 0.0f};
     camera.rotation = 0.0f;
-    camera.zoom = 0.5f;
+    camera.zoom = 0.75f;
   }
   
   void set_position(vec2 position) {

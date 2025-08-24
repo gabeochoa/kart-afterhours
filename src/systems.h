@@ -965,39 +965,77 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
     float width = (float)resolution.width;
     float height = (float)resolution.height;
 
-    float padding = canWrap.padding;
+    // Get camera to calculate proper viewport bounds
+    auto *camera_entity = EntityHelper::get_singleton_cmp<HasCamera>();
+    if (!camera_entity) {
+      // Fallback to original behavior if no camera
+      raylib::Rectangle screenRect{0, 0, width, height};
+      const auto overlaps =
+          EQ::WhereOverlaps::overlaps(screenRect, transform.rect());
+      if (overlaps) {
+        return;
+      }
 
-    raylib::Rectangle screenRect{0, 0, width, height};
-    const auto overlaps =
-        EQ::WhereOverlaps::overlaps(screenRect, transform.rect());
-    if (overlaps) {
-      // Early return, no wrapping checks need to be done further.
+      if (!transform.render_out_of_bounds || transform.cleanup_out_of_bounds) {
+        entity.cleanup = transform.cleanup_out_of_bounds;
+        return;
+      }
+
+      if (transform.rect().x > width + canWrap.padding) {
+        transform.position.x = -canWrap.padding;
+      }
+      if (transform.rect().x < 0 - canWrap.padding) {
+        transform.position.x = width + canWrap.padding;
+      }
+      if (transform.rect().y < 0 - canWrap.padding) {
+        transform.position.y = height + canWrap.padding;
+      }
+      if (transform.rect().y > height + canWrap.padding) {
+        transform.position.y = -canWrap.padding;
+      }
       return;
     }
 
-    // Non-overlapping logic
+    // Calculate camera viewport bounds
+    const auto& camera = camera_entity->camera;
+    float zoom = camera.zoom;
+    
+    // Calculate world coordinates of screen edges
+    float world_left = (0 - camera.offset.x) / zoom + camera.target.x;
+    float world_right = (width - camera.offset.x) / zoom + camera.target.x;
+    float world_top = (0 - camera.offset.y) / zoom + camera.target.y;
+    float world_bottom = (height - camera.offset.y) / zoom + camera.target.y;
 
-    // If it's not overlapping the screen rect and it doesn't want to be
-    // rendered out of bounds
+    // Create world-space screen rectangle
+    raylib::Rectangle worldScreenRect{world_left, world_top, 
+                                     world_right - world_left, 
+                                     world_bottom - world_top};
+
+    const auto overlaps =
+        EQ::WhereOverlaps::overlaps(worldScreenRect, transform.rect());
+    if (overlaps) {
+      return;
+    }
+
     if (!transform.render_out_of_bounds || transform.cleanup_out_of_bounds) {
       entity.cleanup = transform.cleanup_out_of_bounds;
       return;
     }
 
-    if (transform.rect().x > width + padding) {
-      transform.position.x = -padding;
+    float padding = canWrap.padding;
+    
+    // Wrap around the camera viewport bounds
+    if (transform.rect().x > world_right + padding) {
+      transform.position.x = world_left - padding;
     }
-
-    if (transform.rect().x < 0 - padding) {
-      transform.position.x = width + padding;
+    if (transform.rect().x < world_left - padding) {
+      transform.position.x = world_right + padding;
     }
-
-    if (transform.rect().y < 0 - padding) {
-      transform.position.y = height + padding;
+    if (transform.rect().y < world_top - padding) {
+      transform.position.y = world_bottom + padding;
     }
-
-    if (transform.rect().y > height + padding) {
-      transform.position.y = -padding;
+    if (transform.rect().y > world_bottom + padding) {
+      transform.position.y = world_top - padding;
     }
   }
 };
@@ -1105,7 +1143,43 @@ struct RenderOOB : System<Transform> {
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,
                              float) const override {
-    if (is_point_inside(transform.pos(), screen) ||
+    // Get camera to calculate proper viewport bounds
+    auto *camera_entity = EntityHelper::get_singleton_cmp<HasCamera>();
+    if (!camera_entity) {
+      // Fallback to original behavior if no camera
+      if (is_point_inside(transform.pos(), screen) ||
+          !transform.render_out_of_bounds) {
+        return;
+      }
+
+      const auto size =
+          std::max(5.f, //
+                   std::lerp(20.f, 5.f,
+                             (distance_sq(transform.pos(), rect_center(screen)) /
+                              (screen.width * screen.height))));
+
+      raylib::DrawCircleV(calc(screen, transform.pos()), size,
+                          entity.has<HasColor>() ? entity.get<HasColor>().color()
+                                                 : raylib::PINK);
+      return;
+    }
+
+    // Calculate camera viewport bounds
+    const auto& camera = camera_entity->camera;
+    float zoom = camera.zoom;
+    
+    // Calculate world coordinates of screen edges
+    float world_left = (0 - camera.offset.x) / zoom + camera.target.x;
+    float world_right = (screen.width - camera.offset.x) / zoom + camera.target.x;
+    float world_top = (0 - camera.offset.y) / zoom + camera.target.y;
+    float world_bottom = (screen.height - camera.offset.y) / zoom + camera.target.y;
+
+    // Create world-space screen rectangle
+    Rectangle worldScreen{world_left, world_top, 
+                         world_right - world_left, 
+                         world_bottom - world_top};
+
+    if (is_point_inside(transform.pos(), worldScreen) ||
         !transform.render_out_of_bounds) {
       return;
     }
@@ -1113,10 +1187,10 @@ struct RenderOOB : System<Transform> {
     const auto size =
         std::max(5.f, //
                  std::lerp(20.f, 5.f,
-                           (distance_sq(transform.pos(), rect_center(screen)) /
-                            (screen.width * screen.height))));
+                           (distance_sq(transform.pos(), rect_center(worldScreen)) /
+                            (worldScreen.width * worldScreen.height))));
 
-    raylib::DrawCircleV(calc(screen, transform.pos()), size,
+    raylib::DrawCircleV(calc(worldScreen, transform.pos()), size,
                         entity.has<HasColor>() ? entity.get<HasColor>().color()
                                                : raylib::PINK);
   }
