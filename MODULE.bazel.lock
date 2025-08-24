@@ -136,6 +136,56 @@
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
+    "//:tools/deps.bzl%kart_afterhours_deps": {
+      "general": {
+        "bzlTransitiveDigest": "DyqbBsj/2VO6xLuVrue0acnURdWtHrQ6E7nJ91rYAIA=",
+        "usagesDigest": "XVDvmMrzGV55/4hXi1IJG8lgqVGOb3HfuhjBAi7Hido=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "raylib": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "url": "https://github.com/raysan5/raylib/archive/refs/tags/5.0.zip",
+              "strip_prefix": "raylib-5.0",
+              "build_file_content": "\r\ncc_library(\r\n    name = \"raylib\",\r\n    srcs = [\r\n        \"src/rcore.c\",\r\n        \"src/rshapes.c\",\r\n        \"src/rtextures.c\",\r\n        \"src/rtext.c\",\r\n        \"src/rmodels.c\",\r\n        \"src/raudio.c\",\r\n        \"src/rglfw.c\",\r\n        \"src/utils.c\",\r\n    ],\r\n    hdrs = [\r\n        \"src/raylib.h\",\r\n        \"src/raymath.h\",\r\n        \"src/rlgl.h\",\r\n        \"src/rgestures.h\",\r\n        \"src/rcamera.h\",\r\n        \"src/utils.h\",\r\n    ],\r\n    includes = [\r\n        \"src\",\r\n        \"src/external/glfw/include\",\r\n    ],\r\n    copts = select({\r\n        \"@bazel_tools//src/conditions:windows\": [\r\n            \"/D_CRT_SECURE_NO_WARNINGS\",\r\n            \"/EHsc\",\r\n            \"/DNOMINMAX\",\r\n            \"/DWIN32_LEAN_AND_MEAN\",\r\n            \"/DPLATFORM_DESKTOP\",\r\n            \"/D_GLFW_WIN32\",\r\n            \"/DGRAPHICS_API_OPENGL_33\",\r\n        ],\r\n        \"@bazel_tools//src/conditions:darwin\": [\"-D_GLFW_COCOA\"],\r\n        \"@bazel_tools//src/conditions:linux\": [\"-D_GLFW_X11\"],\r\n        \"//conditions:default\": [],\r\n    }),\r\n    linkopts = select({\r\n        \"@bazel_tools//src/conditions:windows\": [\r\n            \"opengl32.lib\",\r\n            \"gdi32.lib\",\r\n            \"user32.lib\",\r\n            \"shell32.lib\",\r\n            \"winmm.lib\",\r\n            \"kernel32.lib\",\r\n            \"advapi32.lib\",\r\n            \"ole32.lib\",\r\n            \"uuid.lib\",\r\n            \"imm32.lib\",\r\n        ],\r\n        \"@bazel_tools//src/conditions:darwin\": [\r\n            \"-framework\", \"Cocoa\",\r\n            \"-framework\", \"OpenGL\",\r\n            \"-framework\", \"IOKit\",\r\n            \"-framework\", \"CoreAudio\",\r\n            \"-framework\", \"CoreVideo\",\r\n        ],\r\n        \"@bazel_tools//src/conditions:linux\": [\r\n            \"-ldl\",\r\n            \"-lm\",\r\n            \"-lpthread\",\r\n            \"-lGL\",\r\n            \"-lX11\",\r\n            \"-lXrandr\",\r\n            \"-lXinerama\",\r\n            \"-lXi\",\r\n            \"-lXxf86vm\",\r\n            \"-lXcursor\",\r\n        ],\r\n        \"//conditions:default\": [],\r\n    }),\r\n    visibility = [\"//visibility:public\"],\r\n)\r\n"
+            }
+          },
+          "nlohmann_json": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "url": "https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.zip",
+              "strip_prefix": "json-3.11.2",
+              "build_file_content": "\r\ncc_library(\r\n    name = \"nlohmann_json\",\r\n    hdrs = [\"single_include/nlohmann/json.hpp\"],\r\n    includes = [\"single_include\"],\r\n    visibility = [\"//visibility:public\"],\r\n)\r\n"
+            }
+          },
+          "fmt": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "url": "https://github.com/fmtlib/fmt/archive/refs/tags/10.1.1.zip",
+              "strip_prefix": "fmt-10.1.1",
+              "build_file_content": "\r\ncc_library(\r\n    name = \"fmt\",\r\n    hdrs = glob([\"include/fmt/*.h\"]),\r\n    includes = [\"include\"],\r\n    visibility = [\"//visibility:public\"],\r\n)\r\n"
+            }
+          },
+          "magic_enum": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "url": "https://github.com/Neargye/magic_enum/archive/refs/tags/v0.9.5.zip",
+              "strip_prefix": "magic_enum-0.9.5",
+              "build_file_content": "\r\ncc_library(\r\n    name = \"magic_enum\",\r\n    hdrs = [\"include/magic_enum/magic_enum.hpp\"],\r\n    includes = [\"include\"],\r\n    visibility = [\"//visibility:public\"],\r\n)\r\n"
+            }
+          }
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "",
+            "bazel_tools",
+            "bazel_tools"
+          ]
+        ]
+      }
+    },
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
         "bzlTransitiveDigest": "hUTp2w+RUVdL7ma5esCXZJAFnX7vLbVfLd7FwnQI6bU=",

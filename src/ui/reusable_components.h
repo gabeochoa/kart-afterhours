@@ -1,14 +1,19 @@
 #pragma once
 
-#include "../ui_systems.h"
+#include "../std_include.h"
+#include "../components.h"
+#include "../input_mapping.h"
+#include "../rl.h"
+#include <afterhours/ah.h>
+#include <afterhours/src/plugins/ui.h>
 
 using namespace afterhours;
 
 namespace ui_reusable_components {
 
 // Reusable player card component
-ElementResult create_player_card(
-    UIContext<InputAction> &context, Entity &parent, const std::string &label,
+afterhours::ui::imm::ElementResult create_player_card(
+    afterhours::ui::UIContext<InputAction> &context, afterhours::Entity &parent, const std::string &label,
     raylib::Color bg_color, bool is_ai = false,
     std::optional<int> ranking = std::nullopt,
     std::optional<std::string> stats_text = std::nullopt,
@@ -20,30 +25,30 @@ ElementResult create_player_card(
         nullptr);
 
 // Reusable styled button component
-ElementResult create_styled_button(UIContext<InputAction> &context,
-                                   Entity &parent, const std::string &label,
+afterhours::ui::imm::ElementResult create_styled_button(afterhours::ui::UIContext<InputAction> &context,
+                                   afterhours::Entity &parent, const std::string &label,
                                    std::function<void()> on_click,
                                    int index = 0);
 
 // Reusable volume slider component
-ElementResult create_volume_slider(UIContext<InputAction> &context,
-                                   Entity &parent, const std::string &label,
+afterhours::ui::imm::ElementResult create_volume_slider(afterhours::ui::UIContext<InputAction> &context,
+                                   afterhours::Entity &parent, const std::string &label,
                                    float &volume,
                                    std::function<void(float)> on_change,
                                    int index = 0);
 
 // Reusable screen container component
-ElementResult create_screen_container(UIContext<InputAction> &context,
-                                      Entity &parent,
+afterhours::ui::imm::ElementResult create_screen_container(afterhours::ui::UIContext<InputAction> &context,
+                                      afterhours::Entity &parent,
                                       const std::string &debug_name);
 
 // Reusable control group component
-ElementResult create_control_group(UIContext<InputAction> &context,
-                                   Entity &parent,
+afterhours::ui::imm::ElementResult create_control_group(afterhours::ui::UIContext<InputAction> &context,
+                                   afterhours::Entity &parent,
                                    const std::string &debug_name);
 
-ElementResult create_top_left_container(UIContext<InputAction> &context,
-                                        Entity &parent,
+afterhours::ui::imm::ElementResult create_top_left_container(afterhours::ui::UIContext<InputAction> &context,
+                                        afterhours::Entity &parent,
                                         const std::string &debug_name,
                                         int index);
 

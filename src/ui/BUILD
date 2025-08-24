@@ -14,16 +14,7 @@ cc_library(
 cc_library(
     name = "ui_systems",
     srcs = [
-        "debug.cpp",
-        "pause.cpp",
         "reusable_components.cpp",
-        "screen_about.cpp",
-        "screen_character_creation.cpp",
-        "screen_main_menu.cpp",
-        "screen_map_selection.cpp",
-        "screen_round_end.cpp",
-        "screen_round_settings.cpp",
-        "screen_settings.cpp",
         "systems_core.cpp",
     ],
     hdrs = [

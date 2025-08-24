@@ -305,6 +305,7 @@ cc_library(
 cc_library(
     name = "sound_systems",
     hdrs = ["sound_systems.h"],
+    srcs = ["sound_systems.cpp"],
     deps = [
         ":std_include",
         ":rl",
@@ -312,6 +313,8 @@ cc_library(
         ":resources",
         ":settings",
         ":systems",
+        ":game_state_manager",
+        ":query",
         "//vendor:afterhours_headers",
     ],
     visibility = ["//visibility:public"],
@@ -394,6 +397,7 @@ cc_library(
 cc_library(
     name = "ui_systems",
     hdrs = ["ui_systems.h"],
+    srcs = ["ui_systems.cpp"],
     deps = [
         ":std_include",
         ":rl",
@@ -403,6 +407,11 @@ cc_library(
         ":systems",
         ":input_mapping",
         ":navigation",
+        ":map_system",
+        ":makers",
+        ":preload",
+        ":texture_library",
+        "//src/ui:ui_animations",
     ],
     visibility = ["//visibility:public"],
 )

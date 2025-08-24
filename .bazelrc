@@ -3,3 +3,4 @@ build --cxxopt=/std:c++latest
 build --cxxopt=/Zc:__cplusplus
 build --cxxopt=/DNOMINMAX
 build --cxxopt=/DWIN32_LEAN_AND_MEAN
+common --enable_bzlmod
