@@ -1894,10 +1894,13 @@ private:
   }
 };
 
-struct ApplyWinnerShader
-    : System<tags::All<GameTag::IsLastRoundsWinner>, HasShader> {
+// TODO tags filtering on System<> dont work on windows yet
+struct ApplyWinnerShader : System<HasShader> {
   virtual void for_each_with(Entity &entity, HasShader &hasShader,
                              float) override {
+    if (!entity.hasTag(GameTag::IsLastRoundsWinner)) {
+      return;
+    }
     hasShader.shaders.clear();
     hasShader.shaders.push_back(ShaderType::car_winner);
     hasShader.shader_set_cache.reset();
