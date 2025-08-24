@@ -306,9 +306,7 @@ struct RenderDebugWindowInfo
     : System<window_manager::ProvidesCurrentResolution> {
   input::PossibleInputCollector inpc;
 
-  virtual void once(float) override {
-    inpc = input::get_input_collector();
-  }
+  virtual void once(float) override { inpc = input::get_input_collector(); }
 
   virtual bool should_run(float) override {
     return true; // @nocommit just for  testing ui scale
@@ -634,9 +632,7 @@ struct RenderDebugGridOverlay
     : System<window_manager::ProvidesCurrentResolution> {
   input::PossibleInputCollector inpc;
 
-  virtual void once(float) override {
-    inpc = input::get_input_collector();
-  }
+  virtual void once(float) override { inpc = input::get_input_collector(); }
 
   virtual bool should_run(float) override {
     inpc = input::get_input_collector();
@@ -725,6 +721,22 @@ struct RenderEntities : System<Transform> {
       if (has_shader) {
         raylib::EndShaderMode();
       }
+    } else {
+      // Render entities without shaders using their color
+      raylib::Color fallback_color =
+          entity.has_child_of<HasColor>()
+              ? entity.get_with_child<HasColor>().color()
+              : raylib::RAYWHITE;
+
+      raylib::DrawRectanglePro(
+          Rectangle{
+              transform.center().x,
+              transform.center().y,
+              transform.size.x,
+              transform.size.y,
+          },
+          vec2{transform.size.x / 2.f, transform.size.y / 2.f}, transform.angle,
+          fallback_color);
     }
   };
 };
@@ -913,9 +925,7 @@ struct WeaponFiredCleanupSystem : System<WeaponFired> {
 struct Shoot : PausableSystem<PlayerID, Transform, CanShoot> {
   input::PossibleInputCollector inpc;
 
-  virtual void once(float) override {
-    inpc = input::get_input_collector();
-  }
+  virtual void once(float) override { inpc = input::get_input_collector(); }
   virtual void for_each_with(Entity &entity, PlayerID &playerID, Transform &,
                              CanShoot &, float) override {
 
@@ -928,7 +938,8 @@ struct Shoot : PausableSystem<PlayerID, Transform, CanShoot> {
         continue;
 
       if (actions_done.amount_pressed > 0.f) {
-        entity.addComponentIfMissing<WantsWeaponFire>(from_int(actions_done.action));
+        entity.addComponentIfMissing<WantsWeaponFire>(
+            from_int(actions_done.action));
       }
     }
   }
@@ -1297,8 +1308,7 @@ struct VelFromInput
   virtual void for_each_with(Entity &entity, PlayerID &playerID,
                              Transform &transform, HonkState &honk, HasShader &,
                              float dt) override {
-    input::PossibleInputCollector inpc =
-        input::get_input_collector();
+    input::PossibleInputCollector inpc = input::get_input_collector();
     if (!inpc.has_value()) {
       return;
     }

@@ -145,10 +145,10 @@ void game() {
           std::make_unique<SetupGameStylingDefaults>());
 #if __APPLE__
       systems.register_update_system(
-      std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
+          std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
       systems.register_update_system(
-      std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
-#endif 
+          std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
+#endif
       systems.register_update_system(std::make_unique<NavigationSystem>());
       systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
       systems.register_update_system(std::make_unique<SchedulePauseUI>());
