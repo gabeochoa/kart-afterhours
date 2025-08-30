@@ -40,6 +40,7 @@ struct S_Data {
   Pct sfx_volume = 0.1f;
 
   bool fullscreen_enabled = false;
+  bool post_processing_enabled = true;
 
   // Round settings
   nlohmann::json round_settings;
@@ -74,6 +75,7 @@ void to_json(nlohmann::json &j, const S_Data &data) {
   j["audio"] = audio_j;
   //
   j["fullscreen_enabled"] = data.fullscreen_enabled;
+  j["post_processing_enabled"] = data.post_processing_enabled;
   //
   j["round_settings"] = data.round_settings;
 }
@@ -87,6 +89,10 @@ void from_json(const nlohmann::json &j, S_Data &data) {
   data.sfx_volume.set(audio_j.at("sfx_volume"));
 
   data.fullscreen_enabled = j.at("fullscreen_enabled");
+
+  if (j.contains("post_processing_enabled")) {
+    data.post_processing_enabled = j.at("post_processing_enabled");
+  }
 
   if (j.contains("round_settings")) {
     data.round_settings = j.at("round_settings");
@@ -158,6 +164,14 @@ void Settings::toggle_fullscreen() {
 }
 
 bool &Settings::get_fullscreen_enabled() { return data->fullscreen_enabled; }
+
+bool &Settings::get_post_processing_enabled() {
+  return data->post_processing_enabled;
+}
+
+void Settings::toggle_post_processing() {
+  data->post_processing_enabled = !data->post_processing_enabled;
+}
 
 bool Settings::load_save_file(int width, int height) {
 

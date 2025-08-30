@@ -11,6 +11,12 @@ uniform vec4 colDiffuse;
 uniform sampler2D texture1;
 uniform sampler2D texture2;
 
+// Bloom controls
+uniform float bloomThreshold = 0.5;    // Brightness threshold for bloom
+uniform float bloomIntensity = 1.2;    // Overall bloom strength
+uniform float bloomRadius = 4.0;       // Bloom spread radius
+uniform vec3 bloomTint = vec3(1.0);    // Color tint for bloom
+
 out vec4 finalColor;
 
 bool inBounds(vec2 p) {
@@ -20,6 +26,24 @@ bool inBounds(vec2 p) {
 vec4 safeTex0(vec2 p) {
     if (!inBounds(p)) return vec4(0.0);
     return texture(texture0, p);
+}
+
+vec3 sampleBloom(vec2 uv, vec2 px, float radius) {
+    vec3 bloom = vec3(0.0);
+    float weight = 0.0;
+    float sigma = radius * 0.5;
+    
+    for(float y = -radius; y <= radius; y += 1.0) {
+        for(float x = -radius; x <= radius; x += 1.0) {
+            vec2 offset = vec2(x, y) * px;
+            float dist = length(offset);
+            float gauss = exp(-(dist * dist) / (2.0 * sigma * sigma));
+            bloom += safeTex0(uv + offset).rgb * gauss;
+            weight += gauss;
+        }
+    }
+    
+    return bloom / max(weight, 0.00001);
 }
 
 void main()
@@ -44,27 +68,18 @@ void main()
     vec4 cB = safeTex0(uvB);
     vec3 col = vec3(cR.r, cG.g, cB.b);
 
-    float threshold = 0.72;
-    vec3 bright = max(col - vec3(threshold), vec3(0.0));
-
+    // Extract bright areas
+    vec3 bright = max(col - vec3(bloomThreshold), vec3(0.0));
+    
+    // Sample bloom with gaussian blur
     vec2 px = 1.0 / max(resolution, vec2(1.0));
-    vec3 bloom = vec3(0.0);
-    bloom += safeTex0(uvBarrel + vec2( 1.0,  0.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2(-1.0,  0.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2( 0.0,  1.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2( 0.0, -1.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2( 1.0,  1.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2(-1.0,  1.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2( 1.0, -1.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2(-1.0, -1.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2( 2.0,  0.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2(-2.0,  0.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2( 0.0,  2.0) * px).rgb;
-    bloom += safeTex0(uvBarrel + vec2( 0.0, -2.0) * px).rgb;
-    bloom /= 12.0;
-    bloom = max(bloom - vec3(threshold), vec3(0.0));
-
-    col += bloom * 0.55;
+    vec3 bloom = sampleBloom(uvBarrel, px, bloomRadius);
+    
+    // Apply threshold and tint
+    bloom = max(bloom - vec3(bloomThreshold), vec3(0.0)) * bloomTint;
+    
+    // Add bloom to original color
+    col += bloom * bloomIntensity;
 
     float grain = fract(sin(dot(uv * resolution + time * 57.0, vec2(12.9898, 78.233))) * 43758.5453);
     col += (grain - 0.5) * 0.02;

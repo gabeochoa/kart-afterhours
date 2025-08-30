@@ -1971,6 +1971,13 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
     Settings::get().toggle_fullscreen();
   }
 
+  // Post Processing checkbox
+  if (imm::checkbox(context, mk(control_group.ent(), 5),
+                    Settings::get().get_post_processing_enabled(),
+                    ComponentConfig{}.with_label("Post Processing"))) {
+    Settings::get().toggle_post_processing();
+  }
+
   // leave control group without the back button now that it's top-left
 
   return GameStateManager::get().next_screen.value_or(

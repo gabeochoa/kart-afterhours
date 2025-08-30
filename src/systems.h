@@ -13,6 +13,7 @@
 #include "map_system.h"
 #include "query.h"
 #include "round_settings.h"
+#include "settings.h"
 #include "shader_library.h"
 #include "sound_library.h"
 #include "tags.h"
@@ -997,9 +998,9 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
     }
 
     // Calculate camera viewport bounds
-    const auto& camera = camera_entity->camera;
+    const auto &camera = camera_entity->camera;
     float zoom = camera.zoom;
-    
+
     // Calculate world coordinates of screen edges
     float world_left = (0 - camera.offset.x) / zoom + camera.target.x;
     float world_right = (width - camera.offset.x) / zoom + camera.target.x;
@@ -1007,9 +1008,9 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
     float world_bottom = (height - camera.offset.y) / zoom + camera.target.y;
 
     // Create world-space screen rectangle
-    raylib::Rectangle worldScreenRect{world_left, world_top, 
-                                     world_right - world_left, 
-                                     world_bottom - world_top};
+    raylib::Rectangle worldScreenRect{world_left, world_top,
+                                      world_right - world_left,
+                                      world_bottom - world_top};
 
     const auto overlaps =
         EQ::WhereOverlaps::overlaps(worldScreenRect, transform.rect());
@@ -1023,7 +1024,7 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
     }
 
     float padding = canWrap.padding;
-    
+
     // Wrap around the camera viewport bounds
     if (transform.rect().x > world_right + padding) {
       transform.position.x = world_left - padding;
@@ -1152,43 +1153,45 @@ struct RenderOOB : System<Transform> {
         return;
       }
 
-      const auto size =
-          std::max(5.f, //
-                   std::lerp(20.f, 5.f,
-                             (distance_sq(transform.pos(), rect_center(screen)) /
-                              (screen.width * screen.height))));
+      const auto size = std::max(
+          5.f, //
+          std::lerp(20.f, 5.f,
+                    (distance_sq(transform.pos(), rect_center(screen)) /
+                     (screen.width * screen.height))));
 
       raylib::DrawCircleV(calc(screen, transform.pos()), size,
-                          entity.has<HasColor>() ? entity.get<HasColor>().color()
-                                                 : raylib::PINK);
+                          entity.has<HasColor>()
+                              ? entity.get<HasColor>().color()
+                              : raylib::PINK);
       return;
     }
 
     // Calculate camera viewport bounds
-    const auto& camera = camera_entity->camera;
+    const auto &camera = camera_entity->camera;
     float zoom = camera.zoom;
-    
+
     // Calculate world coordinates of screen edges
     float world_left = (0 - camera.offset.x) / zoom + camera.target.x;
-    float world_right = (screen.width - camera.offset.x) / zoom + camera.target.x;
+    float world_right =
+        (screen.width - camera.offset.x) / zoom + camera.target.x;
     float world_top = (0 - camera.offset.y) / zoom + camera.target.y;
-    float world_bottom = (screen.height - camera.offset.y) / zoom + camera.target.y;
+    float world_bottom =
+        (screen.height - camera.offset.y) / zoom + camera.target.y;
 
     // Create world-space screen rectangle
-    Rectangle worldScreen{world_left, world_top, 
-                         world_right - world_left, 
-                         world_bottom - world_top};
+    Rectangle worldScreen{world_left, world_top, world_right - world_left,
+                          world_bottom - world_top};
 
     if (is_point_inside(transform.pos(), worldScreen) ||
         !transform.render_out_of_bounds) {
       return;
     }
 
-    const auto size =
-        std::max(5.f, //
-                 std::lerp(20.f, 5.f,
-                           (distance_sq(transform.pos(), rect_center(worldScreen)) /
-                            (worldScreen.width * worldScreen.height))));
+    const auto size = std::max(
+        5.f, //
+        std::lerp(20.f, 5.f,
+                  (distance_sq(transform.pos(), rect_center(worldScreen)) /
+                   (worldScreen.width * worldScreen.height))));
 
     raylib::DrawCircleV(calc(worldScreen, transform.pos()), size,
                         entity.has<HasColor>() ? entity.get<HasColor>().color()
@@ -1990,9 +1993,7 @@ struct BeginWorldRender : System<> {
 };
 
 struct EndWorldRender : System<> {
-  virtual void once(float) override {
-    raylib::EndTextureMode();
-  }
+  virtual void once(float) override { raylib::EndTextureMode(); }
 };
 
 struct BeginCameraMode : System<HasCamera> {
@@ -2017,34 +2018,39 @@ struct BeginTagShaderRender : System<> {
   virtual void once(float) override {
     raylib::BeginTextureMode(screenRT);
     raylib::ClearBackground(raylib::BLANK);
-    
-    bool useTagShader = ShaderLibrary::get().contains(ShaderType::post_processing_tag);
+
+    bool useTagShader =
+        ShaderLibrary::get().contains(ShaderType::post_processing_tag);
     if (useTagShader) {
-      const auto &shader = ShaderLibrary::get().get(ShaderType::post_processing_tag);
+      const auto &shader =
+          ShaderLibrary::get().get(ShaderType::post_processing_tag);
       raylib::BeginShaderMode(shader);
       float t = static_cast<float>(raylib::GetTime());
       int timeLoc = raylib::GetShaderLocation(shader, "time");
       if (timeLoc != -1) {
-        raylib::SetShaderValue(shader, timeLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
+        raylib::SetShaderValue(shader, timeLoc, &t,
+                               raylib::SHADER_UNIFORM_FLOAT);
       }
-      auto *rez = EntityHelper::get_singleton_cmp<window_manager::ProvidesCurrentResolution>();
+      auto *rez = EntityHelper::get_singleton_cmp<
+          window_manager::ProvidesCurrentResolution>();
       if (rez) {
         vec2 r = {static_cast<float>(rez->current_resolution.width),
                   static_cast<float>(rez->current_resolution.height)};
         int rezLoc = raylib::GetShaderLocation(shader, "resolution");
         if (rezLoc != -1) {
-          raylib::SetShaderValue(shader, rezLoc, &r, raylib::SHADER_UNIFORM_VEC2);
+          raylib::SetShaderValue(shader, rezLoc, &r,
+                                 raylib::SHADER_UNIFORM_VEC2);
         }
       }
     }
-    
+
     const raylib::Rectangle src{0.0f, 0.0f, (float)mainRT.texture.width,
                                 -(float)mainRT.texture.height};
     const raylib::Rectangle dst{0.0f, 0.0f, (float)screenRT.texture.width,
                                 (float)screenRT.texture.height};
     raylib::DrawTexturePro(mainRT.texture, src, dst, {0.0f, 0.0f}, 0.0f,
                            raylib::WHITE);
-    
+
     if (useTagShader) {
       raylib::EndShaderMode();
     }
@@ -2052,34 +2058,35 @@ struct BeginTagShaderRender : System<> {
 };
 
 struct EndTagShaderRender : System<> {
-  virtual void once(float) override {
-    raylib::EndTextureMode();
-  }
+  virtual void once(float) override { raylib::EndTextureMode(); }
 };
 
 struct BeginPostProcessingRender : System<> {
-  virtual void once(float) override {
-    raylib::BeginDrawing();
-  }
+  virtual void once(float) override { raylib::BeginDrawing(); }
 };
 
 struct SetupPostProcessingShader : System<> {
   virtual void once(float) override {
-    if (ShaderLibrary::get().contains(ShaderType::post_processing)) {
-      const auto &shader = ShaderLibrary::get().get(ShaderType::post_processing);
+    if (Settings::get().get_post_processing_enabled() &&
+        ShaderLibrary::get().contains(ShaderType::post_processing)) {
+      const auto &shader =
+          ShaderLibrary::get().get(ShaderType::post_processing);
       raylib::BeginShaderMode(shader);
       float t = static_cast<float>(raylib::GetTime());
       int timeLoc = raylib::GetShaderLocation(shader, "time");
       if (timeLoc != -1) {
-        raylib::SetShaderValue(shader, timeLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
+        raylib::SetShaderValue(shader, timeLoc, &t,
+                               raylib::SHADER_UNIFORM_FLOAT);
       }
-      auto *rez = EntityHelper::get_singleton_cmp<window_manager::ProvidesCurrentResolution>();
+      auto *rez = EntityHelper::get_singleton_cmp<
+          window_manager::ProvidesCurrentResolution>();
       if (rez) {
         vec2 r = {static_cast<float>(rez->current_resolution.width),
                   static_cast<float>(rez->current_resolution.height)};
         int rezLoc = raylib::GetShaderLocation(shader, "resolution");
         if (rezLoc != -1) {
-          raylib::SetShaderValue(shader, rezLoc, &r, raylib::SHADER_UNIFORM_VEC2);
+          raylib::SetShaderValue(shader, rezLoc, &r,
+                                 raylib::SHADER_UNIFORM_VEC2);
         }
       }
     }
@@ -2092,7 +2099,8 @@ struct RenderScreenToWindow : System<> {
     const int window_h = raylib::GetScreenHeight();
     const int content_w = screenRT.texture.width;
     const int content_h = screenRT.texture.height;
-    const LetterboxLayout layout = compute_letterbox_layout(window_w, window_h, content_w, content_h);
+    const LetterboxLayout layout =
+        compute_letterbox_layout(window_w, window_h, content_w, content_h);
     const raylib::Rectangle src{0.0f, 0.0f, (float)screenRT.texture.width,
                                 -(float)screenRT.texture.height};
     raylib::DrawTexturePro(screenRT.texture, src, layout.dst, {0.0f, 0.0f},
@@ -2102,12 +2110,13 @@ struct RenderScreenToWindow : System<> {
 
 struct EndPostProcessingShader : System<> {
   virtual void once(float) override {
-    raylib::EndShaderMode();
+    if (Settings::get().get_post_processing_enabled() &&
+        ShaderLibrary::get().contains(ShaderType::post_processing)) {
+      raylib::EndShaderMode();
+    }
   }
 };
 
 struct EndDrawing : System<> {
-  virtual void once(float) override {
-    raylib::EndDrawing();
-  }
+  virtual void once(float) override { raylib::EndDrawing(); }
 };

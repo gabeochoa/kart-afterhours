@@ -44,6 +44,9 @@ struct Settings {
   bool &get_fullscreen_enabled();
   void toggle_fullscreen();
 
+  bool &get_post_processing_enabled();
+  void toggle_post_processing();
+
   void save_round_settings();
   void load_round_settings();
 };
