@@ -142,8 +142,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   std::map<EntityID, int>
   get_tag_and_go_rankings(const std::vector<OptEntity> &round_players,
                           const std::vector<OptEntity> &round_ais);
-  void render_round_end_stats(UIContext<InputAction> &context, Entity &parent,
-                              const OptEntity &car, raylib::Color bg_color);
   void render_lives_stats(UIContext<InputAction> &context, Entity &parent,
                           const OptEntity &car, raylib::Color bg_color);
   void render_kills_stats(UIContext<InputAction> &context, Entity &parent,
@@ -781,123 +779,6 @@ void ScheduleMainMenuUI::round_end_player_column(
   ui_helpers::create_player_card(
       context, column.ent(), player_label, bg_color, is_slot_ai, ranking,
       animated_stats.has_value() ? animated_stats : stats_text);
-}
-
-void ScheduleMainMenuUI::render_round_end_stats(UIContext<InputAction> &context,
-                                                Entity &parent,
-                                                const OptEntity &car,
-                                                raylib::Color bg_color) {
-  switch (RoundManager::get().active_round_type) {
-  case RoundType::Lives:
-    render_lives_stats(context, parent, car, bg_color);
-    break;
-  case RoundType::Kills:
-    render_kills_stats(context, parent, car, bg_color);
-    break;
-  case RoundType::Hippo:
-    render_hippo_stats(context, parent, car, bg_color);
-    break;
-  case RoundType::TagAndGo:
-    render_tag_and_go_stats(context, parent, car, bg_color);
-    break;
-  default:
-    render_unknown_stats(context, parent, car, bg_color);
-    break;
-  }
-}
-
-void ScheduleMainMenuUI::render_lives_stats(UIContext<InputAction> &context,
-                                            Entity &parent,
-                                            const OptEntity &car,
-                                            raylib::Color bg_color) {
-  if (!car->has<HasMultipleLives>()) {
-    return;
-  }
-
-  std::string stats_text = fmt::format(
-      "Lives: {}", car->get<HasMultipleLives>().num_lives_remaining);
-
-  imm::div(context, mk(parent, 1),
-           ComponentConfig{}
-               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-               .with_label(stats_text)
-               .with_color_usage(Theme::Usage::Custom)
-               .with_custom_color(bg_color)
-               .disable_rounded_corners());
-}
-
-void ScheduleMainMenuUI::render_kills_stats(UIContext<InputAction> &context,
-                                            Entity &parent,
-                                            const OptEntity &car,
-                                            raylib::Color bg_color) {
-  if (!car->has<HasKillCountTracker>()) {
-    return;
-  }
-
-  std::string stats_text =
-      fmt::format("Kills: {}", car->get<HasKillCountTracker>().kills);
-
-  imm::div(context, mk(parent, 1),
-           ComponentConfig{}
-               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-               .with_label(stats_text)
-               .with_color_usage(Theme::Usage::Custom)
-               .with_custom_color(bg_color)
-               .disable_rounded_corners());
-}
-
-void ScheduleMainMenuUI::render_hippo_stats(UIContext<InputAction> &context,
-                                            Entity &parent,
-                                            const OptEntity &car,
-                                            raylib::Color bg_color) {
-  if (!car->has<HasHippoCollection>()) {
-    return;
-  }
-
-  std::string stats_text = fmt::format(
-      "Hippos: {}", car->get<HasHippoCollection>().get_hippo_count());
-
-  imm::div(context, mk(parent, 1),
-           ComponentConfig{}
-               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-               .with_label(stats_text)
-               .with_color_usage(Theme::Usage::Custom)
-               .with_custom_color(bg_color)
-               .disable_rounded_corners());
-}
-
-void ScheduleMainMenuUI::render_tag_and_go_stats(
-    UIContext<InputAction> &context, Entity &parent, const OptEntity &car,
-    raylib::Color bg_color) {
-  if (!car->has<HasTagAndGoTracking>()) {
-    return;
-  }
-
-  const auto &tracking = car->get<HasTagAndGoTracking>();
-  std::string stats_text =
-      fmt::format("Not It: {:.1f}s", tracking.time_as_not_it);
-
-  imm::div(context, mk(parent, 1),
-           ComponentConfig{}
-               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-               .with_label(stats_text)
-               .with_color_usage(Theme::Usage::Custom)
-               .with_custom_color(bg_color)
-               .disable_rounded_corners());
-}
-
-void ScheduleMainMenuUI::render_unknown_stats(UIContext<InputAction> &context,
-                                              Entity &parent, const OptEntity &,
-                                              raylib::Color bg_color) {
-  std::string stats_text = "Unknown";
-
-  imm::div(context, mk(parent, 1),
-           ComponentConfig{}
-               .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-               .with_label(stats_text)
-               .with_color_usage(Theme::Usage::Custom)
-               .with_custom_color(bg_color)
-               .disable_rounded_corners());
 }
 
 std::map<EntityID, int> ScheduleMainMenuUI::get_tag_and_go_rankings(
