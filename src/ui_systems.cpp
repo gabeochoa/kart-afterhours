@@ -2041,8 +2041,12 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
                  .with_label("Round End")
                  .with_font(get_font_name(FontID::EQPro), 100.f)
                  .with_skip_tabbing(true)
-                 .with_size(ComponentSize{pixels(400.f), pixels(100.f)})
-                 .with_margin(Margin{.top = screen_pct(0.05f)}));
+                 .with_size(ComponentSize{percent(0.5f), percent(0.2f)})
+                 .with_margin(Margin{
+                     .top = screen_pct(0.05f),
+                     .left = screen_pct(0.2f),
+                 })
+                 .with_debug_name("round_end_title"));
   }
 
   std::map<EntityID, int> rankings;
