@@ -431,9 +431,13 @@ ElementResult create_volume_slider(UIContext<InputAction> &context,
 
   auto volume_label = fmt::format("{}\n {:2.0f}", label, volume * 100.f);
 
-  if (auto result =
-          slider(context, mk(parent, index), volume,
-                 ComponentConfig{}.with_label(std::move(volume_label)))) {
+  if (auto result = slider(context, mk(parent, index), volume,
+                           ComponentConfig{}
+                               .with_label(std::move(volume_label))
+                               .with_padding(Padding{.top = pixels(5.f),
+                                                     .left = pixels(0.f),
+                                                     .bottom = pixels(5.f),
+                                                     .right = pixels(0.f)}))) {
     volume = result.as<float>();
     on_change(volume);
     return {true, parent};
@@ -1914,9 +1918,9 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                                            UIContext<InputAction> &context) {
   auto elem =
       ui_helpers::create_screen_container(context, entity, "settings_screen");
+  auto top_left = ui_helpers::create_top_left_container(context, elem.ent(),
+                                                        "settings_top_left", 0);
   {
-    auto top_left = ui_helpers::create_top_left_container(
-        context, elem.ent(), "settings_top_left", 0);
     ui_helpers::create_styled_button(
         context, top_left.ent(), "back",
         []() {
@@ -1928,14 +1932,12 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
         },
         0);
   }
-  auto control_group =
-      ui_helpers::create_control_group(context, elem.ent(), "control_group");
 
   // Master volume slider
   {
     float master_volume = Settings::get().get_master_volume();
     ui_helpers::create_volume_slider(
-        context, control_group.ent(), "Master Volume", master_volume,
+        context, top_left.ent(), "Master Volume", master_volume,
         [](float volume) { Settings::get().update_master_volume(volume); }, 0);
   }
 
@@ -1943,7 +1945,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
   {
     float music_volume = Settings::get().get_music_volume();
     ui_helpers::create_volume_slider(
-        context, control_group.ent(), "Music Volume", music_volume,
+        context, top_left.ent(), "Music Volume", music_volume,
         [](float volume) { Settings::get().update_music_volume(volume); }, 1);
   }
 
@@ -1951,30 +1953,45 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
   {
     float sfx_volume = Settings::get().get_sfx_volume();
     ui_helpers::create_volume_slider(
-        context, control_group.ent(), "SFX Volume", sfx_volume,
+        context, top_left.ent(), "SFX Volume", sfx_volume,
         [](float volume) { Settings::get().update_sfx_volume(volume); }, 2);
   }
 
   // Resolution dropdown
   {
-    if (imm::dropdown(context, mk(control_group.ent(), 3), resolution_strs,
+    if (imm::dropdown(context, mk(top_left.ent(), 3), resolution_strs,
                       resolution_index,
-                      ComponentConfig{}.with_label("Resolution"))) {
+                      ComponentConfig{}
+                          .with_label("Resolution")
+                          .with_padding(Padding{.top = pixels(5.f),
+                                                .left = pixels(0.f),
+                                                .bottom = pixels(5.f),
+                                                .right = pixels(0.f)}))) {
       resolution_provider->on_data_changed(resolution_index);
     }
   }
 
   // Fullscreen checkbox
-  if (imm::checkbox(context, mk(control_group.ent(), 4),
+  if (imm::checkbox(context, mk(top_left.ent(), 4),
                     Settings::get().get_fullscreen_enabled(),
-                    ComponentConfig{}.with_label("Fullscreen"))) {
+                    ComponentConfig{}
+                        .with_label("Fullscreen")
+                        .with_padding(Padding{.top = pixels(5.f),
+                                              .left = pixels(0.f),
+                                              .bottom = pixels(5.f),
+                                              .right = pixels(0.f)}))) {
     Settings::get().toggle_fullscreen();
   }
 
   // Post Processing checkbox
-  if (imm::checkbox(context, mk(control_group.ent(), 5),
+  if (imm::checkbox(context, mk(top_left.ent(), 5),
                     Settings::get().get_post_processing_enabled(),
-                    ComponentConfig{}.with_label("Post Processing"))) {
+                    ComponentConfig{}
+                        .with_label("Post Processing")
+                        .with_padding(Padding{.top = pixels(5.f),
+                                              .left = pixels(0.f),
+                                              .bottom = pixels(5.f),
+                                              .right = pixels(0.f)}))) {
     Settings::get().toggle_post_processing();
   }
 
