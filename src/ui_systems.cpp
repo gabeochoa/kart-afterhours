@@ -10,7 +10,9 @@
 #include "map_system.h"
 #include "navigation.h"
 #include "preload.h" // FontID
+#include "strings.h"
 #include "texture_library.h"
+#include "translation_manager.h"
 #include "ui/animation_key.h"
 #include "ui/animation_slide_in.h"
 #include "ui/animation_ui_wiggle.h"
@@ -57,18 +59,11 @@ struct SetupGameStylingDefaults
             afterhours::Color{255, 44, 156,
                               255}); // Hot pink for dark backgrounds
 
-    // Component-specific styling
-    styling_defaults.set_component_config(
-        ComponentType::Button,
-        ComponentConfig{}
-            .with_padding(Padding{.top = screen_pct(5.f / 720.f),
-                                  .left = pixels(0.f),
-                                  .bottom = screen_pct(5.f / 720.f),
-                                  .right = pixels(0.f)})
-            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
-                                     screen_pct(50.f / 720.f)})
-            .with_color_usage(Theme::Usage::Primary));
+    // Set the default font for all components based on current language
+    styling_defaults.set_default_font(
+        get_font_name(translation_manager::get_font_for_language()), 16.f);
 
+    // Component-specific styling
     styling_defaults.set_component_config(
         ComponentType::Button,
         ComponentConfig{}
@@ -1893,7 +1888,8 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
 
   // Play button
   ui_helpers::create_styled_button(
-      context, top_left.ent(), "play",
+      context, top_left.ent(),
+      translation_manager::get_string(strings::i18n::play),
       []() { navigation::to(GameStateManager::Screen::CharacterCreation); }, 0);
 
   // About button
@@ -1971,8 +1967,61 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
     }
   }
 
+  // Language dropdown
+  {
+    static std::vector<std::string> language_names =
+        translation_manager::get_available_languages();
+    static size_t language_dropdown_index =
+        0; // Unique variable for language dropdown
+    static translation_manager::Language last_language =
+        translation_manager::Language::English;
+
+    // Only update index when language actually changes
+    auto current_lang = translation_manager::get_language();
+    if (current_lang != last_language) {
+      language_dropdown_index =
+          translation_manager::get_language_index(current_lang);
+      last_language = current_lang;
+    }
+
+    if (imm::dropdown(context, mk(top_left.ent(), 4), language_names,
+                      language_dropdown_index,
+                      ComponentConfig{}
+                          .with_label(translation_manager::get_string(
+                              strings::i18n::language))
+                          .with_padding(Padding{.top = pixels(5.f),
+                                                .left = pixels(0.f),
+                                                .bottom = pixels(5.f),
+                                                .right = pixels(0.f)}))) {
+      // Update language when selection changes
+      switch (language_dropdown_index) {
+      case 0:
+        translation_manager::set_language(
+            translation_manager::Language::English);
+        break;
+      case 1:
+        translation_manager::set_language(
+            translation_manager::Language::Korean);
+        break;
+      case 2:
+        translation_manager::set_language(
+            translation_manager::Language::Chinese);
+        break;
+      case 3:
+        translation_manager::set_language(
+            translation_manager::Language::Japanese);
+        break;
+      }
+
+      auto &styling_defaults = afterhours::ui::imm::UIStylingDefaults::get();
+      auto font_name =
+          get_font_name(translation_manager::get_font_for_language());
+      styling_defaults.set_default_font(font_name, 16.f);
+    }
+  }
+
   // Fullscreen checkbox
-  if (imm::checkbox(context, mk(top_left.ent(), 4),
+  if (imm::checkbox(context, mk(top_left.ent(), 5),
                     Settings::get().get_fullscreen_enabled(),
                     ComponentConfig{}
                         .with_label("Fullscreen")
@@ -1984,7 +2033,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
   }
 
   // Post Processing checkbox
-  if (imm::checkbox(context, mk(top_left.ent(), 5),
+  if (imm::checkbox(context, mk(top_left.ent(), 6),
                     Settings::get().get_post_processing_enabled(),
                     ComponentConfig{}
                         .with_label("Post Processing")

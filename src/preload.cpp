@@ -9,6 +9,11 @@
 #include "shader_library.h"
 #include "sound_library.h"
 #include "texture_library.h"
+#include "translation_manager.h"
+
+#include <iostream>
+#include <sstream>
+#include <vector>
 
 using namespace afterhours;
 // for HasTexture
@@ -18,6 +23,8 @@ std::string get_font_name(FontID id) {
   switch (id) {
   case FontID::EQPro:
     return "eqpro";
+  case FontID::CJK:
+    return "notosanskr";
   case FontID::raylibFont:
     return afterhours::ui::UIComponent::DEFAULT_FONT;
   }
@@ -144,6 +151,14 @@ Preload &Preload::make_singleton() {
         Files::get()
             .fetch_resource_path("", "eqprorounded-regular.ttf")
             .c_str());
+
+    // Load CJK fonts using our helper function
+    auto &font_manager = sophie.get<ui::FontManager>();
+    std::string font_file =
+        Files::get().fetch_resource_path("", "NotoSansKR.ttf").c_str();
+
+    translation_manager::TranslationManager::get().load_cjk_fonts(font_manager,
+                                                                  font_file);
 
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();
