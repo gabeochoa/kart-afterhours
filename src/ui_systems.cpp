@@ -9,9 +9,9 @@
 #include "navigation.h"
 #include "preload.h" // FontID
 #include "texture_library.h"
-#include "ui/animation_button_wiggle.h"
 #include "ui/animation_key.h"
 #include "ui/animation_slide_in.h"
+#include "ui/animation_ui_wiggle.h"
 
 using namespace afterhours;
 
@@ -1250,12 +1250,12 @@ bool ScheduleDebugUI::should_run(float dt) {
 
   if (enableCooldown < 0) {
     enableCooldown = enableCooldownReset;
-      input::PossibleInputCollector inpc =
-      input::get_input_collector();
+    input::PossibleInputCollector inpc = input::get_input_collector();
 
     bool debug_pressed =
         std::ranges::any_of(inpc.inputs(), [](const auto &actions_done) {
-          return action_matches(actions_done.action, InputAction::ToggleUIDebug);
+          return action_matches(actions_done.action,
+                                InputAction::ToggleUIDebug);
         });
     if (debug_pressed) {
       enabled = !enabled;
@@ -2256,7 +2256,7 @@ void register_ui_systems(afterhours::SystemManager &systems) {
     systems.register_update_system(
         std::make_unique<SetupGameStylingDefaults>());
     systems.register_update_system(
-        std::make_unique<ui_game::UpdateUIButtonWiggle<InputAction>>());
+        std::make_unique<ui_game::UpdateUIWiggle<InputAction>>());
     systems.register_update_system(
         std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
     systems.register_update_system(std::make_unique<NavigationSystem>());

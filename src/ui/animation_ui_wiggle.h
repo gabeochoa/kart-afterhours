@@ -12,27 +12,27 @@ using namespace afterhours;
 
 // Re-export in game space for convenience
 namespace ui_game {
-namespace ui_button_anim {
-enum struct Key : size_t { ButtonWiggle };
+namespace ui_anim {
+enum struct Key : size_t { UIWiggle };
 }
-struct ButtonWiggleConfig {
+struct UIWiggleConfig {
   float hover_focus_scale = 1.03f;
   float press_scale = 0.97f;
   float hover_focus_duration = 0.16f;
   float press_duration = 0.08f;
 };
 
-inline ButtonWiggleConfig &button_wiggle_config() {
-  static ButtonWiggleConfig cfg;
+inline UIWiggleConfig &ui_wiggle_config() {
+  static UIWiggleConfig cfg;
   return cfg;
 }
 
-inline void set_button_wiggle_config(const ButtonWiggleConfig &cfg) {
-  button_wiggle_config() = cfg;
+inline void set_ui_wiggle_config(const UIWiggleConfig &cfg) {
+  ui_wiggle_config() = cfg;
 }
 
 template <typename InputAction>
-struct UpdateUIButtonWiggle : afterhours::ui::SystemWithUIContext<> {
+struct UpdateUIWiggle : afterhours::ui::SystemWithUIContext<> {
   afterhours::ui::UIContext<InputAction> *context;
   virtual void once(float) override {
     this->context = afterhours::EntityHelper::get_singleton_cmp<
@@ -51,7 +51,7 @@ struct UpdateUIButtonWiggle : afterhours::ui::SystemWithUIContext<> {
                              float) override {
     if (!component.was_rendered_to_screen)
       return;
-    const auto &cfg = button_wiggle_config();
+    const auto &cfg = ui_wiggle_config();
 
     float target = 1.0f;
     bool is_hot = context->is_hot(entity.id);
@@ -62,22 +62,21 @@ struct UpdateUIButtonWiggle : afterhours::ui::SystemWithUIContext<> {
     else if (is_hot || is_focused)
       target = cfg.hover_focus_scale;
 
-    auto handle = afterhours::animation::anim(ui_button_anim::Key::ButtonWiggle,
-                                              (size_t)entity.id);
+    auto handle =
+        afterhours::animation::anim(ui_anim::Key::UIWiggle, (size_t)entity.id);
     float current = handle.value();
     if (current <= 0.f)
       current = 1.0f;
     if (std::abs(current - target) > 0.001f && !handle.is_active()) {
       float duration =
           is_active ? cfg.press_duration : cfg.hover_focus_duration;
-      afterhours::animation::anim(ui_button_anim::Key::ButtonWiggle,
-                                  (size_t)entity.id)
+      afterhours::animation::anim(ui_anim::Key::UIWiggle, (size_t)entity.id)
           .from(current)
           .to(target, duration, afterhours::animation::EasingType::EaseOutQuad);
     }
 
     float scale = afterhours::animation::clamp_value(
-        ui_button_anim::Key::ButtonWiggle, (size_t)entity.id, cfg.press_scale,
+        ui_anim::Key::UIWiggle, (size_t)entity.id, cfg.press_scale,
         cfg.hover_focus_scale);
 
     entity.addComponentIfMissing<afterhours::ui::HasUIModifiers>().scale =
@@ -187,7 +186,7 @@ private:
         continue;
       }
 
-      const auto &cfg = button_wiggle_config();
+      const auto &cfg = ui_wiggle_config();
 
       float target = 1.0f;
       bool is_hot = context->is_hot(child.id);
@@ -198,23 +197,22 @@ private:
       else if (is_hot || is_focused)
         target = cfg.hover_focus_scale;
 
-      auto handle = afterhours::animation::anim(
-          ui_button_anim::Key::ButtonWiggle, (size_t)child.id);
+      auto handle =
+          afterhours::animation::anim(ui_anim::Key::UIWiggle, (size_t)child.id);
       float current = handle.value();
       if (current <= 0.f)
         current = 1.0f;
       if (std::abs(current - target) > 0.001f && !handle.is_active()) {
         float duration =
             is_active ? cfg.press_duration : cfg.hover_focus_duration;
-        afterhours::animation::anim(ui_button_anim::Key::ButtonWiggle,
-                                    (size_t)child.id)
+        afterhours::animation::anim(ui_anim::Key::UIWiggle, (size_t)child.id)
             .from(current)
             .to(target, duration,
                 afterhours::animation::EasingType::EaseOutQuad);
       }
 
       float scale = afterhours::animation::clamp_value(
-          ui_button_anim::Key::ButtonWiggle, (size_t)child.id, cfg.press_scale,
+          ui_anim::Key::UIWiggle, (size_t)child.id, cfg.press_scale,
           cfg.hover_focus_scale);
 
       child.addComponentIfMissing<afterhours::ui::HasUIModifiers>().scale =
