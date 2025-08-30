@@ -332,6 +332,151 @@ static void write_file(const fs::path &p, const std::string &content) {
   f << content;
 }
 
+static bool generate_svg_from_dot(const fs::path &dot_file,
+                                  const fs::path &svg_file) {
+  std::string cmd = "dot -Tsvg \"" + dot_file.string() + "\" -o \"" +
+                    svg_file.string() + "\"";
+  return system(cmd.c_str()) == 0;
+}
+
+static std::string
+generate_system_dependencies_dot(const std::vector<SystemModel> &systems) {
+  std::ostringstream dot;
+  dot << "digraph SystemDependencies {\n";
+  dot << "  rankdir=TB;\n";
+  dot << "  node [shape=box, style=filled, fontname=\"Arial\"];\n";
+  dot << "  edge [fontname=\"Arial\", fontsize=10];\n\n";
+
+  // Group systems by stage
+  std::unordered_map<std::string, std::vector<std::string>> stage_systems;
+  for (const auto &sys : systems) {
+    stage_systems[sys.stage].push_back(sys.name);
+  }
+
+  // Create subgraphs for each stage
+  for (const auto &[stage, sys_list] : stage_systems) {
+    dot << "  subgraph cluster_" << stage << " {\n";
+    dot << "    label=\"" << stage << "\";\n";
+    dot << "    style=filled;\n";
+    dot << "    color=lightgrey;\n";
+    dot << "    node [style=filled, fillcolor=white];\n";
+
+    for (const auto &sys_name : sys_list) {
+      dot << "    \"" << sys_name << "\";\n";
+    }
+    dot << "  }\n\n";
+  }
+
+  // Add edges for component dependencies
+  for (const auto &sys : systems) {
+    for (const auto &read_comp : sys.read_components) {
+      for (const auto &other_sys : systems) {
+        if (other_sys.name != sys.name &&
+            other_sys.write_components.count(read_comp) > 0) {
+          dot << "  \"" << other_sys.name << "\" -> \"" << sys.name << "\" ";
+          dot << "[label=\"" << read_comp << "\", color=blue];\n";
+        }
+      }
+    }
+  }
+
+  dot << "}\n";
+  return dot.str();
+}
+
+static std::string
+generate_component_relationships_dot(const std::vector<SystemModel> &systems) {
+  std::ostringstream dot;
+  dot << "digraph ComponentRelationships {\n";
+  dot << "  rankdir=LR;\n";
+  dot << "  node [shape=ellipse, style=filled, fontname=\"Arial\"];\n";
+  dot << "  edge [fontname=\"Arial\", fontsize=10];\n\n";
+
+  // Collect all components
+  std::unordered_set<std::string> all_components;
+  for (const auto &sys : systems) {
+    all_components.insert(sys.read_components.begin(),
+                          sys.read_components.end());
+    all_components.insert(sys.write_components.begin(),
+                          sys.write_components.end());
+  }
+
+  // Add component nodes
+  for (const auto &comp : all_components) {
+    dot << "  \"" << comp << "\" [fillcolor=lightblue];\n";
+  }
+
+  // Add system nodes
+  for (const auto &sys : systems) {
+    dot << "  \"" << sys.name << "\" [fillcolor=lightgreen, shape=box];\n";
+  }
+
+  // Add read relationships
+  for (const auto &sys : systems) {
+    for (const auto &comp : sys.read_components) {
+      dot << "  \"" << comp << "\" -> \"" << sys.name << "\" ";
+      dot << "[label=\"reads\", color=blue, style=dashed];\n";
+    }
+  }
+
+  // Add write relationships
+  for (const auto &sys : systems) {
+    for (const auto &comp : sys.write_components) {
+      dot << "  \"" << sys.name << "\" -> \"" << comp << "\" ";
+      dot << "[label=\"writes\", color=red, style=solid];\n";
+    }
+  }
+
+  dot << "}\n";
+  return dot.str();
+}
+
+static std::string
+generate_system_conflicts_dot(const std::vector<SystemModel> &systems) {
+  std::ostringstream dot;
+  dot << "digraph SystemConflicts {\n";
+  dot << "  rankdir=TB;\n";
+  dot << "  node [shape=box, style=filled, fontname=\"Arial\"];\n";
+  dot << "  edge [fontname=\"Arial\", fontsize=10];\n\n";
+
+  // Find potential conflicts (systems that write to the same components)
+  std::unordered_map<std::string, std::vector<std::string>> component_writers;
+  for (const auto &sys : systems) {
+    for (const auto &comp : sys.write_components) {
+      component_writers[comp].push_back(sys.name);
+    }
+  }
+
+  // Add nodes for systems with conflicts
+  std::unordered_set<std::string> systems_with_conflicts;
+  for (const auto &[comp, writers] : component_writers) {
+    if (writers.size() > 1) {
+      for (const auto &writer : writers) {
+        systems_with_conflicts.insert(writer);
+      }
+    }
+  }
+
+  for (const auto &sys_name : systems_with_conflicts) {
+    dot << "  \"" << sys_name << "\" [fillcolor=lightcoral];\n";
+  }
+
+  // Add edges for conflicts
+  for (const auto &[comp, writers] : component_writers) {
+    if (writers.size() > 1) {
+      for (size_t i = 0; i < writers.size(); ++i) {
+        for (size_t j = i + 1; j < writers.size(); ++j) {
+          dot << "  \"" << writers[i] << "\" -> \"" << writers[j] << "\" ";
+          dot << "[label=\"" << comp << "\", color=red, style=dashed];\n";
+        }
+      }
+    }
+  }
+
+  dot << "}\n";
+  return dot.str();
+}
+
 static std::string systems_html_template() {
   // Reuse the HTML from Python generator; [[SUMMARY_JSON]] placeholder to
   // replace
@@ -496,6 +641,8 @@ int main(int argc, char **argv) {
   fs::path main_cpp = "src/main.cpp";
   fs::path outdir = "output";
   fs::path template_path = "template.html";
+  bool generate_svg = false;
+
   for (int i = 1; i < argc; ++i) {
     std::string a = argv[i];
     auto next = [&](fs::path &p) {
@@ -503,7 +650,18 @@ int main(int argc, char **argv) {
         p = argv[++i];
       }
     };
-    if (a == "--src")
+    if (a == "--help" || a == "-h") {
+      std::cout
+          << "Usage: " << argv[0] << " [options]\n"
+          << "Options:\n"
+          << "  --src DIR        Source directory (default: src)\n"
+          << "  --main FILE      Main cpp file (default: src/main.cpp)\n"
+          << "  --outdir DIR     Output directory (default: output)\n"
+          << "  --template FILE  HTML template file (default: template.html)\n"
+          << "  --svg            Generate SVG files from DOT files\n"
+          << "  --help, -h       Show this help message\n";
+      return 0;
+    } else if (a == "--src")
       next(src);
     else if (a == "--main")
       next(main_cpp);
@@ -511,6 +669,13 @@ int main(int argc, char **argv) {
       next(outdir);
     else if (a == "--template")
       next(template_path);
+    else if (a == "--svg")
+      generate_svg = true;
+    else {
+      std::cerr << "Unknown option: " << a << "\n";
+      std::cerr << "Use --help for usage information\n";
+      return 1;
+    }
   }
 
   std::unordered_map<std::string, std::string> stage;
@@ -599,7 +764,130 @@ int main(int argc, char **argv) {
   }
   write_file(outdir / "systems.html", html);
 
-  std::cout << "Wrote: " << (outdir / "dependency_summary.json") << " and "
-            << (outdir / "systems.html") << "\n";
+  // Generate DOT files
+  std::string system_deps_dot = generate_system_dependencies_dot(systems);
+  write_file(outdir / "system_dependencies.dot", system_deps_dot);
+  std::string component_rels_dot =
+      generate_component_relationships_dot(systems);
+  write_file(outdir / "component_relationships.dot", component_rels_dot);
+  std::string system_conflicts_dot = generate_system_conflicts_dot(systems);
+  write_file(outdir / "system_conflicts.dot", system_conflicts_dot);
+
+  // Generate SVG files if requested
+  if (generate_svg) {
+    if (generate_svg_from_dot(outdir / "system_dependencies.dot",
+                              outdir / "system_dependencies.svg")) {
+      std::cout << "Generated: " << (outdir / "system_dependencies.svg")
+                << "\n";
+    }
+    if (generate_svg_from_dot(outdir / "component_relationships.dot",
+                              outdir / "component_relationships.svg")) {
+      std::cout << "Generated: " << (outdir / "component_relationships.svg")
+                << "\n";
+    }
+    if (generate_svg_from_dot(outdir / "system_conflicts.dot",
+                              outdir / "system_conflicts.svg")) {
+      std::cout << "Generated: " << (outdir / "system_conflicts.svg") << "\n";
+    }
+  }
+
+  // Generate summary report
+  std::ostringstream report;
+  report << "=== Dependency Graph Summary ===\n\n";
+
+  // System counts by stage
+  std::unordered_map<std::string, int> stage_counts;
+  for (const auto &sys : systems) {
+    stage_counts[sys.stage]++;
+  }
+
+  report << "Systems by stage:\n";
+  for (const auto &[stage, count] : stage_counts) {
+    report << "  " << stage << ": " << count << " systems\n";
+  }
+
+  // Component usage statistics
+  std::unordered_set<std::string> all_components;
+  std::unordered_map<std::string, int> component_readers;
+  std::unordered_map<std::string, int> component_writers;
+
+  for (const auto &sys : systems) {
+    for (const auto &comp : sys.read_components) {
+      all_components.insert(comp);
+      component_readers[comp]++;
+    }
+    for (const auto &comp : sys.write_components) {
+      all_components.insert(comp);
+      component_writers[comp]++;
+    }
+  }
+
+  report << "\nComponent statistics:\n";
+  report << "  Total unique components: " << all_components.size() << "\n";
+
+  // Find most used components
+  std::vector<std::pair<std::string, int>> most_read;
+  for (const auto &[comp, count] : component_readers) {
+    most_read.emplace_back(comp, count);
+  }
+  std::sort(most_read.begin(), most_read.end(),
+            [](const auto &a, const auto &b) { return a.second > b.second; });
+
+  report << "  Most read components:\n";
+  for (size_t i = 0; i < std::min(size_t(5), most_read.size()); ++i) {
+    report << "    " << most_read[i].first << ": " << most_read[i].second
+           << " readers\n";
+  }
+
+  // Find components with multiple writers (potential conflicts)
+  std::vector<std::pair<std::string, int>> conflict_components;
+  for (const auto &[comp, count] : component_writers) {
+    if (count > 1) {
+      conflict_components.emplace_back(comp, count);
+    }
+  }
+  std::sort(conflict_components.begin(), conflict_components.end(),
+            [](const auto &a, const auto &b) { return a.second > b.second; });
+
+  if (!conflict_components.empty()) {
+    report << "\nComponents with multiple writers (potential conflicts):\n";
+    for (const auto &[comp, count] : conflict_components) {
+      report << "  " << comp << ": " << count << " writers\n";
+    }
+  }
+
+  // System dependency depth analysis
+  std::unordered_map<std::string, int> system_depths;
+  for (const auto &sys : systems) {
+    int max_depth = 0;
+    for (const auto &read_comp : sys.read_components) {
+      for (const auto &other_sys : systems) {
+        if (other_sys.name != sys.name &&
+            other_sys.write_components.count(read_comp) > 0) {
+          max_depth = std::max(max_depth, 1);
+        }
+      }
+    }
+    system_depths[sys.name] = max_depth;
+  }
+
+  int max_system_depth = 0;
+  for (const auto &[sys, depth] : system_depths) {
+    max_system_depth = std::max(max_system_depth, depth);
+  }
+
+  report << "\nSystem dependency analysis:\n";
+  report << "  Maximum dependency depth: " << max_system_depth << "\n";
+
+  write_file(outdir / "dependency_summary.txt", report.str());
+  std::cout << "Generated summary report: "
+            << (outdir / "dependency_summary.txt") << "\n";
+
+  std::cout << "Wrote: " << (outdir / "dependency_summary.json") << ", "
+            << (outdir / "systems.html") << ", "
+            << (outdir / "system_dependencies.dot") << ", "
+            << (outdir / "component_relationships.dot") << ", "
+            << (outdir / "system_conflicts.dot") << ", and "
+            << (outdir / "dependency_summary.txt") << "\n";
   return 0;
 }
