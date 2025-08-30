@@ -1998,13 +1998,9 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
 Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
                                             UIContext<InputAction> &context) {
   auto elem =
-      imm::div(context, mk(entity),
-               ComponentConfig{}
-                   .with_font(get_font_name(FontID::EQPro), 75.f)
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute_position()
-                   .with_debug_name("round_end_screen"));
-
+      ui_helpers::create_screen_container(context, entity, "round_end_screen");
+  auto top_left = ui_helpers::create_top_left_container(
+      context, elem.ent(), "round_end_top_left", 0);
   // Get players from the round (filter out entities marked for cleanup)
   std::vector<OptEntity> round_players;
   std::vector<OptEntity> round_ais;
@@ -2101,28 +2097,11 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
     }
   }
 
-  // Button group at bottom
-  auto button_group =
-      imm::div(context, mk(elem.ent()),
-               ComponentConfig{}
-                   .with_font(get_font_name(FontID::EQPro), 75.f)
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute_position()
-                   .with_debug_name("round_end_button_group"));
-
-  {
-    if (imm::button(context, mk(button_group.ent()),
-                    ComponentConfig{}.with_label("continue"))) {
-      navigation::to(GameStateManager::Screen::CharacterCreation);
-    }
-  }
-
-  {
-    if (imm::button(context, mk(button_group.ent()),
-                    ComponentConfig{}.with_label("quit"))) {
-      exit_game();
-    }
-  }
+  ui_helpers::create_styled_button(
+      context, top_left.ent(), "continue",
+      []() { navigation::to(GameStateManager::Screen::CharacterCreation); }, 0);
+  ui_helpers::create_styled_button(
+      context, top_left.ent(), "quit", [this]() { exit_game(); }, 1);
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
