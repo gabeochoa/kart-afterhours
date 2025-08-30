@@ -3,6 +3,8 @@
 #include <afterhours/ah.h>
 #include <fmt/format.h>
 
+#include <afterhours/src/logging.h>
+
 //
 #include "config.h"
 #include "map_system.h"
@@ -35,7 +37,37 @@ struct SetupGameStylingDefaults
     : System<afterhours::ui::UIContext<InputAction>> {
 
   virtual void once(float) override {
-    auto &styling_defaults = UIStylingDefaults::get();
+    auto &styling_defaults = afterhours::ui::imm::UIStylingDefaults::get();
+
+    // 80s Synthwave Theme
+    styling_defaults
+        .set_theme_color(afterhours::ui::Theme::Usage::Primary,
+                         afterhours::Color{96, 0, 255, 255}) // Deep purple
+        .set_theme_color(afterhours::ui::Theme::Usage::Secondary,
+                         afterhours::Color{0, 224, 255, 255}) // Electric blue
+        .set_theme_color(afterhours::ui::Theme::Usage::Accent,
+                         afterhours::Color{255, 44, 156, 255}) // Hot pink
+        .set_theme_color(afterhours::ui::Theme::Usage::Background,
+                         afterhours::Color{23, 7, 26, 255}) // Deep purple-black
+        .set_theme_color(
+            afterhours::ui::Theme::Usage::Font,
+            afterhours::Color{225, 225, 255, 255}) // Soft blue-white
+        .set_theme_color(
+            afterhours::ui::Theme::Usage::DarkFont,
+            afterhours::Color{255, 44, 156,
+                              255}); // Hot pink for dark backgrounds
+
+    // Component-specific styling
+    styling_defaults.set_component_config(
+        ComponentType::Button,
+        ComponentConfig{}
+            .with_padding(Padding{.top = screen_pct(5.f / 720.f),
+                                  .left = pixels(0.f),
+                                  .bottom = screen_pct(5.f / 720.f),
+                                  .right = pixels(0.f)})
+            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
+                                     screen_pct(50.f / 720.f)})
+            .with_color_usage(Theme::Usage::Primary));
 
     styling_defaults.set_component_config(
         ComponentType::Button,
@@ -2114,11 +2146,12 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
 void register_ui_systems(afterhours::SystemManager &systems) {
   ui::register_before_ui_updates<InputAction>(systems);
   {
+    systems.register_update_system(
+        std::make_unique<SetupGameStylingDefaults>());
+
     afterhours::animation::register_update_systems<UIKey>(systems);
     afterhours::animation::register_update_systems<
         afterhours::animation::CompositeKey>(systems);
-    systems.register_update_system(
-        std::make_unique<SetupGameStylingDefaults>());
     systems.register_update_system(
         std::make_unique<ui_game::UpdateUIWiggle<InputAction>>());
     systems.register_update_system(
