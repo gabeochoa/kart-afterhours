@@ -7,161 +7,195 @@ namespace translation_manager {
 
 // Runtime translation maps
 static std::map<strings::i18n, TranslatableString> english_translations = {
-    {strings::i18n::play,
-     TranslatableString("play", "Main menu button to start a new game")},
+    {strings::i18n::play, translation_manager::TranslatableString(
+                              "play", "Main menu button to start a new game")},
     {strings::i18n::about,
-     TranslatableString("about", "Main menu button to show game information")},
-    {strings::i18n::exit,
-     TranslatableString("exit", "Main menu button to quit the game")},
+     translation_manager::TranslatableString(
+         "about", "Main menu button to show game information")},
+    {strings::i18n::exit, translation_manager::TranslatableString(
+                              "exit", "Main menu button to quit the game")},
     {strings::i18n::loading,
-     TranslatableString("Loading...", "Text shown while game is loading")},
-    {strings::i18n::gameover,
-     TranslatableString("game over", "Text shown when player loses")},
-    {strings::i18n::victory,
-     TranslatableString("victory!", "Text shown when player wins")},
-    {strings::i18n::start,
-     TranslatableString("start", "Button to begin gameplay")},
+     translation_manager::TranslatableString(
+         "Loading...", "Text shown while game is loading")},
+    {strings::i18n::gameover, translation_manager::TranslatableString(
+                                  "game over", "Text shown when player loses")},
+    {strings::i18n::victory, translation_manager::TranslatableString(
+                                 "victory!", "Text shown when player wins")},
+    {strings::i18n::start, translation_manager::TranslatableString(
+                               "start", "Button to begin gameplay")},
     {strings::i18n::back,
-     TranslatableString("back",
-                        "Navigation button to return to previous screen")},
+     translation_manager::TranslatableString(
+         "back", "Navigation button to return to previous screen")},
     {strings::i18n::continue_game,
-     TranslatableString("continue", "Button to continue after round ends")},
-    {strings::i18n::quit,
-     TranslatableString("quit", "Button to exit current game session")},
+     translation_manager::TranslatableString(
+         "continue", "Button to continue after round ends")},
+    {strings::i18n::quit, translation_manager::TranslatableString(
+                              "quit", "Button to exit current game session")},
     {strings::i18n::settings,
-     TranslatableString("settings",
-                        "Main menu button to access game settings")},
-    {strings::i18n::volume,
-     TranslatableString("volume", "Generic volume setting label")},
+     translation_manager::TranslatableString(
+         "settings", "Main menu button to access game settings")},
+    {strings::i18n::volume, translation_manager::TranslatableString(
+                                "volume", "Generic volume setting label")},
     {strings::i18n::fullscreen,
-     TranslatableString("fullscreen", "Checkbox to toggle fullscreen mode")},
+     translation_manager::TranslatableString(
+         "fullscreen", "Checkbox to toggle fullscreen mode")},
     {strings::i18n::resolution,
-     TranslatableString("resolution", "Dropdown to select screen resolution")},
+     translation_manager::TranslatableString(
+         "resolution", "Dropdown to select screen resolution")},
     {strings::i18n::language,
-     TranslatableString("language", "Dropdown to select game language")},
+     translation_manager::TranslatableString(
+         "language", "Dropdown to select game language")},
 
     // Additional UI strings
     {strings::i18n::round_settings,
-     TranslatableString("Round Settings",
-                        "Title for round configuration screen")},
-    {strings::i18n::resume,
-     TranslatableString("resume", "Button to unpause the game")},
+     translation_manager::TranslatableString(
+         "Round Settings", "Title for round configuration screen")},
+    {strings::i18n::resume, translation_manager::TranslatableString(
+                                "resume", "Button to unpause the game")},
     {strings::i18n::back_to_setup,
-     TranslatableString("back to setup",
-                        "Button to return to game setup from pause menu")},
+     translation_manager::TranslatableString(
+         "back to setup", "Button to return to game setup from pause menu")},
     {strings::i18n::exit_game,
-     TranslatableString("exit game",
-                        "Button to quit current game from pause menu")},
-    {strings::i18n::round_length,
-     TranslatableString("Round Length",
-                        "Label for round time duration setting")},
+     translation_manager::TranslatableString(
+         "exit game", "Button to quit current game from pause menu")},
+    {strings::i18n::round_length, translation_manager::TranslatableString(
+                                      "round length: {number_time} seconds",
+                                      "Label for round time duration setting")},
     {strings::i18n::allow_tag_backs,
-     TranslatableString("Allow Tag Backs",
-                        "Checkbox for tag-and-go game mode setting")},
+     translation_manager::TranslatableString(
+         "Allow Tag Backs", "Checkbox for tag-and-go game mode setting")},
     {strings::i18n::select_map,
-     TranslatableString("select map", "Button to choose a map for the game")},
+     translation_manager::TranslatableString(
+         "select map", "Button to choose a map for the game")},
     {strings::i18n::master_volume,
-     TranslatableString("Master Volume", "Slider for overall game volume")},
+     translation_manager::TranslatableString("Master Volume",
+                                             "Slider for overall game volume")},
     {strings::i18n::music_volume,
-     TranslatableString("Music Volume", "Slider for background music volume")},
+     translation_manager::TranslatableString(
+         "Music Volume", "Slider for background music volume")},
     {strings::i18n::sfx_volume,
-     TranslatableString("SFX Volume", "Slider for sound effects volume")},
+     translation_manager::TranslatableString(
+         "SFX Volume", "Slider for sound effects volume")},
     {strings::i18n::post_processing,
-     TranslatableString("Post Processing",
-                        "Checkbox to enable visual post-processing effects")},
+     translation_manager::TranslatableString(
+         "Post Processing",
+         "Checkbox to enable visual post-processing effects")},
     {strings::i18n::round_end,
-     TranslatableString("Round End", "Title shown when a round finishes")},
+     translation_manager::TranslatableString(
+         "Round End", "Title shown when a round finishes")},
     {strings::i18n::paused,
-     TranslatableString("paused", "Large text shown when game is paused")},
+     translation_manager::TranslatableString(
+         "paused", "Large text shown when game is paused")},
     {strings::i18n::unknown,
-     TranslatableString("Unknown", "Fallback text for unknown game states")},
+     translation_manager::TranslatableString(
+         "Unknown", "Fallback text for unknown game states")},
     {strings::i18n::unlimited,
-     TranslatableString("Unlimited", "Option for unlimited round time")},
-    {strings::i18n::easy,
-     TranslatableString("Easy", "AI difficulty level - easiest setting")},
+     translation_manager::TranslatableString(
+         "Unlimited", "Option for unlimited round time")},
+    {strings::i18n::easy, translation_manager::TranslatableString(
+                              "Easy", "AI difficulty level - easiest setting")},
     {strings::i18n::medium,
-     TranslatableString("Medium", "AI difficulty level - moderate setting")},
+     translation_manager::TranslatableString(
+         "Medium", "AI difficulty level - moderate setting")},
     {strings::i18n::hard,
-     TranslatableString("Hard", "AI difficulty level - challenging setting")},
+     translation_manager::TranslatableString(
+         "Hard", "AI difficulty level - challenging setting")},
     {strings::i18n::expert,
-     TranslatableString("Expert", "AI difficulty level - hardest setting")}};
+     translation_manager::TranslatableString(
+         "Expert", "AI difficulty level - hardest setting")}};
 
 static std::map<strings::i18n, TranslatableString> korean_translations = {
-    {strings::i18n::play,
-     TranslatableString("시작", "새 게임을 시작하는 메인 메뉴 버튼")},
-    {strings::i18n::about,
-     TranslatableString("정보", "게임 정보를 보여주는 메인 메뉴 버튼")},
-    {strings::i18n::exit,
-     TranslatableString("종료", "게임을 종료하는 메인 메뉴 버튼")},
+    {strings::i18n::play, translation_manager::TranslatableString(
+                              "시작", "새 게임을 시작하는 메인 메뉴 버튼")},
+    {strings::i18n::about, translation_manager::TranslatableString(
+                               "정보", "게임 정보를 보여주는 메인 메뉴 버튼")},
+    {strings::i18n::exit, translation_manager::TranslatableString(
+                              "종료", "게임을 종료하는 메인 메뉴 버튼")},
     {strings::i18n::loading,
-     TranslatableString("로딩중...", "게임이 로딩 중일 때 표시되는 텍스트")},
+     translation_manager::TranslatableString(
+         "로딩중...", "게임이 로딩 중일 때 표시되는 텍스트")},
     {strings::i18n::gameover,
-     TranslatableString("게임 오버", "플레이어가 패배했을 때 표시되는 텍스트")},
+     translation_manager::TranslatableString(
+         "게임 오버", "플레이어가 패배했을 때 표시되는 텍스트")},
     {strings::i18n::victory,
-     TranslatableString("승리!", "플레이어가 승리했을 때 표시되는 텍스트")},
-    {strings::i18n::start,
-     TranslatableString("시작", "게임플레이를 시작하는 버튼")},
+     translation_manager::TranslatableString(
+         "승리!", "플레이어가 승리했을 때 표시되는 텍스트")},
+    {strings::i18n::start, translation_manager::TranslatableString(
+                               "시작", "게임플레이를 시작하는 버튼")},
     {strings::i18n::back,
-     TranslatableString("뒤로", "이전 화면으로 돌아가는 네비게이션 버튼")},
+     translation_manager::TranslatableString(
+         "뒤로", "이전 화면으로 돌아가는 네비게이션 버튼")},
     {strings::i18n::continue_game,
-     TranslatableString("계속", "라운드가 끝난 후 계속하는 버튼")},
-    {strings::i18n::quit,
-     TranslatableString("종료", "현재 게임 세션을 종료하는 버튼")},
+     translation_manager::TranslatableString("계속",
+                                             "라운드가 끝난 후 계속하는 버튼")},
+    {strings::i18n::quit, translation_manager::TranslatableString(
+                              "종료", "현재 게임 세션을 종료하는 버튼")},
     {strings::i18n::settings,
-     TranslatableString("설정", "게임 설정에 접근하는 메인 메뉴 버튼")},
-    {strings::i18n::volume,
-     TranslatableString("볼륨", "일반적인 볼륨 설정 라벨")},
+     translation_manager::TranslatableString(
+         "설정", "게임 설정에 접근하는 메인 메뉴 버튼")},
+    {strings::i18n::volume, translation_manager::TranslatableString(
+                                "볼륨", "일반적인 볼륨 설정 라벨")},
     {strings::i18n::fullscreen,
-     TranslatableString("전체화면", "전체화면 모드를 토글하는 체크박스")},
+     translation_manager::TranslatableString(
+         "전체화면", "전체화면 모드를 토글하는 체크박스")},
     {strings::i18n::resolution,
-     TranslatableString("해상도", "화면 해상도를 선택하는 드롭다운")},
+     translation_manager::TranslatableString(
+         "해상도", "화면 해상도를 선택하는 드롭다운")},
     {strings::i18n::language,
-     TranslatableString("언어 (Language)", "게임 언어를 선택하는 드롭다운")},
+     translation_manager::TranslatableString("언어 (Language)",
+                                             "게임 언어를 선택하는 드롭다운")},
 
     // Additional UI strings
     {strings::i18n::round_settings,
-     TranslatableString("라운드 설정", "라운드 구성 화면의 제목")},
-    {strings::i18n::resume,
-     TranslatableString("계속", "게임을 일시정지 해제하는 버튼")},
+     translation_manager::TranslatableString("라운드 설정",
+                                             "라운드 구성 화면의 제목")},
+    {strings::i18n::resume, translation_manager::TranslatableString(
+                                "계속", "게임을 일시정지 해제하는 버튼")},
     {strings::i18n::back_to_setup,
-     TranslatableString("설정으로 돌아가기",
-                        "일시정지 메뉴에서 게임 설정으로 돌아가는 버튼")},
+     translation_manager::TranslatableString(
+         "설정으로 돌아가기", "일시정지 메뉴에서 게임 설정으로 돌아가는 버튼")},
     {strings::i18n::exit_game,
-     TranslatableString("게임 종료",
-                        "일시정지 메뉴에서 현재 게임을 종료하는 버튼")},
+     translation_manager::TranslatableString(
+         "게임 종료", "일시정지 메뉴에서 현재 게임을 종료하는 버튼")},
     {strings::i18n::round_length,
-     TranslatableString("라운드 길이", "라운드 시간 지속 설정의 라벨")},
+     translation_manager::TranslatableString("라운드 길이",
+                                             "라운드 시간 지속 설정의 라벨")},
     {strings::i18n::allow_tag_backs,
-     TranslatableString("태그 백 허용",
-                        "태그 앤 고 게임 모드 설정을 위한 체크박스")},
-    {strings::i18n::select_map,
-     TranslatableString("맵 선택", "게임용 맵을 선택하는 버튼")},
+     translation_manager::TranslatableString(
+         "태그 백 허용", "태그 앤 고 게임 모드 설정을 위한 체크박스")},
+    {strings::i18n::select_map, translation_manager::TranslatableString(
+                                    "맵 선택", "게임용 맵을 선택하는 버튼")},
     {strings::i18n::master_volume,
-     TranslatableString("마스터 볼륨", "전체 게임 볼륨을 위한 슬라이더")},
+     translation_manager::TranslatableString("마스터 볼륨",
+                                             "전체 게임 볼륨을 위한 슬라이더")},
     {strings::i18n::music_volume,
-     TranslatableString("음악 볼륨", "배경 음악 볼륨을 위한 슬라이더")},
+     translation_manager::TranslatableString("음악 볼륨",
+                                             "배경 음악 볼륨을 위한 슬라이더")},
     {strings::i18n::sfx_volume,
-     TranslatableString("효과음 볼륨", "효과음 볼륨을 위한 슬라이더")},
+     translation_manager::TranslatableString("효과음 볼륨",
+                                             "효과음 볼륨을 위한 슬라이더")},
     {strings::i18n::post_processing,
-     TranslatableString("후처리", "시각적 후처리 효과를 활성화하는 체크박스")},
+     translation_manager::TranslatableString(
+         "후처리", "시각적 후처리 효과를 활성화하는 체크박스")},
     {strings::i18n::round_end,
-     TranslatableString("라운드 종료", "라운드가 끝날 때 표시되는 제목")},
+     translation_manager::TranslatableString("라운드 종료",
+                                             "라운드가 끝날 때 표시되는 제목")},
     {strings::i18n::paused,
-     TranslatableString("일시정지",
-                        "게임이 일시정지되었을 때 표시되는 큰 텍스트")},
+     translation_manager::TranslatableString(
+         "일시정지", "게임이 일시정지되었을 때 표시되는 큰 텍스트")},
     {strings::i18n::unknown,
-     TranslatableString("알 수 없음",
-                        "알 수 없는 게임 상태를 위한 대체 텍스트")},
-    {strings::i18n::unlimited,
-     TranslatableString("무제한", "무제한 라운드 시간을 위한 옵션")},
-    {strings::i18n::easy,
-     TranslatableString("쉬움", "AI 난이도 - 가장 쉬운 설정")},
+     translation_manager::TranslatableString(
+         "알 수 없음", "알 수 없는 게임 상태를 위한 대체 텍스트")},
+    {strings::i18n::unlimited, translation_manager::TranslatableString(
+                                   "무제한", "무제한 라운드 시간을 위한 옵션")},
+    {strings::i18n::easy, translation_manager::TranslatableString(
+                              "쉬움", "AI 난이도 - 가장 쉬운 설정")},
     {strings::i18n::medium,
-     TranslatableString("보통", "AI 난이도 - 보통 설정")},
-    {strings::i18n::hard,
-     TranslatableString("어려움", "AI 난이도 - 도전적인 설정")},
-    {strings::i18n::expert,
-     TranslatableString("전문가", "AI 난이도 - 가장 어려운 설정")}};
+     translation_manager::TranslatableString("보통", "AI 난이도 - 보통 설정")},
+    {strings::i18n::hard, translation_manager::TranslatableString(
+                              "어려움", "AI 난이도 - 도전적인 설정")},
+    {strings::i18n::expert, translation_manager::TranslatableString(
+                                "전문가", "AI 난이도 - 가장 어려운 설정")}};
 
 // Get translations for a specific language
 const std::map<strings::i18n, TranslatableString> &
@@ -198,15 +232,17 @@ TranslationManager::get_translatable_string(strings::i18n key) const {
 
   auto it = translations.find(key);
   if (it != translations.end()) {
-    return TranslatableString(it->second.get_text(),
-                              it->second.get_description());
+    return translation_manager::TranslatableString(
+        it->second.get_text(), it->second.get_description());
   }
-  return TranslatableString("MISSING_TRANSLATION",
-                            true); // Fallback with no_translate
+  return translation_manager::TranslatableString(
+      "MISSING_TRANSLATION",
+      true); // Fallback with no_translate
 }
 
 // TranslatableString constructor implementation
-TranslatableString::TranslatableString(const strings::i18n &key) {
+translation_manager::TranslatableString::TranslatableString(
+    const strings::i18n &key) {
   // Get translations for current language
   const auto &translations =
       TranslationManager::get().get_translations_for_language(
