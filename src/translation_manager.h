@@ -11,6 +11,18 @@ namespace translation_manager {
 // Language enum for type safety
 enum struct Language { English, Korean, Chinese, Japanese };
 
+// Translation entry with description for translators
+struct TranslationEntry {
+  std::string text;
+  std::string description;
+
+  TranslationEntry(const std::string &t, const std::string &d = "")
+      : text(t), description(d) {}
+
+  // Allow implicit conversion to string for backward compatibility
+  operator std::string() const { return text; }
+};
+
 // Simple translation manager
 class TranslationManager {
 public:
@@ -21,6 +33,9 @@ public:
 
   // Get translated string
   std::string get_string(strings::i18n key) const;
+
+  // Get translation entry with description
+  TranslationEntry get_translation_entry(strings::i18n key) const;
 
   // Get appropriate font ID for the current language
   FontID get_font_for_language() const {
@@ -99,6 +114,11 @@ private:
 // Global get_string function
 inline std::string get_string(strings::i18n key) {
   return TranslationManager::get().get_string(key);
+}
+
+// Global get_translation_entry function
+inline TranslationEntry get_translation_entry(strings::i18n key) {
+  return TranslationManager::get().get_translation_entry(key);
 }
 
 // Global get_font_for_language function

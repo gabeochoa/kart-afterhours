@@ -23,6 +23,9 @@ enum struct i18n {
   back,
   continue_game,
   quit,
+  exit_game,
+  back_to_setup,
+  select_map,
 
   // Settings
   settings,
@@ -30,6 +33,32 @@ enum struct i18n {
   fullscreen,
   resolution,
   language,
+
+  round_settings,
+  allow_tag_backs,
+
+  // Settings
+  master_volume,
+  music_volume,
+  sfx_volume,
+  post_processing,
+
+  round_end,
+  unknown,
+
+  // "Paused" Screen
+  paused,
+  resume,
+
+  // Round time
+  round_length,
+  unlimited,
+
+  // AI difficulty settings
+  easy,
+  medium,
+  hard,
+  expert,
 
   // Count for array sizing
   Count
