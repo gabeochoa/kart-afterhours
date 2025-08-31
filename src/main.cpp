@@ -8,9 +8,9 @@ backward::SignalHandling sh;
 
 #include "game.h"
 //
+#include "./ui/navigation.h"
 #include "argh.h"
 #include "map_system.h"
-#include "navigation.h"
 #include "preload.h"
 #include "settings.h"
 #include "sound_systems.h"

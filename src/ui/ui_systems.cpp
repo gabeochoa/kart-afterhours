@@ -12,7 +12,6 @@
 #include "../game.h"
 #include "../game_state_manager.h"
 #include "../map_system.h"
-#include "../navigation.h"
 #include "../preload.h" // FontID
 #include "../query.h"
 #include "../round_settings.h"
@@ -23,6 +22,7 @@
 #include "animation_key.h"
 #include "animation_slide_in.h"
 #include "animation_ui_wiggle.h"
+#include "navigation.h"
 
 using namespace afterhours;
 

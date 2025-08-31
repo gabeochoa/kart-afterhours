@@ -1,19 +1,18 @@
 #include "preload.h"
 
+#include <iostream>
+#include <sstream>
+#include <vector>
+
 #include "rl.h"
 
-#include "input_mapping.h"
+#include "./ui/navigation.h"
 #include "music_library.h"
-#include "navigation.h"
 #include "settings.h"
 #include "shader_library.h"
 #include "sound_library.h"
 #include "texture_library.h"
 #include "translation_manager.h"
-
-#include <iostream>
-#include <sstream>
-#include <vector>
 
 using namespace afterhours;
 // for HasTexture
