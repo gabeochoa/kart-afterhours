@@ -1431,8 +1431,8 @@ void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
                .with_label(
                    fmt::format("Num Lives: {}", rl_settings.num_starting_lives))
                .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-               .with_margin(Margin{.top = screen_pct(0.01f)}))
-      .with_debug_name("num_lives_text");
+               .with_margin(Margin{.top = screen_pct(0.01f)})
+               .with_debug_name("num_lives_text"));
 }
 
 void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
@@ -2034,14 +2034,6 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
       case 1:
         translation_manager::set_language(
             translation_manager::Language::Korean);
-        break;
-      case 2:
-        translation_manager::set_language(
-            translation_manager::Language::Chinese);
-        break;
-      case 3:
-        translation_manager::set_language(
-            translation_manager::Language::Japanese);
         break;
       }
 
