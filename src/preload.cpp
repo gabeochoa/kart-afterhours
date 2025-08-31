@@ -27,6 +27,8 @@ std::string get_font_name(FontID id) {
     return "notosanskr";
   case FontID::raylibFont:
     return afterhours::ui::UIComponent::DEFAULT_FONT;
+  case FontID::SYMBOL_FONT:
+    return afterhours::ui::UIComponent::SYMBOL_FONT;
   }
   return afterhours::ui::UIComponent::DEFAULT_FONT;
 }
@@ -159,6 +161,12 @@ Preload &Preload::make_singleton() {
 
     translation_manager::TranslationManager::get().load_cjk_fonts(font_manager,
                                                                   font_file);
+
+    font_manager.load_font(
+        afterhours::ui::UIComponent::SYMBOL_FONT,
+        Files::get()
+            .fetch_resource_path("", "eqprorounded-regular.ttf")
+            .c_str());
 
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();

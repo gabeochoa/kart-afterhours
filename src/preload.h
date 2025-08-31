@@ -11,6 +11,7 @@ enum FontID {
   EQPro,
   raylibFont,
   CJK,
+  SYMBOL_FONT,
 };
 
 std::string get_font_name(FontID id);
