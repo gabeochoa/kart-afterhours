@@ -4,6 +4,7 @@
 //
 #include "components.h"
 #include "config.h"
+#include "font_info.h"
 #include "preload.h"
 #include "shader_library.h"
 #include "sound_library.h"
@@ -100,7 +101,7 @@ struct IntroScreens
   void render_title_text(float alpha = 255.f) {
     raylib::Font title_font =
         EntityHelper::get_singleton_cmp<ui::FontManager>()->get_font(
-            get_font_name(FontID::EQPro));
+            get_font_name(FontID::English));
     float title_font_size = ((float)resolution.height / 3.f);
     float title_width =
         (float)raylib::MeasureText(TITLE_TEXT, (int)title_font_size);

@@ -1,7 +1,9 @@
 #pragma once
 
-#include "preload.h"
 #include "rl.h"
+//
+#include "font_info.h"
+#include "preload.h"
 #include "strings.h"
 #include <afterhours/src/plugins/autolayout.h>
 #include <fmt/format.h>
@@ -145,10 +147,10 @@ public:
   FontID get_font_for_language() const {
     switch (current_language) {
     case Language::Korean:
-      return FontID::CJK;
+      return FontID::Korean;
     case Language::English:
     default:
-      return FontID::EQPro;
+      return FontID::English;
     }
   }
 

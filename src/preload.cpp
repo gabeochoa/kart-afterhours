@@ -7,6 +7,7 @@
 #include "rl.h"
 
 #include "./ui/navigation.h"
+#include "font_info.h"
 #include "music_library.h"
 #include "settings.h"
 #include "shader_library.h"
@@ -20,14 +21,14 @@ using namespace afterhours;
 
 std::string get_font_name(FontID id) {
   switch (id) {
-  case FontID::EQPro:
-    return "eqpro";
-  case FontID::CJK:
-    return "notosanskr";
+  case FontID::English:
+    return "eqprorounded-regular.ttf";
+  case FontID::Korean:
+    return "NotoSansMonoCJKkr-Bold.otf";
   case FontID::raylibFont:
     return afterhours::ui::UIComponent::DEFAULT_FONT;
   case FontID::SYMBOL_FONT:
-    return afterhours::ui::UIComponent::SYMBOL_FONT;
+    return "eqprorounded-regular.ttf";
   }
   return afterhours::ui::UIComponent::DEFAULT_FONT;
 }
@@ -148,15 +149,17 @@ Preload &Preload::make_singleton() {
                         .c_str()));
 
     sophie.get<ui::FontManager>().load_font(
-        get_font_name(FontID::EQPro),
+        get_font_name(FontID::English),
         Files::get()
-            .fetch_resource_path("", "eqprorounded-regular.ttf")
+            .fetch_resource_path("", get_font_name(FontID::English))
             .c_str());
 
     // Load CJK fonts using our helper function
     auto &font_manager = sophie.get<ui::FontManager>();
     std::string font_file =
-        Files::get().fetch_resource_path("", "NotoSansKR.ttf").c_str();
+        Files::get()
+            .fetch_resource_path("", get_font_name(FontID::Korean))
+            .c_str();
 
     translation_manager::TranslationManager::get().load_cjk_fonts(font_manager,
                                                                   font_file);
@@ -164,7 +167,7 @@ Preload &Preload::make_singleton() {
     font_manager.load_font(
         afterhours::ui::UIComponent::SYMBOL_FONT,
         Files::get()
-            .fetch_resource_path("", "eqprorounded-regular.ttf")
+            .fetch_resource_path("", get_font_name(FontID::SYMBOL_FONT))
             .c_str());
 
     // making a root component to attach the UI to
@@ -173,7 +176,7 @@ Preload &Preload::make_singleton() {
     sophie.addComponent<ui::UIComponent>(sophie.id)
         .set_desired_width(afterhours::ui::screen_pct(1.f))
         .set_desired_height(afterhours::ui::screen_pct(1.f))
-        .enable_font(get_font_name(FontID::EQPro), 75.f);
+        .enable_font(get_font_name(FontID::English), 75.f);
 
     sophie.addComponent<ManagesAvailableColors>();
     EntityHelper::registerSingleton<ManagesAvailableColors>(sophie);

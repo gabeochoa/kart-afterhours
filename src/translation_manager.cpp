@@ -327,15 +327,6 @@ void TranslationManager::set_language(Language language) {
 void TranslationManager::load_cjk_fonts(
     afterhours::ui::FontManager &font_manager,
     const std::string &font_file) const {
-  // Helper function to get font name from FontID
-  auto get_font_name = [](FontID id) -> std::string {
-    switch (id) {
-    case FontID::CJK:
-      return "notosanskr";
-    default:
-      return "eqpro";
-    }
-  };
 
   // Collect all unique codepoints from all CJK languages
   std::set<int> all_codepoints;
@@ -382,7 +373,7 @@ void TranslationManager::load_cjk_fonts(
 
   // Load all codepoints into a single font
   if (!all_codepoints.empty()) {
-    FontID font_id = FontID::CJK;
+    FontID font_id = FontID::Korean;
     std::string font_name = get_font_name(font_id);
 
     // Convert set to vector

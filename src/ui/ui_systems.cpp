@@ -295,7 +295,6 @@ ElementResult create_player_card(
              ComponentConfig{}
                  .with_size(ComponentSize{percent(1.f), percent(0.3f, 0.4f)})
                  .with_label(ranking_label)
-                 .with_font(get_font_name(FontID::EQPro), 120.f)
                  .with_color_usage(Theme::Usage::Custom)
                  .with_custom_color(bg_color)
                  .disable_rounded_corners()
@@ -445,7 +444,6 @@ ElementResult create_screen_container(UIContext<InputAction> &context,
   return imm::div(
       context, mk(parent),
       ComponentConfig{}
-          .with_font(get_font_name(FontID::EQPro), 75.f)
           .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
           .with_absolute_position()
           .with_debug_name(debug_name));
@@ -865,7 +863,6 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
   auto elem =
       imm::div(context, mk(entity),
                ComponentConfig{}
-                   .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_absolute_position()
                    .with_debug_name("character_creation"));
@@ -1396,7 +1393,6 @@ void SchedulePauseUI::for_each_with(Entity &entity,
   auto elem =
       imm::div(context, mk(entity),
                ComponentConfig{}
-                   .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_absolute_position()
                    .with_debug_name("pause_screen"));
@@ -1414,7 +1410,6 @@ void SchedulePauseUI::for_each_with(Entity &entity,
            ComponentConfig{}
                .with_label(translation_manager::TranslatableString(
                    strings::i18n::paused))
-               .with_font(get_font_name(FontID::EQPro), 100.f)
                .with_skip_tabbing(true)
                .with_size(ComponentSize{pixels(400.f), pixels(100.f)}));
 
@@ -1543,7 +1538,6 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
       imm::div(context, mk(entity),
                ComponentConfig{}
                    .with_debug_name("round_settings")
-                   .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_absolute_position());
 
@@ -1625,7 +1619,6 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
   auto elem =
       imm::div(context, mk(entity),
                ComponentConfig{}
-                   .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_flex_direction(FlexDirection::Row)
                    .with_absolute_position()
@@ -2118,7 +2111,6 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
   auto elem =
       imm::div(context, mk(entity),
                ComponentConfig{}
-                   .with_font(get_font_name(FontID::EQPro), 75.f)
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_absolute_position()
                    .with_debug_name("about_screen"));
@@ -2207,7 +2199,6 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
              ComponentConfig{}
                  .with_label(translation_manager::TranslatableString(
                      strings::i18n::round_end))
-                 .with_font(get_font_name(FontID::EQPro), 100.f)
                  .with_skip_tabbing(true)
                  .with_size(ComponentSize{percent(0.5f), percent(0.2f)})
                  .with_margin(Margin{
