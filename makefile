@@ -101,6 +101,21 @@ countall:
 cppcheck:
 	cppcheck src/ -Ivendor/afterhours --enable=all --std=c++23 --language=c++ --suppress=noConstructor --suppress=noExplicitConstructor --suppress=useStlAlgorithm --suppress=unusedStructMember --suppress=useInitializationList --suppress=duplicateCondition --suppress=nullPointerRedundantCheck --suppress=cstyleCast
 
+# ClangBuildAnalyzer integration
+cba:
+	@echo "Building with xmake to generate trace data..."
+	xmake build
+	@echo "Analyzing build performance..."
+	ClangBuildAnalyzer --all build/.objs/kart/macosx/arm64/debug/src/ build-analysis.html
+	ClangBuildAnalyzer --analyze build-analysis.html | tee build-analysis.txt
+	@echo ""
+	@echo "Top 5 slowest files to parse:"
+	@head -15 build-analysis.txt | grep -A 10 "Files that took longest to parse" || true
+
+clean-cba:
+	rm -f build-analysis.html build-analysis.txt
+	@echo "Analysis files cleaned"
+
 prof:
 	$(mkdir_cmd)
 	$(cp_resources_cmd)
@@ -128,7 +143,7 @@ getxm:
 xm:
 	xmake create -l c++ -t module.binary kart.exe
 
-.PHONY: deps deps-html deps-check deps-dot deps-svg
+.PHONY: deps deps-html deps-check deps-dot deps-svg cba clean-cba
 
 deps:
 	cd tools && make run

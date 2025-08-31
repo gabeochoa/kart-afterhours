@@ -74,6 +74,9 @@ target("kart")
         add_ldflags("$(shell pkg-config --libs raylib)")
     end
 
+    -- Enable time tracing for ClangBuildAnalyzer
+    add_cxxflags("-ftime-trace")
+
     after_build(function(target)
         os.exec("./output/kart.exe")
     end)

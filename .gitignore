@@ -34,3 +34,7 @@ tools/dependency_graph
 
 # Profiling data files
 *.spall
+
+# ClangBuildAnalyzer output files
+build-analysis.html
+build-analysis.txt
