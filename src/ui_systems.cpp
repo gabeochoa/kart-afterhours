@@ -734,28 +734,37 @@ void ScheduleMainMenuUI::round_end_player_column(
   switch (RoundManager::get().active_round_type) {
   case RoundType::Lives:
     if (car->has<HasMultipleLives>()) {
-      stats_text = fmt::format(
-          "Lives: {}", car->get<HasMultipleLives>().num_lives_remaining);
+      stats_text =
+          translation_manager::TranslatableString(strings::i18n::lives_label)
+              .set_param(translation_manager::i18nParam::number_count,
+                         car->get<HasMultipleLives>().num_lives_remaining);
     }
     break;
   case RoundType::Kills:
     if (car->has<HasKillCountTracker>()) {
       stats_text =
-          fmt::format("Kills: {}", car->get<HasKillCountTracker>().kills);
+          translation_manager::TranslatableString(strings::i18n::kills_label)
+              .set_param(translation_manager::i18nParam::number_count,
+                         car->get<HasKillCountTracker>().kills);
     }
     break;
   case RoundType::Hippo:
     if (car->has<HasHippoCollection>()) {
-      stats_text = fmt::format(
-          "Hippos: {}", car->get<HasHippoCollection>().get_hippo_count());
+      stats_text =
+          translation_manager::TranslatableString(strings::i18n::hippos_label)
+              .set_param(translation_manager::i18nParam::number_count,
+                         car->get<HasHippoCollection>().get_hippo_count());
     } else {
-      stats_text = "Hippos: 0";
+      stats_text =
+          translation_manager::TranslatableString(strings::i18n::hippos_zero);
     }
     break;
   case RoundType::TagAndGo:
     if (car->has<HasTagAndGoTracking>()) {
-      stats_text = fmt::format("Not It: {:.1f}s",
-                               car->get<HasTagAndGoTracking>().time_as_not_it);
+      stats_text =
+          translation_manager::TranslatableString(strings::i18n::not_it_timer)
+              .set_param(translation_manager::i18nParam::number_time,
+                         car->get<HasTagAndGoTracking>().time_as_not_it);
     }
     break;
   default:
@@ -778,7 +787,9 @@ void ScheduleMainMenuUI::round_end_player_column(
     if (car->has<HasMultipleLives>()) {
       int final_val = car->get<HasMultipleLives>().num_lives_remaining;
       int shown = static_cast<int>(std::round(score_t * final_val));
-      animated_stats = fmt::format("Lives: {}", shown);
+      animated_stats =
+          translation_manager::TranslatableString(strings::i18n::lives_label)
+              .set_param(translation_manager::i18nParam::number_count, shown);
     }
     break;
   }
@@ -786,7 +797,9 @@ void ScheduleMainMenuUI::round_end_player_column(
     if (car->has<HasKillCountTracker>()) {
       int final_val = car->get<HasKillCountTracker>().kills;
       int shown = static_cast<int>(std::round(score_t * final_val));
-      animated_stats = fmt::format("Kills: {}", shown);
+      animated_stats =
+          translation_manager::TranslatableString(strings::i18n::kills_label)
+              .set_param(translation_manager::i18nParam::number_count, shown);
     }
     break;
   }
@@ -795,14 +808,18 @@ void ScheduleMainMenuUI::round_end_player_column(
                         ? car->get<HasHippoCollection>().get_hippo_count()
                         : 0;
     int shown = static_cast<int>(std::round(score_t * final_val));
-    animated_stats = fmt::format("Hippos: {}", shown);
+    animated_stats =
+        translation_manager::TranslatableString(strings::i18n::hippos_label)
+            .set_param(translation_manager::i18nParam::number_count, shown);
     break;
   }
   case RoundType::TagAndGo: {
     if (car->has<HasTagAndGoTracking>()) {
       float final_val = car->get<HasTagAndGoTracking>().time_as_not_it;
       float shown = std::round(score_t * final_val * 10.0f) / 10.0f;
-      animated_stats = fmt::format("Not It: {:.1f}s", shown);
+      animated_stats =
+          translation_manager::TranslatableString(strings::i18n::not_it_timer)
+              .set_param(translation_manager::i18nParam::number_time, shown);
     }
     break;
   }
@@ -907,9 +924,12 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 void ScheduleMainMenuUI::render_round_settings_preview(
     UIContext<InputAction> &context, Entity &parent) {
   imm::div(context, mk(parent),
-           ComponentConfig{}.with_label(fmt::format(
-               "Win Condition: {}",
-               magic_enum::enum_name(RoundManager::get().active_round_type))));
+           ComponentConfig{}.with_label(
+               translation_manager::TranslatableString(
+                   strings::i18n::win_condition_label)
+                   .set_param(translation_manager::i18nParam::weapon_name,
+                              magic_enum::enum_name(
+                                  RoundManager::get().active_round_type))));
 
   auto *spritesheet_component = EntityHelper::get_singleton_cmp<
       afterhours::texture_manager::HasSpritesheet>();
@@ -946,7 +966,10 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     auto &s = RoundManager::get().get_active_rt<RoundLivesSettings>();
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
-                 fmt::format("Num Lives: {}", s.num_starting_lives)));
+                 translation_manager::TranslatableString(
+                     strings::i18n::num_lives_label)
+                     .set_param(translation_manager::i18nParam::number_count,
+                                s.num_starting_lives)));
     break;
   }
   case RoundType::Kills: {
@@ -969,14 +992,20 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     }
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
-                 fmt::format("Round Length: {}", time_display)));
+                 translation_manager::TranslatableString(
+                     strings::i18n::round_length_label)
+                     .set_param(translation_manager::i18nParam::weapon_name,
+                                time_display)));
     break;
   }
   case RoundType::Hippo: {
     auto &s = RoundManager::get().get_active_rt<RoundHippoSettings>();
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
-                 fmt::format("Total Hippos: {}", s.total_hippos)));
+                 translation_manager::TranslatableString(
+                     strings::i18n::total_hippos_label)
+                     .set_param(translation_manager::i18nParam::number_count,
+                                s.total_hippos)));
     break;
   }
   case RoundType::TagAndGo: {
@@ -999,7 +1028,10 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     }
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
-                 fmt::format("Round Length: {}", time_display)));
+                 translation_manager::TranslatableString(
+                     strings::i18n::round_length_label)
+                     .set_param(translation_manager::i18nParam::weapon_name,
+                                time_display)));
     break;
   }
   default:
@@ -1433,7 +1465,10 @@ void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
   imm::div(context, mk(entity),
            ComponentConfig{}
                .with_label(
-                   fmt::format("Num Lives: {}", rl_settings.num_starting_lives))
+                   translation_manager::TranslatableString(
+                       strings::i18n::num_lives_label)
+                       .set_param(translation_manager::i18nParam::number_count,
+                                  rl_settings.num_starting_lives))
                .with_size(ComponentSize{percent(1.f), percent(0.2f)})
                .with_margin(Margin{.top = screen_pct(0.01f)})
                .with_debug_name("num_lives_text"));
@@ -1444,8 +1479,11 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
 
   imm::div(context, mk(entity),
            ComponentConfig{}
-               .with_label(fmt::format("Round Length: {}",
-                                       rl_settings.current_round_time))
+               .with_label(
+                   translation_manager::TranslatableString(
+                       strings::i18n::round_length_label)
+                       .set_param(translation_manager::i18nParam::number_time,
+                                  rl_settings.current_round_time))
                .with_size(ComponentSize{screen_pct(0.3f), screen_pct(0.06f)})
                .with_margin(Margin{.top = screen_pct(0.01f)}));
 
@@ -1467,11 +1505,14 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
 void round_hippo_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundHippoSettings>();
 
-  imm::div(
-      context, mk(entity),
-      ComponentConfig{}
-          .with_label(fmt::format("Total Hippos: {}", rl_settings.total_hippos))
-          .with_size(ComponentSize{percent(1.f), percent(0.2f)}));
+  imm::div(context, mk(entity),
+           ComponentConfig{}
+               .with_label(
+                   translation_manager::TranslatableString(
+                       strings::i18n::total_hippos_label)
+                       .set_param(translation_manager::i18nParam::number_count,
+                                  rl_settings.total_hippos))
+               .with_size(ComponentSize{percent(1.f), percent(0.2f)}));
 }
 
 void round_tag_and_go_settings(Entity &entity,

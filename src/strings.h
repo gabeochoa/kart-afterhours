@@ -60,6 +60,19 @@ enum struct i18n {
   hard,
   expert,
 
+  // Player Statistics
+  lives_label,
+  kills_label,
+  hippos_label,
+  hippos_zero,
+  not_it_timer,
+
+  // Round Settings Labels
+  win_condition_label,
+  num_lives_label,
+  round_length_label,
+  total_hippos_label,
+
   // Count for array sizing
   Count
 };

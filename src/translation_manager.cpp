@@ -102,7 +102,38 @@ static std::map<strings::i18n, TranslatableString> english_translations = {
          "Hard", "AI difficulty level - challenging setting")},
     {strings::i18n::expert,
      translation_manager::TranslatableString(
-         "Expert", "AI difficulty level - hardest setting")}};
+         "Expert", "AI difficulty level - hardest setting")},
+
+    // Player Statistics
+    {strings::i18n::lives_label,
+     translation_manager::TranslatableString("Lives: {}",
+                                             "Label for player lives display")},
+    {strings::i18n::kills_label,
+     translation_manager::TranslatableString(
+         "Kills: {}", "Label for player kill count display")},
+    {strings::i18n::hippos_label,
+     translation_manager::TranslatableString(
+         "Hippos: {}", "Label for hippo collection count display")},
+    {strings::i18n::hippos_zero,
+     translation_manager::TranslatableString(
+         "Hippos: 0", "Fallback text when no hippos collected")},
+    {strings::i18n::not_it_timer,
+     translation_manager::TranslatableString(
+         "Not It: {:.1f}s", "Label for tag game timer display")},
+
+    // Round Settings Labels
+    {strings::i18n::win_condition_label,
+     translation_manager::TranslatableString(
+         "Win Condition: {}", "Label for win condition setting")},
+    {strings::i18n::num_lives_label,
+     translation_manager::TranslatableString(
+         "Num Lives: {}", "Label for starting lives setting")},
+    {strings::i18n::round_length_label,
+     translation_manager::TranslatableString(
+         "Round Length: {}", "Label for round time duration setting")},
+    {strings::i18n::total_hippos_label,
+     translation_manager::TranslatableString("Total Hippos: {}",
+                                             "Label for hippo count setting")}};
 
 static std::map<strings::i18n, TranslatableString> korean_translations = {
     {strings::i18n::play, translation_manager::TranslatableString(
@@ -195,7 +226,36 @@ static std::map<strings::i18n, TranslatableString> korean_translations = {
     {strings::i18n::hard, translation_manager::TranslatableString(
                               "어려움", "AI 난이도 - 도전적인 설정")},
     {strings::i18n::expert, translation_manager::TranslatableString(
-                                "전문가", "AI 난이도 - 가장 어려운 설정")}};
+                                "전문가", "AI 난이도 - 가장 어려운 설정")},
+
+    // Player Statistics
+    {strings::i18n::lives_label, translation_manager::TranslatableString(
+                                     "생명: {}", "플레이어 생명 표시 라벨")},
+    {strings::i18n::kills_label, translation_manager::TranslatableString(
+                                     "킬: {}", "플레이어 킬 카운트 표시 라벨")},
+    {strings::i18n::hippos_label,
+     translation_manager::TranslatableString("하마: {}",
+                                             "하마 수집 카운트 표시 라벨")},
+    {strings::i18n::hippos_zero,
+     translation_manager::TranslatableString(
+         "하마: 0", "하마를 수집하지 않았을 때의 대체 텍스트")},
+    {strings::i18n::not_it_timer,
+     translation_manager::TranslatableString("술래: {:.1f}초",
+                                             "술래잡기 게임 타이머 표시 라벨")},
+
+    // Round Settings Labels
+    {strings::i18n::win_condition_label,
+     translation_manager::TranslatableString("승리 조건: {}",
+                                             "승리 조건 설정 라벨")},
+    {strings::i18n::num_lives_label,
+     translation_manager::TranslatableString("시작 생명: {}",
+                                             "시작 생명 설정 라벨")},
+    {strings::i18n::round_length_label,
+     translation_manager::TranslatableString("라운드 길이: {}",
+                                             "라운드 시간 지속 설정 라벨")},
+    {strings::i18n::total_hippos_label,
+     translation_manager::TranslatableString("총 하마: {}",
+                                             "하마 개수 설정 라벨")}};
 
 // Get translations for a specific language
 const std::map<strings::i18n, TranslatableString> &
