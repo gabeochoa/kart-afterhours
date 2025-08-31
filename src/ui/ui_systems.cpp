@@ -1455,17 +1455,16 @@ void SchedulePauseUI::for_each_with(Entity &entity,
 void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundLivesSettings>();
 
-  imm::div(
-      context, mk(entity),
-      ComponentConfig{}
-          .with_label(
-              translation_manager::TranslatableString(
-                  strings::i18n::num_lives_label)
-                  .set_param(translation_manager::i18nParam::number_count,
-                             rl_settings.num_starting_lives))
-          .with_size(ComponentSize{screen_pct(200.f / 1280.f), percent(0.2f)})
-          .with_margin(Margin{.top = screen_pct(0.01f)})
-          .with_debug_name("num_lives_text"));
+  imm::div(context, mk(entity),
+           ComponentConfig{}
+               .with_label(
+                   translation_manager::TranslatableString(
+                       strings::i18n::num_lives_label)
+                       .set_param(translation_manager::i18nParam::number_count,
+                                  rl_settings.num_starting_lives))
+               .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
+               .with_margin(Margin{.top = screen_pct(0.01f)})
+               .with_debug_name("num_lives_text"));
 }
 
 void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
@@ -1478,7 +1477,7 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
                        strings::i18n::round_length_label)
                        .set_param(translation_manager::i18nParam::number_time,
                                   rl_settings.current_round_time))
-               .with_size(ComponentSize{screen_pct(0.3f), screen_pct(0.06f)})
+               .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
                .with_margin(Margin{.top = screen_pct(0.01f)}));
 
   {
@@ -1506,7 +1505,7 @@ void round_hippo_settings(Entity &entity, UIContext<InputAction> &context) {
                        strings::i18n::total_hippos_label)
                        .set_param(translation_manager::i18nParam::number_count,
                                   rl_settings.total_hippos))
-               .with_size(ComponentSize{percent(1.f), percent(0.2f)}));
+               .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)}));
 }
 
 void round_tag_and_go_settings(Entity &entity,
