@@ -1455,16 +1455,17 @@ void SchedulePauseUI::for_each_with(Entity &entity,
 void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundLivesSettings>();
 
-  imm::div(context, mk(entity),
-           ComponentConfig{}
-               .with_label(
-                   translation_manager::TranslatableString(
-                       strings::i18n::num_lives_label)
-                       .set_param(translation_manager::i18nParam::number_count,
-                                  rl_settings.num_starting_lives))
-               .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-               .with_margin(Margin{.top = screen_pct(0.01f)})
-               .with_debug_name("num_lives_text"));
+  imm::div(
+      context, mk(entity),
+      ComponentConfig{}
+          .with_label(
+              translation_manager::TranslatableString(
+                  strings::i18n::num_lives_label)
+                  .set_param(translation_manager::i18nParam::number_count,
+                             rl_settings.num_starting_lives))
+          .with_size(ComponentSize{screen_pct(200.f / 1280.f), percent(0.2f)})
+          .with_margin(Margin{.top = screen_pct(0.01f)})
+          .with_debug_name("num_lives_text"));
 }
 
 void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
@@ -1547,27 +1548,19 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_absolute_position());
 
+  auto top_left = ui_helpers::create_top_left_container(
+      context, elem.ent(), "round_settings_top_left", 0);
+
   // Top-left controls scheduled first so "select map" gets initial focus
   {
-    auto settings_group =
-        imm::div(context, mk(elem.ent()),
-                 ComponentConfig{}
-                     .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                     .with_padding(Padding{.top = screen_pct(0.02f),
-                                           .left = screen_pct(0.02f),
-                                           .bottom = pixels(0.f),
-                                           .right = pixels(0.f)})
-                     .with_absolute_position()
-                     .with_debug_name("round_settings_top_left"));
-
     ui_helpers::create_styled_button(
-        context, settings_group.ent(),
+        context, top_left.ent(),
         translation_manager::TranslatableString(strings::i18n::select_map),
         []() { navigation::to(GameStateManager::Screen::MapSelection); }, 0);
 
     {
       auto win_condition_div =
-          imm::div(context, mk(settings_group.ent()),
+          imm::div(context, mk(top_left.ent()),
                    ComponentConfig{}
                        .with_size(ComponentSize{percent(1.f), percent(0.2f)})
                        .with_debug_name("win_condition_div"));
@@ -1588,8 +1581,8 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     auto enabled_weapons = RoundManager::get().get_enabled_weapons();
 
     if (auto result = imm::checkbox_group(
-            context, mk(settings_group.ent()), enabled_weapons,
-            WEAPON_STRING_LIST, {1, 3},
+            context, mk(top_left.ent()), enabled_weapons, WEAPON_STRING_LIST,
+            {1, 3},
             ComponentConfig{}
                 .with_flex_direction(FlexDirection::Column)
                 .with_margin(Margin{.top = screen_pct(0.01f)}));
@@ -1601,16 +1594,16 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
 
     switch (RoundManager::get().active_round_type) {
     case RoundType::Lives:
-      round_lives_settings(settings_group.ent(), context);
+      round_lives_settings(top_left.ent(), context);
       break;
     case RoundType::Kills:
-      round_kills_settings(settings_group.ent(), context);
+      round_kills_settings(top_left.ent(), context);
       break;
     case RoundType::Hippo:
-      round_hippo_settings(settings_group.ent(), context);
+      round_hippo_settings(top_left.ent(), context);
       break;
     case RoundType::TagAndGo:
-      round_tag_and_go_settings(settings_group.ent(), context);
+      round_tag_and_go_settings(top_left.ent(), context);
       break;
     default:
       log_error("You need to add a handler for UI settings for round type {}",
@@ -1619,7 +1612,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     }
 
     ui_helpers::create_styled_button(
-        context, settings_group.ent(),
+        context, top_left.ent(),
         translation_manager::TranslatableString(strings::i18n::back),
         []() { navigation::back(); }, 2);
   }
