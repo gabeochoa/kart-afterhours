@@ -2,13 +2,8 @@
 #pragma once
 
 #include "shader_types.h"
-#include <algorithm>
-#include <map>
-#include <memory>
 #include <optional>
 #include <string>
-#include <unordered_set>
-#include <vector>
 
 #include "input_mapping.h"
 #include "math_util.h"
@@ -529,27 +524,19 @@ struct PlaySoundRequest : BaseComponent {
 
 struct HasCamera : BaseComponent {
   raylib::Camera2D camera;
-  
+
   HasCamera() {
     camera.offset = {0.0f, 0.0f};
     camera.target = {0.0f, 0.0f};
     camera.rotation = 0.0f;
     camera.zoom = 0.75f;
   }
-  
-  void set_position(vec2 position) {
-    camera.target = position;
-  }
-  
-  void set_offset(vec2 offset) {
-    camera.offset = offset;
-  }
-  
-  void set_zoom(float zoom) {
-    camera.zoom = zoom;
-  }
-  
-  void set_rotation(float rotation) {
-    camera.rotation = rotation;
-  }
+
+  void set_position(vec2 position) { camera.target = position; }
+
+  void set_offset(vec2 offset) { camera.offset = offset; }
+
+  void set_zoom(float zoom) { camera.zoom = zoom; }
+
+  void set_rotation(float rotation) { camera.rotation = rotation; }
 };

@@ -9,7 +9,6 @@ backward::SignalHandling sh;
 #include "game.h"
 //
 #include "argh.h"
-#include "intro.h"
 #include "map_system.h"
 #include "navigation.h"
 #include "preload.h"
@@ -28,6 +27,9 @@ raylib::RenderTexture2D mainRT;
 raylib::RenderTexture2D screenRT;
 
 using namespace afterhours;
+
+// From intro.cpp
+void intro();
 
 void game() {
   mainRT = raylib::LoadRenderTexture(Settings::get().get_screen_width(),
@@ -171,11 +173,14 @@ void game() {
           systems, InputAction::ToggleUILayoutDebug);
       systems.register_render_system(std::make_unique<EndTagShaderRender>());
       // pass 3: draw to screen with base post-processing shader
-      systems.register_render_system(std::make_unique<BeginPostProcessingRender>());
-      systems.register_render_system(std::make_unique<SetupPostProcessingShader>());
+      systems.register_render_system(
+          std::make_unique<BeginPostProcessingRender>());
+      systems.register_render_system(
+          std::make_unique<SetupPostProcessingShader>());
 
       systems.register_render_system(std::make_unique<RenderScreenToWindow>());
-      systems.register_render_system(std::make_unique<EndPostProcessingShader>());
+      systems.register_render_system(
+          std::make_unique<EndPostProcessingShader>());
       systems.register_render_system(std::make_unique<RenderLetterboxBars>());
       systems.register_render_system(std::make_unique<RenderRoundTimer>());
       systems.register_render_system(std::make_unique<RenderFPS>());

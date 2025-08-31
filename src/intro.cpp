@@ -1,8 +1,7 @@
 
-#pragma once
-
+#include "game.h"
 #include "rl.h"
-
+//
 #include "components.h"
 #include "config.h"
 #include "preload.h"
@@ -22,7 +21,6 @@ struct IntroScreens
     Complete,
   } state = State::None;
 
-  // Animation timing constants
   static constexpr float INITIAL_DELAY = 1.0f;
   static constexpr float CHASE_STATE_FULL_TIME = 20.0f;
   static constexpr float RAYLIB_ANIMATION_DURATION = 0.90f;
@@ -32,7 +30,6 @@ struct IntroScreens
       RAYLIB_ANIMATION_DURATION * 4.5f + DELAY_DURATION;
   static constexpr float PASSBY_SKIP_FADE_TOTAL = 0.15f;
 
-  // Car animation configuration
   static constexpr float CHASE_CAR_SIZE = 120.f;
   static constexpr float CHASE_SPEED = 800.f;
   static constexpr float CHASE_SINE_AMPLITUDE = 60.f;
@@ -40,16 +37,13 @@ struct IntroScreens
   static constexpr float CHASE_CAR_SPACING = 0.6f;
   static constexpr float CHASE_CAR_START_DELAY = 0.2f;
 
-  // Text timing configuration
   static constexpr float TEXT_FADE_IN_DURATION_DIVISOR = 20.f;
   static constexpr float TEXT_FADE_OUT_START_DIVISOR = 9.f;
   static constexpr float TEXT_FADE_OUT_DURATION_DIVISOR = 10.f;
 
-  // UI constants
   static constexpr float BOX_LINE_THICKNESS = 5.f;
   static constexpr float FONT_SIZE_DIVISOR = 15.f;
 
-  // Text constants
   static constexpr const char *POWERED_BY_TEXT = "POWERED BY";
   static constexpr const char *RAYLIB_TEXT = "raylib";
   static constexpr const char *TITLE_TEXT = "kart chaos";
@@ -123,7 +117,6 @@ struct IntroScreens
     float total_distance = (float)resolution.width + CHASE_CAR_SIZE;
     float x_pos = car_offset * total_distance - CHASE_CAR_SIZE;
 
-    // Add randomization to Y position
     float base_y = (float)resolution.height / 2.f;
     float sine_offset =
         std::sin(car_offset * CHASE_SINE_FREQUENCY * 2.f * M_PI) *
@@ -139,14 +132,12 @@ struct IntroScreens
 
     float random_offset =
         std::sin((car_offset + car_index * 1.5f) * 3.14f) * 20.f;
-    // 0.5f = phase offset per car, 3.14f = frequency, 20.f = amplitude
     float y_pos = base_y + sine_offset + random_offset;
 
     return {x_pos, y_pos};
   }
 
   State render_chase() {
-    // Get the spritesheet texture
     auto *spritesheet_component = EntityHelper::get_singleton_cmp<
         afterhours::texture_manager::HasSpritesheet>();
     if (!spritesheet_component) {
@@ -157,12 +148,10 @@ struct IntroScreens
     Rectangle source_frame =
         afterhours::texture_manager::idx_to_sprite_frame(0, 1);
 
-    // Calculate car movement using CHASE_SPEED
     float car_distance = (timeInState - CHASE_CAR_START_DELAY) * CHASE_SPEED;
     float total_distance = (float)resolution.width + CHASE_CAR_SIZE;
     float car_progress = car_distance / total_distance;
 
-    // Calculate text fade progress
     float text_fade_in_duration =
         CHASE_STATE_FULL_TIME / TEXT_FADE_IN_DURATION_DIVISOR;
     float text_fade_out_start =
@@ -172,16 +161,13 @@ struct IntroScreens
 
     float text_alpha = 255.f;
     if (timeInState < text_fade_in_duration) {
-      // Fade in
       text_alpha = (timeInState / text_fade_in_duration) * 255.f;
     } else if (timeInState > text_fade_out_start) {
-      // Fade out
       float fade_out_progress =
           (timeInState - text_fade_out_start) / text_fade_out_duration;
       text_alpha = (1.f - std::min(1.f, fade_out_progress)) * 255.f;
     }
 
-    // Create mask texture with text
     static raylib::RenderTexture2D textMaskTexture;
     static bool maskTextureCreated = false;
     if (!maskTextureCreated) {
@@ -190,16 +176,13 @@ struct IntroScreens
       maskTextureCreated = true;
     }
 
-    // Render text to mask texture
     raylib::BeginTextureMode(textMaskTexture);
     raylib::ClearBackground({0, 0, 0, 0});
     render_title_text(text_alpha);
     raylib::EndTextureMode();
 
-    // Render text to screen
     render_title_text(text_alpha);
 
-    // Render cars to separate texture with masking
     if (car_progress > 0.f) {
       static raylib::RenderTexture2D carTexture;
       static bool carTextureCreated = false;
@@ -236,8 +219,7 @@ struct IntroScreens
               auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
               req.policy = PlaySoundRequest::Policy::Name;
               req.name = name;
-              req.prefer_alias =
-                  false; // these pass-bys are long; no aliasing needed
+              req.prefer_alias = false;
             }
           };
           switch (i) {
@@ -263,7 +245,6 @@ struct IntroScreens
 
       raylib::EndTextureMode();
 
-      // Apply mask shader
       raylib::Shader maskShader =
           ShaderLibrary::get().get(ShaderType::text_mask);
       int maskTextureLoc = raylib::GetShaderLocation(maskShader, "maskTexture");
@@ -295,7 +276,6 @@ struct IntroScreens
       raylib::EndShaderMode();
     }
 
-    // End chase state when the 3rd car (green car) has completed its journey
     float third_car_progress = car_progress - (2 * CHASE_CAR_SPACING);
     if (third_car_progress >= 1.0f) {
       passbyPlayed[0] = passbyPlayed[1] = passbyPlayed[2] = false;
@@ -370,7 +350,6 @@ struct IntroScreens
         line_color.a = (unsigned char)(line_color.a * (1.f - fade_progress));
       }
 
-      // Top and left lines
       raylib::DrawLineEx(box_top_left,
                          box_top_left + vec2{width * pct_complete, 0},
                          BOX_LINE_THICKNESS, line_color);
@@ -391,7 +370,6 @@ struct IntroScreens
         line_color.a = (unsigned char)(line_color.a * (1.f - fade_progress));
       }
 
-      // Right and bottom lines
       raylib::DrawLineEx(box_top_left + vec2{width, 0},
                          box_top_left + vec2{width, 0} +
                              vec2{0, width * pct_complete},
@@ -437,7 +415,6 @@ struct IntroScreens
     raylib::ClearBackground(raylib::BLACK);
     resolution = pCurrentResolution.current_resolution;
 
-    // Check for any key or mouse click to skip intro
     if (raylib::GetKeyPressed() != 0 ||
         raylib::IsMouseButtonPressed(raylib::MOUSE_LEFT_BUTTON)) {
       skipRequested = true;
@@ -541,6 +518,5 @@ void intro() {
     raylib::EndDrawing();
   }
 
-  // turn back on running for the next screen
   running = true;
 }
