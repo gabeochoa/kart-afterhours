@@ -331,6 +331,23 @@ void TranslationManager::load_cjk_fonts(
   // Collect all unique codepoints from all CJK languages
   std::set<int> all_codepoints;
 
+  // Add Latin alphabet (uppercase and lowercase) and numbers
+  for (char c = 'A'; c <= 'Z'; ++c) {
+    all_codepoints.insert(static_cast<int>(c));
+  }
+  for (char c = 'a'; c <= 'z'; ++c) {
+    all_codepoints.insert(static_cast<int>(c));
+  }
+  for (char c = '0'; c <= '9'; ++c) {
+    all_codepoints.insert(static_cast<int>(c));
+  }
+
+  // Add common punctuation characters
+  const char punctuation[] = ".,!?;:()[]{}\"'`~@#$%^&*+-=_|\\/<>";
+  for (char c : punctuation) {
+    all_codepoints.insert(static_cast<int>(c));
+  }
+
   for (const auto &lang : {Language::Korean}) {
     // Get all translations for this language
     const auto &translations = get_translations_for_language(lang);
