@@ -1431,7 +1431,8 @@ void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
                .with_label(
                    fmt::format("Num Lives: {}", rl_settings.num_starting_lives))
                .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-               .with_margin(Margin{.top = screen_pct(0.01f)}));
+               .with_margin(Margin{.top = screen_pct(0.01f)}))
+      .with_debug_name("num_lives_text");
 }
 
 void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
