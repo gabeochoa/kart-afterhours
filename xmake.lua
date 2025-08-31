@@ -4,6 +4,12 @@
 if is_host("windows") then 
     set_toolset("cxx", "g++")
     set_toolset("ld", "g++")
+elseif is_host("macosx") then
+    set_toolset("cxx", "clang++")
+    set_toolset("ld", "clang++")
+    set_extension(".exe")
+    add_cxxflags("-DBACKWARD")
+    add_ldflags("-fuse-ld=lld")
 else
     set_toolset("cxx", "clang++")
     set_toolset("ld", "clang++")
