@@ -9,6 +9,7 @@
 #include "math_util.h"
 #include "max_health.h"
 #include "rl.h"
+#include "shader_types.h"
 #include "sound_library.h"
 
 // Note: This must be included after std includes

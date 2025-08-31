@@ -6,28 +6,25 @@
 #include <afterhours/src/logging.h>
 
 //
-#include "config.h"
-#include "map_system.h"
-#include "navigation.h"
-#include "preload.h" // FontID
-#include "strings.h"
-#include "texture_library.h"
-#include "translation_manager.h"
-#include "ui/animation_key.h"
-#include "ui/animation_slide_in.h"
-#include "ui/animation_ui_wiggle.h"
+
+#include "../components.h"
+#include "../config.h"
+#include "../game.h"
+#include "../game_state_manager.h"
+#include "../map_system.h"
+#include "../navigation.h"
+#include "../preload.h" // FontID
+#include "../query.h"
+#include "../round_settings.h"
+#include "../settings.h"
+#include "../strings.h"
+#include "../texture_library.h"
+#include "../translation_manager.h"
+#include "animation_key.h"
+#include "animation_slide_in.h"
+#include "animation_ui_wiggle.h"
 
 using namespace afterhours;
-
-#include "game.h"
-
-#include "components.h"
-#include "game_state_manager.h"
-#include "navigation.h"
-#include "query.h"
-#include "settings.h"
-
-#include "round_settings.h"
 
 struct MapConfig;
 
@@ -220,10 +217,6 @@ static inline void apply_slide_mods(afterhours::Entity &ent, float slide_v) {
   ent.addComponentIfMissing<afterhours::ui::HasOpacity>().value =
       std::clamp(slide_v, 0.0f, 1.0f);
 }
-
-#include "game_state_manager.h"
-#include "makers.h" // make_ai()
-#include "round_settings.h"
 
 // Reusable UI component functions
 namespace ui_helpers {

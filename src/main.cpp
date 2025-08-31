@@ -16,7 +16,7 @@ backward::SignalHandling sh;
 #include "sound_systems.h"
 #include "systems.h"
 #include "systems_ai.h"
-#include "ui_systems.h"
+#include "ui/ui_systems.h"
 #include <afterhours/src/plugins/animation.h>
 
 // TODO add honking
