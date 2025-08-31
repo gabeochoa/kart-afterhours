@@ -1,5 +1,6 @@
 #include "translation_manager.h"
 #include "log.h"
+#include "magic_enum/magic_enum.hpp"
 #include <map>
 #include <set>
 
@@ -78,7 +79,7 @@ static std::map<strings::i18n, TranslatableString> english_translations = {
          "SFX Volume", "Slider for sound effects volume")},
     {strings::i18n::post_processing,
      translation_manager::TranslatableString(
-         "Post Processing",
+         "post processing",
          "Checkbox to enable visual post-processing effects")},
     {strings::i18n::round_end,
      translation_manager::TranslatableString(
@@ -274,42 +275,41 @@ TranslationManager::TranslationManager() {
   set_language(Language::English); // Default to English
 }
 
-std::string TranslationManager::get_string(strings::i18n key) const {
-  // Get translations for current language
+std::map<strings::i18n, TranslatableString>::const_iterator
+TranslationManager::find_translation(strings::i18n key) const {
   const auto &translations = get_translations_for_language(current_language);
-
   auto it = translations.find(key);
-  if (it != translations.end()) {
+  if (it == translations.end()) {
+    log_warn("Translation not found for key: {}", magic_enum::enum_name(key));
+  }
+  return it;
+}
+
+std::string TranslationManager::get_string(strings::i18n key) const {
+  auto it = find_translation(key);
+  if (it != get_translations_for_language(current_language).end()) {
     return it->second.get_text();
   }
-  return "MISSING_TRANSLATION"; // Fallback if translation not found
+  return "MISSING_TRANSLATION";
 }
 
 TranslatableString
 TranslationManager::get_translatable_string(strings::i18n key) const {
-  // Get translations for current language
-  const auto &translations = get_translations_for_language(current_language);
-
-  auto it = translations.find(key);
-  if (it != translations.end()) {
+  auto it = find_translation(key);
+  if (it != get_translations_for_language(current_language).end()) {
     return translation_manager::TranslatableString(
         it->second.get_text(), it->second.get_description());
   }
-  return translation_manager::TranslatableString(
-      "MISSING_TRANSLATION",
-      true); // Fallback with no_translate
+  return translation_manager::TranslatableString("MISSING_TRANSLATION", true);
 }
 
 // TranslatableString constructor implementation
 translation_manager::TranslatableString::TranslatableString(
     const strings::i18n &key) {
-  // Get translations for current language
-  const auto &translations =
-      TranslationManager::get().get_translations_for_language(
-          TranslationManager::get().get_language());
-
-  auto it = translations.find(key);
-  if (it != translations.end()) {
+  auto &manager = TranslationManager::get();
+  auto it = manager.find_translation(key);
+  if (it !=
+      manager.get_translations_for_language(manager.get_language()).end()) {
     content = it->second.get_text();
     description = it->second.description;
   } else {

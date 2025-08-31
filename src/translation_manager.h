@@ -139,6 +139,9 @@ public:
 
   TranslatableString get_translatable_string(strings::i18n key) const;
 
+  std::map<strings::i18n, TranslatableString>::const_iterator
+  find_translation(strings::i18n key) const;
+
   // Get translations for a specific language
   const std::map<strings::i18n, TranslatableString> &
   get_translations_for_language(Language language) const;
