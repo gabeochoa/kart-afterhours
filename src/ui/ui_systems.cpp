@@ -421,15 +421,14 @@ ElementResult create_volume_slider(UIContext<InputAction> &context,
                                    std::function<void(float)> on_change,
                                    int index = 0) {
 
-  auto volume_label = fmt::format("{}\n {:2.0f}", label, volume * 100.f);
-
+  // auto volume_label = fmt::format("{}\n {:2.0f}", label, volume * 100.f);
   if (auto result = slider(context, mk(parent, index), volume,
-                           ComponentConfig{}
-                               .with_label(std::move(volume_label))
-                               .with_padding(Padding{.top = pixels(5.f),
-                                                     .left = pixels(0.f),
-                                                     .bottom = pixels(5.f),
-                                                     .right = pixels(0.f)}))) {
+                           ComponentConfig{}.with_label(label).with_padding(
+                               Padding{.top = pixels(5.f),
+                                       .left = pixels(0.f),
+                                       .bottom = pixels(5.f),
+                                       .right = pixels(0.f)}),
+                           SliderHandleValueLabelPosition::OnHandle)) {
     volume = result.as<float>();
     on_change(volume);
     return {true, parent};
