@@ -2054,6 +2054,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
 
   // Resolution dropdown
   {
+    // TODO for some reason the dropdown button isnt wiggling
     if (imm::dropdown(context, mk(top_left.ent(), 3), resolution_strs,
                       resolution_index,
                       ComponentConfig{}
