@@ -766,6 +766,14 @@ void ScheduleMainMenuUI::round_end_player_column(
     break;
   }
 
+  std::optional<std::string> kills_text;
+  if (car->has<HasKillCountTracker>()) {
+    kills_text =
+        translation_manager::TranslatableString(strings::i18n::kills_label)
+            .set_param(translation_manager::i18nParam::number_count,
+                       car->get<HasKillCountTracker>().kills);
+  }
+
   // Score roll-up value (0..1). We keep it generic regardless of round type
   afterhours::animation::one_shot(UIKey::RoundEndScore, index, [](auto h) {
     h.from(0.0f).to(1.0f, 0.8f, afterhours::animation::EasingType::EaseOutQuad);
@@ -821,9 +829,25 @@ void ScheduleMainMenuUI::round_end_player_column(
   }
   }
 
-  ui_helpers::create_player_card(
-      context, column.ent(), player_label, bg_color, is_slot_ai, ranking,
-      animated_stats.has_value() ? animated_stats : stats_text);
+  // Combine round-specific stats with kill count
+  std::optional<std::string> combined_stats;
+  std::string final_stats_text =
+      animated_stats.has_value()
+          ? animated_stats.value()
+          : (stats_text.has_value() ? stats_text.value() : "");
+
+  if (kills_text.has_value()) {
+    if (!final_stats_text.empty()) {
+      combined_stats = final_stats_text + " | " + kills_text.value();
+    } else {
+      combined_stats = kills_text.value();
+    }
+  } else if (!final_stats_text.empty()) {
+    combined_stats = final_stats_text;
+  }
+
+  ui_helpers::create_player_card(context, column.ent(), player_label, bg_color,
+                                 is_slot_ai, ranking, combined_stats);
 }
 
 std::map<EntityID, int> ScheduleMainMenuUI::get_tag_and_go_rankings(

@@ -1709,10 +1709,7 @@ struct ProcessDeath : PausableSystem<Transform, HasHealth> {
           get_spawn_position(static_cast<size_t>(entity.get<PlayerID>().id));
     }
 
-    // Handle kill attribution in kill-based rounds
-    if (RoundManager::get().active_round_type == RoundType::Kills) {
-      handle_kill_attribution(entity, hasHealth);
-    }
+    handle_kill_attribution(entity, hasHealth);
 
     // Handle lives system
     if (entity.has<HasMultipleLives>()) {
