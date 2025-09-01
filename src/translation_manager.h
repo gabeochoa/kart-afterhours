@@ -77,9 +77,7 @@ public:
     return set_param(param, fmt::format("{}", arg));
   }
 
-  template <>
-  auto &set_param<TranslatableString>(const i18nParam &param,
-                                      const TranslatableString &arg) {
+  auto &set_param(const i18nParam &param, const TranslatableString &arg) {
     return set_param(param, fmt::format("{}", arg.underlying_TL_ONLY()));
   }
 

@@ -60,7 +60,7 @@ Preload &Preload::init(const char *title) {
   raylib::InitWindow(width, height, title);
   raylib::SetWindowSize(width, height);
   // Back to warnings
-  raylib::TraceLogLevel logLevel = raylib::LOG_WARNING;
+  raylib::TraceLogLevel logLevel = raylib::LOG_ERROR;
   raylib::SetTraceLogLevel(logLevel);
   raylib::SetTargetFPS(200);
   raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
