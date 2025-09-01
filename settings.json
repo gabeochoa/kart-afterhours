@@ -12,7 +12,7 @@
         "width": 1280
     },
     "round_settings": {
-        "active_round_type": 3,
+        "active_round_type": 0,
         "settings": {
             "Hippo": {
                 "enabled_weapons": 4,

@@ -33,7 +33,11 @@ struct PausableSystem : afterhours::System<Components...> {
   }
 };
 
-#include "systems_roundtypes.h"
+#include "systems_common.h"
+#include "systems_hippo.h"
+#include "systems_kills.h"
+#include "systems_lives.h"
+#include "systems_tagandgo.h"
 
 struct UpdateSpriteTransform
     : System<Transform, afterhours::texture_manager::HasSprite> {
