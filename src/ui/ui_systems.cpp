@@ -2062,6 +2062,16 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
       case 1:
         new_language = translation_manager::Language::Korean;
         break;
+      case 2:
+        new_language = translation_manager::Language::Japanese;
+        break;
+      default:
+        // This will cause a compilation error if we add a new language without
+        // updating this switch
+        static_assert(magic_enum::enum_count<translation_manager::Language>() ==
+                          3,
+                      "Add new language case to this switch statement");
+        break;
       }
 
       translation_manager::set_language(new_language);

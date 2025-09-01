@@ -67,34 +67,16 @@ void from_json(const nlohmann::json &j,
 }
 
 void to_json(nlohmann::json &j, const translation_manager::Language &language) {
-  switch (language) {
-  case translation_manager::Language::English:
-    j = "English";
-    break;
-  case translation_manager::Language::Korean:
-    j = "Korean";
-    break;
-  default:
-    j = "English";
-    break;
-  }
+  j = magic_enum::enum_name(language);
 }
 
 void from_json(const nlohmann::json &j,
                translation_manager::Language &language) {
   if (j.is_string()) {
-    std::string lang_str = j.get<std::string>();
-    if (lang_str == "Korean") {
-      language = translation_manager::Language::Korean;
-    } else {
-      language = translation_manager::Language::English;
-    }
-  } else if (j.is_number()) {
-    int lang_num = j.get<int>();
-    if (lang_num == 1) {
-      language = translation_manager::Language::Korean;
-    } else {
-      language = translation_manager::Language::English;
+    auto lang_enum = magic_enum::enum_cast<translation_manager::Language>(
+        j.get<std::string>());
+    if (lang_enum.has_value()) {
+      language = lang_enum.value();
     }
   } else {
     language = translation_manager::Language::English;

@@ -25,6 +25,8 @@ std::string get_font_name(FontID id) {
     return "eqprorounded-regular.ttf";
   case FontID::Korean:
     return "NotoSansMonoCJKkr-Bold.otf";
+  case FontID::Japanese:
+    return "NotoSansMonoCJKjp-Bold.otf";
   case FontID::raylibFont:
     return afterhours::ui::UIComponent::DEFAULT_FONT;
   case FontID::SYMBOL_FONT:

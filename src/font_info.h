@@ -5,6 +5,7 @@
 enum FontID {
   English,
   Korean,
+  Japanese,
   raylibFont,
   SYMBOL_FONT,
 };

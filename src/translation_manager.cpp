@@ -1,6 +1,7 @@
 #include "translation_manager.h"
 #include "log.h"
 #include "magic_enum/magic_enum.hpp"
+#include "resources.h"
 #include <map>
 #include <set>
 
@@ -258,6 +259,135 @@ static std::map<strings::i18n, TranslatableString> korean_translations = {
      translation_manager::TranslatableString("총 하마: {}",
                                              "하마 개수 설정 라벨")}};
 
+static std::map<strings::i18n, TranslatableString> japanese_translations = {
+    {strings::i18n::play,
+     translation_manager::TranslatableString(
+         "プレイ", "新しいゲームを開始するメインメニューボタン")},
+    {strings::i18n::about,
+     translation_manager::TranslatableString(
+         "情報", "ゲーム情報を表示するメインメニューボタン")},
+    {strings::i18n::exit, translation_manager::TranslatableString(
+                              "終了", "ゲームを終了するメインメニューボタン")},
+    {strings::i18n::loading,
+     translation_manager::TranslatableString(
+         "読み込み中...", "ゲームが読み込み中に表示されるテキスト")},
+    {strings::i18n::gameover,
+     translation_manager::TranslatableString(
+         "ゲームオーバー", "プレイヤーが敗北した時に表示されるテキスト")},
+    {strings::i18n::victory,
+     translation_manager::TranslatableString(
+         "勝利！", "プレイヤーが勝利した時に表示されるテキスト")},
+    {strings::i18n::start, translation_manager::TranslatableString(
+                               "開始", "ゲームプレイを開始するボタン")},
+    {strings::i18n::back, translation_manager::TranslatableString(
+                              "戻る", "前の画面に戻るナビゲーションボタン")},
+    {strings::i18n::continue_game,
+     translation_manager::TranslatableString("続行",
+                                             "ラウンド終了後に続行するボタン")},
+    {strings::i18n::quit,
+     translation_manager::TranslatableString(
+         "終了", "現在のゲームセッションを終了するボタン")},
+    {strings::i18n::settings,
+     translation_manager::TranslatableString(
+         "設定", "ゲーム設定にアクセスするメインメニューボタン")},
+    {strings::i18n::volume,
+     translation_manager::TranslatableString("音量", "一般的な音量設定ラベル")},
+    {strings::i18n::fullscreen,
+     translation_manager::TranslatableString(
+         "フルスクリーン", "フルスクリーンモードを切り替えるチェックボックス")},
+    {strings::i18n::resolution,
+     translation_manager::TranslatableString(
+         "解像度", "画面解像度を選択するドロップダウン")},
+    {strings::i18n::language,
+     translation_manager::TranslatableString(
+         "言語 (Language)", "ゲーム言語を選択するドロップダウン")},
+
+    // Additional UI strings
+    {strings::i18n::round_settings,
+     translation_manager::TranslatableString("ラウンド設定",
+                                             "ラウンド構成画面のタイトル")},
+    {strings::i18n::resume, translation_manager::TranslatableString(
+                                "続行", "ゲームの一時停止を解除するボタン")},
+    {strings::i18n::back_to_setup,
+     translation_manager::TranslatableString(
+         "設定に戻る", "一時停止メニューからゲーム設定に戻るボタン")},
+    {strings::i18n::exit_game,
+     translation_manager::TranslatableString(
+         "ゲーム終了", "一時停止メニューから現在のゲームを終了するボタン")},
+    {strings::i18n::round_length,
+     translation_manager::TranslatableString("ラウンド時間",
+                                             "ラウンド時間持続設定のラベル")},
+    {strings::i18n::allow_tag_backs,
+     translation_manager::TranslatableString(
+         "タグバック許可",
+         "タグアンドゴーゲームモード設定のためのチェックボックス")},
+    {strings::i18n::select_map,
+     translation_manager::TranslatableString("マップ選択",
+                                             "ゲーム用マップを選択するボタン")},
+    {strings::i18n::master_volume,
+     translation_manager::TranslatableString(
+         "マスターボリューム", "全体ゲーム音量のためのスライダー")},
+    {strings::i18n::music_volume,
+     translation_manager::TranslatableString("音楽ボリューム",
+                                             "背景音楽音量のためのスライダー")},
+    {strings::i18n::sfx_volume,
+     translation_manager::TranslatableString("効果音ボリューム",
+                                             "効果音音量のためのスライダー")},
+    {strings::i18n::post_processing,
+     translation_manager::TranslatableString(
+         "後処理", "視覚的後処理効果を有効にするチェックボックス")},
+    {strings::i18n::round_end,
+     translation_manager::TranslatableString(
+         "ラウンド終了", "ラウンドが終了した時に表示されるタイトル")},
+    {strings::i18n::paused,
+     translation_manager::TranslatableString(
+         "一時停止", "ゲームが一時停止された時に表示される大きなテキスト")},
+    {strings::i18n::unknown,
+     translation_manager::TranslatableString(
+         "不明", "不明なゲーム状態のための代替テキスト")},
+    {strings::i18n::unlimited,
+     translation_manager::TranslatableString(
+         "無制限", "無制限ラウンド時間のためのオプション")},
+    {strings::i18n::easy, translation_manager::TranslatableString(
+                              "簡単", "AI難易度 - 最も簡単な設定")},
+    {strings::i18n::medium,
+     translation_manager::TranslatableString("普通", "AI難易度 - 普通の設定")},
+    {strings::i18n::hard, translation_manager::TranslatableString(
+                              "難しい", "AI難易度 - 挑戦的な設定")},
+    {strings::i18n::expert, translation_manager::TranslatableString(
+                                "エキスパート", "AI難易度 - 最も難しい設定")},
+
+    // Player Statistics
+    {strings::i18n::lives_label,
+     translation_manager::TranslatableString("ライフ: {}",
+                                             "プレイヤーライフ表示ラベル")},
+    {strings::i18n::kills_label,
+     translation_manager::TranslatableString(
+         "キル: {}", "プレイヤーキルカウント表示ラベル")},
+    {strings::i18n::hippos_label,
+     translation_manager::TranslatableString("カバ: {}",
+                                             "カバ収集カウント表示ラベル")},
+    {strings::i18n::hippos_zero,
+     translation_manager::TranslatableString(
+         "カバ: 0", "カバを収集していない時の代替テキスト")},
+    {strings::i18n::not_it_timer,
+     translation_manager::TranslatableString(
+         "鬼: {:.1f}초", "鬼ごっこゲームタイマー表示ラベル")},
+
+    // Round Settings Labels
+    {strings::i18n::win_condition_label,
+     translation_manager::TranslatableString("勝利条件: {}",
+                                             "勝利条件設定ラベル")},
+    {strings::i18n::num_lives_label,
+     translation_manager::TranslatableString("開始ライフ: {}",
+                                             "開始ライフ設定ラベル")},
+    {strings::i18n::round_length_label,
+     translation_manager::TranslatableString("ラウンド時間: {}",
+                                             "ラウンド時間持続設定ラベル")},
+    {strings::i18n::total_hippos_label,
+     translation_manager::TranslatableString("総カバ: {}",
+                                             "カバ個数設定ラベル")}};
+
 // Get translations for a specific language
 const std::map<strings::i18n, TranslatableString> &
 TranslationManager::get_translations_for_language(Language language) const {
@@ -266,6 +396,8 @@ TranslationManager::get_translations_for_language(Language language) const {
     return english_translations;
   case Language::Korean:
     return korean_translations;
+  case Language::Japanese:
+    return japanese_translations;
   default:
     return english_translations;
   }
@@ -348,7 +480,7 @@ void TranslationManager::load_cjk_fonts(
     all_codepoints.insert(static_cast<int>(c));
   }
 
-  for (const auto &lang : {Language::Korean}) {
+  for (const auto &lang : {Language::Korean, Language::Japanese}) {
     // Get all translations for this language
     const auto &translations = get_translations_for_language(lang);
 
@@ -388,20 +520,34 @@ void TranslationManager::load_cjk_fonts(
     }
   }
 
-  // Load all codepoints into a single font
+  // Load all codepoints into both Korean and Japanese fonts
   if (!all_codepoints.empty()) {
-    FontID font_id = FontID::Korean;
-    std::string font_name = get_font_name(font_id);
-
     // Convert set to vector
     std::vector<int> codepoints(all_codepoints.begin(), all_codepoints.end());
 
-    font_manager.load_font_with_codepoints(font_name, font_file.c_str(),
-                                           codepoints.data(),
-                                           static_cast<int>(codepoints.size()));
+    // Load into Korean font
+    FontID korean_font_id = FontID::Korean;
+    std::string korean_font_name = get_font_name(korean_font_id);
+    std::string korean_font_file =
+        Files::get().fetch_resource_path("", korean_font_name);
 
-    log_info("Loaded {} font with {} total codepoints for all CJK languages",
-             font_name, codepoints.size());
+    font_manager.load_font_with_codepoints(
+        korean_font_name, korean_font_file.c_str(), codepoints.data(),
+        static_cast<int>(codepoints.size()));
+
+    // Load into Japanese font
+    FontID japanese_font_id = FontID::Japanese;
+    std::string japanese_font_name = get_font_name(japanese_font_id);
+    std::string japanese_font_file =
+        Files::get().fetch_resource_path("", japanese_font_name);
+
+    font_manager.load_font_with_codepoints(
+        japanese_font_name, japanese_font_file.c_str(), codepoints.data(),
+        static_cast<int>(codepoints.size()));
+
+    log_info(
+        "Loaded {} and {} fonts with {} total codepoints for all CJK languages",
+        korean_font_name, japanese_font_name, codepoints.size());
   }
 }
 

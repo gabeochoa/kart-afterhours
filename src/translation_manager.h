@@ -7,13 +7,14 @@
 #include "strings.h"
 #include <afterhours/src/plugins/autolayout.h>
 #include <fmt/format.h>
+#include <magic_enum/magic_enum.hpp>
 #include <map>
 #include <string>
 
 namespace translation_manager {
 
 // Language enum for type safety
-enum struct Language { English, Korean };
+enum struct Language { English, Korean, Japanese };
 
 enum struct i18nParam {
   number_count,
@@ -151,6 +152,8 @@ public:
     switch (current_language) {
     case Language::Korean:
       return FontID::Korean;
+    case Language::Japanese:
+      return FontID::Japanese;
     case Language::English:
     default:
       return FontID::English;
@@ -170,33 +173,23 @@ public:
 
   // Get language name for a specific language
   static std::string get_language_name(Language language) {
-    switch (language) {
-    case Language::Korean:
-      return "Korean";
-    case Language::English:
-    default:
-      return "English";
-    }
+    return std::string(magic_enum::enum_name(language));
   }
 
   // Get vector of all available language names
   static std::vector<std::string> get_available_languages() {
-    return {
-        get_language_name(Language::English),
-        get_language_name(Language::Korean),
-    };
+    std::vector<std::string> languages;
+    auto enum_values = magic_enum::enum_values<Language>();
+    for (auto lang : enum_values) {
+      languages.push_back(std::string(magic_enum::enum_name(lang)));
+    }
+    return languages;
   }
 
   // Get index of a specific language in the available languages list
   static size_t get_language_index(Language language) {
-    switch (language) {
-    case Language::English:
-      return 0;
-    case Language::Korean:
-      return 1;
-    default:
-      return 0;
-    }
+    auto index = magic_enum::enum_index(language);
+    return index.value_or(0);
   }
 
   // Load CJK fonts for all the strings this manager needs
