@@ -16,7 +16,6 @@ struct CheckLivesWinCondition : PausableSystem<> {
     }
     auto players_with_lives =
         EntityQuery()
-            .whereHasComponent<PlayerID>()
             .whereHasComponent<HasMultipleLives>()
             .whereLambda([](const Entity &e) {
               return e.get<HasMultipleLives>().num_lives_remaining > 0;
