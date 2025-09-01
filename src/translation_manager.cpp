@@ -51,7 +51,7 @@ static std::map<strings::i18n, TranslatableString> english_translations = {
     // Additional UI strings
     {strings::i18n::round_settings,
      translation_manager::TranslatableString(
-         "Round Settings", "Title for round configuration screen")},
+         "round settings", "Title for round configuration screen")},
     {strings::i18n::resume, translation_manager::TranslatableString(
                                 "resume", "Button to unpause the game")},
     {strings::i18n::back_to_setup,
@@ -65,76 +65,76 @@ static std::map<strings::i18n, TranslatableString> english_translations = {
                                       "Label for round time duration setting")},
     {strings::i18n::allow_tag_backs,
      translation_manager::TranslatableString(
-         "Allow Tag Backs", "Checkbox for tag-and-go game mode setting")},
+         "allow tag backs", "Checkbox for tag-and-go game mode setting")},
     {strings::i18n::select_map,
      translation_manager::TranslatableString(
          "select map", "Button to choose a map for the game")},
     {strings::i18n::master_volume,
-     translation_manager::TranslatableString("Master Volume",
+     translation_manager::TranslatableString("master volume",
                                              "Slider for overall game volume")},
     {strings::i18n::music_volume,
      translation_manager::TranslatableString(
-         "Music Volume", "Slider for background music volume")},
+         "music volume", "Slider for background music volume")},
     {strings::i18n::sfx_volume,
      translation_manager::TranslatableString(
-         "SFX Volume", "Slider for sound effects volume")},
+         "sfx volume", "Slider for sound effects volume")},
     {strings::i18n::post_processing,
      translation_manager::TranslatableString(
          "post processing",
          "Checkbox to enable visual post-processing effects")},
     {strings::i18n::round_end,
      translation_manager::TranslatableString(
-         "Round End", "Title shown when a round finishes")},
+         "round end", "Title shown when a round finishes")},
     {strings::i18n::paused,
      translation_manager::TranslatableString(
          "paused", "Large text shown when game is paused")},
     {strings::i18n::unknown,
      translation_manager::TranslatableString(
-         "Unknown", "Fallback text for unknown game states")},
+         "unknown", "Fallback text for unknown game states")},
     {strings::i18n::unlimited,
      translation_manager::TranslatableString(
-         "Unlimited", "Option for unlimited round time")},
+         "unlimited", "Option for unlimited round time")},
     {strings::i18n::easy, translation_manager::TranslatableString(
-                              "Easy", "AI difficulty level - easiest setting")},
+                              "easy", "AI difficulty level - easiest setting")},
     {strings::i18n::medium,
      translation_manager::TranslatableString(
-         "Medium", "AI difficulty level - moderate setting")},
+         "medium", "AI difficulty level - moderate setting")},
     {strings::i18n::hard,
      translation_manager::TranslatableString(
-         "Hard", "AI difficulty level - challenging setting")},
+         "hard", "AI difficulty level - challenging setting")},
     {strings::i18n::expert,
      translation_manager::TranslatableString(
-         "Expert", "AI difficulty level - hardest setting")},
+         "expert", "AI difficulty level - hardest setting")},
 
     // Player Statistics
     {strings::i18n::lives_label,
-     translation_manager::TranslatableString("Lives: {}",
+     translation_manager::TranslatableString("lives: {}",
                                              "Label for player lives display")},
     {strings::i18n::kills_label,
      translation_manager::TranslatableString(
-         "Kills: {}", "Label for player kill count display")},
+         "kills: {}", "Label for player kill count display")},
     {strings::i18n::hippos_label,
      translation_manager::TranslatableString(
-         "Hippos: {}", "Label for hippo collection count display")},
+         "hippos: {}", "Label for hippo collection count display")},
     {strings::i18n::hippos_zero,
      translation_manager::TranslatableString(
-         "Hippos: 0", "Fallback text when no hippos collected")},
+         "hippos: 0", "Fallback text when no hippos collected")},
     {strings::i18n::not_it_timer,
      translation_manager::TranslatableString(
-         "Not It: {:.1f}s", "Label for tag game timer display")},
+         "not it: {:.1f}s", "Label for tag game timer display")},
 
     // Round Settings Labels
     {strings::i18n::win_condition_label,
      translation_manager::TranslatableString(
-         "Win Condition: {}", "Label for win condition setting")},
+         "win condition: {}", "Label for win condition setting")},
     {strings::i18n::num_lives_label,
      translation_manager::TranslatableString(
-         "Num Lives: {}", "Label for starting lives setting")},
+         "num lives: {}", "Label for starting lives setting")},
     {strings::i18n::round_length_label,
      translation_manager::TranslatableString(
-         "Round Length: {}", "Label for round time duration setting")},
+         "round length: {}", "Label for round time duration setting")},
     {strings::i18n::total_hippos_label,
-     translation_manager::TranslatableString("Total Hippos: {}",
+     translation_manager::TranslatableString("total hippos: {}",
                                              "Label for hippo count setting")}};
 
 static std::map<strings::i18n, TranslatableString> korean_translations = {
@@ -175,7 +175,7 @@ static std::map<strings::i18n, TranslatableString> korean_translations = {
      translation_manager::TranslatableString(
          "해상도", "화면 해상도를 선택하는 드롭다운")},
     {strings::i18n::language,
-     translation_manager::TranslatableString("언어 (Language)",
+     translation_manager::TranslatableString("언어 (language)",
                                              "게임 언어를 선택하는 드롭다운")},
 
     // Additional UI strings
@@ -199,19 +199,19 @@ static std::map<strings::i18n, TranslatableString> korean_translations = {
     {strings::i18n::select_map, translation_manager::TranslatableString(
                                     "맵 선택", "게임용 맵을 선택하는 버튼")},
     {strings::i18n::master_volume,
-     translation_manager::TranslatableString("마스터 볼륨",
+     translation_manager::TranslatableString("마스터 볼륨 (master volume)",
                                              "전체 게임 볼륨을 위한 슬라이더")},
     {strings::i18n::music_volume,
-     translation_manager::TranslatableString("음악 볼륨",
+     translation_manager::TranslatableString("음악 볼륨 (music volume)",
                                              "배경 음악 볼륨을 위한 슬라이더")},
     {strings::i18n::sfx_volume,
-     translation_manager::TranslatableString("효과음 볼륨",
+     translation_manager::TranslatableString("효과음 볼륨 (sfx volume)",
                                              "효과음 볼륨을 위한 슬라이더")},
     {strings::i18n::post_processing,
      translation_manager::TranslatableString(
          "후처리", "시각적 후처리 효과를 활성화하는 체크박스")},
     {strings::i18n::round_end,
-     translation_manager::TranslatableString("라운드 종료",
+     translation_manager::TranslatableString("라운드 종료 (round end)",
                                              "라운드가 끝날 때 표시되는 제목")},
     {strings::i18n::paused,
      translation_manager::TranslatableString(
@@ -231,8 +231,9 @@ static std::map<strings::i18n, TranslatableString> korean_translations = {
                                 "전문가", "AI 난이도 - 가장 어려운 설정")},
 
     // Player Statistics
-    {strings::i18n::lives_label, translation_manager::TranslatableString(
-                                     "생명: {}", "플레이어 생명 표시 라벨")},
+    {strings::i18n::lives_label,
+     translation_manager::TranslatableString("생명 (lives): {}",
+                                             "플레이어 생명 표시 라벨")},
     {strings::i18n::kills_label, translation_manager::TranslatableString(
                                      "킬: {}", "플레이어 킬 카운트 표시 라벨")},
     {strings::i18n::hippos_label,

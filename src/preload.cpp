@@ -22,7 +22,8 @@ using namespace afterhours;
 std::string get_font_name(FontID id) {
   switch (id) {
   case FontID::English:
-    return "eqprorounded-regular.ttf";
+    // return "eqprorounded-regular.ttf";
+    return "NotoSansMonoCJKkr-Bold.otf";
   case FontID::Korean:
     return "NotoSansMonoCJKkr-Bold.otf";
   case FontID::Japanese:
@@ -30,7 +31,8 @@ std::string get_font_name(FontID id) {
   case FontID::raylibFont:
     return afterhours::ui::UIComponent::DEFAULT_FONT;
   case FontID::SYMBOL_FONT:
-    return "eqprorounded-regular.ttf";
+    return "NotoSansMonoCJKkr-Bold.otf";
+    // return "eqprorounded-regular.ttf";
   }
   return afterhours::ui::UIComponent::DEFAULT_FONT;
 }
