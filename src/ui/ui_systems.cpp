@@ -404,7 +404,9 @@ ElementResult create_styled_button(UIContext<InputAction> &context,
                                             .left = pixels(0.f),
                                             .bottom = pixels(5.f),
                                             .right = pixels(0.f)})
-                      .with_label(label))) {
+                      .with_label(label)
+                      .with_opacity(0.0f)
+                      .with_translate(-2000.0f, 0.0f))) {
     on_click();
     return {true, parent};
   }
@@ -1459,7 +1461,9 @@ void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
                                   rl_settings.num_starting_lives))
                .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
                .with_margin(Margin{.top = screen_pct(0.01f)})
-               .with_debug_name("num_lives_text"));
+               .with_debug_name("num_lives_text")
+               .with_opacity(0.0f)
+               .with_translate(-2000.0f, 0.0f));
 }
 
 void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
@@ -1473,17 +1477,22 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
                        .set_param(translation_manager::i18nParam::number_time,
                                   rl_settings.current_round_time))
                .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
-               .with_margin(Margin{.top = screen_pct(0.01f)}));
+               .with_margin(Margin{.top = screen_pct(0.01f)})
+               .with_opacity(0.0f)
+               .with_translate(-2000.0f, 0.0f));
 
   {
     // TODO replace with actual strings
     auto options = magic_enum::enum_names<RoundSettings::TimeOptions>();
     auto option_index = magic_enum::enum_index(rl_settings.time_option).value();
 
-    if (auto result = imm::dropdown(context, mk(entity), options, option_index,
-                                    ComponentConfig{}.with_label(
-                                        translation_manager::TranslatableString(
-                                            strings::i18n::round_length)));
+    if (auto result = imm::dropdown(
+            context, mk(entity), options, option_index,
+            ComponentConfig{}
+                .with_label(translation_manager::TranslatableString(
+                    strings::i18n::round_length))
+                .with_opacity(0.0f)
+                .with_translate(-2000.0f, 0.0f));
         result) {
       rl_settings.set_time_option(result.as<int>());
     }
@@ -1514,20 +1523,25 @@ void round_tag_and_go_settings(Entity &entity,
 
     if (auto result = imm::dropdown(
             context, mk(entity), options, option_index,
-            ComponentConfig{}.with_label(
-                translation_manager::TranslatableString(
-                    strings::i18n::round_length)
-                    .set_param(translation_manager::i18nParam::number_time,
-                               30)));
+            ComponentConfig{}
+                .with_label(
+                    translation_manager::TranslatableString(
+                        strings::i18n::round_length)
+                        .set_param(translation_manager::i18nParam::number_time,
+                                   30))
+                .with_opacity(0.0f)
+                .with_translate(-2000.0f, 0.0f));
         result) {
       cm_settings.set_time_option(result.as<int>());
     }
   }
 
-  if (imm::checkbox(
-          context, mk(entity), cm_settings.allow_tag_backs,
-          ComponentConfig{}.with_label(translation_manager::TranslatableString(
-              strings::i18n::allow_tag_backs)))) {
+  if (imm::checkbox(context, mk(entity), cm_settings.allow_tag_backs,
+                    ComponentConfig{}
+                        .with_label(translation_manager::TranslatableString(
+                            strings::i18n::allow_tag_backs))
+                        .with_opacity(0.0f)
+                        .with_translate(-2000.0f, 0.0f))) {
     // value already toggled by checkbox binding
   }
 }
@@ -1563,7 +1577,9 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
 
       if (auto result = imm::navigation_bar(
               context, mk(win_condition_div.ent()), RoundType_NAMES,
-              selected_round_type, ComponentConfig{});
+              selected_round_type,
+              ComponentConfig{}.with_opacity(0.0f).with_translate(-2000.0f,
+                                                                  0.0f));
           result) {
         RoundManager::get().set_active_round_type(
             static_cast<int>(selected_round_type));
@@ -1578,7 +1594,9 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
             {1, 3},
             ComponentConfig{}
                 .with_flex_direction(FlexDirection::Column)
-                .with_margin(Margin{.top = screen_pct(0.01f)}));
+                .with_margin(Margin{.top = screen_pct(0.01f)})
+                .with_opacity(0.0f)
+                .with_translate(-2000.0f, 0.0f));
         result) {
       auto mask = result.as<unsigned long>();
       log_info("weapon checkbox_group changed; mask={}", mask);
@@ -2298,12 +2316,14 @@ void register_ui_systems(afterhours::SystemManager &systems) {
         afterhours::animation::CompositeKey>(systems);
     systems.register_update_system(
         std::make_unique<ui_game::UpdateUIWiggle<InputAction>>());
-    systems.register_update_system(
-        std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
     systems.register_update_system(std::make_unique<NavigationSystem>());
     systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
     systems.register_update_system(std::make_unique<SchedulePauseUI>());
     systems.register_update_system(std::make_unique<ScheduleDebugUI>());
   }
   ui::register_after_ui_updates<InputAction>(systems);
+  systems.register_update_system(
+      std::make_unique<ui_game::ApplyInitialSlideInMask<InputAction>>());
+  systems.register_update_system(
+      std::make_unique<ui_game::UpdateUISlideIn<InputAction>>());
 }

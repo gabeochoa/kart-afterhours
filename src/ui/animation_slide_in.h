@@ -208,3 +208,60 @@ private:
 };
 
 } // namespace ui_game
+
+template <typename InputAction>
+struct ApplyInitialSlideInMask : afterhours::ui::SystemWithUIContext<> {
+  GameStateManager::Screen last_screen = GameStateManager::Screen::None;
+  std::unordered_set<size_t> initialized_ids;
+  afterhours::window_manager::Resolution resolution;
+
+  virtual void once(float) override {
+    if (auto *resEnt = afterhours::EntityHelper::get_singleton_cmp<
+            afterhours::window_manager::ProvidesCurrentResolution>()) {
+      resolution = resEnt->current_resolution;
+    }
+  }
+
+  virtual void for_each_with(afterhours::Entity &entity,
+                             afterhours::ui::UIComponent &component,
+                             const float) override {
+    auto current_screen = GameStateManager::get().active_screen;
+    if (current_screen != last_screen) {
+      initialized_ids.clear();
+      last_screen = current_screen;
+    }
+
+    if (!component.was_rendered_to_screen)
+      return;
+
+    if (initialized_ids.contains(static_cast<size_t>(entity.id)))
+      return;
+
+    if (afterhours::animation::get_value(UIKey::SlideInAll,
+                                         static_cast<size_t>(entity.id))
+            .has_value())
+      return;
+
+    auto rect = component.rect();
+    float rightEdge = rect.x + rect.width;
+    float limit = resolution.width * 0.25f;
+    if (rightEdge > limit)
+      return;
+
+    auto &mods = entity.addComponentIfMissing<afterhours::ui::HasUIModifiers>();
+    auto rect_now = component.rect();
+    float off_left = -(rect_now.x + rect_now.width + 20.0f);
+    mods.translate_x = off_left;
+    mods.translate_y = 0.0f;
+    entity.addComponentIfMissing<afterhours::ui::HasOpacity>().value = 0.0f;
+
+    initialized_ids.insert(static_cast<size_t>(entity.id));
+  }
+};
+
+namespace ui_game {
+
+template <typename InputAction>
+using ApplyInitialSlideInMask = ::ApplyInitialSlideInMask<InputAction>;
+
+} // namespace ui_game
