@@ -134,6 +134,30 @@ Preload &Preload::init(const char *title) {
   return *this;
 }
 
+void setup_fonts(Entity &sophie) {
+  sophie.get<ui::FontManager>().load_font(
+      get_font_name(FontID::English),
+      Files::get()
+          .fetch_resource_path("", get_font_name(FontID::English))
+          .c_str());
+
+  // Load CJK fonts using our helper function
+  auto &font_manager = sophie.get<ui::FontManager>();
+  std::string font_file =
+      Files::get()
+          .fetch_resource_path("", get_font_name(FontID::Korean))
+          .c_str();
+
+  translation_manager::TranslationManager::get().load_cjk_fonts(font_manager,
+                                                                font_file);
+
+  font_manager.load_font(
+      afterhours::ui::UIComponent::SYMBOL_FONT,
+      Files::get()
+          .fetch_resource_path("", get_font_name(FontID::SYMBOL_FONT))
+          .c_str());
+}
+
 Preload &Preload::make_singleton() {
   // sophie
   auto &sophie = EntityHelper::createEntity();
@@ -142,34 +166,16 @@ Preload &Preload::make_singleton() {
     window_manager::add_singleton_components(sophie, 200);
     ui::add_singleton_components<InputAction>(sophie);
 
+    auto &settings = Settings::get();
+    translation_manager::set_language(settings.get_language());
+
     texture_manager::add_singleton_components(
         sophie, raylib::LoadTexture(
                     Files::get()
                         .fetch_resource_path("images", "spritesheet.png")
                         .c_str()));
 
-    sophie.get<ui::FontManager>().load_font(
-        get_font_name(FontID::English),
-        Files::get()
-            .fetch_resource_path("", get_font_name(FontID::English))
-            .c_str());
-
-    // Load CJK fonts using our helper function
-    auto &font_manager = sophie.get<ui::FontManager>();
-    std::string font_file =
-        Files::get()
-            .fetch_resource_path("", get_font_name(FontID::Korean))
-            .c_str();
-
-    translation_manager::TranslationManager::get().load_cjk_fonts(font_manager,
-                                                                  font_file);
-
-    font_manager.load_font(
-        afterhours::ui::UIComponent::SYMBOL_FONT,
-        Files::get()
-            .fetch_resource_path("", get_font_name(FontID::SYMBOL_FONT))
-            .c_str());
-
+    setup_fonts(sophie);
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();
     sophie.addComponent<ui::UIComponentDebug>("sophie");

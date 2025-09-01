@@ -2052,17 +2052,21 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                                                 .left = pixels(0.f),
                                                 .bottom = pixels(5.f),
                                                 .right = pixels(0.f)}))) {
+
+      auto new_language = translation_manager::Language::English;
       // Update language when selection changes
       switch (language_dropdown_index) {
       case 0:
-        translation_manager::set_language(
-            translation_manager::Language::English);
+        new_language = translation_manager::Language::English;
         break;
       case 1:
-        translation_manager::set_language(
-            translation_manager::Language::Korean);
+        new_language = translation_manager::Language::Korean;
         break;
       }
+
+      translation_manager::set_language(new_language);
+      Settings::get().set_language(new_language);
+      Settings::get().write_save_file();
 
       auto &styling_defaults = afterhours::ui::imm::UIStylingDefaults::get();
       auto font_name =

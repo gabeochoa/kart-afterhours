@@ -6,6 +6,7 @@
 #include <afterhours/src/plugins/window_manager.h>
 
 #include "library.h"
+#include "translation_manager.h"
 #include <afterhours/src/singleton.h>
 
 struct S_Data;
@@ -46,6 +47,9 @@ struct Settings {
 
   bool &get_post_processing_enabled();
   void toggle_post_processing();
+
+  translation_manager::Language get_language() const;
+  void set_language(translation_manager::Language language);
 
   void save_round_settings();
   void load_round_settings();

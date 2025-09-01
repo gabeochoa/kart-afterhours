@@ -42,6 +42,9 @@ struct S_Data {
   bool fullscreen_enabled = false;
   bool post_processing_enabled = true;
 
+  translation_manager::Language language =
+      translation_manager::Language::English;
+
   // Round settings
   nlohmann::json round_settings;
 
@@ -63,6 +66,41 @@ void from_json(const nlohmann::json &j,
   j.at("height").get_to(resolution.height);
 }
 
+void to_json(nlohmann::json &j, const translation_manager::Language &language) {
+  switch (language) {
+  case translation_manager::Language::English:
+    j = "English";
+    break;
+  case translation_manager::Language::Korean:
+    j = "Korean";
+    break;
+  default:
+    j = "English";
+    break;
+  }
+}
+
+void from_json(const nlohmann::json &j,
+               translation_manager::Language &language) {
+  if (j.is_string()) {
+    std::string lang_str = j.get<std::string>();
+    if (lang_str == "Korean") {
+      language = translation_manager::Language::Korean;
+    } else {
+      language = translation_manager::Language::English;
+    }
+  } else if (j.is_number()) {
+    int lang_num = j.get<int>();
+    if (lang_num == 1) {
+      language = translation_manager::Language::Korean;
+    } else {
+      language = translation_manager::Language::English;
+    }
+  } else {
+    language = translation_manager::Language::English;
+  }
+}
+
 void to_json(nlohmann::json &j, const S_Data &data) {
   nlohmann::json rez_j;
   to_json(rez_j, data.resolution);
@@ -76,6 +114,10 @@ void to_json(nlohmann::json &j, const S_Data &data) {
   //
   j["fullscreen_enabled"] = data.fullscreen_enabled;
   j["post_processing_enabled"] = data.post_processing_enabled;
+  //
+  nlohmann::json lang_j;
+  to_json(lang_j, data.language);
+  j["language"] = lang_j;
   //
   j["round_settings"] = data.round_settings;
 }
@@ -92,6 +134,10 @@ void from_json(const nlohmann::json &j, S_Data &data) {
 
   if (j.contains("post_processing_enabled")) {
     data.post_processing_enabled = j.at("post_processing_enabled");
+  }
+
+  if (j.contains("language")) {
+    from_json(j.at("language"), data.language);
   }
 
   if (j.contains("round_settings")) {
@@ -247,4 +293,12 @@ void Settings::load_round_settings() {
   if (!data->round_settings.is_null()) {
     RoundManager::get().from_json(data->round_settings);
   }
+}
+
+translation_manager::Language Settings::get_language() const {
+  return data->language;
+}
+
+void Settings::set_language(translation_manager::Language language) {
+  data->language = language;
 }
