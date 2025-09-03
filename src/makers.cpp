@@ -271,36 +271,37 @@ Entity &make_car(size_t id) {
   auto &enabled_weapons = RoundManager::get().get_enabled_weapons();
   auto &can_shoot = entity.addComponent<CanShoot>();
 
+  // Smart weapon assignment - find available slots
+  std::vector<Weapon::Type> weapons_to_assign;
+
   if (enabled_weapons.test(static_cast<size_t>(Weapon::Type::Cannon))) {
-    can_shoot.register_weapon(InputAction::ShootLeft,
-                              Weapon::FiringDirection::Forward,
-                              Weapon::Type::Cannon);
+    weapons_to_assign.push_back(Weapon::Type::Cannon);
   }
   if (enabled_weapons.test(static_cast<size_t>(Weapon::Type::Sniper))) {
-    can_shoot.register_weapon(InputAction::ShootRight,
-                              Weapon::FiringDirection::Forward,
-                              Weapon::Type::Sniper);
+    weapons_to_assign.push_back(Weapon::Type::Sniper);
   }
   if (enabled_weapons.test(static_cast<size_t>(Weapon::Type::Shotgun))) {
-    can_shoot.register_weapon(InputAction::ShootLeft,
-                              Weapon::FiringDirection::Forward,
-                              Weapon::Type::Shotgun);
+    weapons_to_assign.push_back(Weapon::Type::Shotgun);
   }
   if (enabled_weapons.test(static_cast<size_t>(Weapon::Type::MachineGun))) {
-    can_shoot.register_weapon(InputAction::ShootRight,
-                              Weapon::FiringDirection::Forward,
-                              Weapon::Type::MachineGun);
+    weapons_to_assign.push_back(Weapon::Type::MachineGun);
   }
 
   // Fallback to default weapons if none are enabled
-  if (enabled_weapons.none()) {
-    can_shoot
-        .register_weapon(InputAction::ShootLeft,
-                         Weapon::FiringDirection::Forward,
-                         Weapon::Type::Shotgun)
-        .register_weapon(InputAction::ShootRight,
-                         Weapon::FiringDirection::Forward,
-                         Weapon::Type::MachineGun);
+  if (weapons_to_assign.empty()) {
+    weapons_to_assign.push_back(Weapon::Type::Shotgun);
+    weapons_to_assign.push_back(Weapon::Type::MachineGun);
+  }
+
+  // Assign weapons to available slots
+  std::vector<InputAction> available_slots = {InputAction::ShootLeft,
+                                              InputAction::ShootRight};
+
+  for (size_t i = 0; i < weapons_to_assign.size() && i < available_slots.size();
+       ++i) {
+    can_shoot.register_weapon(available_slots[i],
+                              Weapon::FiringDirection::Forward,
+                              weapons_to_assign[i]);
   }
 
   return entity;
