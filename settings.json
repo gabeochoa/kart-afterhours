@@ -1,6 +1,6 @@
 {
     "audio": {
-        "master_volume": 0.7053923010826111,
+        "master_volume": 0.02575782686471939,
         "music_volume": 0.6917187571525574,
         "sfx_volume": 0.3560938835144043
     },
@@ -17,18 +17,21 @@
             "Hippo": {
                 "enabled_weapons": 4,
                 "show_countdown_timer": true,
+                "team_mode_enabled": false,
                 "time_option": 3,
                 "total_hippos": 50
             },
             "Kills": {
                 "enabled_weapons": 2,
                 "show_countdown_timer": true,
+                "team_mode_enabled": false,
                 "time_option": 3
             },
             "Lives": {
                 "enabled_weapons": 1,
                 "num_starting_lives": 1,
                 "show_countdown_timer": true,
+                "team_mode_enabled": true,
                 "time_option": 0
             },
             "TagAndGo": {
@@ -36,6 +39,7 @@
                 "enabled_weapons": 7,
                 "show_countdown_timer": true,
                 "speed_multiplier": 0.699999988079071,
+                "team_mode_enabled": false,
                 "time_option": 3
             }
         }

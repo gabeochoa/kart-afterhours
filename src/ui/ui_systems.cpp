@@ -1,4 +1,4 @@
-#include "ui_systems.h"
+
 
 #include <afterhours/ah.h>
 #include <fmt/format.h>
@@ -31,6 +31,9 @@ struct MapConfig;
 using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
 using Screen = GameStateManager::Screen;
+
+auto height_at_720p(float value) { return screen_pct(value / 720.f); }
+auto width_at_720p(float value) { return screen_pct(value / 1280.f); }
 
 struct SetupGameStylingDefaults
     : System<afterhours::ui::UIContext<InputAction>> {
@@ -178,6 +181,19 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                const OptEntity &car, raylib::Color bg_color);
   void render_unknown_stats(UIContext<InputAction> &context, Entity &parent,
                             const OptEntity &car, raylib::Color bg_color);
+  void render_team_column(UIContext<InputAction> &context,
+                          Entity &team_columns_container,
+                          const std::string &team_name,
+                          const std::vector<size_t> &team_players,
+                          const size_t num_slots, int team_index);
+  void render_team_results(UIContext<InputAction> &context, Entity &parent,
+                           const std::vector<OptEntity> &round_players,
+                           const std::vector<OptEntity> &round_ais);
+  void render_team_column_results(UIContext<InputAction> &context,
+                                  Entity &parent, const std::string &team_name,
+                                  int team_id,
+                                  const std::vector<OptEntity> &team_players,
+                                  int team_score);
   void start_game_with_random_animation();
 
   Screen character_creation(Entity &entity, UIContext<InputAction> &context);
@@ -221,173 +237,201 @@ static inline void apply_slide_mods(afterhours::Entity &ent, float slide_v) {
 // Reusable UI component functions
 namespace ui_helpers {
 
-// Reusable player card component
-ElementResult create_player_card(
-    UIContext<InputAction> &context, Entity &parent, const std::string &label,
-    raylib::Color bg_color, bool is_ai = false,
-    std::optional<int> ranking = std::nullopt,
-    std::optional<std::string> stats_text = std::nullopt,
-    std::function<void()> on_next_color = nullptr,
-    std::function<void()> on_remove = nullptr, bool show_add_ai = false,
-    std::function<void()> on_add_ai = nullptr,
-    std::optional<AIDifficulty::Difficulty> ai_difficulty = std::nullopt,
-    std::function<void(AIDifficulty::Difficulty)> on_difficulty_change =
-        nullptr) {
+struct PlayerCardData {
+  Entity &parent;
+  int index;
+  const std::string &label;
+  raylib::Color bg_color;
+  bool is_ai = false;
 
-  auto card = imm::div(context, mk(parent),
-                       ComponentConfig{}
-                           .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                           .with_margin(Margin{.top = percent(0.1f),
-                                               .bottom = percent(0.1f),
-                                               .left = percent(0.1f),
-                                               .right = percent(0.1f)})
-                           .with_color_usage(Theme::Usage::Custom)
-                           .with_custom_color(bg_color)
-                           .disable_rounded_corners());
+  std::optional<int> ranking = std::nullopt;
+  std::optional<std::string> stats_text = std::nullopt;
 
-  std::string player_label = label;
-  if (is_ai) {
-    player_label += " (AI)";
+  std::function<void()> on_next_color = nullptr;
+  std::function<void()> on_remove = nullptr;
+  std::function<void()> on_add_ai = nullptr;
+  std::function<void()> on_team_switch = nullptr;
+  std::optional<AIDifficulty::Difficulty> ai_difficulty = std::nullopt;
+  std::function<void(AIDifficulty::Difficulty)> on_difficulty_change = nullptr;
+};
+
+ElementResult player_card_cell(UIContext<InputAction> &context, Entity &parent,
+                               const std::string &debug_name,
+                               float width_percent = 0.125f) {
+  return imm::div(
+      context, mk(parent, std::hash<std::string>{}(debug_name + "_cell")),
+      ComponentConfig{}
+          .with_size(ComponentSize{percent(width_percent), percent(1.f)})
+          .with_padding(Padding{.top = height_at_720p(5.f),
+                                .left = width_at_720p(0.f),
+                                .bottom = height_at_720p(5.f),
+                                .right = width_at_720p(0.f)})
+          .with_debug_name(debug_name + "_cell"));
+}
+
+void maybe_button(UIContext<InputAction> &context, Entity &parent,
+                  const std::string &label, const std::string &debug_name,
+                  std::function<void()> action = nullptr,
+                  float width_percent = 0.125f) {
+
+  if (!action) {
+    return;
   }
 
-  auto header_row =
-      imm::div(context, mk(card.ent()),
-               ComponentConfig{}
-                   .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-                   .with_flex_direction(FlexDirection::Row)
-                   .with_debug_name("player_card_header"));
+  auto button_cell =
+      player_card_cell(context, parent, debug_name, width_percent);
 
-  bool show_next_color_icon = static_cast<bool>(on_next_color);
-  bool show_remove_icon = is_ai && static_cast<bool>(on_remove);
-  int header_icon_count =
-      (show_next_color_icon ? 1 : 0) + (show_remove_icon ? 1 : 0);
-  const float header_icon_width = 0.2f;
-  float label_width =
-      1.f - (header_icon_width * static_cast<float>(header_icon_count));
-  if (label_width < 0.2f)
-    label_width = 0.2f;
-
-  imm::div(context, mk(header_row.ent()),
-           ComponentConfig{}
-               .with_size(ComponentSize{percent(label_width), percent(1.f)})
-               .with_label(player_label)
-               .with_color_usage(Theme::Usage::Custom)
-               .with_custom_color(bg_color)
-               .disable_rounded_corners()
-               .with_debug_name("player_card_label"));
-
-  // Stats text (if provided)
-  if (stats_text.has_value()) {
-    imm::div(context, mk(card.ent(), 1),
-             ComponentConfig{}
-                 .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-                 .with_label(stats_text.value())
-                 .with_color_usage(Theme::Usage::Custom)
-                 .with_custom_color(bg_color)
-                 .disable_rounded_corners());
+  if (imm::button(context,
+                  mk(button_cell.ent(),
+                     std::hash<std::string>{}(debug_name + "_button")),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), percent(1.f)})
+                      .with_label(label)
+                      .with_debug_name(debug_name + "_button"))) {
+    action();
   }
+}
 
-  // Ranking (for top 3)
-  if (ranking.has_value() && ranking.value() <= 3) {
-    std::string ranking_label = fmt::format("#{}", ranking.value());
+void maybe_image_button(UIContext<InputAction> &context, Entity &parent,
+                        const std::string &debug_name, raylib::Texture2D sheet,
+                        Rectangle spriteSheetSrc,
+                        std::function<void()> action = nullptr,
+                        float width_percent = 0.125f) {
 
-    imm::div(context, mk(card.ent(), 2),
-             ComponentConfig{}
-                 .with_size(ComponentSize{percent(1.f), percent(0.3f, 0.4f)})
-                 .with_label(ranking_label)
-                 .with_color_usage(Theme::Usage::Custom)
-                 .with_custom_color(bg_color)
-                 .disable_rounded_corners()
-                 .with_debug_name("player_card_ranking"));
+  if (!action) {
+    return;
   }
+  auto button_cell =
+      player_card_cell(context, parent, debug_name, width_percent);
 
-  if (show_next_color_icon) {
-    raylib::Texture2D sheet = EntityHelper::get_singleton_cmp<
-                                  afterhours::texture_manager::HasSpritesheet>()
-                                  ->texture;
-    auto src = afterhours::texture_manager::idx_to_sprite_frame(0, 6);
-
-    auto icon_cell = imm::div(
-        context, mk(header_row.ent()),
-        ComponentConfig{}
-            .with_size(ComponentSize{percent(header_icon_width), percent(1.f)})
-            .with_padding(Padding{.top = percent(0.02f),
-                                  .left = percent(0.02f),
-                                  .bottom = percent(0.02f),
-                                  .right = percent(0.02f)})
-            .with_debug_name("next_color_cell"));
-
-    if (imm::image_button(
-            context, mk(icon_cell.ent()), sheet, src,
-            ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                .with_debug_name("next_color_icon")))
-      on_next_color();
+  if (imm::image_button(
+          context,
+          mk(button_cell.ent(),
+             std::hash<std::string>{}(debug_name + "_button")),
+          sheet, spriteSheetSrc,
+          ComponentConfig{}
+              .with_size(ComponentSize{percent(1.f), percent(1.f)})
+              .with_debug_name(debug_name))) {
+    action();
   }
+}
 
-  if (show_remove_icon) {
-    auto &trash_tex = TextureLibrary::get().get("trashcan");
-    raylib::Rectangle src{0.f, 0.f, static_cast<float>(trash_tex.width),
-                          static_cast<float>(trash_tex.height)};
-
-    auto icon_cell = imm::div(
-        context, mk(header_row.ent()),
-        ComponentConfig{}
-            .with_size(ComponentSize{percent(header_icon_width), percent(1.f)})
-            .with_padding(Padding{.top = percent(0.02f),
-                                  .left = percent(0.02f),
-                                  .bottom = percent(0.02f),
-                                  .right = percent(0.02f)})
-            .with_debug_name("remove_ai_cell"));
-
-    if (imm::image_button(
-            context, mk(icon_cell.ent()), trash_tex, src,
-            ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                .with_debug_name("remove_ai_icon"))) {
-      on_remove();
-    }
-  }
-
-  // AI Difficulty navigation bar
-  if (is_ai && ai_difficulty.has_value() && on_difficulty_change) {
+void maybe_difficulty_button(UIContext<InputAction> &context, Entity &parent,
+                             PlayerCardData &data) {
+  if (data.ai_difficulty.has_value() && data.on_difficulty_change) {
     auto difficulty_options = std::vector<std::string>{
         translation_manager::TranslatableString(strings::i18n::easy),
         translation_manager::TranslatableString(strings::i18n::medium),
         translation_manager::TranslatableString(strings::i18n::hard),
         translation_manager::TranslatableString(strings::i18n::expert)};
-    auto current_difficulty = static_cast<size_t>(ai_difficulty.value());
+    auto current_difficulty = static_cast<size_t>(data.ai_difficulty.value());
+
+    auto difficulty_cell =
+        player_card_cell(context, parent, "difficulty_cell", 0.7f);
 
     if (auto result = imm::navigation_bar(
-            context, mk(card.ent()), difficulty_options, current_difficulty,
+            context, mk(difficulty_cell.ent()), difficulty_options,
+            current_difficulty,
             ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), pixels(50.f)})
+                .with_size(ComponentSize{percent(1.f), percent(1.f)})
                 .disable_rounded_corners()
                 .with_debug_name("ai_difficulty_navigation_bar"))) {
-      on_difficulty_change(
+      data.on_difficulty_change(
           static_cast<AIDifficulty::Difficulty>(current_difficulty));
     }
   }
+}
 
-  // Remove AI button (trashcan icon)
-  // removed: separate remove ai button; handled in header
+void maybe_next_color_button(UIContext<InputAction> &context, Entity &parent,
+                             PlayerCardData &data) {
+  raylib::Texture2D sheet = EntityHelper::get_singleton_cmp<
+                                afterhours::texture_manager::HasSpritesheet>()
+                                ->texture;
 
-  // Add AI button (dollar_sign icon)
-  if (show_add_ai && on_add_ai) {
-    auto &dollar_tex = TextureLibrary::get().get("dollar_sign");
-    raylib::Rectangle src{0.f, 0.f, static_cast<float>(dollar_tex.width),
-                          static_cast<float>(dollar_tex.height)};
+  maybe_image_button(context, parent, "next_color", sheet,
+                     afterhours::texture_manager::idx_to_sprite_frame(0, 6),
+                     data.on_next_color);
+}
 
-    if (imm::image_button(
-            context, mk(card.ent()), dollar_tex, src,
-            ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), percent(0.2f, 0.4f)})
-                .with_padding(Padding{.top = percent(0.25f)})
-                .disable_rounded_corners()
-                .with_debug_name("add_ai_button"))) {
-      on_add_ai();
+void maybe_ai_buttons(UIContext<InputAction> &context, Entity &parent,
+                      PlayerCardData &data) {
+
+  auto bottom_row = imm::div(
+      context, mk(parent),
+      ComponentConfig{}
+          .with_size(ComponentSize{percent(1.f, 1.f), percent(0.4f, 1.f)})
+          .with_flex_direction(FlexDirection::Row)
+          .with_debug_name("player_card_bottom_row"));
+  if (data.is_ai) {
+    maybe_difficulty_button(context, bottom_row.ent(), data);
+
+    if (data.on_difficulty_change) {
+      auto spacer = imm::div(
+          context, mk(bottom_row.ent()),
+          ComponentConfig{}
+              .with_size(ComponentSize{percent(0.15f, 0.1f), percent(1.f)})
+              .with_debug_name("spacer"));
     }
+
+    auto &trash_tex = TextureLibrary::get().get("trashcan");
+    raylib::Rectangle src{0.f, 0.f, static_cast<float>(trash_tex.width),
+                          static_cast<float>(trash_tex.height)};
+    maybe_image_button(context, bottom_row.ent(), "delete", trash_tex, src,
+                       data.on_remove);
   }
+
+  auto &dollar_tex = TextureLibrary::get().get("dollar_sign");
+  raylib::Rectangle src{0.f, 0.f, static_cast<float>(dollar_tex.width),
+                        static_cast<float>(dollar_tex.height)};
+  maybe_image_button(context, bottom_row.ent(), "add_ai", dollar_tex, src,
+                     data.on_add_ai, 1.f);
+}
+
+// Reusable player card component
+ElementResult create_player_card(UIContext<InputAction> &context,
+                                 Entity &parent, PlayerCardData &data) {
+
+  auto card = imm::div(context, mk(parent),
+                       ComponentConfig{}
+                           .with_size(ComponentSize{percent(1.f), percent(1.f)})
+                           .with_color_usage(Theme::Usage::Custom)
+                           .with_custom_color(data.bg_color)
+                           .disable_rounded_corners());
+
+  // Top row: ID [color] [team switch]
+  auto top_row =
+      imm::div(context, mk(card.ent()),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(1.0f), percent(0.4f)})
+                   .with_margin(Margin{.top = height_at_720p(5.f),
+                                       .left = width_at_720p(5.f),
+                                       .bottom = height_at_720p(5.f),
+                                       .right = width_at_720p(5.f)})
+                   .with_padding(Padding{.top = height_at_720p(5.f),
+                                         .left = width_at_720p(0.f),
+                                         .bottom = height_at_720p(5.f),
+                                         .right = width_at_720p(0.f)})
+                   .with_flex_direction(FlexDirection::Row)
+                   .with_debug_name("player_card_top_row"));
+
+  // Player ID label
+  imm::div(context, mk(top_row.ent()),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(0.2f), percent(1.f)})
+               .with_padding(Padding{.top = height_at_720p(5.f),
+                                     .left = width_at_720p(5.f),
+                                     .bottom = height_at_720p(5.f),
+                                     .right = width_at_720p(5.f)})
+               .with_label(data.label)
+               .with_color_usage(Theme::Usage::Custom)
+               .with_custom_color(data.bg_color)
+               .disable_rounded_corners()
+               .with_debug_name("player_id_label"));
+
+  maybe_next_color_button(context, top_row.ent(), data);
+  maybe_button(context, top_row.ent(), "<->", "team_switch",
+               data.on_team_switch);
+  maybe_ai_buttons(context, card.ent(), data);
 
   return {true, card.ent()};
 }
@@ -578,22 +622,24 @@ void ScheduleMainMenuUI::character_selector_column(
                             colorManager.get_next_NO_STORE(index), 0.1f);
 
   const auto num_cols = std::min(4.f, static_cast<float>(num_slots));
+  bool team_mode = RoundManager::get().get_active_settings().team_mode_enabled;
 
   if (is_last_slot && (players.size() + ais.size()) >= input::MAX_GAMEPAD_ID) {
     return;
   }
 
+  float card_width = 400.f;
+  float card_height = 100.f;
+
   auto column =
       imm::div(context, mk(parent, (int)index),
                ComponentConfig{}
-                   .with_size(ComponentSize{percent(1.f / num_cols, 0.1f),
-                                            percent(1.f, 0.4f)})
-                   .with_margin(Margin{
-                       .top = percent(0.02f),
-                       .bottom = percent(0.02f),
-                       .left = percent(0.02f),
-                       .right = percent(0.02f),
-                   })
+                   .with_size(ComponentSize{width_at_720p(card_width),
+                                            height_at_720p(card_height)})
+                   .with_padding(Padding{.top = height_at_720p(5.f),
+                                         .left = width_at_720p(5.f),
+                                         .bottom = height_at_720p(5.f),
+                                         .right = width_at_720p(5.f)})
                    .with_color_usage(Theme::Usage::Custom)
                    .with_custom_color(bg_color)
                    .disable_rounded_corners());
@@ -601,6 +647,13 @@ void ScheduleMainMenuUI::character_selector_column(
   // Create player card using helper function
   std::string label = car.has_value() ? fmt::format("{} {}", index, car->id)
                                       : fmt::format("{} Empty", index);
+
+  // Add team indicator to label in team mode
+  if (team_mode && car.has_value() && car->has<TeamID>()) {
+    int team_id = car->get<TeamID>().team_id;
+    std::string team_letter = (team_id == 0) ? "A" : "B";
+    label = fmt::format("{} {} ({})", index, car->id, team_letter);
+  }
 
   bool player_right = false;
   if (index < players.size()) {
@@ -671,10 +724,45 @@ void ScheduleMainMenuUI::character_selector_column(
     };
   }
 
-  ui_helpers::create_player_card(
-      context, column.ent(), label, bg_color, is_slot_ai, std::nullopt,
-      std::nullopt, on_next_color, on_remove, show_add_ai, on_add_ai,
-      ai_difficulty, on_difficulty_change);
+  // Team switching functionality for team mode
+  std::function<void()> on_team_switch = nullptr;
+  bool show_team_switch = false;
+
+  if (team_mode && car.has_value()) {
+    show_team_switch = true;
+
+    // Initialize team assignment if not set
+    if (!car->has<TeamID>()) {
+      int initial_team = (index % 2 == 0) ? 0 : 1; // Alternate teams
+      car->addComponent<TeamID>(initial_team);
+    }
+
+    on_team_switch = [&car]() {
+      if (car.has_value() && car->has<TeamID>()) {
+        // Toggle team assignment
+        int current_team = car->get<TeamID>().team_id;
+        int new_team = (current_team == 0) ? 1 : 0;
+        car->get<TeamID>().team_id = new_team;
+        log_info("Player {} switched to team {}", car->id, new_team);
+      }
+    };
+  }
+
+  ui_helpers::PlayerCardData data{
+      .parent = column.ent(),
+      .index = 0,
+      .label = label,
+      .bg_color = bg_color,
+      .is_ai = is_slot_ai,
+      .on_next_color = on_next_color,
+      .on_remove = on_remove,
+      .on_add_ai = show_add_ai ? on_add_ai : nullptr,
+      .ai_difficulty = ai_difficulty,
+      .on_difficulty_change = on_difficulty_change,
+      .on_team_switch = show_team_switch ? on_team_switch : nullptr,
+  };
+
+  ui_helpers::create_player_card(context, column.ent(), data);
 }
 
 void ScheduleMainMenuUI::round_end_player_column(
@@ -845,8 +933,17 @@ void ScheduleMainMenuUI::round_end_player_column(
     combined_stats = final_stats_text;
   }
 
-  ui_helpers::create_player_card(context, column.ent(), player_label, bg_color,
-                                 is_slot_ai, ranking, combined_stats);
+  ui_helpers::PlayerCardData data{
+      .parent = column.ent(),
+      .index = 0,
+      .label = player_label,
+      .bg_color = bg_color,
+      .is_ai = is_slot_ai,
+      .ranking = ranking,
+      .stats_text = combined_stats,
+  };
+
+  ui_helpers::create_player_card(context, column.ent(), data);
 }
 
 std::map<EntityID, int> ScheduleMainMenuUI::get_tag_and_go_rankings(
@@ -883,6 +980,68 @@ std::map<EntityID, int> ScheduleMainMenuUI::get_tag_and_go_rankings(
   return rankings;
 }
 
+void ScheduleMainMenuUI::render_team_column(
+    UIContext<InputAction> &context, Entity &team_columns_container,
+    const std::string &team_name, const std::vector<size_t> &team_players,
+    const size_t num_slots, int team_index) {
+  auto team_color =
+      team_index == 0
+          ? raylib::Color{100, 150, 255, 50}  // Light blue for Team A
+          : raylib::Color{255, 150, 100, 50}; // Light orange for Team B
+
+  auto column_container = imm::div(
+      context, mk(team_columns_container, team_index),
+      ComponentConfig{}
+          .with_size(ComponentSize{width_at_720p(400.f), height_at_720p(700.f)})
+          .with_flex_direction(FlexDirection::Column)
+          .with_padding(Padding{.left = width_at_720p(20.f),
+                                .right = width_at_720p(20.f)})
+          .with_color_usage(Theme::Usage::Custom)
+          .with_custom_color(team_color)
+          .disable_rounded_corners()
+          .with_debug_name(team_name + "_column"));
+
+  imm::div(
+      context, mk(column_container.ent(), team_index),
+      ComponentConfig{}
+          .with_size(ComponentSize{width_at_720p(400.f), height_at_720p(100.f)})
+          .with_label(team_name)
+          .with_debug_name(team_name + "_header"));
+
+  ////
+  if (team_players.empty()) {
+    imm::div(context, mk(column_container.ent(), team_index),
+             ComponentConfig{}
+                 .with_size(
+                     ComponentSize{width_at_720p(400.f), height_at_720p(700.f)})
+                 .with_label("No players")
+                 .with_debug_name(team_name + "_empty"));
+  } else {
+    int cards_per_row = 1;
+    size_t team_rows = team_players.size();
+
+    for (size_t row_id = 0; row_id < team_rows; row_id++) {
+      auto team_row = imm::div(
+          context, mk(column_container.ent(), row_id),
+          ComponentConfig{}
+              .with_size(ComponentSize{width_at_720p(400.f),
+                                       // Cap row height at 300/720 pixels
+                                       // (about 42% of screen height)
+                                       height_at_720p(100.f)})
+              .with_flex_direction(FlexDirection::Row)
+              .with_debug_name(team_name + "_row"));
+
+      // Render players for this row
+      size_t start = row_id * cards_per_row;
+      for (size_t i = start;
+           i < std::min(team_players.size(), start + cards_per_row); i++) {
+        character_selector_column(team_row.ent(), context, team_players[i],
+                                  num_slots);
+      }
+    }
+  }
+}
+
 Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                                               UIContext<InputAction> &context) {
   auto elem =
@@ -905,30 +1064,90 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
       translation_manager::TranslatableString(strings::i18n::back),
       []() { navigation::back(); }, 1);
 
+  // Team mode toggle
+  auto &active_settings = RoundManager::get().get_active_settings();
+  if (imm::checkbox(context, mk(top_left.ent()),
+                    active_settings.team_mode_enabled,
+                    ComponentConfig{}
+                        .with_label("Team Mode")
+                        .with_margin(Margin{.top = screen_pct(0.01f)}))) {
+    // Value already toggled by checkbox binding
+    log_info("team mode toggled: {}", active_settings.team_mode_enabled);
+  }
+
   size_t num_slots = players.size() + ais.size() + 1;
-  // 0-4 => 1, 5->8 -> 2
-  int fours = static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
+  bool team_mode = RoundManager::get().get_active_settings().team_mode_enabled;
 
   auto btn_group = imm::div(
       context, mk(elem.ent()),
       ComponentConfig{}
           .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-          .with_margin(Margin{.top = screen_pct(fours == 1 ? 0.2f : 0.05f),
-                              .left = screen_pct(0.2f),
+          .with_margin(Margin{.top = screen_pct(0.15f),
+                              // Account for left column (20%) + padding
+                              .left = screen_pct(0.20f),
                               .right = screen_pct(0.1f)})
           .with_absolute_position()
           .with_debug_name("btn_group"));
 
-  for (int row_id = 0; row_id < fours; row_id++) {
-    auto row = imm::div(
-        context, mk(btn_group.ent(), row_id),
-        ComponentConfig{}
-            .with_size(ComponentSize{percent(1.f), percent(0.5f, 0.4f)})
-            .with_flex_direction(FlexDirection::Row)
-            .with_debug_name("row"));
-    size_t start = row_id * 4;
-    for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
-      character_selector_column(row.ent(), context, i, num_slots);
+  if (team_mode) {
+    // Team mode: Two rows (Team A on top, Team B on bottom)
+
+    // Group players by team
+    std::vector<size_t> team_a_players;
+    std::vector<size_t> team_b_players;
+
+    for (size_t i = 0; i < num_slots; i++) {
+      OptEntity car;
+      if (i < players.size()) {
+        car = players[i];
+      } else if (i < players.size() + ais.size()) {
+        car = ais[i - players.size()];
+      }
+
+      // Determine which team this player belongs to
+      bool is_team_a = true; // Default to team A
+      if (car.has_value() && car->has<TeamID>()) {
+        is_team_a = (car->get<TeamID>().team_id == 0);
+      } else {
+        // If no team assignment, alternate based on index
+        is_team_a = (i % 2 == 0);
+      }
+
+      if (is_team_a) {
+        team_a_players.push_back(i);
+      } else {
+        team_b_players.push_back(i);
+      }
+    }
+
+    // Create centered container for team columns
+    auto team_columns_container =
+        imm::div(context, mk(btn_group.ent()),
+                 ComponentConfig{}
+                     .with_size(ComponentSize{percent(1.0f), percent(1.f)})
+                     .with_flex_direction(FlexDirection::Row)
+                     .with_debug_name("team_columns_container"));
+
+    render_team_column(context, team_columns_container.ent(), "Team A",
+                       team_a_players, num_slots, 0);
+    render_team_column(context, team_columns_container.ent(), "Team B",
+                       team_b_players, num_slots, 1);
+  } else {
+    // Individual mode: Original grid layout
+    int fours =
+        static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
+
+    for (int row_id = 0; row_id < fours; row_id++) {
+      auto row = imm::div(
+          context, mk(btn_group.ent(), row_id),
+          ComponentConfig{}
+              .with_size(ComponentSize{percent(1.f), percent(0.5f, 0.4f)})
+              .with_flex_direction(FlexDirection::Row)
+              .with_debug_name("row"));
+      size_t start = row_id * 4;
+      for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
+        character_selector_column(row.ent(), context, i, num_slots);
+      }
     }
   }
 
@@ -2210,6 +2429,141 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
       GameStateManager::get().active_screen);
 }
 
+void ScheduleMainMenuUI::render_team_column_results(
+    UIContext<InputAction> &context, Entity &parent,
+    const std::string &team_name, int team_id,
+    const std::vector<OptEntity> &team_players, int team_score) {
+  // Determine team color
+  auto team_color =
+      team_id == 0
+          ? afterhours::ui::imm::ThemeDefaults::get().get_theme().from_usage(
+                Theme::Usage::Primary) // Light blue for Team A
+          : afterhours::ui::imm::ThemeDefaults::get().get_theme().from_usage(
+                Theme::Usage::Accent); // Light orange for Team B
+
+  // Create team column
+  auto team_column =
+      imm::div(context, mk(parent, team_id),
+               ComponentConfig{}
+                   .with_size(ComponentSize{percent(0.5f), percent(1.f)})
+                   .with_flex_direction(FlexDirection::Column)
+                   .with_color_usage(Theme::Usage::Custom)
+                   .with_custom_color(team_color)
+                   .disable_rounded_corners()
+                   .with_debug_name(team_name + "_column"));
+
+  // Team header
+  imm::div(context, mk(team_column.ent()),
+           ComponentConfig{}
+               .with_label(team_name)
+               .with_size(ComponentSize{percent(1.f), percent(0.15f)})
+               .with_debug_name(team_name + "_header"));
+
+  // Team score
+  imm::div(context, mk(team_column.ent()),
+           ComponentConfig{}
+               .with_label("Score: " + std::to_string(team_score))
+               .with_size(ComponentSize{percent(1.f), percent(0.1f)})
+               .with_debug_name(team_name + "_score"));
+
+  // Team players
+  for (size_t i = 0; i < team_players.size(); i++) {
+    const auto &player = team_players[i];
+    if (player.has_value()) {
+      std::string player_name = "Player" + std::to_string(i + 1);
+      if (player->has<PlayerID>()) {
+        player_name = "Player" + std::to_string(player->get<PlayerID>().id);
+      } else if (player->has<AIControlled>()) {
+        player_name = "AI" + std::to_string(i + 1);
+      }
+
+      imm::div(
+          context, mk(team_column.ent(), i),
+          ComponentConfig{}
+              .with_label(player_name)
+              .with_size(ComponentSize{percent(1.f), percent(0.1f)})
+              .with_debug_name(team_name + "_player_" + std::to_string(i)));
+    }
+  }
+}
+
+void ScheduleMainMenuUI::render_team_results(
+    UIContext<InputAction> &context, Entity &parent,
+    const std::vector<OptEntity> &round_players,
+    const std::vector<OptEntity> &round_ais) {
+  // Group players by team
+  std::map<int, std::vector<OptEntity>> team_groups;
+
+  // Group players by team
+  for (const auto &player : round_players) {
+    if (player.has_value()) {
+      int team_id = -1; // Default to no team
+      if (player->has<TeamID>()) {
+        team_id = player->get<TeamID>().team_id;
+      }
+      team_groups[team_id].push_back(player);
+    }
+  }
+
+  // Group AIs by team
+  for (const auto &ai : round_ais) {
+    if (ai.has_value()) {
+      int team_id = -1; // Default to no team
+      if (ai->has<TeamID>()) {
+        team_id = ai->get<TeamID>().team_id;
+      }
+      team_groups[team_id].push_back(ai);
+    }
+  }
+
+  // Calculate team scores
+  std::map<int, int> team_scores;
+  for (const auto &[team_id, players] : team_groups) {
+    int total_score = 0;
+    for (const auto &player : players) {
+      if (player.has_value()) {
+        // Calculate score based on game mode
+        if (RoundManager::get().active_round_type == RoundType::Hippo) {
+          if (player->has<HasHippoCollection>()) {
+            total_score += player->get<HasHippoCollection>().get_hippo_count();
+          }
+        } else if (RoundManager::get().active_round_type == RoundType::Kills) {
+          if (player->has<HasKillCountTracker>()) {
+            total_score += player->get<HasKillCountTracker>().kills;
+          }
+        } else if (RoundManager::get().active_round_type == RoundType::Lives) {
+          if (player->has<HasMultipleLives>()) {
+            total_score += player->get<HasMultipleLives>().num_lives_remaining;
+          }
+        } else if (RoundManager::get().active_round_type ==
+                   RoundType::TagAndGo) {
+          if (player->has<HasTagAndGoTracking>()) {
+            total_score += static_cast<int>(
+                player->get<HasTagAndGoTracking>().time_as_not_it);
+          }
+        }
+      }
+    }
+    team_scores[team_id] = total_score;
+  }
+
+  // Create two-column layout
+  auto team_container =
+      imm::div(context, mk(parent),
+               ComponentConfig{}
+                   .with_size(ComponentSize{screen_pct(0.6f), screen_pct(0.6f)})
+                   .with_margin(Margin{.top = screen_pct(0.2f),
+                                       .left = screen_pct(0.2f)})
+                   .with_flex_direction(FlexDirection::Row)
+                   .with_absolute_position()
+                   .with_debug_name("team_results_container"));
+
+  render_team_column_results(context, team_container.ent(), "TEAM A", 0,
+                             team_groups[0], team_scores[0]);
+  render_team_column_results(context, team_container.ent(), "TEAM B", 1,
+                             team_groups[1], team_scores[1]);
+}
+
 Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
                                             UIContext<InputAction> &context) {
   auto elem =
@@ -2264,54 +2618,61 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
                  .with_debug_name("round_end_title"));
   }
 
-  std::map<EntityID, int> rankings;
-  if (RoundManager::get().active_round_type == RoundType::TagAndGo) {
-    rankings = get_tag_and_go_rankings(round_players, round_ais);
-  }
+  // Check if team mode is enabled
+  auto &settings = RoundManager::get().get_active_settings();
+  if (settings.team_mode_enabled) {
+    // Render team results in two columns
+    render_team_results(context, elem.ent(), round_players, round_ais);
+  } else {
+    // Render individual results in grid layout
+    std::map<EntityID, int> rankings;
+    if (RoundManager::get().active_round_type == RoundType::TagAndGo) {
+      rankings = get_tag_and_go_rankings(round_players, round_ais);
+    }
 
-  // Render players in a grid layout similar to character creation
-  size_t num_slots = round_players.size() + round_ais.size();
-  if (num_slots > 0) {
-    int fours =
-        static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
+    size_t num_slots = round_players.size() + round_ais.size();
+    if (num_slots > 0) {
+      int fours =
+          static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
 
-    auto player_group = imm::div(
-        context, mk(elem.ent()),
-        ComponentConfig{}
-            .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-            .with_margin(Margin{.top = screen_pct(fours == 1 ? 0.3f : 0.15f),
-                                .left = screen_pct(0.2f),
-                                .right = screen_pct(0.1f)})
-            .with_absolute_position()
-            .with_debug_name("player_group"));
-
-    for (int row_id = 0; row_id < fours; row_id++) {
-      auto row = imm::div(
-          context, mk(player_group.ent(), row_id),
+      auto player_group = imm::div(
+          context, mk(elem.ent()),
           ComponentConfig{}
-              .with_size(ComponentSize{percent(1.f), percent(0.5f, 0.4f)})
-              .with_flex_direction(FlexDirection::Row)
-              .with_debug_name("row"));
-      size_t start = row_id * 4;
-      for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
-        OptEntity car;
-        if (i < round_players.size()) {
-          car = round_players[i];
-        } else {
-          car = round_ais[i - round_players.size()];
-        }
+              .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+              .with_margin(Margin{.top = screen_pct(fours == 1 ? 0.3f : 0.15f),
+                                  .left = screen_pct(0.2f),
+                                  .right = screen_pct(0.1f)})
+              .with_absolute_position()
+              .with_debug_name("player_group"));
 
-        std::optional<int> ranking;
-        if (car.has_value() &&
-            RoundManager::get().active_round_type == RoundType::TagAndGo) {
-          auto it = rankings.find(car->id);
-          if (it != rankings.end() && it->second <= 3) {
-            ranking = it->second;
+      for (int row_id = 0; row_id < fours; row_id++) {
+        auto row = imm::div(
+            context, mk(player_group.ent(), row_id),
+            ComponentConfig{}
+                .with_size(ComponentSize{percent(1.f), percent(0.5f, 0.4f)})
+                .with_flex_direction(FlexDirection::Row)
+                .with_debug_name("row"));
+        size_t start = row_id * 4;
+        for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
+          OptEntity car;
+          if (i < round_players.size()) {
+            car = round_players[i];
+          } else {
+            car = round_ais[i - round_players.size()];
           }
-        }
 
-        round_end_player_column(row.ent(), context, i, round_players, round_ais,
-                                ranking);
+          std::optional<int> ranking;
+          if (car.has_value() &&
+              RoundManager::get().active_round_type == RoundType::TagAndGo) {
+            auto it = rankings.find(car->id);
+            if (it != rankings.end() && it->second <= 3) {
+              ranking = it->second;
+            }
+          }
+
+          round_end_player_column(row.ent(), context, i, round_players,
+                                  round_ais, ranking);
+        }
       }
     }
   }

@@ -53,6 +53,9 @@ struct RoundSettings {
   // Whether to show countdown timer in UI
   bool show_countdown_timer = true;
 
+  // Whether team mode is enabled (Team A vs Team B)
+  bool team_mode_enabled = false;
+
 private:
   static float get_time_from_option(TimeOptions option) {
     switch (option) {
@@ -374,6 +377,9 @@ struct RoundManager {
       // Countdown settings are now in base class, so add to all round types
       round_j["show_countdown_timer"] = settings[i]->show_countdown_timer;
 
+      // Team mode setting is now in base class, so add to all round types
+      round_j["team_mode_enabled"] = settings[i]->team_mode_enabled;
+
       switch (round_type) {
       case RoundType::Lives: {
         auto &lives_settings =
@@ -438,6 +444,13 @@ struct RoundManager {
           if (round_j.contains("show_countdown_timer")) {
             settings[i]->show_countdown_timer =
                 round_j["show_countdown_timer"].get<bool>();
+          }
+
+          // Team mode setting is now in base class, so handle for all round
+          // types
+          if (round_j.contains("team_mode_enabled")) {
+            settings[i]->team_mode_enabled =
+                round_j["team_mode_enabled"].get<bool>();
           }
 
           switch (round_type) {

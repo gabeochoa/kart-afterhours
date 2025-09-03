@@ -332,6 +332,12 @@ void make_player(input::GamepadID id) {
   entity.addComponent<PlayerID>(id);
   entity.addComponent<HonkState>();
 
+  // Add team assignment if team mode is enabled
+  if (RoundManager::get().get_active_settings().team_mode_enabled) {
+    int team_id = (id % 2 == 0) ? 0 : 1; // Alternate teams
+    entity.addComponent<TeamID>(team_id);
+  }
+
   const auto player_id_text = "[Player " + std::to_string(id) + "]";
   const auto player_label_pos_offset = vec2{-.1f, 0.f};
   LabelInfo player_text_label_info(player_id_text, player_label_pos_offset,
@@ -370,6 +376,12 @@ void make_ai() {
   entity.addComponent<AIDifficulty>();
   entity.addComponent<AIMode>();
   entity.addComponent<AIParams>();
+
+  // Add team assignment if team mode is enabled
+  if (RoundManager::get().get_active_settings().team_mode_enabled) {
+    int team_id = ((num_players + num_ais) % 2 == 0) ? 0 : 1; // Alternate teams
+    entity.addComponent<TeamID>(team_id);
+  }
 }
 
 Entity &make_hippo_item(vec2 position) {

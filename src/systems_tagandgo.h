@@ -97,7 +97,7 @@ struct InitializeTagAndGoGame : PausableSystem<> {
   }
 };
 
-struct CheckTagAndGoWinCondition : PausableSystem<> {
+struct CheckTagAndGoWinFFA : PausableSystem<> {
   virtual void once(float dt) override {
     if (RoundManager::get().active_round_type != RoundType::TagAndGo) {
       return;
@@ -109,6 +109,10 @@ struct CheckTagAndGoWinCondition : PausableSystem<> {
     if (settings.state != RoundSettings::GameState::InGame) {
       return;
     }
+    if (settings.team_mode_enabled) {
+      return; // Team mode is handled by CheckTagAndGoWinTeam
+    }
+
     auto &tag_settings =
         RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
     if (tag_settings.current_round_time <= 0) {
@@ -124,6 +128,8 @@ struct CheckTagAndGoWinCondition : PausableSystem<> {
       GameStateManager::get().end_game();
       return;
     }
+
+    // FFA mode: Original logic
     auto winner_it = std::ranges::max_element(
         players_with_tracking, std::less<>{},
         [](const afterhours::RefEntity &entity_ref) {
@@ -132,6 +138,80 @@ struct CheckTagAndGoWinCondition : PausableSystem<> {
     tag_settings.state = RoundSettings::GameState::GameOver;
     tag_settings.current_round_time = 0;
     GameStateManager::get().end_game({winner_it->get()});
+  }
+};
+
+struct CheckTagAndGoWinTeam : PausableSystem<> {
+  virtual void once(float dt) override {
+    if (RoundManager::get().active_round_type != RoundType::TagAndGo) {
+      return;
+    }
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+    auto &settings = RoundManager::get().get_active_settings();
+    if (settings.state != RoundSettings::GameState::InGame) {
+      return;
+    }
+    if (!settings.team_mode_enabled) {
+      return; // FFA mode is handled by CheckTagAndGoWinFFA
+    }
+
+    auto &tag_settings =
+        RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
+    if (tag_settings.current_round_time <= 0) {
+      return;
+    }
+    tag_settings.current_round_time -= dt;
+    if (tag_settings.current_round_time > 0) {
+      return;
+    }
+    auto players_with_tracking =
+        EntityQuery().whereHasComponent<HasTagAndGoTracking>().gen();
+    if (players_with_tracking.empty()) {
+      GameStateManager::get().end_game();
+      return;
+    }
+
+    // Team mode: Aggregate time_as_not_it by team
+    std::map<int, float> team_times;
+
+    for (const auto &entity_ref : players_with_tracking) {
+      Entity &entity = entity_ref.get();
+      int team_id = -1; // Default to no team
+
+      if (entity.has<TeamID>()) {
+        team_id = entity.get<TeamID>().team_id;
+      }
+
+      float time_not_it = entity.get<HasTagAndGoTracking>().time_as_not_it;
+      team_times[team_id] += time_not_it;
+    }
+
+    // Find team with most total time not it
+    float max_team_time = 0.0f;
+    int winning_team = -1;
+
+    for (const auto &[team_id, time] : team_times) {
+      if (time > max_team_time) {
+        max_team_time = time;
+        winning_team = team_id;
+      }
+    }
+
+    // Collect all players from winning team
+    afterhours::RefEntities winners;
+    for (const auto &entity_ref : players_with_tracking) {
+      Entity &entity = entity_ref.get();
+      if (entity.has<TeamID>() &&
+          entity.get<TeamID>().team_id == winning_team) {
+        winners.push_back(entity_ref);
+      }
+    }
+
+    tag_settings.state = RoundSettings::GameState::GameOver;
+    tag_settings.current_round_time = 0;
+    GameStateManager::get().end_game(winners);
   }
 };
 

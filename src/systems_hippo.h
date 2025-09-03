@@ -79,7 +79,7 @@ struct SpawnHippoItems : PausableSystem<> {
   }
 };
 
-struct CheckHippoWinCondition : PausableSystem<> {
+struct CheckHippoWinFFA : PausableSystem<> {
 
   void cleanup_remaining_hippos(RoundHippoSettings &) {
     auto remaining_hippos = EQ().whereHasComponent<HippoItem>().gen();
@@ -100,6 +100,9 @@ struct CheckHippoWinCondition : PausableSystem<> {
     auto &settings = RoundManager::get().get_active_settings();
     if (settings.state != RoundSettings::GameState::InGame) {
       return;
+    }
+    if (settings.team_mode_enabled) {
+      return; // Team mode is handled by CheckHippoWinTeam
     }
 
     auto &hippo_settings =
@@ -123,6 +126,7 @@ struct CheckHippoWinCondition : PausableSystem<> {
       return;
     }
 
+    // FFA mode: Original logic
     auto max_hippos_it = std::ranges::max_element(
         players_with_hippos, std::less<>{},
         [](const afterhours::RefEntity &entity_ref) {
@@ -140,6 +144,94 @@ struct CheckHippoWinCondition : PausableSystem<> {
           return entity_ref.get().get<HasHippoCollection>().get_hippo_count() ==
                  max_hippos;
         });
+
+    hippo_settings.current_round_time = 0;
+    GameStateManager::get().end_game(winners);
+  }
+};
+
+struct CheckHippoWinTeam : PausableSystem<> {
+
+  void cleanup_remaining_hippos(RoundHippoSettings &) {
+    auto remaining_hippos = EQ().whereHasComponent<HippoItem>().gen();
+    for (const auto &hippo_ref : remaining_hippos) {
+      hippo_ref.get().cleanup = true;
+    }
+  }
+
+  virtual void once(float dt) override {
+    if (RoundManager::get().active_round_type != RoundType::Hippo) {
+      return;
+    }
+
+    if (!GameStateManager::get().is_game_active()) {
+      return;
+    }
+
+    auto &settings = RoundManager::get().get_active_settings();
+    if (settings.state != RoundSettings::GameState::InGame) {
+      return;
+    }
+    if (!settings.team_mode_enabled) {
+      return; // FFA mode is handled by CheckHippoWinFFA
+    }
+
+    auto &hippo_settings =
+        RoundManager::get().get_active_rt<RoundHippoSettings>();
+    if (hippo_settings.current_round_time <= 0) {
+      return;
+    }
+
+    hippo_settings.current_round_time -= dt;
+
+    if (hippo_settings.current_round_time > 0) {
+      return;
+    }
+
+    cleanup_remaining_hippos(hippo_settings);
+
+    auto players_with_hippos =
+        EntityQuery().whereHasComponent<HasHippoCollection>().gen();
+    if (players_with_hippos.empty()) {
+      GameStateManager::get().end_game();
+      return;
+    }
+
+    // Team mode: Aggregate hippos by team
+    std::map<int, int> team_hippos;
+
+    for (const auto &entity_ref : players_with_hippos) {
+      Entity &entity = entity_ref.get();
+      int team_id = -1; // Default to no team
+
+      if (entity.has<TeamID>()) {
+        team_id = entity.get<TeamID>().team_id;
+      }
+
+      int hippos = entity.get<HasHippoCollection>().get_hippo_count();
+      team_hippos[team_id] += hippos;
+    }
+
+    // Find team with most hippos
+    int max_team_hippos = 0;
+    int winning_team = -1;
+
+    for (const auto &[team_id, hippos] : team_hippos) {
+      if (hippos > max_team_hippos) {
+        max_team_hippos = hippos;
+        winning_team = team_id;
+      }
+    }
+
+    // Collect all players from winning team
+    afterhours::RefEntities winners;
+    for (const auto &entity_ref : players_with_hippos) {
+      Entity &entity = entity_ref.get();
+      if (entity.has<TeamID>() &&
+          entity.get<TeamID>().team_id == winning_team) {
+        winners.push_back(entity_ref);
+      }
+    }
 
     hippo_settings.current_round_time = 0;
     GameStateManager::get().end_game(winners);

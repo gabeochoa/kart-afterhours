@@ -541,3 +541,8 @@ struct HasCamera : BaseComponent {
 
   void set_rotation(float rotation) { camera.rotation = rotation; }
 };
+
+struct TeamID : BaseComponent {
+  int team_id; // 0 = Team A, 1 = Team B, -1 = No Team (individual mode)
+  TeamID(int id = -1) : team_id(id) {}
+};

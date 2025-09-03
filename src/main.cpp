@@ -102,18 +102,22 @@ void game() {
         std::make_unique<WeaponFiredCleanupSystem>());
     systems.register_update_system(std::make_unique<DrainLife>());
     systems.register_update_system(std::make_unique<UpdateTrackingEntities>());
-    systems.register_update_system(std::make_unique<CheckLivesWinCondition>());
-    systems.register_update_system(std::make_unique<CheckKillsWinCondition>());
+    systems.register_update_system(std::make_unique<CheckLivesWinFFA>());
+    systems.register_update_system(std::make_unique<CheckLivesWinTeam>());
+    systems.register_update_system(std::make_unique<CheckKillsWinFFA>());
+    systems.register_update_system(std::make_unique<CheckKillsWinTeam>());
+    systems.register_update_system(std::make_unique<CheckHippoWinFFA>());
+    systems.register_update_system(std::make_unique<CheckHippoWinTeam>());
+    systems.register_update_system(std::make_unique<CheckTagAndGoWinFFA>());
+    systems.register_update_system(std::make_unique<CheckTagAndGoWinTeam>());
+
     systems.register_update_system(std::make_unique<ProcessHippoCollection>());
     systems.register_update_system(std::make_unique<SpawnHippoItems>());
-    systems.register_update_system(std::make_unique<CheckHippoWinCondition>());
     systems.register_update_system(std::make_unique<InitializeTagAndGoGame>());
     systems.register_update_system(std::make_unique<UpdateTagAndGoTimers>());
     systems.register_update_system(std::make_unique<UpdateRoundCountdown>());
     systems.register_update_system(
         std::make_unique<HandleTagAndGoTagTransfer>());
-    systems.register_update_system(
-        std::make_unique<CheckTagAndGoWinCondition>());
     systems.register_update_system(std::make_unique<ScaleTaggerSize>());
 
     systems.register_update_system(std::make_unique<UpdateSpriteTransform>());
