@@ -158,6 +158,7 @@ void game() {
         systems.register_render_system(std::make_unique<RenderLabels>());
         systems.register_render_system(
             std::make_unique<RenderWeaponCooldown>());
+        systems.register_render_system(std::make_unique<RenderWeaponHUD>());
         systems.register_render_system(std::make_unique<RenderOOB>());
         systems.register_render_system(std::make_unique<EndCameraMode>());
         // (UI moved to pass 2 so it is after tag shader)

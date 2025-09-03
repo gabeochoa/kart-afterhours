@@ -828,6 +828,345 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
   }
 };
 
+struct RenderWeaponHUD : System<input::ProvidesMaxGamepadID,
+                                window_manager::ProvidesCurrentResolution> {
+
+private:
+  static constexpr float MARGIN_PERCENT = 0.05f;
+  static constexpr float FIXED_SPACING = 150.0f;
+  static constexpr float HUD_TOP_PERCENT = 0.04f;
+  static constexpr float WEAPON_ICON_PERCENT = 0.07f;
+  static constexpr float WEAPON_SPACING_PERCENT = 0.02f;
+  static constexpr float PLAYER_LABEL_PERCENT = 0.025f;
+  static constexpr float LABEL_OFFSET = 10.0f;
+
+  static constexpr const char *PLAYER_LABELS[] = {"P1", "P2", "P3", "P4",
+                                                  "P5", "P6", "P7", "P8"};
+  static constexpr const char *AI_LABELS[] = {"AI1", "AI2", "AI3", "AI4",
+                                              "AI5", "AI6", "AI7", "AI8"};
+  static constexpr size_t MAX_STATIC_LABELS = 8;
+  static constexpr float DEG_TO_RAD = 3.14159265359f / 180.0f;
+
+  mutable std::optional<size_t> cached_total_slots = std::nullopt;
+  mutable bool was_game_active = false;
+  mutable std::vector<std::optional<EntityID>> cached_player_mapping;
+  mutable std::unordered_map<EntityID, Entity *> entity_cache;
+
+  raylib::Color getDefaultPlayerColor() const { return raylib::WHITE; }
+
+  bool isPlayerDead(const Entity *player_entity) const {
+    if (!player_entity)
+      return false;
+
+    if (player_entity->has<HasHealth>()) {
+      if (player_entity->get<HasHealth>().amount <= 0)
+        return true;
+    }
+
+    if (player_entity->has<HasMultipleLives>()) {
+      if (player_entity->get<HasMultipleLives>().num_lives_remaining <= 0)
+        return true;
+    }
+
+    return false;
+  }
+
+  raylib::Color getPlayerColor(const Entity *player_entity) const {
+    if (player_entity && player_entity->has<HasColor>()) {
+      return player_entity->get<HasColor>().color();
+    }
+    return getDefaultPlayerColor();
+  }
+
+  size_t
+  getTotalPlayerSlots(const input::ProvidesMaxGamepadID &maxGamepadID) const {
+    bool is_game_active = GameStateManager::get().is_game_active();
+
+    // Clear cache when game ends
+    if (was_game_active && !is_game_active) {
+      cached_total_slots = std::nullopt;
+      cached_player_mapping.clear();
+      entity_cache.clear();
+    }
+
+    // Cache the count and mapping when game starts (transition from inactive to
+    // active)
+    if (!was_game_active && is_game_active && !cached_total_slots.has_value()) {
+      size_t human_slots = maxGamepadID.count();
+      auto ai_query = EQ().whereHasComponent<AIControlled>().gen();
+      size_t ai_slots = ai_query.size();
+      cached_total_slots = human_slots + ai_slots;
+
+      // Cache the player mapping and entity pointers
+      cached_player_mapping.clear();
+      cached_player_mapping.reserve(cached_total_slots.value());
+      entity_cache.clear();
+
+      // Map human players
+      auto human_players = EQ().whereHasComponent<PlayerID>().gen();
+      for (size_t i = 0; i < human_slots; ++i) {
+        bool found = false;
+        for (Entity &player : human_players) {
+          if (player.has<PlayerID>() &&
+              player.get<PlayerID>().id == static_cast<input::GamepadID>(i)) {
+            cached_player_mapping.push_back(player.id);
+            entity_cache[player.id] = &player;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          cached_player_mapping.push_back(std::nullopt);
+        }
+      }
+
+      // Map AI players
+      auto ai_players = EQ().whereHasComponent<AIControlled>().gen();
+      size_t ai_index = 0;
+      for (Entity &ai_player : ai_players) {
+        if (ai_index < ai_slots) {
+          cached_player_mapping.push_back(ai_player.id);
+          entity_cache[ai_player.id] = &ai_player;
+          ai_index++;
+        }
+      }
+    }
+
+    was_game_active = is_game_active;
+
+    // Return cached value if available, otherwise calculate current count
+    if (cached_total_slots.has_value()) {
+      return cached_total_slots.value();
+    } else {
+      size_t human_slots = maxGamepadID.count();
+      auto ai_query = EQ().whereHasComponent<AIControlled>().gen();
+      size_t ai_slots = ai_query.size();
+      return human_slots + ai_slots;
+    }
+  }
+
+  Entity *
+  findPlayerEntity(size_t player_index,
+                   const input::ProvidesMaxGamepadID &maxGamepadID) const {
+    // Use cached mapping if available (during active gameplay)
+    if (!cached_player_mapping.empty() &&
+        player_index < cached_player_mapping.size()) {
+      auto cached_entity_id = cached_player_mapping[player_index];
+      if (cached_entity_id.has_value()) {
+        auto it = entity_cache.find(cached_entity_id.value());
+        if (it != entity_cache.end()) {
+          return it->second;
+        }
+      }
+      return nullptr; // Entity was removed (dead player)
+    }
+
+    // Fallback to original logic for menu screens
+    size_t human_count = maxGamepadID.count();
+
+    if (player_index < human_count) {
+      auto human_players = EQ().whereHasComponent<PlayerID>().gen();
+      for (Entity &player : human_players) {
+        if (player.has<PlayerID>() &&
+            player.get<PlayerID>().id ==
+                static_cast<input::GamepadID>(player_index)) {
+          return &player;
+        }
+      }
+    } else {
+      auto ai_players = EQ().whereHasComponent<AIControlled>().gen();
+      size_t ai_index = player_index - human_count;
+      size_t current_ai = 0;
+
+      for (Entity &ai_player : ai_players) {
+        if (current_ai == ai_index) {
+          return &ai_player;
+        }
+        current_ai++;
+      }
+    }
+
+    return nullptr;
+  }
+
+  void
+  renderPlayerLabel(float center_x, float y, size_t player_index, bool is_dead,
+                    raylib::Color color, float label_size,
+                    const input::ProvidesMaxGamepadID &maxGamepadID) const {
+    const char *label;
+
+    if (is_dead) {
+      label = "DEAD";
+      color = raylib::GRAY;
+    } else if (player_index < maxGamepadID.count()) {
+      label = (player_index < MAX_STATIC_LABELS)
+                  ? PLAYER_LABELS[player_index]
+                  : getPlayerLabel(player_index + 1, "P");
+    } else {
+      size_t ai_index = player_index - maxGamepadID.count();
+      label = (ai_index < MAX_STATIC_LABELS)
+                  ? AI_LABELS[ai_index]
+                  : getPlayerLabel(ai_index + 1, "AI");
+    }
+
+    raylib::DrawText(
+        label, static_cast<int>(center_x - (strlen(label) * label_size * 0.3f)),
+        static_cast<int>(y), static_cast<int>(label_size), color);
+  }
+
+  const char *getPlayerLabel(size_t index, const char *prefix) const {
+    static char fallback_label[8];
+    snprintf(fallback_label, sizeof(fallback_label), "%s%zu", prefix, index);
+    return fallback_label;
+  }
+
+  void renderSingleWeapon(float weapon_x, float y,
+                          const std::unique_ptr<Weapon> &weapon,
+                          raylib::Color player_color, float icon_size) const {
+    bool is_on_cooldown = weapon->cooldown > 0.0f;
+    float cooldown_ratio =
+        is_on_cooldown ? (weapon->cooldown / weapon->config.cooldownReset)
+                       : 0.0f;
+
+    raylib::DrawCircle(static_cast<int>(weapon_x + icon_size * 0.5f),
+                       static_cast<int>(y + icon_size * 0.5f), icon_size * 0.5f,
+                       player_color);
+
+    auto *spritesheet_component = EntityHelper::get_singleton_cmp<
+        afterhours::texture_manager::HasSpritesheet>();
+    if (spritesheet_component) {
+      raylib::Texture2D sheet = spritesheet_component->texture;
+      const auto weapon_frame = weapon_icon_frame(weapon->type);
+      raylib::Color icon_tint =
+          is_on_cooldown ? raylib::Color{100, 100, 100, 255} : raylib::WHITE;
+
+      raylib::DrawTexturePro(
+          sheet, weapon_frame,
+          raylib::Rectangle{weapon_x, y, icon_size, icon_size}, {0, 0}, 0.0f,
+          icon_tint);
+    }
+
+    if (is_on_cooldown) {
+      renderCooldownOverlay(weapon_x, y, icon_size, cooldown_ratio,
+                            player_color);
+    }
+  }
+
+  void renderCooldownOverlay(float weapon_x, float y, float icon_size,
+                             float cooldown_ratio,
+                             raylib::Color player_color) const {
+    float center_x = weapon_x + icon_size * 0.5f;
+    float center_y = y + icon_size * 0.5f;
+    float radius = icon_size * 0.5f;
+
+    float progress_angle = -90.0f + (360.0f * (1.0f - cooldown_ratio));
+    float end_angle = progress_angle + (360.0f * cooldown_ratio);
+
+    raylib::DrawCircleSector(raylib::Vector2{center_x, center_y}, radius,
+                             progress_angle, end_angle, 32,
+                             afterhours::colors::darken(player_color, 0.4f));
+
+    if (cooldown_ratio > 0.0f && cooldown_ratio < 1.0f) {
+      float line_x = center_x + radius * cos(progress_angle * DEG_TO_RAD);
+      float line_y = center_y + radius * sin(progress_angle * DEG_TO_RAD);
+
+      raylib::DrawLine(static_cast<int>(center_x), static_cast<int>(center_y),
+                       static_cast<int>(line_x), static_cast<int>(line_y),
+                       raylib::Color{255, 255, 255, 200});
+    }
+  }
+
+  void renderWeaponIcons(float center_x, float y, Entity *player_entity,
+                         raylib::Color player_color, float icon_size,
+                         float spacing) const {
+    if (!player_entity || !player_entity->has<CanShoot>())
+      return;
+
+    const auto &can_shoot = player_entity->get<CanShoot>();
+    float total_width = (icon_size * 2) + spacing;
+    float start_x = center_x - (total_width * 0.5f);
+
+    int weapon_count = 0;
+    for (const auto &weapon_pair : can_shoot.weapons) {
+      if (weapon_count >= 2)
+        break;
+
+      const auto &weapon = weapon_pair.second;
+      float weapon_x = start_x + (weapon_count * (icon_size + spacing));
+      renderSingleWeapon(weapon_x, y, weapon, player_color, icon_size);
+      weapon_count++;
+    }
+  }
+
+  // Calculate layout information - no allocations
+  struct LayoutInfo {
+    float screen_width, screen_height;
+    float hud_y, player_label_size, weapon_icon_size, weapon_spacing;
+    float screen_center_x, fixed_spacing, hud_start_x;
+    size_t total_players;
+  };
+
+  LayoutInfo
+  calculateLayout(const window_manager::ProvidesCurrentResolution &resolution,
+                  const input::ProvidesMaxGamepadID &maxGamepadID) const {
+    LayoutInfo layout;
+    layout.screen_width =
+        static_cast<float>(resolution.current_resolution.width);
+    layout.screen_height =
+        static_cast<float>(resolution.current_resolution.height);
+    layout.total_players = getTotalPlayerSlots(maxGamepadID);
+
+    if (layout.total_players == 0)
+      return layout;
+
+    layout.screen_center_x = layout.screen_width * 0.5f;
+    layout.fixed_spacing = FIXED_SPACING;
+    layout.hud_start_x =
+        layout.screen_center_x -
+        (layout.total_players > 1
+             ? (layout.total_players - 1) * layout.fixed_spacing * 0.5f
+             : 0.0f);
+
+    layout.hud_y = layout.screen_height * HUD_TOP_PERCENT;
+    layout.weapon_icon_size = layout.screen_height * WEAPON_ICON_PERCENT;
+    layout.weapon_spacing = layout.screen_height * WEAPON_SPACING_PERCENT;
+    layout.player_label_size = layout.screen_height * PLAYER_LABEL_PERCENT;
+
+    return layout;
+  }
+
+public:
+  virtual void
+  for_each_with(const Entity &, const input::ProvidesMaxGamepadID &maxGamepadID,
+                const window_manager::ProvidesCurrentResolution &resolution,
+                float) const override {
+
+    auto layout = calculateLayout(resolution, maxGamepadID);
+    if (layout.total_players == 0)
+      return;
+
+    for (size_t player_index = 0; player_index < layout.total_players;
+         ++player_index) {
+      const float player_center_x =
+          layout.hud_start_x + (player_index * layout.fixed_spacing);
+
+      Entity *player_entity = findPlayerEntity(player_index, maxGamepadID);
+      bool is_dead = (player_entity == nullptr) || isPlayerDead(player_entity);
+      raylib::Color player_color = getPlayerColor(player_entity);
+
+      renderPlayerLabel(player_center_x, layout.hud_y, player_index, is_dead,
+                        player_color, layout.player_label_size, maxGamepadID);
+
+      if (!is_dead) {
+        float weapon_y = layout.hud_y + layout.player_label_size + LABEL_OFFSET;
+        renderWeaponIcons(player_center_x, weapon_y, player_entity,
+                          player_color, layout.weapon_icon_size,
+                          layout.weapon_spacing);
+      }
+    }
+  }
+};
+
 struct WeaponCooldownSystem : PausableSystem<CanShoot> {
   virtual void for_each_with(Entity &, CanShoot &canShoot, float dt) override {
     magic_enum::enum_for_each<InputAction>([&](auto val) {
