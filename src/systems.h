@@ -868,8 +868,6 @@ struct RenderWeaponCooldown : System<Transform, CanShoot> {
 
 struct RenderWeaponHUD : System<input::ProvidesMaxGamepadID,
                                 window_manager::ProvidesCurrentResolution> {
-
-  // TODO idk why its left aligned but ill come back to this
 private:
   static constexpr float MARGIN_PERCENT = 0.05f;
   static constexpr float FIXED_SPACING = 150.0f;
