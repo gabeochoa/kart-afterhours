@@ -70,7 +70,7 @@ enum struct i18n {
   // Round Settings Labels
   win_condition_label,
   num_lives_label,
-  round_length_label,
+  round_length_with_time,
   total_hippos_label,
 
   // Count for array sizing

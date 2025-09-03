@@ -1008,7 +1008,7 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
                  translation_manager::TranslatableString(
-                     strings::i18n::round_length_label)
+                     strings::i18n::round_length_with_time)
                      .set_param(translation_manager::i18nParam::weapon_name,
                                 time_display)));
     break;
@@ -1044,7 +1044,7 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     imm::div(context, mk(parent),
              ComponentConfig{}.with_label(
                  translation_manager::TranslatableString(
-                     strings::i18n::round_length_label)
+                     strings::i18n::round_length_with_time)
                      .set_param(translation_manager::i18nParam::weapon_name,
                                 time_display)));
     break;
@@ -1496,7 +1496,7 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
            ComponentConfig{}
                .with_label(
                    translation_manager::TranslatableString(
-                       strings::i18n::round_length_label)
+                       strings::i18n::round_length_with_time)
                        .set_param(translation_manager::i18nParam::number_time,
                                   rl_settings.current_round_time))
                .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})

@@ -60,9 +60,9 @@ static std::map<strings::i18n, TranslatableString> english_translations = {
     {strings::i18n::exit_game,
      translation_manager::TranslatableString(
          "exit game", "Button to quit current game from pause menu")},
-    {strings::i18n::round_length, translation_manager::TranslatableString(
-                                      "round length: {number_time} seconds",
-                                      "Label for round time duration setting")},
+    {strings::i18n::round_length,
+     translation_manager::TranslatableString(
+         "round length", "Label for round time duration setting")},
     {strings::i18n::allow_tag_backs,
      translation_manager::TranslatableString(
          "allow tag backs", "Checkbox for tag-and-go game mode setting")},
@@ -130,7 +130,7 @@ static std::map<strings::i18n, TranslatableString> english_translations = {
     {strings::i18n::num_lives_label,
      translation_manager::TranslatableString(
          "num lives: {}", "Label for starting lives setting")},
-    {strings::i18n::round_length_label,
+    {strings::i18n::round_length_with_time,
      translation_manager::TranslatableString(
          "round length: {}", "Label for round time duration setting")},
     {strings::i18n::total_hippos_label,
@@ -253,7 +253,7 @@ static std::map<strings::i18n, TranslatableString> korean_translations = {
     {strings::i18n::num_lives_label,
      translation_manager::TranslatableString("시작 생명: {}",
                                              "시작 생명 설정 라벨")},
-    {strings::i18n::round_length_label,
+    {strings::i18n::round_length_with_time,
      translation_manager::TranslatableString("라운드 길이: {}",
                                              "라운드 시간 지속 설정 라벨")},
     {strings::i18n::total_hippos_label,
@@ -382,7 +382,7 @@ static std::map<strings::i18n, TranslatableString> japanese_translations = {
     {strings::i18n::num_lives_label,
      translation_manager::TranslatableString("開始ライフ: {}",
                                              "開始ライフ設定ラベル")},
-    {strings::i18n::round_length_label,
+    {strings::i18n::round_length_with_time,
      translation_manager::TranslatableString("ラウンド時間: {}",
                                              "ラウンド時間持続設定ラベル")},
     {strings::i18n::total_hippos_label,
