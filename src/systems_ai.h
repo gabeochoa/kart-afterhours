@@ -36,6 +36,8 @@ struct AITargetSelection : PausableSystem<AIControlled, Transform, AIParams> {
 
     switch (active_mode) {
     case RoundType::Lives:
+      lives_ai_target(entity, ai, transform, params);
+      break;
     case RoundType::Kills:
       kills_ai_target(entity, ai, transform, params);
       break;
@@ -107,6 +109,60 @@ private:
       }
     }
     ai.target = closest_pos;
+  }
+
+  void lives_ai_target(Entity &entity, AIControlled &ai, Transform &transform,
+                       const AIParams &params) {
+    // Find all other players (both human and AI)
+    auto all_players = EntityQuery({.force_merge = true})
+                           .whereHasComponent<Transform>()
+                           .whereLambda([](const Entity &e) {
+                             return e.has<PlayerID>() || e.has<AIControlled>();
+                           })
+                           .whereNotID(entity.id)
+                           .gen();
+
+    if (all_players.empty()) {
+      default_ai_target(entity, ai, transform, params);
+      return;
+    }
+
+    vec2 my_pos = transform.pos();
+    vec2 target_pos = vec2{0, 0};
+    float best_score = -std::numeric_limits<float>::max();
+
+    // Find the best target considering both distance and avoidance
+    for (const auto &ref : all_players) {
+      const auto &player = ref.get();
+      vec2 player_pos = player.get<Transform>().pos();
+      float distance_to_player = distance_sq(my_pos, player_pos);
+
+      // Calculate avoidance score - prefer targets that are further from other
+      // players
+      float avoidance_score = 0.0f;
+      for (const auto &other_ref : all_players) {
+        if (other_ref.get().id == player.id)
+          continue;
+
+        vec2 other_pos = other_ref.get().get<Transform>().pos();
+        float distance_between = distance_sq(player_pos, other_pos);
+
+        // Higher score for targets that are further from other players
+        avoidance_score += std::min(distance_between / 10000.0f, 1.0f);
+      }
+
+      // Combine distance preference (closer is better) with avoidance (further
+      // from others is better)
+      float distance_score = 1.0f / (1.0f + distance_to_player / 10000.0f);
+      float combined_score = distance_score * 0.6f + avoidance_score * 0.4f;
+
+      if (combined_score > best_score) {
+        best_score = combined_score;
+        target_pos = player_pos;
+      }
+    }
+
+    ai.target = target_pos;
   }
 
   void hippo_ai_target(Entity &entity, AIControlled &ai, Transform &transform,
@@ -404,14 +460,21 @@ struct AIShoot : PausableSystem<AIControlled, Transform, AIParams, CanShoot> {
     if (settings.state != RoundSettings::GameState::InGame) {
       return;
     }
-    if (RoundManager::get().active_round_type != RoundType::Kills) {
+    if (RoundManager::get().active_round_type != RoundType::Kills &&
+        RoundManager::get().active_round_type != RoundType::Lives) {
       return;
     }
     vec2 forward_dir{std::sin(transform.as_rad()),
                      -std::cos(transform.as_rad())};
+
+    // TODO better filter for targetable
+    // In Lives mode, target all players (human and AI), in Kills mode only
+    // target human players
     auto players = EntityQuery({.force_merge = true})
-                       .whereHasComponent<PlayerID>()
                        .whereHasComponent<Transform>()
+                       .whereLambda([&](const Entity &e) {
+                         return e.has<PlayerID>() || e.has<AIControlled>();
+                       })
                        .gen();
     if (players.empty()) {
       return;
