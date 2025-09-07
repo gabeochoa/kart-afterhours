@@ -175,7 +175,6 @@ inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
 #include "log.h"
 
 #define AFTER_HOURS_INPUT_VALIDATION_ASSERT
-#define AFTER_HOURS_INCLUDE_DERIVED_CHILDREN
 #define AFTER_HOURS_ENTITY_HELPER
 #define AFTER_HOURS_ENTITY_QUERY
 #define AFTER_HOURS_SYSTEM
