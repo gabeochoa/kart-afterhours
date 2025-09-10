@@ -1656,6 +1656,15 @@ struct UpdateCollidingEntities : PausableSystem<Transform> {
       b.velocity += frictionImpulse / b.collision_config.mass;
     }
 
+    // Clamp velocities to max speed after collision response
+    float maxSpeed = Config::get().max_speed.data;
+    if (a.speed() > maxSpeed) {
+      a.velocity = vec_norm(a.velocity) * maxSpeed;
+    }
+    if (b.speed() > maxSpeed) {
+      b.velocity = vec_norm(b.velocity) * maxSpeed;
+    }
+
     // Positional correction
     float penetrationDepth = calculate_penetration_depth(a.rect(), b.rect());
     positional_correction(a, b, collisionNormal, penetrationDepth);
