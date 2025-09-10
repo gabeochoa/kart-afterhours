@@ -887,30 +887,26 @@ private:
   mutable std::optional<size_t> cached_total_slots = std::nullopt;
   mutable bool was_game_active = false;
   mutable std::vector<std::optional<EntityID>> cached_player_mapping;
-  mutable std::unordered_map<EntityID, Entity *> entity_cache;
 
   raylib::Color getDefaultPlayerColor() const { return raylib::WHITE; }
 
-  bool isPlayerDead(const Entity *player_entity) const {
-    if (!player_entity)
-      return false;
-
-    if (player_entity->has<HasHealth>()) {
-      if (player_entity->get<HasHealth>().amount <= 0)
+  bool isPlayerDead(const Entity &player_entity) const {
+    if (player_entity.has<HasHealth>()) {
+      if (player_entity.get<HasHealth>().amount <= 0)
         return true;
     }
 
-    if (player_entity->has<HasMultipleLives>()) {
-      if (player_entity->get<HasMultipleLives>().num_lives_remaining <= 0)
+    if (player_entity.has<HasMultipleLives>()) {
+      if (player_entity.get<HasMultipleLives>().num_lives_remaining <= 0)
         return true;
     }
 
     return false;
   }
 
-  raylib::Color getPlayerColor(const Entity *player_entity) const {
-    if (player_entity && player_entity->has<HasColor>()) {
-      return player_entity->get<HasColor>().color();
+  raylib::Color getPlayerColor(const Entity &player_entity) const {
+    if (player_entity.has<HasColor>()) {
+      return player_entity.get<HasColor>().color();
     }
     return getDefaultPlayerColor();
   }
@@ -923,7 +919,6 @@ private:
     if (was_game_active && !is_game_active) {
       cached_total_slots = std::nullopt;
       cached_player_mapping.clear();
-      entity_cache.clear();
     }
 
     // Cache the count and mapping when game starts (transition from inactive to
@@ -934,10 +929,9 @@ private:
       size_t ai_slots = ai_query.size();
       cached_total_slots = human_slots + ai_slots;
 
-      // Cache the player mapping and entity pointers
+      // Cache the player mapping
       cached_player_mapping.clear();
       cached_player_mapping.reserve(cached_total_slots.value());
-      entity_cache.clear();
 
       // Map human players
       auto human_players = EQ().whereHasComponent<PlayerID>().gen();
@@ -947,7 +941,6 @@ private:
           if (player.has<PlayerID>() &&
               player.get<PlayerID>().id == static_cast<input::GamepadID>(i)) {
             cached_player_mapping.push_back(player.id);
-            entity_cache[player.id] = &player;
             found = true;
             break;
           }
@@ -963,7 +956,6 @@ private:
       for (Entity &ai_player : ai_players) {
         if (ai_index < ai_slots) {
           cached_player_mapping.push_back(ai_player.id);
-          entity_cache[ai_player.id] = &ai_player;
           ai_index++;
         }
       }
@@ -985,20 +977,6 @@ private:
   Entity *
   findPlayerEntity(size_t player_index,
                    const input::ProvidesMaxGamepadID &maxGamepadID) const {
-    // Use cached mapping if available (during active gameplay)
-    if (!cached_player_mapping.empty() &&
-        player_index < cached_player_mapping.size()) {
-      auto cached_entity_id = cached_player_mapping[player_index];
-      if (cached_entity_id.has_value()) {
-        auto it = entity_cache.find(cached_entity_id.value());
-        if (it != entity_cache.end()) {
-          return it->second;
-        }
-      }
-      return nullptr; // Entity was removed (dead player)
-    }
-
-    // Fallback to original logic for menu screens
     size_t human_count = maxGamepadID.count();
 
     if (player_index < human_count) {
@@ -1113,13 +1091,13 @@ private:
     }
   }
 
-  void renderWeaponIcons(float center_x, float y, Entity *player_entity,
+  void renderWeaponIcons(float center_x, float y, const Entity &player_entity,
                          raylib::Color player_color, float icon_size,
                          float spacing) const {
-    if (!player_entity || !player_entity->has<CanShoot>())
+    if (!player_entity.has<CanShoot>())
       return;
 
-    const auto &can_shoot = player_entity->get<CanShoot>();
+    const auto &can_shoot = player_entity.get<CanShoot>();
     float total_width = (icon_size * 2) + spacing;
     float start_x = center_x - (total_width * 0.5f);
 
@@ -1188,15 +1166,17 @@ public:
           layout.hud_start_x + (player_index * layout.fixed_spacing);
 
       Entity *player_entity = findPlayerEntity(player_index, maxGamepadID);
-      bool is_dead = (player_entity == nullptr) || isPlayerDead(player_entity);
-      raylib::Color player_color = getPlayerColor(player_entity);
+      bool is_dead = (player_entity == nullptr) || isPlayerDead(*player_entity);
+      raylib::Color player_color = player_entity
+                                       ? getPlayerColor(*player_entity)
+                                       : getDefaultPlayerColor();
 
       renderPlayerLabel(player_center_x, layout.hud_y, player_index, is_dead,
                         player_color, layout.player_label_size, maxGamepadID);
 
-      if (!is_dead) {
+      if (!is_dead && player_entity) {
         float weapon_y = layout.hud_y + layout.player_label_size + LABEL_OFFSET;
-        renderWeaponIcons(player_center_x, weapon_y, player_entity,
+        renderWeaponIcons(player_center_x, weapon_y, *player_entity,
                           player_color, layout.weapon_icon_size,
                           layout.weapon_spacing);
       }
