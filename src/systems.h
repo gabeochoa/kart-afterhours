@@ -1315,7 +1315,7 @@ struct Shoot : PausableSystem<PlayerID, Transform, CanShoot> {
       return;
     }
 
-    for (const auto &actions_done : inpc.inputs()) {
+    for (const auto &actions_done : inpc.inputs_pressed()) {
       if (actions_done.id != playerID.id)
         continue;
 
