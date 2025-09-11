@@ -205,6 +205,9 @@ void game() {
 }
 
 int main(int argc, char *argv[]) {
+  // Debug: Show Transform component type ID
+  log_info("Transform component type ID is {}",
+           components::get_type_id<Transform>());
 
   // if nothing else ends up using this, we should move into preload.cpp
   argh::parser cmdl(argc, argv, argh::parser::PREFER_PARAM_FOR_UNREG_OPTION);

@@ -1,4 +1,6 @@
 
+// Define this as the component registration unit for all afterhours components
+#define AFTER_HOURS_COMPONENT_REGISTRATION_UNIT
 
 #include <afterhours/ah.h>
 #include <fmt/format.h>

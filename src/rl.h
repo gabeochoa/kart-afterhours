@@ -181,6 +181,9 @@ inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
 #define AFTER_HOURS_IMM_UI
 #define AFTER_HOURS_USE_RAYLIB
 
+// Define this as the component registration unit for all afterhours components
+#define AFTER_HOURS_COMPONENT_REGISTRATION_UNIT
+
 #define RectangleType raylib::Rectangle
 #define Vector2Type raylib::Vector2
 #define TextureType raylib::Texture2D

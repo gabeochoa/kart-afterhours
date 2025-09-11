@@ -716,9 +716,17 @@ struct RenderDebugGridOverlay
 };
 
 struct RenderEntities : System<Transform> {
+  RenderEntities() {
+    log_info("RenderEntities: Transform component type ID is {}",
+             components::get_type_id<Transform>());
+    log_info("RenderEntities: Component bitset is {}",
+             get_component_bitset().to_string().c_str());
+  }
 
   virtual void for_each_with(const Entity &entity, const Transform &transform,
                              float) const override {
+    log_info("RenderEntities: Processing entity {} at position ({}, {})",
+             entity.id, transform.position.x, transform.position.y);
     if (entity.has<afterhours::texture_manager::HasSpritesheet>())
       return;
     if (entity.has<afterhours::texture_manager::HasAnimation>())
@@ -2043,6 +2051,7 @@ struct ProcessCollisionAbsorption : System<Transform, CollisionAbsorber> {
                  CollisionAbsorber::AbsorberType::Absorber;
         };
 
+    // TODO use optimized component filtering
     auto collided_with_absorber =
         EQ().whereHasComponent<CollisionAbsorber>()
             .whereNotID(entity.id)
