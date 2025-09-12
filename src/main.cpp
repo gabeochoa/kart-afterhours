@@ -1,4 +1,7 @@
 
+// Define this as the component registration unit for all afterhours components
+#define AFTER_HOURS_COMPONENT_REGISTRATION_UNIT
+
 #ifdef BACKWARD
 #include "backward/backward.hpp"
 namespace backward {

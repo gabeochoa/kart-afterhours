@@ -77,6 +77,6 @@ target("kart")
     -- Enable time tracing for ClangBuildAnalyzer
     add_cxxflags("-ftime-trace")
 
-    after_build(function(target)
-        os.exec("./output/kart.exe")
-    end)
+    -- after_build(function(target)
+    --     os.exec("./output/kart.exe")
+    -- end)
