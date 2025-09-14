@@ -4,12 +4,14 @@
 #include <sstream>
 #include <vector>
 
+#include "log.h"
 #include "rl.h"
 
 #include "./ui/navigation.h"
 #include "font_info.h"
-#include "music_library.h"
 #include "settings.h"
+
+#include "music_library.h"
 #include "shader_library.h"
 #include "sound_library.h"
 #include "texture_library.h"

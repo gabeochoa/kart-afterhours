@@ -4,7 +4,7 @@
 
 #include <memory>
 
-#include "library.h"
+#include <afterhours/src/library.h>
 #include <afterhours/src/singleton.h>
 
 SINGLETON_FWD(Preload)

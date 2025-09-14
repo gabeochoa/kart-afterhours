@@ -1,10 +1,10 @@
 #pragma once
 
 #include "components.h"
-#include "library.h"
 #include "round_settings.h"
 #include "tags.h"
 #include <afterhours/ah.h>
+#include <afterhours/src/library.h>
 #include <optional>
 
 SINGLETON_FWD(GameStateManager)

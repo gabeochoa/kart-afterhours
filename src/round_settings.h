@@ -2,8 +2,8 @@
 #pragma once
 
 #include "components.h"
-#include "library.h"
 #include "rl.h"
+#include <afterhours/src/library.h>
 #include <bitset>
 #include <nlohmann/json.hpp>
 #include <optional>

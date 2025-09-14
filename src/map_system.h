@@ -1,10 +1,10 @@
 #pragma once
 
-#include "library.h"
 #include "makers.h"
 #include "rl.h"
 #include "round_settings.h"
 #include "tags.h"
+#include <afterhours/src/library.h>
 #include <bitset>
 #include <functional>
 #include <magic_enum/magic_enum.hpp>

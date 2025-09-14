@@ -1,7 +1,7 @@
 #pragma once
 
-#include "library.h"
 #include "shader_types.h"
+#include <afterhours/src/library.h>
 #include <afterhours/src/singleton.h>
 
 #include "rl.h"
