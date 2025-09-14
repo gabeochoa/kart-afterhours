@@ -134,16 +134,11 @@ private:
   render_shader_batch(ShaderType shader_type,
                       const std::vector<EntityRenderData> &entities) const {
     const auto &shader = ShaderLibrary::get().get(shader_type);
-    raylib::BeginShaderMode(shader);
-
-    // Update uniforms once per shader batch
-    update_shader_uniforms(shader, shader_type);
 
     // Get spritesheet once per batch
     auto *spritesheet_component = EntityHelper::get_singleton_cmp<
         afterhours::texture_manager::HasSpritesheet>();
     if (!spritesheet_component) {
-      raylib::EndShaderMode();
       return;
     }
 
@@ -151,13 +146,19 @@ private:
     Rectangle source_frame =
         afterhours::texture_manager::idx_to_sprite_frame(0, 1);
 
-    // Render all entities with this shader
+    // Render each entity with its own shader state
     for (const auto &entity_data : entities) {
+      raylib::BeginShaderMode(shader);
+
+      // Update common uniforms once per entity
+      update_shader_uniforms(shader, shader_type);
+
+      // Render the entity with its specific uniforms
       render_single_entity(entity_data, sheet, source_frame, shader,
                            shader_type);
-    }
 
-    raylib::EndShaderMode();
+      raylib::EndShaderMode();
+    }
   }
 
   void update_shader_uniforms(const raylib::Shader &shader,
@@ -272,9 +273,13 @@ private:
         entityColor.b / 255.0f,
         entityColor.a / 255.0f,
     };
-    raylib::SetShaderValue(shader,
-                           raylib::GetShaderLocation(shader, "entityColor"),
-                           entityColorF, raylib::SHADER_UNIFORM_VEC4);
+    int entityColorLoc = raylib::GetShaderLocation(shader, "entityColor");
+    if (entityColorLoc != -1) {
+      raylib::SetShaderValue(shader, entityColorLoc, entityColorF,
+                             raylib::SHADER_UNIFORM_VEC4);
+    } else {
+      log_warn("entityColor uniform location not found in shader!");
+    }
 
     // Update winner rainbow uniform
     int rainbowLoc = raylib::GetShaderLocation(shader, "winnerRainbow");

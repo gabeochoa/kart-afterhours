@@ -71,8 +71,8 @@ void game() {
         // TODO id love to have this but its hard to read the UI
         // because the racing lines and stuff go over it
         // MapManager::get().create_map();
-        make_ai();
-        make_ai();
+        // make_ai();
+        // make_ai();
 
         create_startup = false;
       }
