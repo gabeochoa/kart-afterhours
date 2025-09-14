@@ -46,7 +46,7 @@ static vec2 get_spawn_position(size_t id) {
                             resolution_provider->height());
 }
 
-#include "bitset_utils.h"
+#include "../vendor/afterhours/src/bitset_utils.h"
 // Forward declare RoundType to avoid heavy header include
 enum struct RoundType : size_t;
 struct ManagesAvailableColors : BaseComponent {
