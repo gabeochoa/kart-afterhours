@@ -45,6 +45,8 @@ public:
   explicit TranslatableString(const std::string &s) : content(s) {}
   explicit TranslatableString(const std::string &s, const std::string &desc)
       : content(s), description(desc) {}
+  explicit TranslatableString(const char *s, const char *desc)
+      : content(s), description(desc) {}
   explicit TranslatableString(const strings::i18n &key);
   explicit TranslatableString(const std::string &s, bool ignore_translate)
       : content(s), no_translate(ignore_translate) {}

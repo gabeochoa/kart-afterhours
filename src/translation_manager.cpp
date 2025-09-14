@@ -459,7 +459,7 @@ void TranslationManager::set_language(Language language) {
 // Load CJK fonts for all the strings this manager needs
 void TranslationManager::load_cjk_fonts(
     afterhours::ui::FontManager &font_manager,
-    const std::string &font_file) const {
+    const std::string & /* font_file */) const {
 
   // Collect all unique codepoints from all CJK languages
   std::set<int> all_codepoints;

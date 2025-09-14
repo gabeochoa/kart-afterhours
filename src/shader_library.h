@@ -59,7 +59,7 @@ struct ShaderLibrary {
     return shaders_by_type.find(type) != shaders_by_type.end();
   }
 
-  void load(const char *const filename, const char *const name) {
+  void load(const char *const /* filename */, const char *const name) {
     // Convert string name to enum type and load using new system
     ShaderType type = ShaderUtils::from_string(name);
     load_shader(type);

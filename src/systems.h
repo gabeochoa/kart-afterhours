@@ -95,7 +95,7 @@ struct RenderSpritesWithShaders
   mutable vec2 last_resolution = {0, 0};
 
   virtual void
-  for_each_with(const Entity &entity, const Transform &transform,
+  for_each_with(const Entity & /* entity */, const Transform &transform,
                 const afterhours::texture_manager::HasSprite &hasSprite,
                 const HasShader &hasShader, const HasColor &hasColor,
                 float) const override {
@@ -161,7 +161,7 @@ private:
   }
 
   void update_shader_uniforms(const raylib::Shader &shader,
-                              ShaderType shader_type) const {
+                              ShaderType /* shader_type */) const {
     float current_time = static_cast<float>(raylib::GetTime());
 
     // Update time uniform if it changed
@@ -465,8 +465,6 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
 
 struct BeginPostProcessingShader : System<> {
   virtual void once(float) const override {
-    const bool hasBase =
-        ShaderLibrary::get().contains(ShaderType::post_processing);
     const bool hasTag =
         ShaderLibrary::get().contains(ShaderType::post_processing_tag);
     auto &rm = RoundManager::get();
@@ -475,8 +473,6 @@ struct BeginPostProcessingShader : System<> {
       auto &settings = rm.get_active_settings();
       useTagShader = (settings.state == RoundSettings::GameState::Countdown);
     }
-    const char *name =
-        (useTagShader && hasTag) ? "post_processing_tag" : "post_processing";
     if (!ShaderLibrary::get().contains(ShaderType::post_processing_tag)) {
       return;
     }

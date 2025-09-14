@@ -64,12 +64,6 @@ afterhours is an ECS library that also provides minimal game-engine helpers. We 
   - Exclude `RoundManager`-specific parts; let projects extend via JSON blob
 - **Target**: `afterhours/core/settings.h` (STB-style)
 
-#### 5) Bitset Utilities
-- **Move**: `src/bitset_utils.h` helpers like "next disabled bit"
-- **Why**: Generic utility used in multiple places (e.g., color allocation)
-- **Deps**: standard library
-- **Target**: `afterhours/core/bitset_utils.h` (STB-style)
-
 #### 6) Sound and Music Libraries (Core)
 - **Move**: `src/sound_library.h`, `src/music_library.h` - just the `Library<T>` wrappers
 - **Why**: Reusable sound/music resource management

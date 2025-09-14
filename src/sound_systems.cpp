@@ -40,7 +40,7 @@ struct UIClickSounds
 
   virtual void for_each_with(Entity &, afterhours::ui::UIComponent &component,
                              afterhours::ui::HasClickListener &hasClickListener,
-                             float) {
+                             float) override {
     if (!GameStateManager::get().is_menu_active()) {
       return;
     }
