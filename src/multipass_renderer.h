@@ -5,7 +5,7 @@
 #include "shader_pass_registry.h"
 #include "shader_types.h"
 #include <afterhours/src/singleton.h>
-#include <afterhours/src/system.h>
+#include <afterhours/src/ecs.h>
 #include <memory>
 #include <vector>
 

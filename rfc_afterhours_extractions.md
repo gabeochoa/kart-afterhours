@@ -22,16 +22,6 @@ afterhours is an ECS library that also provides minimal game-engine helpers. We 
 
 ### DON'T HAVE TO BE PLUGINS (Pure Utilities - STB-style)
 
-#### 1) Core Resource Registry
-- **Move**: `src/library.h` (`Library<T>`
-  name→resource store with prefix lookup and simple random selection)
-- **Why**: Generic utility for textures, sounds, music, shaders, etc.
-- **Deps**: standard library only (uses `type_name.h` from afterhours)
-- **API notes**:
-  - Keep `add/get/contains/lookup/get_random_match/unload_all`
-  - Leave TODO hook for pluggable RNG (so `get_random_match` can be wired later)
-- **Target**: `afterhours/core/library.h` (STB-style)
-
 #### 2) Filesystem/Resource Paths Helper
 - **Move**: `src/resources.{h,cpp}` (`Files` resource locator)
 - **Why**: Cross-project resource discovery (game folder, resource folder, settings path, directory iteration)
@@ -41,7 +31,7 @@ afterhours is an ECS library that also provides minimal game-engine helpers. We 
   - Keep `game_folder()/settings_filepath()/relative_settings()`
   - Keep `fetch_resource_path()/for_resources_in_group()/for_resources_in_folder()`
   - Make `FilesConfig` customizable at construction
-- **Target**: `afterhours/core/filesystem.h` (STB-style)
+- **Target**: `afterhours/filesystem.h` (STB-style)
 
 #### 3) Internationalization (i18n)
 - **Move**: `src/translation_manager.{h,cpp}`, `src/strings.h`
@@ -51,7 +41,7 @@ afterhours is an ECS library that also provides minimal game-engine helpers. We 
 - **API notes**:
   - Keep `TranslationManager`, `TranslatableString`, enum `Language`
   - Replace direct font loading with a user-provided callback or UI-agnostic policy
-- **Target**: `afterhours/core/i18n.h` (STB-style)
+- **Target**: `afterhours/i18n.h` (STB-style)
 
 #### 4) Settings Store (JSON-backed)
 - **Move**: Generalize `src/settings.{h,cpp}` to a reusable settings system
@@ -62,7 +52,7 @@ afterhours is an ECS library that also provides minimal game-engine helpers. We 
   - Provide a small typed settings container + load/save
   - Offer observer hooks or a `refresh()` method so games can react
   - Exclude `RoundManager`-specific parts; let projects extend via JSON blob
-- **Target**: `afterhours/core/settings.h` (STB-style)
+- **Target**: `afterhours/settings.h` (STB-style)
 
 #### 6) Sound and Music Libraries (Core)
 - **Move**: `src/sound_library.h`, `src/music_library.h` - just the `Library<T>` wrappers
@@ -72,7 +62,7 @@ afterhours is an ECS library that also provides minimal game-engine helpers. We 
 - **API notes**:
   - Keep `Library<T>`-based wrappers
   - Keep volume management
-- **Target**: `afterhours/core/sound_library.h` (STB-style)
+- **Target**: `afterhours/sound_library.h` (STB-style)
 
 ### MUST BE PLUGINS (ECS-Integrated)
 
@@ -247,7 +237,7 @@ Following the STB library philosophy of "single-file, header-only, no dependenci
 
 ```
 afterhours/
-├── core/                    # STB-style single files
+├──                     # STB-style single files
 │   ├── afterhours_utils.h
 │   ├── afterhours_animation.h
 │   ├── afterhours_color.h
@@ -305,7 +295,7 @@ afterhours/
 
 Several proposed extractions currently have `.cpp` files that need to be converted to header-only:
 
-#### 1) `resources.cpp` → `afterhours/core/filesystem.h`
+#### 1) `resources.cpp` → `afterhours/filesystem.h`
 **Current Issues:**
 - Constructor calls `ensure_game_folder_exists()`
 - Platform-specific `#ifdef __APPLE__` for sago
@@ -313,7 +303,7 @@ Several proposed extractions currently have `.cpp` files that need to be convert
 
 **Header-Only Solution:**
 ```cpp
-// In afterhours/core/filesystem.h
+// In afterhours/filesystem.h
 namespace afterhours {
 namespace filesystem {
 
@@ -349,7 +339,7 @@ struct Files {
 } // namespace afterhours
 ```
 
-#### 2) `translation_manager.cpp` → `afterhours/core/i18n.h`
+#### 2) `translation_manager.cpp` → `afterhours/i18n.h`
 **Current Issues:**
 - Contains game-specific translation strings (should be removed)
 - Uses `log_warn()` for missing translations
@@ -357,7 +347,7 @@ struct Files {
 
 **Header-Only Solution:**
 ```cpp
-// In afterhours/core/i18n.h
+// In afterhours/i18n.h
 namespace afterhours {
 namespace i18n {
 
@@ -433,7 +423,7 @@ afterhours::i18n::TranslationManager<MyGameKeys>::get().set_translations(my_tran
 std::string text = afterhours::i18n::TranslationManager<MyGameKeys>::get().get_string(MyGameKeys::play);
 ```
 
-#### 3) `settings.cpp` → `afterhours/core/settings.h`
+#### 3) `settings.cpp` → `afterhours/settings.h`
 **Current Issues:**
 - Complex JSON serialization/deserialization
 - Uses `log_error()`, `log_info()` for logging
@@ -441,7 +431,7 @@ std::string text = afterhours::i18n::TranslationManager<MyGameKeys>::get().get_s
 
 **Header-Only Solution:**
 ```cpp
-// In afterhours/core/settings.h
+// In afterhours/settings.h
 namespace afterhours {
 namespace settings {
 

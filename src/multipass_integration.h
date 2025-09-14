@@ -3,8 +3,7 @@
 #include "components.h"
 #include "multipass_renderer.h"
 #include "shader_pass_registry.h"
-#include <afterhours/src/entity_helper.h>
-#include <afterhours/src/system.h>
+#include <afterhours/src/ecs.h>
 
 // Example system that demonstrates multipass rendering integration
 struct MultipassRenderingSystem : System<> {

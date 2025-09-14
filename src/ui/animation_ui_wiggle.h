@@ -1,7 +1,6 @@
 #pragma once
 
-#include <afterhours/src/entity.h>
-#include <afterhours/src/entity_helper.h>
+#include <afterhours/src/ecs.h>
 #include <afterhours/src/plugins/animation.h>
 #include <afterhours/src/plugins/ui/components.h>
 #include <afterhours/src/plugins/ui/context.h>
