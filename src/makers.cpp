@@ -16,13 +16,18 @@ void make_explosion_anim(Entity &parent) {
   poof.addComponent<Transform>(parent_transform.pos(), vec2{10.f, 10.f});
 
   const Transform &transform = poof.get<Transform>();
-  poof.addComponent<HasAnimation>(transform.position, transform.size,
-                                  transform.angle, vec2{0, 3},
-                                  9,          // total_frames
-                                  1.f / 20.f, // frame_dur
-                                  true,       // once
-                                  2.f,        // scale
-                                  0, 0, raylib::RAYWHITE);
+  poof.addComponent<HasAnimation>(
+      HasAnimation::Params{.position = transform.position,
+                           .size = transform.size,
+                           .angle = transform.angle,
+                           .start_position = vec2{0, 3},
+                           .total_frames = 9,
+                           .frame_dur = 1.f / 20.f,
+                           .once = true,
+                           .scale = 2.f,
+                           .cur_frame = 0,
+                           .rotation = 0,
+                           .colorTint = raylib::RAYWHITE});
 }
 
 void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
@@ -60,12 +65,18 @@ void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
   poof.addComponent<Transform>(parent_transform.pos() + off, vec2{10.f, 10.f})
       .set_angle(parent_transform.angle + angle_offset);
   const Transform &transform = poof.get<Transform>();
-  poof.addComponent<HasAnimation>(transform.position, transform.size,
-                                  transform.angle, vec2{0, 0},
-                                  14,         // total_frames
-                                  1.f / 20.f, // frame_dur
-                                  true,       // once
-                                  1.f, 0, angle, raylib::RAYWHITE);
+  poof.addComponent<HasAnimation>(
+      HasAnimation::Params{.position = transform.position,
+                           .size = transform.size,
+                           .angle = transform.angle,
+                           .start_position = vec2{0, 0},
+                           .total_frames = 14,
+                           .frame_dur = 1.f / 20.f,
+                           .once = true,
+                           .scale = 1.f,
+                           .cur_frame = 0,
+                           .rotation = angle,
+                           .colorTint = raylib::RAYWHITE});
 }
 
 void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
@@ -166,9 +177,18 @@ void make_poof_anim(Entity &parent, Weapon::FiringDirection dir,
   poof.addComponent<Transform>(parent_transform.pos() + off, vec2{10.f, 10.f})
       .set_angle(base_angle + angle_offset);
   const Transform &transform = poof.get<Transform>();
-  poof.addComponent<HasAnimation>(transform.position, transform.size,
-                                  transform.angle, vec2{0, 0}, 14, 1.f / 20.f,
-                                  true, 1.f, 0, angle, raylib::RAYWHITE);
+  poof.addComponent<HasAnimation>(
+      HasAnimation::Params{.position = transform.position,
+                           .size = transform.size,
+                           .angle = transform.angle,
+                           .start_position = vec2{0, 0},
+                           .total_frames = 14,
+                           .frame_dur = 1.f / 20.f,
+                           .once = true,
+                           .scale = 1.f,
+                           .cur_frame = 0,
+                           .rotation = angle,
+                           .colorTint = raylib::RAYWHITE});
 }
 
 void make_bullet(Entity &parent, const ProjectileConfig &cfg,
