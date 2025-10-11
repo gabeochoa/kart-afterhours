@@ -465,9 +465,9 @@ ElementResult create_volume_slider(UIContext<InputAction> &context,
   // auto volume_label = fmt::format("{}\n {:2.0f}", label, volume * 100.f);
   if (auto result = slider(context, mk(parent, index), volume,
                            ComponentConfig{}.with_label(label).with_padding(
-                               Padding{.top = pixels(5.f),
+                               Padding{.top = spacing_to_size(Spacing::xs),
                                        .left = pixels(0.f),
-                                       .bottom = pixels(5.f),
+                                       .bottom = spacing_to_size(Spacing::xs),
                                        .right = pixels(0.f)}),
                            SliderHandleValueLabelPosition::OnHandle)) {
     volume = result.as<float>();
@@ -500,8 +500,8 @@ ElementResult create_control_group(UIContext<InputAction> &context,
       context, mk(parent),
       ComponentConfig{}
           .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-          .with_padding(Padding{.top = screen_pct(0.4f),
-                                .left = screen_pct(0.4f),
+          .with_padding(Padding{.top = spacing_to_size(Spacing::lg),
+                                .left = spacing_to_size(Spacing::lg),
                                 .bottom = pixels(0.f),
                                 .right = pixels(0.f)})
           .with_absolute_position()
@@ -517,8 +517,8 @@ ElementResult create_top_left_container(UIContext<InputAction> &context,
       context, mk(parent, index),
       ComponentConfig{}
           .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-          .with_padding(Padding{.top = screen_pct(0.02f),
-                                .left = screen_pct(0.02f),
+          .with_padding(Padding{.top = spacing_to_size(Spacing::sm),
+                                .left = spacing_to_size(Spacing::sm),
                                 .bottom = pixels(0.f),
                                 .right = pixels(0.f)})
           .with_absolute_position()
@@ -533,23 +533,23 @@ using Screen = GameStateManager::Screen;
 constexpr static vec2 button_size = vec2{100, 50};
 
 Padding button_group_padding = Padding{
-    .top = screen_pct(0.4f),
-    .left = screen_pct(0.4f),
+    .top = spacing_to_size(Spacing::lg),
+    .left = spacing_to_size(Spacing::lg),
     .bottom = pixels(0.f),
     .right = pixels(0.f),
 };
 
 Padding control_group_padding = Padding{
-    .top = screen_pct(0.4f),
-    .left = screen_pct(0.4f),
+    .top = spacing_to_size(Spacing::lg),
+    .left = spacing_to_size(Spacing::lg),
     .bottom = pixels(0.f),
     .right = pixels(0.f),
 };
 
 Padding button_padding = Padding{
-    .top = pixels(button_size.y / 10.f),
+    .top = spacing_to_size(Spacing::xs),
     .left = pixels(0.f),
-    .bottom = pixels(button_size.y / 10.f),
+    .bottom = spacing_to_size(Spacing::xs),
     .right = pixels(0.f),
 };
 
@@ -792,10 +792,7 @@ void ScheduleMainMenuUI::round_end_player_column(
                ComponentConfig{}
                    .with_size(ComponentSize{percent(1.f / num_cols, 0.1f),
                                             percent(1.f, 0.4f)})
-                   .with_margin(Margin{.top = percent(0.05f),
-                                       .bottom = percent(0.05f),
-                                       .left = percent(0.05f),
-                                       .right = percent(0.05f)})
+                   .with_margin(Spacing::xs)
                    .with_color_usage(Theme::Usage::Custom)
                    .with_custom_color(bg_color)
                    .with_translate(0.0f, (1.0f - card_v) * 20.0f)
