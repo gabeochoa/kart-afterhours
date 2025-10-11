@@ -32,9 +32,6 @@ using namespace afterhours::ui;
 using namespace afterhours::ui::imm;
 using Screen = GameStateManager::Screen;
 
-auto height_at_720p(float value) { return screen_pct(value / 720.f); }
-auto width_at_720p(float value) { return screen_pct(value / 1280.f); }
-
 struct SetupGameStylingDefaults
     : System<afterhours::ui::UIContext<InputAction>> {
 
@@ -262,10 +259,10 @@ ElementResult player_card_cell(UIContext<InputAction> &context, Entity &parent,
       context, mk(parent, std::hash<std::string>{}(debug_name + "_cell")),
       ComponentConfig{}
           .with_size(ComponentSize{percent(width_percent), percent(1.f)})
-          .with_padding(Padding{.top = height_at_720p(5.f),
-                                .left = width_at_720p(0.f),
-                                .bottom = height_at_720p(5.f),
-                                .right = width_at_720p(0.f)})
+          .with_padding(Padding{.top = ui::h720(5.f),
+                                .left = ui::w1280(0.f),
+                                .bottom = ui::h720(5.f),
+                                .right = ui::w1280(0.f)})
           .with_debug_name(debug_name + "_cell"));
 }
 
@@ -403,14 +400,14 @@ ElementResult create_player_card(UIContext<InputAction> &context,
       imm::div(context, mk(card.ent()),
                ComponentConfig{}
                    .with_size(ComponentSize{percent(1.0f), percent(0.4f)})
-                   .with_margin(Margin{.top = height_at_720p(5.f),
-                                       .left = width_at_720p(5.f),
-                                       .bottom = height_at_720p(5.f),
-                                       .right = width_at_720p(5.f)})
-                   .with_padding(Padding{.top = height_at_720p(5.f),
-                                         .left = width_at_720p(0.f),
-                                         .bottom = height_at_720p(5.f),
-                                         .right = width_at_720p(0.f)})
+                   .with_margin(Margin{.top = ui::h720(5.f),
+                                       .left = ui::w1280(5.f),
+                                       .bottom = ui::h720(5.f),
+                                       .right = ui::w1280(5.f)})
+                   .with_padding(Padding{.top = ui::h720(5.f),
+                                         .left = ui::w1280(0.f),
+                                         .bottom = ui::h720(5.f),
+                                         .right = ui::w1280(0.f)})
                    .with_flex_direction(FlexDirection::Row)
                    .with_debug_name("player_card_top_row"));
 
@@ -418,10 +415,10 @@ ElementResult create_player_card(UIContext<InputAction> &context,
   imm::div(context, mk(top_row.ent()),
            ComponentConfig{}
                .with_size(ComponentSize{percent(0.2f), percent(1.f)})
-               .with_padding(Padding{.top = height_at_720p(5.f),
-                                     .left = width_at_720p(5.f),
-                                     .bottom = height_at_720p(5.f),
-                                     .right = width_at_720p(5.f)})
+               .with_padding(Padding{.top = ui::h720(5.f),
+                                     .left = ui::w1280(5.f),
+                                     .bottom = ui::h720(5.f),
+                                     .right = ui::w1280(5.f)})
                .with_label(data.label)
                .with_color_usage(Theme::Usage::Custom)
                .with_custom_color(data.bg_color)
@@ -631,18 +628,17 @@ void ScheduleMainMenuUI::character_selector_column(
   float card_width = 400.f;
   float card_height = 100.f;
 
-  auto column =
-      imm::div(context, mk(parent, (int)index),
-               ComponentConfig{}
-                   .with_size(ComponentSize{width_at_720p(card_width),
-                                            height_at_720p(card_height)})
-                   .with_padding(Padding{.top = height_at_720p(5.f),
-                                         .left = width_at_720p(5.f),
-                                         .bottom = height_at_720p(5.f),
-                                         .right = width_at_720p(5.f)})
-                   .with_color_usage(Theme::Usage::Custom)
-                   .with_custom_color(bg_color)
-                   .disable_rounded_corners());
+  auto column = imm::div(context, mk(parent, (int)index),
+                         ComponentConfig{}
+                             .with_size(ComponentSize{ui::w1280(card_width),
+                                                      ui::h720(card_height)})
+                             .with_padding(Padding{.top = ui::h720(5.f),
+                                                   .left = ui::w1280(5.f),
+                                                   .bottom = ui::h720(5.f),
+                                                   .right = ui::w1280(5.f)})
+                             .with_color_usage(Theme::Usage::Custom)
+                             .with_custom_color(bg_color)
+                             .disable_rounded_corners());
 
   // Create player card using helper function
   std::string label = car.has_value() ? fmt::format("{} {}", index, car->id)
@@ -989,31 +985,29 @@ void ScheduleMainMenuUI::render_team_column(
           ? raylib::Color{100, 150, 255, 50}  // Light blue for Team A
           : raylib::Color{255, 150, 100, 50}; // Light orange for Team B
 
-  auto column_container = imm::div(
-      context, mk(team_columns_container, team_index),
-      ComponentConfig{}
-          .with_size(ComponentSize{width_at_720p(400.f), height_at_720p(700.f)})
-          .with_flex_direction(FlexDirection::Column)
-          .with_padding(Padding{.left = width_at_720p(20.f),
-                                .right = width_at_720p(20.f)})
-          .with_color_usage(Theme::Usage::Custom)
-          .with_custom_color(team_color)
-          .disable_rounded_corners()
-          .with_debug_name(team_name + "_column"));
+  auto column_container =
+      imm::div(context, mk(team_columns_container, team_index),
+               ComponentConfig{}
+                   .with_size(ComponentSize{ui::w1280(400.f), ui::h720(700.f)})
+                   .with_flex_direction(FlexDirection::Column)
+                   .with_padding(Padding{.left = ui::w1280(20.f),
+                                         .right = ui::w1280(20.f)})
+                   .with_color_usage(Theme::Usage::Custom)
+                   .with_custom_color(team_color)
+                   .disable_rounded_corners()
+                   .with_debug_name(team_name + "_column"));
 
-  imm::div(
-      context, mk(column_container.ent(), team_index),
-      ComponentConfig{}
-          .with_size(ComponentSize{width_at_720p(400.f), height_at_720p(100.f)})
-          .with_label(team_name)
-          .with_debug_name(team_name + "_header"));
+  imm::div(context, mk(column_container.ent(), team_index),
+           ComponentConfig{}
+               .with_size(ComponentSize{ui::w1280(400.f), ui::h720(100.f)})
+               .with_label(team_name)
+               .with_debug_name(team_name + "_header"));
 
   ////
   if (team_players.empty()) {
     imm::div(context, mk(column_container.ent(), team_index),
              ComponentConfig{}
-                 .with_size(
-                     ComponentSize{width_at_720p(400.f), height_at_720p(700.f)})
+                 .with_size(ComponentSize{ui::w1280(400.f), ui::h720(700.f)})
                  .with_label("No players")
                  .with_debug_name(team_name + "_empty"));
   } else {
@@ -1024,10 +1018,10 @@ void ScheduleMainMenuUI::render_team_column(
       auto team_row = imm::div(
           context, mk(column_container.ent(), row_id),
           ComponentConfig{}
-              .with_size(ComponentSize{width_at_720p(400.f),
+              .with_size(ComponentSize{ui::w1280(400.f),
                                        // Cap row height at 300/720 pixels
                                        // (about 42% of screen height)
-                                       height_at_720p(100.f)})
+                                       ui::h720(100.f)})
               .with_flex_direction(FlexDirection::Row)
               .with_debug_name(team_name + "_row"));
 
