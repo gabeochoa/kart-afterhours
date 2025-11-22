@@ -209,8 +209,7 @@ Preload &Preload::make_singleton() {
   {
     // Camera singleton for game world rendering
     auto &camera = EntityHelper::createEntity();
-    camera.addComponent<HasCamera>();
-    EntityHelper::registerSingleton<HasCamera>(camera);
+    afterhours::camera::add_singleton_components(camera);
   }
   return *this;
 }

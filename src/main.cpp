@@ -18,6 +18,7 @@ backward::SignalHandling sh;
 #include "systems_ai.h"
 #include "ui/ui_systems.h"
 #include <afterhours/src/plugins/animation.h>
+#include <afterhours/src/plugins/camera.h>
 
 // TODO add honking
 
@@ -45,6 +46,7 @@ void game() {
     ui::enforce_singletons<InputAction>(systems);
     input::enforce_singletons(systems);
     texture_manager::enforce_singletons(systems);
+    camera::enforce_singletons(systems);
     translation_manager::TranslationPlugin::enforce_singletons(systems);
   }
 
@@ -150,7 +152,7 @@ void game() {
       systems.register_render_system(std::make_unique<BeginWorldRender>());
 
       {
-        systems.register_render_system(std::make_unique<BeginCameraMode>());
+        camera::register_begin_camera(systems);
         systems.register_render_system(std::make_unique<RenderSkid>());
         systems.register_render_system(std::make_unique<RenderEntities>());
         texture_manager::register_render_systems(systems);
@@ -164,7 +166,7 @@ void game() {
         systems.register_render_system(
             std::make_unique<RenderWeaponCooldown>());
         systems.register_render_system(std::make_unique<RenderOOB>());
-        systems.register_render_system(std::make_unique<EndCameraMode>());
+        camera::register_end_camera(systems);
         // (UI moved to pass 2 so it is after tag shader)
       }
       systems.register_render_system(std::make_unique<EndWorldRender>());

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <afterhours/ah.h>
+#include <afterhours/src/plugins/camera.h>
 //
 
 #include "car_affectors.h"
@@ -1330,7 +1331,8 @@ struct WrapAroundTransform : System<Transform, CanWrapAround> {
     float height = (float)resolution.height;
 
     // Get camera to calculate proper viewport bounds
-    auto *camera_entity = EntityHelper::get_singleton_cmp<HasCamera>();
+    auto *camera_entity =
+        EntityHelper::get_singleton_cmp<afterhours::camera::HasCamera>();
     if (!camera_entity) {
       // Fallback to original behavior if no camera
       raylib::Rectangle screenRect{0, 0, width, height};
@@ -1508,7 +1510,8 @@ struct RenderOOB : System<Transform> {
   virtual void for_each_with(const Entity &entity, const Transform &transform,
                              float) const override {
     // Get camera to calculate proper viewport bounds
-    auto *camera_entity = EntityHelper::get_singleton_cmp<HasCamera>();
+    auto *camera_entity =
+        EntityHelper::get_singleton_cmp<afterhours::camera::HasCamera>();
     if (!camera_entity) {
       // Fallback to original behavior if no camera
       if (is_point_inside(transform.pos(), screen) ||
@@ -2363,24 +2366,6 @@ struct BeginWorldRender : System<> {
 
 struct EndWorldRender : System<> {
   virtual void once(float) const override { raylib::EndTextureMode(); }
-};
-
-struct BeginCameraMode : System<HasCamera> {
-  virtual void once(float) const override {
-    auto *camera_entity = EntityHelper::get_singleton_cmp<HasCamera>();
-    if (camera_entity) {
-      raylib::BeginMode2D(camera_entity->camera);
-    }
-  }
-};
-
-struct EndCameraMode : System<HasCamera> {
-  virtual void once(float) const override {
-    auto *camera_entity = EntityHelper::get_singleton_cmp<HasCamera>();
-    if (camera_entity) {
-      raylib::EndMode2D();
-    }
-  }
 };
 
 struct BeginTagShaderRender : System<> {
