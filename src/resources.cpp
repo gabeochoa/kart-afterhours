@@ -1,4 +1,3 @@
-
 #include "resources.h"
 #include "log.h"
 

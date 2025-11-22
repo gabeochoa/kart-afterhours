@@ -45,6 +45,7 @@ void game() {
     ui::enforce_singletons<InputAction>(systems);
     input::enforce_singletons(systems);
     texture_manager::enforce_singletons(systems);
+    translation_manager::TranslationPlugin::enforce_singletons(systems);
   }
 
   // external plugins

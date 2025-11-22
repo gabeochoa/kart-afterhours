@@ -147,15 +147,15 @@ void setup_fonts(Entity &sophie) {
           .fetch_resource_path("", get_font_name(FontID::English))
           .c_str());
 
-  // Load CJK fonts using our helper function
   auto &font_manager = sophie.get<ui::FontManager>();
   std::string font_file =
       Files::get()
           .fetch_resource_path("", get_font_name(FontID::Korean))
           .c_str();
 
-  translation_manager::TranslationManager::get().load_cjk_fonts(font_manager,
-                                                                font_file);
+  translation_manager::TranslationPlugin::load_cjk_fonts(
+      font_manager, font_file, get_font_name,
+      translation_manager::get_font_for_language_mapper);
 
   font_manager.load_font(
       afterhours::ui::UIComponent::SYMBOL_FONT,
@@ -173,6 +173,9 @@ Preload &Preload::make_singleton() {
     ui::add_singleton_components<InputAction>(sophie);
 
     auto &settings = Settings::get();
+    translation_manager::TranslationPlugin::add_singleton_components(
+        sophie, translation_manager::get_translation_data(),
+        settings.get_language(), translation_manager::translation_param);
     translation_manager::set_language(settings.get_language());
 
     texture_manager::add_singleton_components(

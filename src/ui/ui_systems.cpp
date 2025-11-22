@@ -317,10 +317,14 @@ void maybe_difficulty_button(UIContext<InputAction> &context, Entity &parent,
                              PlayerCardData &data) {
   if (data.ai_difficulty.has_value() && data.on_difficulty_change) {
     auto difficulty_options = std::vector<std::string>{
-        translation_manager::TranslatableString(strings::i18n::easy),
-        translation_manager::TranslatableString(strings::i18n::medium),
-        translation_manager::TranslatableString(strings::i18n::hard),
-        translation_manager::TranslatableString(strings::i18n::expert)};
+        translation_manager::make_translatable_string(strings::i18n::easy)
+            .get_text(),
+        translation_manager::make_translatable_string(strings::i18n::medium)
+            .get_text(),
+        translation_manager::make_translatable_string(strings::i18n::hard)
+            .get_text(),
+        translation_manager::make_translatable_string(strings::i18n::expert)
+            .get_text()};
     auto current_difficulty = static_cast<size_t>(data.ai_difficulty.value());
 
     auto difficulty_cell =
@@ -807,51 +811,63 @@ void ScheduleMainMenuUI::round_end_player_column(
   switch (RoundManager::get().active_round_type) {
   case RoundType::Lives:
     if (car->has<HasMultipleLives>()) {
-      stats_text =
-          translation_manager::TranslatableString(strings::i18n::lives_label)
+      stats_text = translation_manager::translate_formatted(
+          translation_manager::make_translatable_string(
+              strings::i18n::lives_label)
               .set_param(translation_manager::i18nParam::number_count,
-                         car->get<HasMultipleLives>().num_lives_remaining);
+                         car->get<HasMultipleLives>().num_lives_remaining,
+                         translation_manager::translation_param));
     }
     break;
   case RoundType::Kills:
     if (car->has<HasKillCountTracker>()) {
-      stats_text =
-          translation_manager::TranslatableString(strings::i18n::kills_label)
+      stats_text = translation_manager::translate_formatted(
+          translation_manager::make_translatable_string(
+              strings::i18n::kills_label)
               .set_param(translation_manager::i18nParam::number_count,
-                         car->get<HasKillCountTracker>().kills);
+                         car->get<HasKillCountTracker>().kills,
+                         translation_manager::translation_param));
     }
     break;
   case RoundType::Hippo:
     if (car->has<HasHippoCollection>()) {
-      stats_text =
-          translation_manager::TranslatableString(strings::i18n::hippos_label)
+      stats_text = translation_manager::translate_formatted(
+          translation_manager::make_translatable_string(
+              strings::i18n::hippos_label)
               .set_param(translation_manager::i18nParam::number_count,
-                         car->get<HasHippoCollection>().get_hippo_count());
+                         car->get<HasHippoCollection>().get_hippo_count(),
+                         translation_manager::translation_param));
     } else {
-      stats_text =
-          translation_manager::TranslatableString(strings::i18n::hippos_zero);
+      stats_text = translation_manager::make_translatable_string(
+                       strings::i18n::hippos_zero)
+                       .get_text();
     }
     break;
   case RoundType::TagAndGo:
     if (car->has<HasTagAndGoTracking>()) {
-      stats_text =
-          translation_manager::TranslatableString(strings::i18n::not_it_timer)
+      stats_text = translation_manager::translate_formatted(
+          translation_manager::make_translatable_string(
+              strings::i18n::not_it_timer)
               .set_param(translation_manager::i18nParam::number_time,
-                         car->get<HasTagAndGoTracking>().time_as_not_it);
+                         car->get<HasTagAndGoTracking>().time_as_not_it,
+                         translation_manager::translation_param));
     }
     break;
   default:
     stats_text =
-        translation_manager::TranslatableString(strings::i18n::unknown);
+        translation_manager::make_translatable_string(strings::i18n::unknown)
+            .get_text();
     break;
   }
 
   std::optional<std::string> kills_text;
   if (car->has<HasKillCountTracker>()) {
-    kills_text =
-        translation_manager::TranslatableString(strings::i18n::kills_label)
+    kills_text = translation_manager::translate_formatted(
+        translation_manager::make_translatable_string(
+            strings::i18n::kills_label)
             .set_param(translation_manager::i18nParam::number_count,
-                       car->get<HasKillCountTracker>().kills);
+                       car->get<HasKillCountTracker>().kills,
+                       translation_manager::translation_param));
   }
 
   // Score roll-up value (0..1). We keep it generic regardless of round type
@@ -868,9 +884,11 @@ void ScheduleMainMenuUI::round_end_player_column(
     if (car->has<HasMultipleLives>()) {
       int final_val = car->get<HasMultipleLives>().num_lives_remaining;
       int shown = static_cast<int>(std::round(score_t * final_val));
-      animated_stats =
-          translation_manager::TranslatableString(strings::i18n::lives_label)
-              .set_param(translation_manager::i18nParam::number_count, shown);
+      animated_stats = translation_manager::translate_formatted(
+          translation_manager::make_translatable_string(
+              strings::i18n::lives_label)
+              .set_param(translation_manager::i18nParam::number_count, shown,
+                         translation_manager::translation_param));
     }
     break;
   }
@@ -878,9 +896,11 @@ void ScheduleMainMenuUI::round_end_player_column(
     if (car->has<HasKillCountTracker>()) {
       int final_val = car->get<HasKillCountTracker>().kills;
       int shown = static_cast<int>(std::round(score_t * final_val));
-      animated_stats =
-          translation_manager::TranslatableString(strings::i18n::kills_label)
-              .set_param(translation_manager::i18nParam::number_count, shown);
+      animated_stats = translation_manager::translate_formatted(
+          translation_manager::make_translatable_string(
+              strings::i18n::kills_label)
+              .set_param(translation_manager::i18nParam::number_count, shown,
+                         translation_manager::translation_param));
     }
     break;
   }
@@ -889,18 +909,22 @@ void ScheduleMainMenuUI::round_end_player_column(
                         ? car->get<HasHippoCollection>().get_hippo_count()
                         : 0;
     int shown = static_cast<int>(std::round(score_t * final_val));
-    animated_stats =
-        translation_manager::TranslatableString(strings::i18n::hippos_label)
-            .set_param(translation_manager::i18nParam::number_count, shown);
+    animated_stats = translation_manager::translate_formatted(
+        translation_manager::make_translatable_string(
+            strings::i18n::hippos_label)
+            .set_param(translation_manager::i18nParam::number_count, shown,
+                       translation_manager::translation_param));
     break;
   }
   case RoundType::TagAndGo: {
     if (car->has<HasTagAndGoTracking>()) {
       float final_val = car->get<HasTagAndGoTracking>().time_as_not_it;
       float shown = std::round(score_t * final_val * 10.0f) / 10.0f;
-      animated_stats =
-          translation_manager::TranslatableString(strings::i18n::not_it_timer)
-              .set_param(translation_manager::i18nParam::number_time, shown);
+      animated_stats = translation_manager::translate_formatted(
+          translation_manager::make_translatable_string(
+              strings::i18n::not_it_timer)
+              .set_param(translation_manager::i18nParam::number_time, shown,
+                         translation_manager::translation_param));
     }
     break;
   }
@@ -1047,12 +1071,15 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
   ui_helpers::create_styled_button(
       context, top_left.ent(),
-      translation_manager::TranslatableString(strings::i18n::round_settings),
+      translation_manager::make_translatable_string(
+          strings::i18n::round_settings)
+          .get_text(),
       []() { navigation::to(GameStateManager::Screen::RoundSettings); }, 0);
 
   ui_helpers::create_styled_button(
       context, top_left.ent(),
-      translation_manager::TranslatableString(strings::i18n::back),
+      translation_manager::make_translatable_string(strings::i18n::back)
+          .get_text(),
       []() { navigation::back(); }, 1);
 
   // Team mode toggle
@@ -1148,13 +1175,15 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
 void ScheduleMainMenuUI::render_round_settings_preview(
     UIContext<InputAction> &context, Entity &parent) {
-  imm::div(context, mk(parent),
-           ComponentConfig{}.with_label(
-               translation_manager::TranslatableString(
-                   strings::i18n::win_condition_label)
-                   .set_param(translation_manager::i18nParam::weapon_name,
-                              magic_enum::enum_name(
-                                  RoundManager::get().active_round_type))));
+  imm::div(
+      context, mk(parent),
+      ComponentConfig{}.with_label(translation_manager::translate_formatted(
+          translation_manager::make_translatable_string(
+              strings::i18n::win_condition_label)
+              .set_param(
+                  translation_manager::i18nParam::weapon_name,
+                  magic_enum::enum_name(RoundManager::get().active_round_type),
+                  translation_manager::translation_param))));
 
   auto *spritesheet_component = EntityHelper::get_singleton_cmp<
       afterhours::texture_manager::HasSpritesheet>();
@@ -1189,12 +1218,14 @@ void ScheduleMainMenuUI::render_round_settings_preview(
   switch (RoundManager::get().active_round_type) {
   case RoundType::Lives: {
     auto &s = RoundManager::get().get_active_rt<RoundLivesSettings>();
-    imm::div(context, mk(parent),
-             ComponentConfig{}.with_label(
-                 translation_manager::TranslatableString(
-                     strings::i18n::num_lives_label)
-                     .set_param(translation_manager::i18nParam::number_count,
-                                s.num_starting_lives)));
+    imm::div(
+        context, mk(parent),
+        ComponentConfig{}.with_label(translation_manager::translate_formatted(
+            translation_manager::make_translatable_string(
+                strings::i18n::num_lives_label)
+                .set_param(translation_manager::i18nParam::number_count,
+                           s.num_starting_lives,
+                           translation_manager::translation_param))));
     break;
   }
   case RoundType::Kills: {
@@ -1202,8 +1233,9 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     std::string time_display;
     switch (s.time_option) {
     case RoundSettings::TimeOptions::Unlimited:
-      time_display =
-          translation_manager::TranslatableString(strings::i18n::unlimited);
+      time_display = translation_manager::make_translatable_string(
+                         strings::i18n::unlimited)
+                         .get_text();
       break;
     case RoundSettings::TimeOptions::Seconds_10:
       time_display = "10s";
@@ -1215,22 +1247,26 @@ void ScheduleMainMenuUI::render_round_settings_preview(
       time_display = "1m";
       break;
     }
-    imm::div(context, mk(parent),
-             ComponentConfig{}.with_label(
-                 translation_manager::TranslatableString(
-                     strings::i18n::round_length_with_time)
-                     .set_param(translation_manager::i18nParam::weapon_name,
-                                time_display)));
+    imm::div(
+        context, mk(parent),
+        ComponentConfig{}.with_label(translation_manager::translate_formatted(
+            translation_manager::make_translatable_string(
+                strings::i18n::round_length_with_time)
+                .set_param(translation_manager::i18nParam::weapon_name,
+                           time_display,
+                           translation_manager::translation_param))));
     break;
   }
   case RoundType::Hippo: {
     auto &s = RoundManager::get().get_active_rt<RoundHippoSettings>();
-    imm::div(context, mk(parent),
-             ComponentConfig{}.with_label(
-                 translation_manager::TranslatableString(
-                     strings::i18n::total_hippos_label)
-                     .set_param(translation_manager::i18nParam::number_count,
-                                s.total_hippos)));
+    imm::div(
+        context, mk(parent),
+        ComponentConfig{}.with_label(translation_manager::translate_formatted(
+            translation_manager::make_translatable_string(
+                strings::i18n::total_hippos_label)
+                .set_param(translation_manager::i18nParam::number_count,
+                           s.total_hippos,
+                           translation_manager::translation_param))));
     break;
   }
   case RoundType::TagAndGo: {
@@ -1238,8 +1274,9 @@ void ScheduleMainMenuUI::render_round_settings_preview(
     std::string time_display;
     switch (s.time_option) {
     case RoundSettings::TimeOptions::Unlimited:
-      time_display =
-          translation_manager::TranslatableString(strings::i18n::unlimited);
+      time_display = translation_manager::make_translatable_string(
+                         strings::i18n::unlimited)
+                         .get_text();
       break;
     case RoundSettings::TimeOptions::Seconds_10:
       time_display = "10s";
@@ -1251,19 +1288,22 @@ void ScheduleMainMenuUI::render_round_settings_preview(
       time_display = "1m";
       break;
     }
-    imm::div(context, mk(parent),
-             ComponentConfig{}.with_label(
-                 translation_manager::TranslatableString(
-                     strings::i18n::round_length_with_time)
-                     .set_param(translation_manager::i18nParam::weapon_name,
-                                time_display)));
+    imm::div(
+        context, mk(parent),
+        ComponentConfig{}.with_label(translation_manager::translate_formatted(
+            translation_manager::make_translatable_string(
+                strings::i18n::round_length_with_time)
+                .set_param(translation_manager::i18nParam::weapon_name,
+                           time_display,
+                           translation_manager::translation_param))));
     break;
   }
   default:
-    imm::div(
-        context, mk(parent),
-        ComponentConfig{}.with_label(translation_manager::TranslatableString(
-            strings::i18n::round_settings)));
+    imm::div(context, mk(parent),
+             ComponentConfig{}.with_label(
+                 translation_manager::make_translatable_string(
+                     strings::i18n::round_settings)
+                     .get_text()));
     break;
   }
 }
@@ -1643,8 +1683,9 @@ void SchedulePauseUI::for_each_with(Entity &entity,
 
   imm::div(context, mk(left_col.ent(), 0),
            ComponentConfig{}
-               .with_label(translation_manager::TranslatableString(
-                   strings::i18n::paused))
+               .with_label(translation_manager::make_translatable_string(
+                               strings::i18n::paused)
+                               .get_text())
                .with_skip_tabbing(true)
                .with_size(ComponentSize{pixels(400.f), pixels(100.f)}));
 
@@ -1654,8 +1695,9 @@ void SchedulePauseUI::for_each_with(Entity &entity,
                                             .left = pixels(0.f),
                                             .bottom = pixels(5.f),
                                             .right = pixels(0.f)})
-                      .with_label(translation_manager::TranslatableString(
-                          strings::i18n::resume)))) {
+                      .with_label(translation_manager::make_translatable_string(
+                                      strings::i18n::resume)
+                                      .get_text()))) {
     GameStateManager::get().unpause_game();
   }
 
@@ -1665,8 +1707,9 @@ void SchedulePauseUI::for_each_with(Entity &entity,
                                             .left = pixels(0.f),
                                             .bottom = pixels(5.f),
                                             .right = pixels(0.f)})
-                      .with_label(translation_manager::TranslatableString(
-                          strings::i18n::back_to_setup)))) {
+                      .with_label(translation_manager::make_translatable_string(
+                                      strings::i18n::back_to_setup)
+                                      .get_text()))) {
     GameStateManager::get().end_game();
   }
 
@@ -1676,8 +1719,9 @@ void SchedulePauseUI::for_each_with(Entity &entity,
                                             .left = pixels(0.f),
                                             .bottom = pixels(5.f),
                                             .right = pixels(0.f)})
-                      .with_label(translation_manager::TranslatableString(
-                          strings::i18n::exit_game)))) {
+                      .with_label(translation_manager::make_translatable_string(
+                                      strings::i18n::exit_game)
+                                      .get_text()))) {
     exit_game();
   }
 }
@@ -1687,11 +1731,12 @@ void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
 
   imm::div(context, mk(entity),
            ComponentConfig{}
-               .with_label(
-                   translation_manager::TranslatableString(
+               .with_label(translation_manager::translate_formatted(
+                   translation_manager::make_translatable_string(
                        strings::i18n::num_lives_label)
                        .set_param(translation_manager::i18nParam::number_count,
-                                  rl_settings.num_starting_lives))
+                                  rl_settings.num_starting_lives,
+                                  translation_manager::translation_param)))
                .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
                .with_margin(Margin{.top = screen_pct(0.01f)})
                .with_debug_name("num_lives_text")
@@ -1704,11 +1749,12 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
 
   imm::div(context, mk(entity),
            ComponentConfig{}
-               .with_label(
-                   translation_manager::TranslatableString(
+               .with_label(translation_manager::translate_formatted(
+                   translation_manager::make_translatable_string(
                        strings::i18n::round_length_with_time)
                        .set_param(translation_manager::i18nParam::number_time,
-                                  rl_settings.current_round_time))
+                                  rl_settings.current_round_time,
+                                  translation_manager::translation_param)))
                .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
                .with_margin(Margin{.top = screen_pct(0.01f)})
                .with_opacity(0.0f)
@@ -1722,8 +1768,9 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
     if (auto result = imm::dropdown(
             context, mk(entity), options, option_index,
             ComponentConfig{}
-                .with_label(translation_manager::TranslatableString(
-                    strings::i18n::round_length))
+                .with_label(translation_manager::make_translatable_string(
+                                strings::i18n::round_length)
+                                .get_text())
                 .with_opacity(0.0f)
                 .with_translate(-2000.0f, 0.0f));
         result) {
@@ -1737,11 +1784,12 @@ void round_hippo_settings(Entity &entity, UIContext<InputAction> &context) {
 
   imm::div(context, mk(entity),
            ComponentConfig{}
-               .with_label(
-                   translation_manager::TranslatableString(
+               .with_label(translation_manager::translate_formatted(
+                   translation_manager::make_translatable_string(
                        strings::i18n::total_hippos_label)
                        .set_param(translation_manager::i18nParam::number_count,
-                                  rl_settings.total_hippos))
+                                  rl_settings.total_hippos,
+                                  translation_manager::translation_param)))
                .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)}));
 }
 
@@ -1757,11 +1805,11 @@ void round_tag_and_go_settings(Entity &entity,
     if (auto result = imm::dropdown(
             context, mk(entity), options, option_index,
             ComponentConfig{}
-                .with_label(
-                    translation_manager::TranslatableString(
+                .with_label(translation_manager::translate_formatted(
+                    translation_manager::make_translatable_string(
                         strings::i18n::round_length)
                         .set_param(translation_manager::i18nParam::number_time,
-                                   30))
+                                   30, translation_manager::translation_param)))
                 .with_opacity(0.0f)
                 .with_translate(-2000.0f, 0.0f));
         result) {
@@ -1769,12 +1817,14 @@ void round_tag_and_go_settings(Entity &entity,
     }
   }
 
-  if (imm::checkbox(context, mk(entity), cm_settings.allow_tag_backs,
-                    ComponentConfig{}
-                        .with_label(translation_manager::TranslatableString(
-                            strings::i18n::allow_tag_backs))
-                        .with_opacity(0.0f)
-                        .with_translate(-2000.0f, 0.0f))) {
+  if (imm::checkbox(
+          context, mk(entity), cm_settings.allow_tag_backs,
+          ComponentConfig{}
+              .with_label(translation_manager::make_translatable_string(
+                              strings::i18n::allow_tag_backs)
+                              .get_text())
+              .with_opacity(0.0f)
+              .with_translate(-2000.0f, 0.0f))) {
     // value already toggled by checkbox binding
   }
 }
@@ -1795,7 +1845,8 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
   {
     ui_helpers::create_styled_button(
         context, top_left.ent(),
-        translation_manager::TranslatableString(strings::i18n::select_map),
+        translation_manager::make_translatable_string(strings::i18n::select_map)
+            .get_text(),
         []() { navigation::to(GameStateManager::Screen::MapSelection); }, 0);
 
     {
@@ -1857,7 +1908,8 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
 
     ui_helpers::create_styled_button(
         context, top_left.ent(),
-        translation_manager::TranslatableString(strings::i18n::back),
+        translation_manager::make_translatable_string(strings::i18n::back)
+            .get_text(),
         []() { navigation::back(); }, 2);
   }
 
@@ -2130,7 +2182,8 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
 
   ui_helpers::create_styled_button(
       context, left_col.ent(),
-      translation_manager::TranslatableString(strings::i18n::back),
+      translation_manager::make_translatable_string(strings::i18n::back)
+          .get_text(),
       []() { navigation::back(); }, 0);
 
   return GameStateManager::get().next_screen.value_or(
@@ -2187,25 +2240,29 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
   // Play button
   ui_helpers::create_styled_button(
       context, top_left.ent(),
-      translation_manager::TranslatableString(strings::i18n::play),
+      translation_manager::make_translatable_string(strings::i18n::play)
+          .get_text(),
       []() { navigation::to(GameStateManager::Screen::CharacterCreation); }, 0);
 
   // About button
   ui_helpers::create_styled_button(
       context, top_left.ent(),
-      translation_manager::TranslatableString(strings::i18n::about),
+      translation_manager::make_translatable_string(strings::i18n::about)
+          .get_text(),
       []() { navigation::to(GameStateManager::Screen::About); }, 1);
 
   // Settings button
   ui_helpers::create_styled_button(
       context, top_left.ent(),
-      translation_manager::TranslatableString(strings::i18n::settings),
+      translation_manager::make_translatable_string(strings::i18n::settings)
+          .get_text(),
       []() { navigation::to(GameStateManager::Screen::Settings); }, 2);
 
   // Exit button
   ui_helpers::create_styled_button(
       context, top_left.ent(),
-      translation_manager::TranslatableString(strings::i18n::exit),
+      translation_manager::make_translatable_string(strings::i18n::exit)
+          .get_text(),
       [this]() { exit_game(); }, 3);
 
   return GameStateManager::get().next_screen.value_or(
@@ -2221,7 +2278,8 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
   {
     ui_helpers::create_styled_button(
         context, top_left.ent(),
-        translation_manager::TranslatableString(strings::i18n::back),
+        translation_manager::make_translatable_string(strings::i18n::back)
+            .get_text(),
         []() {
           Settings::get().update_resolution(
               EntityHelper::get_singleton_cmp<
@@ -2237,7 +2295,9 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
     float master_volume = Settings::get().get_master_volume();
     ui_helpers::create_volume_slider(
         context, top_left.ent(),
-        translation_manager::TranslatableString(strings::i18n::master_volume),
+        translation_manager::make_translatable_string(
+            strings::i18n::master_volume)
+            .get_text(),
         master_volume,
         [](float volume) { Settings::get().update_master_volume(volume); }, 0);
   }
@@ -2247,7 +2307,9 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
     float music_volume = Settings::get().get_music_volume();
     ui_helpers::create_volume_slider(
         context, top_left.ent(),
-        translation_manager::TranslatableString(strings::i18n::music_volume),
+        translation_manager::make_translatable_string(
+            strings::i18n::music_volume)
+            .get_text(),
         music_volume,
         [](float volume) { Settings::get().update_music_volume(volume); }, 1);
   }
@@ -2257,7 +2319,8 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
     float sfx_volume = Settings::get().get_sfx_volume();
     ui_helpers::create_volume_slider(
         context, top_left.ent(),
-        translation_manager::TranslatableString(strings::i18n::sfx_volume),
+        translation_manager::make_translatable_string(strings::i18n::sfx_volume)
+            .get_text(),
         sfx_volume,
         [](float volume) { Settings::get().update_sfx_volume(volume); }, 2);
   }
@@ -2265,15 +2328,16 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
   // Resolution dropdown
   {
     // TODO for some reason the dropdown button isnt wiggling
-    if (imm::dropdown(context, mk(top_left.ent(), 3), resolution_strs,
-                      resolution_index,
-                      ComponentConfig{}
-                          .with_label(translation_manager::TranslatableString(
-                              strings::i18n::resolution))
-                          .with_padding(Padding{.top = pixels(5.f),
-                                                .left = pixels(0.f),
-                                                .bottom = pixels(5.f),
-                                                .right = pixels(0.f)}))) {
+    if (imm::dropdown(
+            context, mk(top_left.ent(), 3), resolution_strs, resolution_index,
+            ComponentConfig{}
+                .with_label(translation_manager::make_translatable_string(
+                                strings::i18n::resolution)
+                                .get_text())
+                .with_padding(Padding{.top = pixels(5.f),
+                                      .left = pixels(0.f),
+                                      .bottom = pixels(5.f),
+                                      .right = pixels(0.f)}))) {
       resolution_provider->on_data_changed(resolution_index);
     }
   }
@@ -2295,15 +2359,17 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
       last_language = current_lang;
     }
 
-    if (imm::dropdown(context, mk(top_left.ent(), 4), language_names,
-                      language_dropdown_index,
-                      ComponentConfig{}
-                          .with_label(translation_manager::TranslatableString(
-                              strings::i18n::language))
-                          .with_padding(Padding{.top = pixels(5.f),
-                                                .left = pixels(0.f),
-                                                .bottom = pixels(5.f),
-                                                .right = pixels(0.f)}))) {
+    if (imm::dropdown(
+            context, mk(top_left.ent(), 4), language_names,
+            language_dropdown_index,
+            ComponentConfig{}
+                .with_label(translation_manager::make_translatable_string(
+                                strings::i18n::language)
+                                .get_text())
+                .with_padding(Padding{.top = pixels(5.f),
+                                      .left = pixels(0.f),
+                                      .bottom = pixels(5.f),
+                                      .right = pixels(0.f)}))) {
 
       auto new_language = translation_manager::Language::English;
       // Update language when selection changes
@@ -2338,28 +2404,32 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
   }
 
   // Fullscreen checkbox
-  if (imm::checkbox(context, mk(top_left.ent(), 5),
-                    Settings::get().get_fullscreen_enabled(),
-                    ComponentConfig{}
-                        .with_label(translation_manager::TranslatableString(
-                            strings::i18n::fullscreen))
-                        .with_padding(Padding{.top = pixels(5.f),
-                                              .left = pixels(0.f),
-                                              .bottom = pixels(5.f),
-                                              .right = pixels(0.f)}))) {
+  if (imm::checkbox(
+          context, mk(top_left.ent(), 5),
+          Settings::get().get_fullscreen_enabled(),
+          ComponentConfig{}
+              .with_label(translation_manager::make_translatable_string(
+                              strings::i18n::fullscreen)
+                              .get_text())
+              .with_padding(Padding{.top = pixels(5.f),
+                                    .left = pixels(0.f),
+                                    .bottom = pixels(5.f),
+                                    .right = pixels(0.f)}))) {
     Settings::get().toggle_fullscreen();
   }
 
   // Post Processing checkbox
-  if (imm::checkbox(context, mk(top_left.ent(), 6),
-                    Settings::get().get_post_processing_enabled(),
-                    ComponentConfig{}
-                        .with_label(translation_manager::TranslatableString(
-                            strings::i18n::post_processing))
-                        .with_padding(Padding{.top = pixels(5.f),
-                                              .left = pixels(0.f),
-                                              .bottom = pixels(5.f),
-                                              .right = pixels(0.f)}))) {
+  if (imm::checkbox(
+          context, mk(top_left.ent(), 6),
+          Settings::get().get_post_processing_enabled(),
+          ComponentConfig{}
+              .with_label(translation_manager::make_translatable_string(
+                              strings::i18n::post_processing)
+                              .get_text())
+              .with_padding(Padding{.top = pixels(5.f),
+                                    .left = pixels(0.f),
+                                    .bottom = pixels(5.f),
+                                    .right = pixels(0.f)}))) {
     Settings::get().toggle_post_processing();
   }
 
@@ -2386,7 +2456,8 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
                                                           "about_top_left", 0);
     ui_helpers::create_styled_button(
         context, top_left.ent(),
-        translation_manager::TranslatableString(strings::i18n::back),
+        translation_manager::make_translatable_string(strings::i18n::back)
+            .get_text(),
         []() { navigation::back(); }, 0);
   }
 
@@ -2598,8 +2669,9 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
   {
     imm::div(context, mk(elem.ent()),
              ComponentConfig{}
-                 .with_label(translation_manager::TranslatableString(
-                     strings::i18n::round_end))
+                 .with_label(translation_manager::make_translatable_string(
+                                 strings::i18n::round_end)
+                                 .get_text())
                  .with_skip_tabbing(true)
                  .with_size(ComponentSize{percent(0.5f), percent(0.2f)})
                  .with_margin(Margin{
@@ -2670,11 +2742,14 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
 
   ui_helpers::create_styled_button(
       context, top_left.ent(),
-      translation_manager::TranslatableString(strings::i18n::continue_game),
+      translation_manager::make_translatable_string(
+          strings::i18n::continue_game)
+          .get_text(),
       []() { navigation::to(GameStateManager::Screen::CharacterCreation); }, 0);
   ui_helpers::create_styled_button(
       context, top_left.ent(),
-      translation_manager::TranslatableString(strings::i18n::quit),
+      translation_manager::make_translatable_string(strings::i18n::quit)
+          .get_text(),
       [this]() { exit_game(); }, 1);
 
   return GameStateManager::get().next_screen.value_or(
