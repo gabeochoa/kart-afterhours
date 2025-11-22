@@ -10,6 +10,7 @@
 #include "max_health.h"
 #include "rl.h"
 #include "shader_types.h"
+#include <afterhours/src/plugins/collision.h>
 
 // Note: This must be included after std includes
 #include "config.h"
@@ -191,12 +192,7 @@ struct TracksEntity : BaseComponent {
   TracksEntity(EntityID id_, vec2 off) : id(id_), offset(off) {}
 };
 
-struct CollisionConfig {
-  float mass{1.f}; // Affects impulse strength & knock back effect
-  float friction{
-      0.f}; // Affects post collision slide velocity and subsequently distance
-  float restitution{.5f}; // Affects "bouncy-ness" [0, 1] where 1 is bouncy
-};
+using CollisionConfig = afterhours::collision::CollisionConfig;
 
 struct Transform : BaseComponent {
   vec2 position{0.f, 0.f};
@@ -493,7 +489,6 @@ struct WantsBoost : BaseComponent {};
 struct HonkState : BaseComponent {
   bool was_down = false;
 };
-
 
 #include "components_weapons.h"
 

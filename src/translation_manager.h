@@ -6,6 +6,7 @@
 #include <afterhours/src/plugins/translation.h>
 #include <fmt/format.h>
 #include <functional>
+#include <string_view>
 #include <magic_enum/magic_enum.hpp>
 #include <map>
 #include <string>

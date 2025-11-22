@@ -16,6 +16,7 @@
 #include "settings.h"
 #include "shader_library.h"
 #include "tags.h"
+#include <afterhours/src/plugins/collision.h>
 #include <afterhours/src/plugins/sound_system.h>
 
 #include <afterhours/src/plugins/camera.h>
@@ -1579,180 +1580,58 @@ struct UpdateTrackingEntities : System<Transform, TracksEntity> {
 };
 
 struct UpdateCollidingEntities : PausableSystem<Transform> {
+  using PluginSystem =
+      afterhours::collision::UpdateCollidingEntities<Transform>;
+  std::unique_ptr<PluginSystem> plugin_system;
 
-  std::set<int> ids;
-
-  virtual void once(float) override { ids.clear(); }
-
-  void positional_correction(Transform &a, Transform &b,
-                             const vec2 &collisionNormal,
-                             float penetrationDepth) {
-    float correctionMagnitude =
-        std::max(penetrationDepth, 0.0f) /
-        (1.0f / a.collision_config.mass + 1.0f / b.collision_config.mass);
-    vec2 correction = collisionNormal * correctionMagnitude;
-
-    a.position -= correction / a.collision_config.mass;
-    b.position += correction / b.collision_config.mass;
-  }
-
-  void resolve_collision(Transform &a, Transform &b, const float dt) {
-    vec2 collisionNormal = vec_norm(b.position - a.position);
-
-    // Calculate normal impulse
-    float impulse = calculate_impulse(a, b, collisionNormal);
-    vec2 impulseVector =
-        collisionNormal * impulse * Config::get().collision_scalar.data * dt;
-
-    // Apply normal impulse
-    if (a.collision_config.mass > 0.0f &&
-        a.collision_config.mass != std::numeric_limits<float>::max()) {
-      a.velocity -= impulseVector / a.collision_config.mass;
-    }
-
-    if (b.collision_config.mass > 0.0f &&
-        b.collision_config.mass != std::numeric_limits<float>::max()) {
-      b.velocity += impulseVector / b.collision_config.mass;
-    }
-
-    // Calculate and apply friction impulse
-    vec2 relativeVelocity = b.velocity - a.velocity;
-    vec2 tangent =
-        vec_norm(relativeVelocity -
-                 collisionNormal * vec_dot(relativeVelocity, collisionNormal));
-
-    float frictionImpulseMagnitude =
-        vec_dot(relativeVelocity, tangent) /
-        (1.0f / a.collision_config.mass + 1.0f / b.collision_config.mass);
-    float frictionCoefficient =
-        std::sqrt(a.collision_config.friction * b.collision_config.friction);
-    frictionImpulseMagnitude =
-        std::clamp(frictionImpulseMagnitude, -impulse * frictionCoefficient,
-                   impulse * frictionCoefficient);
-
-    vec2 frictionImpulse = tangent * frictionImpulseMagnitude *
-                           Config::get().collision_scalar.data * dt;
-
-    if (a.collision_config.mass > 0.0f &&
-        a.collision_config.mass != std::numeric_limits<float>::max()) {
-      a.velocity -= frictionImpulse / a.collision_config.mass;
-    }
-
-    if (b.collision_config.mass > 0.0f &&
-        b.collision_config.mass != std::numeric_limits<float>::max()) {
-      b.velocity += frictionImpulse / b.collision_config.mass;
-    }
-
-    // Clamp velocities to max speed after collision response
-    float maxSpeed = Config::get().max_speed.data;
-    if (a.speed() > maxSpeed) {
-      a.velocity = vec_norm(a.velocity) * maxSpeed;
-    }
-    if (b.speed() > maxSpeed) {
-      b.velocity = vec_norm(b.velocity) * maxSpeed;
-    }
-
-    // Positional correction
-    float penetrationDepth = calculate_penetration_depth(a.rect(), b.rect());
-    positional_correction(a, b, collisionNormal, penetrationDepth);
-  }
-
-  float calculate_penetration_depth(const Rectangle &a, const Rectangle &b) {
-    // Calculate the overlap along the X axis
-    float overlapX =
-        std::min(a.x + a.width, b.x + b.width) - std::max(a.x, b.x);
-
-    // Calculate the overlap along the Y axis
-    float overlapY =
-        std::min(a.y + a.height, b.y + b.height) - std::max(a.y, b.y);
-
-    // If there's no overlap, return 0
-    if (overlapX <= 0.0f || overlapY <= 0.0f)
-      return 0.0f;
-
-    // Return the smaller overlap for the penetration depth
-    return std::min(overlapX, overlapY);
-  }
-
-  float calculate_dynamic_restitution(const Transform &a, const Transform &b) {
-    float baseRestitution = std::min(a.collision_config.restitution,
-                                     b.collision_config.restitution);
-
-    // Reduce restitution for high-speed collisions
-    vec2 relativeVelocity = b.velocity - a.velocity;
-    float speed = Vector2Length(relativeVelocity);
-
-    if (speed >
-        (Config::get().max_speed.data * .75f)) { // Adjust threshold as needed
-      baseRestitution *= 0.5f; // Reduce bounce for high-speed collisions
-    }
-
-    return baseRestitution;
-  }
-
-  float calculate_impulse(const Transform &a, const Transform &b,
-                          const vec2 &collisionNormal) {
-    vec2 relativeVelocity = b.velocity - a.velocity;
-    float velocityAlongNormal = vec_dot(relativeVelocity, collisionNormal);
-
-    // Prevent objects from "sticking" or resolving collisions when moving
-    // apart
-    if (velocityAlongNormal > 0.0f)
-      return 0.0f;
-
-    float restitution = calculate_dynamic_restitution(a, b);
-
-    // Impulse calculation with restitution
-    float impulse = -(1.0f + restitution) * velocityAlongNormal;
-    impulse /=
-        (1.0f / a.collision_config.mass + 1.0f / b.collision_config.mass);
-
-    return impulse;
-  }
-
-  virtual void for_each_with(Entity &entity, Transform &transform,
-                             float dt) override {
-
-    // skip any already resolved
-    if (ids.contains(entity.id)) {
-      return;
-    }
-
-    const auto gets_absorbed = [](Entity &ent) {
+  UpdateCollidingEntities() {
+    plugin_system = std::make_unique<PluginSystem>();
+    plugin_system->config.get_collision_scalar = []() {
+      return Config::get().collision_scalar.data;
+    };
+    plugin_system->config.get_max_speed = []() {
+      return Config::get().max_speed.data;
+    };
+    plugin_system->callbacks.should_skip_entity = nullptr;
+    plugin_system->callbacks.is_floor_overlay = [](const Entity &ent) {
+      return ent.hasTag(GameTag::FloorOverlay);
+    };
+    plugin_system->callbacks.gets_absorbed = [](const Entity &ent) {
       return ent.has<CollisionAbsorber>() &&
              ent.get<CollisionAbsorber>().absorber_type ==
                  CollisionAbsorber::AbsorberType::Absorbed;
     };
-
-    if (gets_absorbed(entity)) {
-      return;
-    }
-
-    if (entity.hasTag(GameTag::FloorOverlay)) {
-      return;
-    }
-
-    auto can_collide = EQ().whereHasComponent<Transform>()
-                           .whereHasNoTags<GameTag::FloorOverlay>()
-                           .whereNotID(entity.id)
-                           .whereOverlaps(transform.rect())
-                           .gen();
-
-    for (Entity &other : can_collide) {
-      Transform &b = other.get<Transform>();
-
-      // If the other transform gets absorbed, but this is its parent, ignore
-      // collision.
-      if (gets_absorbed(other)) {
-        if (other.get<CollisionAbsorber>().parent_id.value_or(-1) ==
-            entity.id) {
-          ids.insert(other.id);
-          continue;
-        }
+    plugin_system->callbacks.get_absorber_parent_id = [](const Entity &ent) {
+      if (ent.has<CollisionAbsorber>()) {
+        return std::optional<int>(static_cast<int>(
+            ent.get<CollisionAbsorber>().parent_id.value_or(-1)));
       }
+      return std::optional<int>();
+    };
+    plugin_system->callbacks.normalize_vec = vec_norm;
+    plugin_system->callbacks.dot_product = vec_dot;
+    plugin_system->callbacks.vector_length = [](const vec2 &v) {
+      return Vector2Length(v);
+    };
+    plugin_system->callbacks.get_speed = [](const Transform &t) {
+      return t.speed();
+    };
+    plugin_system->callbacks.check_overlap = [](const Transform &a,
+                                                const Transform &b) {
+      return EQ::WhereOverlaps::overlaps(a.rect(), b.rect());
+    };
+  }
 
-      resolve_collision(transform, b, dt);
-      ids.insert(other.id);
+  virtual void once(float dt) override {
+    if (plugin_system) {
+      plugin_system->once(dt);
+    }
+  }
+
+  virtual void for_each_with(Entity &entity, Transform &transform,
+                             float dt) override {
+    if (plugin_system) {
+      plugin_system->for_each_with(entity, transform, dt);
     }
   }
 };
