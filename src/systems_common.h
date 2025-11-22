@@ -4,7 +4,7 @@
 #include "game_state_manager.h"
 #include "query.h"
 #include "round_settings.h"
-#include "sound_library.h"
+#include <afterhours/src/plugins/sound_system.h>
 #include <afterhours/ah.h>
 #include <fmt/format.h>
 
@@ -28,13 +28,13 @@ struct UpdateRoundCountdown : PausableSystem<> {
     if (settings.countdown_before_start < 0.05f &&
         settings.countdown_before_start > 0.03f) {
       auto opt = EntityQuery({.force_merge = true})
-                     .whereHasComponent<SoundEmitter>()
+                     .whereHasComponent<sound_system::SoundEmitter>()
                      .gen_first();
       if (opt.valid()) {
         auto &ent = opt.asE();
-        auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-        req.policy = PlaySoundRequest::Policy::Enum;
-        req.file = SoundFile::Round_Start;
+        auto &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
+        req.policy = sound_system::PlaySoundRequest::Policy::Enum;
+        req.file = sound_system::SoundFile::Round_Start;
       }
     }
 

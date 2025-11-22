@@ -2214,13 +2214,13 @@ void ScheduleMainMenuUI::start_game_with_random_animation() {
       .on_step(1.0f,
                [](int) {
                  auto opt = EntityQuery({.force_merge = true})
-                                .whereHasComponent<SoundEmitter>()
+                                .whereHasComponent<sound_system::SoundEmitter>()
                                 .gen_first();
                  if (opt.valid()) {
                    auto &ent = opt.asE();
-                   auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-                   req.policy = PlaySoundRequest::Policy::Enum;
-                   req.file = SoundFile::UI_Move;
+                   auto &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
+                   req.policy = sound_system::PlaySoundRequest::Policy::Enum;
+                   req.file = sound_system::SoundFile::UI_Move;
                  }
                })
       .on_complete([final_map_index]() {

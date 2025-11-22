@@ -17,6 +17,7 @@ backward::SignalHandling sh;
 #include "systems.h"
 #include "systems_ai.h"
 #include "ui/ui_systems.h"
+#include <afterhours/src/plugins/sound_system.h>
 #include <afterhours/src/plugins/animation.h>
 #include <afterhours/src/plugins/camera.h>
 
@@ -48,12 +49,14 @@ void game() {
     texture_manager::enforce_singletons(systems);
     camera::enforce_singletons(systems);
     translation_manager::TranslationPlugin::enforce_singletons(systems);
+    sound_system::enforce_singletons(systems);
   }
 
   // external plugins
   {
     input::register_update_systems(systems);
     window_manager::register_update_systems(systems);
+    sound_system::register_update_systems(systems);
   }
 
   // Fixed update
@@ -142,7 +145,6 @@ void game() {
     });
 
     register_ui_systems(systems);
-    register_sound_systems(systems);
 
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());

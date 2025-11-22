@@ -5,14 +5,14 @@
         "sfx_volume": 0.3560938835144043
     },
     "fullscreen_enabled": false,
-    "language": "Korean",
+    "language": "English",
     "post_processing_enabled": true,
     "resolution": {
         "height": 720,
         "width": 1280
     },
     "round_settings": {
-        "active_round_type": 0,
+        "active_round_type": 3,
         "settings": {
             "Hippo": {
                 "enabled_weapons": 4,

@@ -59,18 +59,18 @@ struct IntroScreens
   float passbyFadeTotal = PASSBY_FADE_TOTAL;
 
   void set_passby_volume(float v) {
-    auto &s0 = SoundLibrary::get().get("IntroPassBy_0");
-    auto &s1 = SoundLibrary::get().get("IntroPassBy_1");
-    auto &s2 = SoundLibrary::get().get("IntroPassBy_2");
+    auto &s0 = sound_system::SoundLibrary::get().get("IntroPassBy_0");
+    auto &s1 = sound_system::SoundLibrary::get().get("IntroPassBy_1");
+    auto &s2 = sound_system::SoundLibrary::get().get("IntroPassBy_2");
     raylib::SetSoundVolume(s0, v);
     raylib::SetSoundVolume(s1, v);
     raylib::SetSoundVolume(s2, v);
   }
 
   void stop_passby() {
-    auto &s0 = SoundLibrary::get().get("IntroPassBy_0");
-    auto &s1 = SoundLibrary::get().get("IntroPassBy_1");
-    auto &s2 = SoundLibrary::get().get("IntroPassBy_2");
+    auto &s0 = sound_system::SoundLibrary::get().get("IntroPassBy_0");
+    auto &s1 = sound_system::SoundLibrary::get().get("IntroPassBy_1");
+    auto &s2 = sound_system::SoundLibrary::get().get("IntroPassBy_2");
     raylib::StopSound(s0);
     raylib::StopSound(s1);
     raylib::StopSound(s2);
@@ -213,12 +213,12 @@ struct IntroScreens
         if (!passbyPlayed[i] && car_pos.x >= (float)resolution.width * 0.1f) {
           auto enqueue = [](const char *name) {
             auto opt = EntityQuery({.force_merge = true})
-                           .whereHasComponent<SoundEmitter>()
+                           .whereHasComponent<sound_system::SoundEmitter>()
                            .gen_first();
             if (opt.valid()) {
               auto &ent = opt.asE();
-              auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-              req.policy = PlaySoundRequest::Policy::Name;
+              auto &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
+              req.policy = sound_system::PlaySoundRequest::Policy::Name;
               req.name = name;
               req.prefer_alias = false;
             }

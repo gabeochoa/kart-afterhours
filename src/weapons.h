@@ -86,7 +86,7 @@ struct Cannon : Weapon {
                    .knockback_amt = 0.25f,
                    .base_damage = kill_shots_to_base_dmg(3),
                    .sound = SoundConfig{.name = sound_file_to_str(
-                                            SoundFile::Weapon_Canon_Shot),
+                                            sound_system::SoundFile::Weapon_Canon_Shot),
                                         .has_multiple = false},
                },
                fd) {}
@@ -101,7 +101,7 @@ struct Sniper : Weapon {
                    .knockback_amt = 0.50f,
                    .base_damage = kill_shots_to_base_dmg(1),
                    .sound = SoundConfig{.name = sound_file_to_str(
-                                            SoundFile::Weapon_Sniper_Shot),
+                                            sound_system::SoundFile::Weapon_Sniper_Shot),
                                         .has_multiple = false},
                },
                fd) {}
@@ -116,7 +116,7 @@ struct Shotgun : Weapon {
                    .knockback_amt = 0.50f,
                    .base_damage = kill_shots_to_base_dmg(4),
                    .sound = SoundConfig{.name = sound_file_to_str(
-                                            SoundFile::Weapon_Shotgun_Shot),
+                                            sound_system::SoundFile::Weapon_Shotgun_Shot),
                                         .has_multiple = false},
                },
                fd) {}

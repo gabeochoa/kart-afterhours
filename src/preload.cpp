@@ -204,8 +204,7 @@ Preload &Preload::make_singleton() {
   {
     // Audio emitter singleton for centralized sound requests
     auto &audio = EntityHelper::createEntity();
-    audio.addComponent<SoundEmitter>();
-    EntityHelper::registerSingleton<SoundEmitter>(audio);
+    sound_system::add_singleton_components(audio);
   }
   {
     // Camera singleton for game world rendering
@@ -222,3 +221,5 @@ Preload::~Preload() {
   raylib::CloseAudioDevice();
   raylib::CloseWindow();
 }
+
+std::shared_ptr<afterhours::sound_system::SoundLibrary> afterhours::sound_system::SoundLibrary_single;

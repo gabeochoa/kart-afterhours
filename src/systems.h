@@ -15,8 +15,8 @@
 #include "round_settings.h"
 #include "settings.h"
 #include "shader_library.h"
-#include "sound_library.h"
 #include "tags.h"
+#include <afterhours/src/plugins/sound_system.h>
 
 #include <afterhours/src/plugins/camera.h>
 
@@ -1276,9 +1276,9 @@ struct WeaponRecoilSystem : System<WeaponFired, Transform> {
 struct WeaponSoundSystem : System<WeaponFired> {
   virtual void for_each_with(Entity &, WeaponFired &evt, float) override {
     if (evt.sound.has_multiple) {
-      SoundLibrary::get().play_random_match(evt.sound.name);
+      sound_system::SoundLibrary::get().play_random_match(evt.sound.name);
     } else {
-      SoundLibrary::get().play(evt.sound.name.c_str());
+      sound_system::SoundLibrary::get().play(evt.sound.name.c_str());
     }
   }
 };
@@ -1835,14 +1835,17 @@ struct VelFromInput
       } break;
       case InputAction::Honk: {
         if (auto opt = EntityQuery({.force_merge = true})
-                           .whereHasComponent<SoundEmitter>()
+                           .whereHasComponent<sound_system::SoundEmitter>()
                            .gen_first();
             opt.valid()) {
           auto &ent = opt.asE();
-          auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-          req.policy = honk.was_down
-                           ? PlaySoundRequest::Policy::PrefixIfNonePlaying
-                           : PlaySoundRequest::Policy::PrefixFirstAvailable;
+          auto &req =
+              ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
+          req.policy =
+              honk.was_down
+                  ? sound_system::PlaySoundRequest::Policy::PrefixIfNonePlaying
+                  : sound_system::PlaySoundRequest::Policy::
+                        PrefixFirstAvailable;
           req.prefix =
               "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
         }
@@ -1869,14 +1872,15 @@ struct VelFromInput
         "VEHHorn_Renault_R4_GTL_Horn_Signal_01_Interior_JSE_RR4_Mono_";
     if (honk_down) {
       if (auto opt = EntityQuery({.force_merge = true})
-                         .whereHasComponent<SoundEmitter>()
+                         .whereHasComponent<sound_system::SoundEmitter>()
                          .gen_first();
           opt.valid()) {
         auto &ent = opt.asE();
-        auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-        req.policy = honk.was_down
-                         ? PlaySoundRequest::Policy::PrefixIfNonePlaying
-                         : PlaySoundRequest::Policy::PrefixFirstAvailable;
+        auto &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
+        req.policy =
+            honk.was_down
+                ? sound_system::PlaySoundRequest::Policy::PrefixIfNonePlaying
+                : sound_system::PlaySoundRequest::Policy::PrefixFirstAvailable;
         req.prefix = horn_prefix;
       }
     }
@@ -1946,12 +1950,12 @@ struct ProcessBoostRequests : PausableSystem<WantsBoost, Transform> {
       return;
     }
     if (auto opt = EntityQuery({.force_merge = true})
-                       .whereHasComponent<SoundEmitter>()
+                       .whereHasComponent<sound_system::SoundEmitter>()
                        .gen_first();
         opt.valid()) {
       auto &ent = opt.asE();
-      auto &req = ent.addComponentIfMissing<PlaySoundRequest>();
-      req.policy = PlaySoundRequest::Policy::PrefixRandom;
+      auto &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
+      req.policy = sound_system::PlaySoundRequest::Policy::PrefixRandom;
       req.prefix = "AIRBrst_Steam_Release_Short_03_JSE_SG_Mono_";
     }
     transform.accel_mult = Config::get().boost_acceleration.data;

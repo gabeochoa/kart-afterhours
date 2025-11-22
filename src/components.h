@@ -10,7 +10,6 @@
 #include "max_health.h"
 #include "rl.h"
 #include "shader_types.h"
-#include "sound_library.h"
 
 // Note: This must be included after std includes
 #include "config.h"
@@ -495,31 +494,6 @@ struct HonkState : BaseComponent {
   bool was_down = false;
 };
 
-struct SoundEmitter : BaseComponent {
-  int default_alias_copies = 4;
-  std::map<std::string, std::vector<std::string>> alias_names_by_base;
-  std::map<std::string, size_t> next_alias_index_by_base;
-};
-
-struct PlaySoundRequest : BaseComponent {
-  enum class Policy {
-    Name,
-    Enum,
-    PrefixRandom,
-    PrefixFirstAvailable,
-    PrefixIfNonePlaying
-  };
-
-  Policy policy{Policy::Name};
-  std::string name;
-  SoundFile file{SoundFile::UI_Move};
-  std::string prefix;
-  bool prefer_alias{true};
-
-  PlaySoundRequest() = default;
-  explicit PlaySoundRequest(SoundFile f)
-      : policy(Policy::Enum), file(f), prefer_alias(true) {}
-};
 
 #include "components_weapons.h"
 
