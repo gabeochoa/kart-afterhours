@@ -16,6 +16,7 @@
 #include "sound_library.h"
 #include "texture_library.h"
 #include "translation_manager.h"
+#include <afterhours/src/plugins/camera.h>
 
 using namespace afterhours;
 // for HasTexture

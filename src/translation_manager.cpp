@@ -3,6 +3,7 @@
 #include "log.h"
 #include "resources.h"
 #include "rl.h"
+#include <functional>
 #include <set>
 
 namespace translation_manager {

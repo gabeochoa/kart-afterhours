@@ -1,7 +1,6 @@
 #pragma once
 
 #include <afterhours/ah.h>
-#include <afterhours/src/plugins/camera.h>
 //
 
 #include "car_affectors.h"
@@ -18,6 +17,8 @@
 #include "shader_library.h"
 #include "sound_library.h"
 #include "tags.h"
+
+#include <afterhours/src/plugins/camera.h>
 
 // Hippo game constants
 constexpr float HIPPO_SPAWN_INTERVAL = 0.8f;
