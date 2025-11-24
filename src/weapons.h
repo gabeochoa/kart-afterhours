@@ -74,8 +74,9 @@ struct Weapon {
   }
 };
 
-void make_poof_anim(Entity &, const Weapon &, float angle_offset = 0);
-void make_bullet(Entity &, const Weapon &, float angle_offset = 0);
+void make_poof_anim(afterhours::Entity &, const Weapon &,
+                    float angle_offset = 0);
+void make_bullet(afterhours::Entity &, const Weapon &, float angle_offset = 0);
 
 struct Cannon : Weapon {
 
@@ -145,7 +146,7 @@ struct MachineGun : Weapon {
             fd) {}
 };
 
-struct CanShoot : BaseComponent {
+struct CanShoot : afterhours::BaseComponent {
   std::map<InputAction, std::unique_ptr<Weapon>> weapons;
 
   CanShoot() = default;
@@ -181,7 +182,7 @@ struct CanShoot : BaseComponent {
     return weapons[action]->pass_time(dt);
   }
 
-  bool fire(Entity &, InputAction action, float dt) {
+  bool fire(afterhours::Entity &, InputAction action, float dt) {
     if (!weapons.contains(action))
       return false;
     if (weapons[action]->fire(dt)) {
@@ -206,8 +207,9 @@ constexpr static std::array<std::pair<int, int>, WEAPON_COUNT>
         /* MachineGun  */ std::pair{3, 5},
 };
 
-inline texture_manager::Rectangle weapon_icon_frame(Weapon::Type t) {
+inline afterhours::texture_manager::Rectangle
+weapon_icon_frame(Weapon::Type t) {
   auto idx = static_cast<size_t>(t);
   auto [col, row] = WEAPON_ICON_COORDS[idx];
-  return texture_manager::idx_to_sprite_frame(col, row);
+  return afterhours::texture_manager::idx_to_sprite_frame(col, row);
 }

@@ -191,13 +191,13 @@ inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
 #include <afterhours/src/plugins/window_manager.h>
 #include <cassert>
 
-typedef raylib::Vector2 vec2;
 typedef raylib::Vector3 vec3;
 typedef raylib::Vector4 vec4;
 using raylib::Rectangle;
 
 #include <afterhours/src/plugins/autolayout.h>
 #include <afterhours/src/plugins/ui.h>
+#include <afterhours/src/plugins/collision.h>
 
 #ifdef __clang__
 #pragma clang diagnostic pop

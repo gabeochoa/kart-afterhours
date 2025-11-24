@@ -37,8 +37,8 @@ struct GameStateManager {
     log_info("Game started!");
   }
 
-  void end_game(const RefEntities &winners = {}) {
-    for (Entity &existing_winner : EntityQuery({.ignore_temp_warning = true})
+  void end_game(const afterhours::RefEntities &winners = {}) {
+    for (afterhours::Entity &existing_winner : afterhours::EntityQuery({.ignore_temp_warning = true})
                                        .whereHasTag(GameTag::IsLastRoundsWinner)
                                        .gen()) {
       existing_winner.disableTag(GameTag::IsLastRoundsWinner);
@@ -48,7 +48,7 @@ struct GameStateManager {
       winner.get().enableTag(GameTag::IsLastRoundsWinner);
     }
 
-    for (Entity &e : EntityQuery({.ignore_temp_warning = true})
+    for (afterhours::Entity &e : afterhours::EntityQuery({.ignore_temp_warning = true})
                          .whereHasComponent<HasShader>()
                          .gen()) {
       auto &shader = e.get<HasShader>();

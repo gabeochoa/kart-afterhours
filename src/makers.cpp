@@ -6,13 +6,14 @@
 #include "round_settings.h"
 #include "tags.h"
 
+using namespace afterhours;
 using afterhours::texture_manager::HasAnimation;
 using afterhours::texture_manager::idx_to_sprite_frame;
 
-void make_explosion_anim(Entity &parent) {
+void make_explosion_anim(afterhours::Entity &parent) {
   const Transform &parent_transform = parent.get<Transform>();
 
-  auto &poof = EntityHelper::createEntity();
+  auto &poof = afterhours::EntityHelper::createEntity();
   poof.addComponent<Transform>(parent_transform.pos(), vec2{10.f, 10.f});
 
   const Transform &transform = poof.get<Transform>();
@@ -30,7 +31,7 @@ void make_explosion_anim(Entity &parent) {
                            .colorTint = raylib::RAYWHITE});
 }
 
-void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
+void make_poof_anim(afterhours::Entity &parent, const Weapon &wp, float angle_offset) {
   const Transform &parent_transform = parent.get<Transform>();
 
   vec2 off;
@@ -60,7 +61,7 @@ void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
     break;
   }
 
-  auto &poof = EntityHelper::createEntity();
+  auto &poof = afterhours::EntityHelper::createEntity();
   poof.addComponent<TracksEntity>(parent.id, off);
   poof.addComponent<Transform>(parent_transform.pos() + off, vec2{10.f, 10.f})
       .set_angle(parent_transform.angle + angle_offset);
@@ -79,7 +80,7 @@ void make_poof_anim(Entity &parent, const Weapon &wp, float angle_offset) {
                            .colorTint = raylib::RAYWHITE});
 }
 
-void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
+void make_bullet(afterhours::Entity &parent, const Weapon &wp, float angle_offset) {
   const Transform &transform = parent.get<Transform>();
 
   auto angle = 0.f;
@@ -112,7 +113,7 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
   vec2 spawn_bias{0, wp.config.size.y};
   auto bullet_spawn_pos = transform.pos() + spawn_bias;
 
-  auto &bullet = EntityHelper::createEntity();
+  auto &bullet = afterhours::EntityHelper::createEntity();
   bullet.addComponent<Transform>(bullet_spawn_pos, wp.config.size)
       .set_angle(angle_offset);
 
@@ -147,7 +148,7 @@ void make_bullet(Entity &parent, const Weapon &wp, float angle_offset) {
   bullet_transform.cleanup_out_of_bounds = !wp.config.can_wrap_around;
 }
 
-void make_poof_anim(Entity &parent, Weapon::FiringDirection dir,
+void make_poof_anim(afterhours::Entity &parent, Weapon::FiringDirection dir,
                     float base_angle, float angle_offset) {
   const Transform &parent_transform = parent.get<Transform>();
 
@@ -172,7 +173,7 @@ void make_poof_anim(Entity &parent, Weapon::FiringDirection dir,
     break;
   }
 
-  auto &poof = EntityHelper::createEntity();
+  auto &poof = afterhours::EntityHelper::createEntity();
   poof.addComponent<TracksEntity>(parent.id, off);
   poof.addComponent<Transform>(parent_transform.pos() + off, vec2{10.f, 10.f})
       .set_angle(base_angle + angle_offset);
@@ -191,7 +192,7 @@ void make_poof_anim(Entity &parent, Weapon::FiringDirection dir,
                            .colorTint = raylib::RAYWHITE});
 }
 
-void make_bullet(Entity &parent, const ProjectileConfig &cfg,
+void make_bullet(afterhours::Entity &parent, const ProjectileConfig &cfg,
                  Weapon::FiringDirection dir, float angle_offset) {
   const Transform &transform = parent.get<Transform>();
 
@@ -225,7 +226,7 @@ void make_bullet(Entity &parent, const ProjectileConfig &cfg,
   vec2 spawn_bias{0, cfg.size.y};
   auto bullet_spawn_pos = transform.pos() + spawn_bias;
 
-  auto &bullet = EntityHelper::createEntity();
+  auto &bullet = afterhours::EntityHelper::createEntity();
   bullet.addComponent<Transform>(bullet_spawn_pos, cfg.size)
       .set_angle(final_angle_offset);
 
@@ -258,8 +259,8 @@ void make_bullet(Entity &parent, const ProjectileConfig &cfg,
   bullet_transform.cleanup_out_of_bounds = !cfg.can_wrap_around;
 }
 
-Entity &make_car(size_t id) {
-  auto &entity = EntityHelper::createEntity();
+afterhours::Entity &make_car(size_t id) {
+  auto &entity = afterhours::EntityHelper::createEntity();
 
   int starting_lives = RoundManager::get().fetch_num_starting_lives();
   entity.addComponent<HasMultipleLives>(starting_lives);
@@ -279,7 +280,7 @@ Entity &make_car(size_t id) {
   entity.addComponent<HasHealth>(MAX_HEALTH);
   entity.addComponent<TireMarkComponent>();
   entity.addComponent<HasColor>([&entity]() -> raylib::Color {
-    return EntityHelper::get_singleton_cmp<ManagesAvailableColors>()
+    return afterhours::EntityHelper::get_singleton_cmp<ManagesAvailableColors>()
         ->get_next_available(entity.id);
   });
   entity.addComponent<afterhours::texture_manager::HasSprite>(
@@ -327,9 +328,9 @@ Entity &make_car(size_t id) {
   return entity;
 }
 
-Entity &make_obstacle(raylib::Rectangle rect, const raylib::Color color,
+afterhours::Entity &make_obstacle(raylib::Rectangle rect, const raylib::Color color,
                       const CollisionConfig &collision_config) {
-  auto &entity = EntityHelper::createEntity();
+  auto &entity = afterhours::EntityHelper::createEntity();
 
   auto &transform = entity.addComponent<Transform>(std::move(rect));
   transform.collision_config = collision_config;
@@ -404,8 +405,8 @@ void make_ai() {
   }
 }
 
-Entity &make_hippo_item(vec2 position) {
-  auto &entity = EntityHelper::createEntity();
+afterhours::Entity &make_hippo_item(vec2 position) {
+  auto &entity = afterhours::EntityHelper::createEntity();
 
   entity.addComponent<Transform>(position, vec2{30, 30});
   entity.addComponent<HippoItem>(0.0f);
@@ -416,11 +417,11 @@ Entity &make_hippo_item(vec2 position) {
   return entity;
 }
 
-Entity &make_oil_slick(raylib::Rectangle rect, float steering_multiplier,
+afterhours::Entity &make_oil_slick(raylib::Rectangle rect, float steering_multiplier,
                        float acceleration_multiplier,
                        float steering_sensitivity_increment) {
   raylib::Color darker_oil{20, 12, 6, 255};
-  auto &entity = EntityHelper::createEntity();
+  auto &entity = afterhours::EntityHelper::createEntity();
 
   auto &transform = entity.addComponent<Transform>(std::move(rect));
   transform.collision_config =
@@ -439,13 +440,13 @@ Entity &make_oil_slick(raylib::Rectangle rect, float steering_multiplier,
   return entity;
 }
 
-Entity &make_default_oil_slick(raylib::Rectangle rect) {
+afterhours::Entity &make_default_oil_slick(raylib::Rectangle rect) {
   return make_oil_slick(rect, 1.1f, 0.1f, 2.0f);
 }
 
-Entity &make_sticky_goo(raylib::Rectangle rect) {
+afterhours::Entity &make_sticky_goo(raylib::Rectangle rect) {
   raylib::Color goo{57, 255, 20, 255};
-  auto &entity = EntityHelper::createEntity();
+  auto &entity = afterhours::EntityHelper::createEntity();
 
   auto &transform = entity.addComponent<Transform>(std::move(rect));
   transform.collision_config =

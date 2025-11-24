@@ -4,7 +4,7 @@
 
 using Screen = GameStateManager::Screen;
 
-struct MenuNavigationStack : BaseComponent {
+struct MenuNavigationStack : afterhours::BaseComponent {
   std::vector<Screen> stack;
   bool ui_visible{true};
 };
@@ -16,7 +16,7 @@ void back();
 
 } // namespace navigation
 
-struct NavigationSystem : System<> {
+struct NavigationSystem : afterhours::System<> {
   input::PossibleInputCollector inpc;
 
   virtual void once(float) override;

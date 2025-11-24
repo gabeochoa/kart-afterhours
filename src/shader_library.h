@@ -120,12 +120,12 @@ private:
   }
 };
 
-struct UpdateShaderValues : System<> {
+struct UpdateShaderValues : afterhours::System<> {
   virtual void once(float) override {
     // Update shader values for all active shaders
     // This system runs once per frame to update global shader uniforms
 
-    auto *resolution_provider = EntityHelper::get_singleton_cmp<
+    auto *resolution_provider = afterhours::EntityHelper::get_singleton_cmp<
         afterhours::window_manager::ProvidesCurrentResolution>();
     if (!resolution_provider) {
       return;

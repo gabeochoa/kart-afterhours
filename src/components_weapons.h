@@ -3,13 +3,13 @@
 #include "input_mapping.h"
 #include "rl.h"
 
-struct RecoilConfig : afterhours::BaseComponent {
+struct RecoilConfig : ::afterhours::BaseComponent {
   float knockback_amt{0.f};
   RecoilConfig() = default;
   explicit RecoilConfig(float amt) : knockback_amt(amt) {}
 };
 
-struct ProjectileConfig : afterhours::BaseComponent {
+struct ProjectileConfig : ::afterhours::BaseComponent {
   vec2 size{10.f, 10.f};
   float speed{5.f};
   float acceleration{0.f};
@@ -83,18 +83,18 @@ inline ProjectileConfig::Builder ProjectileConfig::builder() {
   return Builder{};
 }
 
-struct WeaponSoundInfo : afterhours::BaseComponent {
+struct WeaponSoundInfo : ::afterhours::BaseComponent {
   std::string name;
   bool has_multiple{false};
 };
 
-struct WantsWeaponFire : afterhours::BaseComponent {
+struct WantsWeaponFire : ::afterhours::BaseComponent {
   InputAction action;
   WantsWeaponFire() = default;
   explicit WantsWeaponFire(InputAction a) : action(a) {}
 };
 
-struct WeaponFired : afterhours::BaseComponent {
+struct WeaponFired : ::afterhours::BaseComponent {
   int weapon_type{0};
   int firing_direction{0};
   ProjectileConfig projectile;

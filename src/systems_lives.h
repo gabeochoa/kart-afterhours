@@ -6,6 +6,8 @@
 #include "round_settings.h"
 #include <afterhours/ah.h>
 
+using namespace afterhours;
+
 struct CheckLivesWinFFA : PausableSystem<> {
   virtual void once(float) override {
     if (RoundManager::get().active_round_type != RoundType::Lives) {

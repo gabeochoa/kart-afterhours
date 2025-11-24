@@ -81,7 +81,7 @@ void MapManager::generate_map_preview(int map_index) {
 
   vec2 preview_offset = get_preview_offset(map_index);
 
-  auto map_entities = EntityQuery({.force_merge = true})
+  auto map_entities = afterhours::EntityQuery({.force_merge = true})
                           .whereHasTag(GameTag::MapGenerated)
                           .gen();
 
@@ -94,9 +94,9 @@ void MapManager::generate_map_preview(int map_index) {
   }
 
   // Calculate the actual map bounds to center the camera properly
-  auto *pcr = EntityHelper::get_singleton_cmp<
-      window_manager::ProvidesCurrentResolution>();
-  window_manager::Resolution resolution = pcr->current_resolution;
+  auto *pcr = afterhours::EntityHelper::get_singleton_cmp<
+      afterhours::window_manager::ProvidesCurrentResolution>();
+  afterhours::window_manager::Resolution resolution = pcr->current_resolution;
 
   raylib::Camera2D camera = {};
   float zoom_x = PREVIEW_TEXTURE_SIZE / static_cast<float>(resolution.width);
@@ -115,14 +115,14 @@ void MapManager::generate_map_preview(int map_index) {
   raylib::ClearBackground(raylib::DARKGRAY);
   raylib::BeginMode2D(camera);
 
-  auto preview_entities = EntityQuery({.force_merge = true})
+  auto preview_entities = afterhours::EntityQuery({.force_merge = true})
                               .whereHasComponent<Transform>()
-                              .whereHasComponent<HasColor>()
+                              .whereHasComponent<afterhours::HasColor>()
                               .gen();
 
   for (auto &entity : preview_entities) {
     auto &transform = entity.get().get<Transform>();
-    auto &color = entity.get().get<HasColor>();
+    auto &color = entity.get().get<afterhours::HasColor>();
 
     if (transform.position.x >= preview_offset.x &&
         transform.position.x < preview_offset.x + resolution.width &&
@@ -165,12 +165,12 @@ void MapManager::cleanup_preview_textures() {
 void MapManager::cleanup_preview_area(int map_index) {
   vec2 preview_offset = get_preview_offset(map_index);
 
-  auto *pcr = EntityHelper::get_singleton_cmp<
-      window_manager::ProvidesCurrentResolution>();
-  window_manager::Resolution resolution = pcr->current_resolution;
+  auto *pcr = afterhours::EntityHelper::get_singleton_cmp<
+      afterhours::window_manager::ProvidesCurrentResolution>();
+  afterhours::window_manager::Resolution resolution = pcr->current_resolution;
 
   auto entities_in_area =
-      EntityQuery({.force_merge = true}).whereHasComponent<Transform>().gen();
+      afterhours::EntityQuery({.force_merge = true}).whereHasComponent<Transform>().gen();
 
   for (auto &entity : entities_in_area) {
     if (entity.get().has<Transform>()) {
@@ -188,9 +188,9 @@ void MapManager::cleanup_preview_area(int map_index) {
 
 // Map creation functions
 void MapManager::create_arena_map() {
-  auto *pcr = EntityHelper::get_singleton_cmp<
-      window_manager::ProvidesCurrentResolution>();
-  window_manager::Resolution resolution = pcr->current_resolution;
+  auto *pcr = afterhours::EntityHelper::get_singleton_cmp<
+      afterhours::window_manager::ProvidesCurrentResolution>();
+  afterhours::window_manager::Resolution resolution = pcr->current_resolution;
 
   const auto screen_pct = [resolution](float x, float y, float w, float h) {
     return Rectangle{
@@ -227,9 +227,9 @@ void MapManager::create_arena_map() {
 }
 
 void MapManager::create_maze_map() {
-  auto *pcr = EntityHelper::get_singleton_cmp<
-      window_manager::ProvidesCurrentResolution>();
-  window_manager::Resolution resolution = pcr->current_resolution;
+  auto *pcr = afterhours::EntityHelper::get_singleton_cmp<
+      afterhours::window_manager::ProvidesCurrentResolution>();
+  afterhours::window_manager::Resolution resolution = pcr->current_resolution;
 
   const auto screen_pct = [resolution](float x, float y, float w, float h) {
     return Rectangle{
@@ -265,9 +265,9 @@ void MapManager::create_maze_map() {
 }
 
 void MapManager::create_race_map() {
-  auto *pcr = EntityHelper::get_singleton_cmp<
-      window_manager::ProvidesCurrentResolution>();
-  window_manager::Resolution resolution = pcr->current_resolution;
+  auto *pcr = afterhours::EntityHelper::get_singleton_cmp<
+      afterhours::window_manager::ProvidesCurrentResolution>();
+  afterhours::window_manager::Resolution resolution = pcr->current_resolution;
 
   const auto screen_pct = [resolution](float x, float y, float w, float h) {
     return Rectangle{
@@ -303,9 +303,9 @@ void MapManager::create_race_map() {
 }
 
 void MapManager::create_battle_map() {
-  auto *pcr = EntityHelper::get_singleton_cmp<
-      window_manager::ProvidesCurrentResolution>();
-  window_manager::Resolution resolution = pcr->current_resolution;
+  auto *pcr = afterhours::EntityHelper::get_singleton_cmp<
+      afterhours::window_manager::ProvidesCurrentResolution>();
+  afterhours::window_manager::Resolution resolution = pcr->current_resolution;
 
   const auto screen_pct = [resolution](float x, float y, float w, float h) {
     return Rectangle{
@@ -337,9 +337,9 @@ void MapManager::create_battle_map() {
 }
 
 void MapManager::create_tagandgo_map() {
-  auto *pcr = EntityHelper::get_singleton_cmp<
-      window_manager::ProvidesCurrentResolution>();
-  window_manager::Resolution resolution = pcr->current_resolution;
+  auto *pcr = afterhours::EntityHelper::get_singleton_cmp<
+      afterhours::window_manager::ProvidesCurrentResolution>();
+  afterhours::window_manager::Resolution resolution = pcr->current_resolution;
 
   const auto screen_pct = [resolution](float x, float y, float w, float h) {
     return Rectangle{
@@ -375,9 +375,9 @@ void MapManager::create_tagandgo_map() {
 }
 
 void MapManager::create_test_map() {
-  auto *pcr = EntityHelper::get_singleton_cmp<
-      window_manager::ProvidesCurrentResolution>();
-  window_manager::Resolution resolution = pcr->current_resolution;
+  auto *pcr = afterhours::EntityHelper::get_singleton_cmp<
+      afterhours::window_manager::ProvidesCurrentResolution>();
+  afterhours::window_manager::Resolution resolution = pcr->current_resolution;
 
   const auto screen_pct = [resolution](float x, float y, float w, float h) {
     return Rectangle{

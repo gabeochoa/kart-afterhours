@@ -11,6 +11,8 @@
 #include "../game_state_manager.h"
 #include "animation_key.h"
 
+using namespace afterhours;
+
 namespace ui_game {
 
 template <typename InputAction>

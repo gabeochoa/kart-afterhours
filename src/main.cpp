@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
   ::afterhours::files::init("Cart Chaos", "resources");
 
   // Initialize settings plugin
-  afterhours::settings::init<SettingsData>("settings.json");
+  afterhours::settings::init<SettingsData>("Cart Chaos", "settings.json");
 
   // Load savefile first
   Settings::load_save_file(screenWidth, screenHeight);

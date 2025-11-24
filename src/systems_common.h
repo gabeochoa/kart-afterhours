@@ -27,14 +27,14 @@ struct UpdateRoundCountdown : PausableSystem<> {
 
     if (settings.countdown_before_start < 0.05f &&
         settings.countdown_before_start > 0.03f) {
-      auto opt = EntityQuery({.force_merge = true})
-                     .whereHasComponent<sound_system::SoundEmitter>()
+      auto opt = afterhours::EntityQuery({.force_merge = true})
+                     .whereHasComponent<afterhours::sound_system::SoundEmitter>()
                      .gen_first();
       if (opt.valid()) {
         auto &ent = opt.asE();
-        auto &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
-        req.policy = sound_system::PlaySoundRequest::Policy::Enum;
-        req.file = sound_system::SoundFile::Round_Start;
+        auto &req = ent.addComponentIfMissing<afterhours::sound_system::PlaySoundRequest>();
+        req.policy = afterhours::sound_system::PlaySoundRequest::Policy::Name;
+        req.name = "Round_Start";
       }
     }
 
@@ -47,9 +47,9 @@ struct UpdateRoundCountdown : PausableSystem<> {
   }
 };
 
-struct RenderRoundTimer : System<window_manager::ProvidesCurrentResolution> {
-  virtual void for_each_with(const Entity &,
-                             const window_manager::ProvidesCurrentResolution &,
+struct RenderRoundTimer : afterhours::System<afterhours::window_manager::ProvidesCurrentResolution> {
+  virtual void for_each_with(const afterhours::Entity &,
+                             const afterhours::window_manager::ProvidesCurrentResolution &,
                              float) const override {
     if (!RoundManager::get().uses_timer()) {
       return;

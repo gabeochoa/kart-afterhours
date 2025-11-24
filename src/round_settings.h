@@ -161,7 +161,7 @@ struct RoundTagAndGoSettings : RoundSettings {
 
   void reset_temp_data() override {
     // Reset all players' tag states when starting a new round
-    auto players_with_tracking = EntityQuery({.ignore_temp_warning = true})
+    auto players_with_tracking = afterhours::EntityQuery({.ignore_temp_warning = true})
                                      .whereHasComponent<HasTagAndGoTracking>()
                                      .gen();
     for (auto &player_ref : players_with_tracking) {

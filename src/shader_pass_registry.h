@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
+using namespace afterhours;
+
 SINGLETON_FWD(ShaderPassRegistry)
 struct ShaderPassRegistry {
   SINGLETON(ShaderPassRegistry)

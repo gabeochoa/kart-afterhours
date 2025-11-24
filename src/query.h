@@ -3,15 +3,15 @@
 
 #include "components.h"
 
-struct EQ : public EntityQuery<EQ> {
-  struct WhereInRange : EntityQuery::Modification {
+struct EQ : public afterhours::EntityQuery<EQ> {
+  struct WhereInRange : afterhours::EntityQuery<EQ>::Modification {
     vec2 position;
     float range;
 
     // This might not always be the correct epsilon
     explicit WhereInRange(vec2 pos, float r = 0.01f)
         : position(pos), range(r) {}
-    bool operator()(const Entity &entity) const override {
+    bool operator()(const afterhours::Entity &entity) const override {
       vec2 pos = entity.get<Transform>().pos();
       return distance_sq(position, pos) < (range * range);
     }
@@ -22,14 +22,14 @@ struct EQ : public EntityQuery<EQ> {
   }
 
   EQ &orderByDist(const vec2 &position) {
-    return orderByLambda([position](const Entity &a, const Entity &b) {
+    return orderByLambda([position](const afterhours::Entity &a, const afterhours::Entity &b) {
       float a_dist = distance_sq(a.get<Transform>().pos(), position);
       float b_dist = distance_sq(b.get<Transform>().pos(), position);
       return a_dist < b_dist;
     });
   }
 
-  struct WhereOverlaps : EntityQuery::Modification {
+  struct WhereOverlaps : afterhours::EntityQuery<EQ>::Modification {
     Rectangle rect;
 
     explicit WhereOverlaps(Rectangle rect_) : rect(rect_) {}
@@ -45,7 +45,7 @@ struct EQ : public EntityQuery<EQ> {
       return xOverlap && yOverlap;
     }
 
-    bool operator()(const Entity &entity) const override {
+    bool operator()(const afterhours::Entity &entity) const override {
       return overlaps(rect, entity.get<Transform>().rect());
     }
   };
@@ -53,7 +53,7 @@ struct EQ : public EntityQuery<EQ> {
   EQ &whereOverlaps(const Rectangle r) { return add_mod(new WhereOverlaps(r)); }
 
   EQ &orderByPlayerID() {
-    return orderByLambda([](const Entity &a, const Entity &b) {
+    return orderByLambda([](const afterhours::Entity &a, const afterhours::Entity &b) {
       return a.get<PlayerID>().id < b.get<PlayerID>().id;
     });
   }

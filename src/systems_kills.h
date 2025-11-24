@@ -6,6 +6,8 @@
 #include "round_settings.h"
 #include <afterhours/ah.h>
 
+using namespace afterhours;
+
 struct CheckKillsWinFFA : PausableSystem<> {
   virtual void once(float dt) override {
     if (RoundManager::get().active_round_type != RoundType::Kills) {
@@ -28,7 +30,7 @@ struct CheckKillsWinFFA : PausableSystem<> {
       kills_settings.current_round_time -= dt;
       if (kills_settings.current_round_time <= 0) {
         auto entities_with_kills =
-            EntityQuery().whereHasComponent<HasKillCountTracker>().gen();
+            afterhours::EntityQuery().whereHasComponent<HasKillCountTracker>().gen();
         if (entities_with_kills.empty()) {
           GameStateManager::get().end_game();
           return;
@@ -83,7 +85,7 @@ struct CheckKillsWinTeam : PausableSystem<> {
       kills_settings.current_round_time -= dt;
       if (kills_settings.current_round_time <= 0) {
         auto entities_with_kills =
-            EntityQuery().whereHasComponent<HasKillCountTracker>().gen();
+            afterhours::EntityQuery().whereHasComponent<HasKillCountTracker>().gen();
         if (entities_with_kills.empty()) {
           GameStateManager::get().end_game();
           return;

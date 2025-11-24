@@ -7,8 +7,8 @@
 #include "round_settings.h"
 #include <afterhours/ah.h>
 
-struct ProcessHippoCollection : System<Transform, HasHippoCollection> {
-  virtual void for_each_with(Entity &, Transform &transform,
+struct ProcessHippoCollection : afterhours::System<Transform, HasHippoCollection> {
+  virtual void for_each_with(afterhours::Entity &, Transform &transform,
                              HasHippoCollection &hippo_collection,
                              float) override {
     if (RoundManager::get().active_round_type != RoundType::Hippo) {
@@ -18,7 +18,7 @@ struct ProcessHippoCollection : System<Transform, HasHippoCollection> {
                            .whereOverlaps(transform.rect())
                            .gen();
     for (const auto &item_ref : hippo_items) {
-      Entity &item = item_ref.get();
+      afterhours::Entity &item = item_ref.get();
       HippoItem &hippo_item = item.get<HippoItem>();
       if (hippo_item.collected)
         continue;
@@ -65,8 +65,8 @@ struct SpawnHippoItems : PausableSystem<> {
     if (elapsed_time < target_spawn_time) {
       return;
     }
-    auto *resolution_provider = EntityHelper::get_singleton_cmp<
-        window_manager::ProvidesCurrentResolution>();
+    auto *resolution_provider = afterhours::EntityHelper::get_singleton_cmp<
+        afterhours::window_manager::ProvidesCurrentResolution>();
     if (!resolution_provider) {
       return;
     }
@@ -120,7 +120,7 @@ struct CheckHippoWinFFA : PausableSystem<> {
     cleanup_remaining_hippos(hippo_settings);
 
     auto players_with_hippos =
-        EntityQuery().whereHasComponent<HasHippoCollection>().gen();
+        afterhours::EntityQuery().whereHasComponent<HasHippoCollection>().gen();
     if (players_with_hippos.empty()) {
       GameStateManager::get().end_game();
       return;
@@ -137,7 +137,7 @@ struct CheckHippoWinFFA : PausableSystem<> {
             ? 0
             : max_hippos_it->get().get<HasHippoCollection>().get_hippo_count();
 
-    RefEntities winners;
+    afterhours::RefEntities winners;
     std::ranges::copy_if(
         players_with_hippos, std::back_inserter(winners),
         [max_hippos](const afterhours::RefEntity &entity_ref) {
@@ -191,7 +191,7 @@ struct CheckHippoWinTeam : PausableSystem<> {
     cleanup_remaining_hippos(hippo_settings);
 
     auto players_with_hippos =
-        EntityQuery().whereHasComponent<HasHippoCollection>().gen();
+        afterhours::EntityQuery().whereHasComponent<HasHippoCollection>().gen();
     if (players_with_hippos.empty()) {
       GameStateManager::get().end_game();
       return;
@@ -201,7 +201,7 @@ struct CheckHippoWinTeam : PausableSystem<> {
     std::map<int, int> team_hippos;
 
     for (const auto &entity_ref : players_with_hippos) {
-      Entity &entity = entity_ref.get();
+      afterhours::Entity &entity = entity_ref.get();
       int team_id = -1; // Default to no team
 
       if (entity.has<TeamID>()) {
@@ -224,9 +224,9 @@ struct CheckHippoWinTeam : PausableSystem<> {
     }
 
     // Collect all players from winning team
-    RefEntities winners;
+    afterhours::RefEntities winners;
     for (const auto &entity_ref : players_with_hippos) {
-      Entity &entity = entity_ref.get();
+      afterhours::Entity &entity = entity_ref.get();
       if (entity.has<TeamID>() &&
           entity.get<TeamID>().team_id == winning_team) {
         winners.push_back(entity_ref);

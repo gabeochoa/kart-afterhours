@@ -6,6 +6,8 @@
 #include "round_settings.h"
 #include <afterhours/ah.h>
 
+using namespace afterhours;
+
 struct UpdateTagAndGoTimers : PausableSystem<HasTagAndGoTracking> {
   virtual void for_each_with(Entity &, HasTagAndGoTracking &taggerTracking,
                              float dt) override {

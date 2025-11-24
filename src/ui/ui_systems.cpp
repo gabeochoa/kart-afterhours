@@ -2219,8 +2219,8 @@ void ScheduleMainMenuUI::start_game_with_random_animation() {
                  if (opt.valid()) {
                    auto &ent = opt.asE();
                    auto &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
-                   req.policy = sound_system::PlaySoundRequest::Policy::Enum;
-                   req.file = sound_system::SoundFile::UI_Move;
+                   req.policy = sound_system::PlaySoundRequest::Policy::Name;
+                   req.name = sound_file_to_str(SoundFile::UI_Move);
                  }
                })
       .on_complete([final_map_index]() {

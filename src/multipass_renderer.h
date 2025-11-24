@@ -9,6 +9,8 @@
 #include <memory>
 #include <vector>
 
+using namespace afterhours;
+
 SINGLETON_FWD(MultipassRenderer)
 struct MultipassRenderer {
   SINGLETON(MultipassRenderer)

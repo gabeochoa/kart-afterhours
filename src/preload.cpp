@@ -169,8 +169,8 @@ Preload &Preload::make_singleton() {
     auto &settings = Settings::get();
     translation_manager::TranslationPlugin::add_singleton_components(
         sophie, translation_manager::get_translation_data(),
-        settings.get_language(), translation_manager::translation_param);
-    translation_manager::set_language(settings.get_language());
+        Settings::get_language(), translation_manager::translation_param);
+    translation_manager::set_language(Settings::get_language());
 
     texture_manager::add_singleton_components(
         sophie, raylib::LoadTexture(
@@ -214,3 +214,4 @@ Preload::~Preload() {
 }
 
 std::shared_ptr<afterhours::sound_system::SoundLibrary> afterhours::sound_system::SoundLibrary_single;
+std::shared_ptr<afterhours::sound_system::MusicLibrary> afterhours::sound_system::MusicLibrary_single;

@@ -22,8 +22,8 @@
 // will restart it.
 //
 // we need to make aliases so that each one can play at the same time
-struct CarRumble : System<Transform, CanShoot> {
-  virtual void for_each_with(const Entity &, const Transform &,
+struct CarRumble : afterhours::System<Transform, CanShoot> {
+  virtual void for_each_with(const afterhours::Entity &, const Transform &,
                              const CanShoot &, float) const override {
     // SoundLibrary::get().play(SoundFile::Engine_Idle_Short);
   }
@@ -39,7 +39,7 @@ struct UIClickSounds
     // this->include_derived_children = true;
   }
 
-  virtual void for_each_with(Entity &, afterhours::ui::UIComponent &component,
+  virtual void for_each_with(afterhours::Entity &, afterhours::ui::UIComponent &component,
                              afterhours::ui::HasClickListener &hasClickListener,
                              float) override {
     if (!GameStateManager::get().is_menu_active()) {
@@ -51,14 +51,14 @@ struct UIClickSounds
 
     // If this element registered a click this frame, play the UI_Select sound
     if (hasClickListener.down) {
-      auto opt = EntityQuery({.force_merge = true})
-                     .template whereHasComponent<sound_system::SoundEmitter>()
+      auto opt = afterhours::EntityQuery({.force_merge = true})
+                     .template whereHasComponent<afterhours::sound_system::SoundEmitter>()
                      .gen_first();
       if (opt.valid()) {
-        Entity &ent = opt.asE();
-        sound_system::PlaySoundRequest &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
-        req.policy = sound_system::PlaySoundRequest::Policy::Enum;
-        req.file = sound_system::SoundFile::UI_Select;
+        afterhours::Entity &ent = opt.asE();
+        afterhours::sound_system::PlaySoundRequest &req = ent.addComponentIfMissing<afterhours::sound_system::PlaySoundRequest>();
+        req.policy = afterhours::sound_system::PlaySoundRequest::Policy::Name;
+        req.name = sound_file_to_str(SoundFile::UI_Select);
       }
     }
 
@@ -73,7 +73,7 @@ private:
         continue;
       }
 
-      Entity &child = child_entity.asE();
+      afterhours::Entity &child = child_entity.asE();
       if (!child.has<afterhours::ui::UIComponent>() ||
           !child.has<afterhours::ui::HasClickListener>()) {
         continue;
@@ -92,14 +92,14 @@ private:
 
       // If this element registered a click this frame, play the UI_Select sound
       if (child_hasClickListener.down) {
-        auto opt = EntityQuery({.force_merge = true})
-                       .template whereHasComponent<sound_system::SoundEmitter>()
+        auto opt = afterhours::EntityQuery({.force_merge = true})
+                       .template whereHasComponent<afterhours::sound_system::SoundEmitter>()
                        .gen_first();
         if (opt.valid()) {
-          Entity &ent = opt.asE();
-          sound_system::PlaySoundRequest &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
-          req.policy = sound_system::PlaySoundRequest::Policy::Enum;
-          req.file = sound_system::SoundFile::UI_Select;
+          afterhours::Entity &ent = opt.asE();
+          afterhours::sound_system::PlaySoundRequest &req = ent.addComponentIfMissing<afterhours::sound_system::PlaySoundRequest>();
+          req.policy = afterhours::sound_system::PlaySoundRequest::Policy::Name;
+          req.name = sound_file_to_str(SoundFile::UI_Select);
         }
       }
 
@@ -108,7 +108,7 @@ private:
   }
 };
 
-struct BackgroundMusic : System<> {
+struct BackgroundMusic : afterhours::System<> {
   bool started = false;
 
   virtual void once(float) override {
@@ -128,12 +128,12 @@ struct BackgroundMusic : System<> {
     }
   }
 
-  virtual void for_each_with(Entity &, float) override {}
+  virtual void for_each_with(afterhours::Entity &, float) override {}
 };
 
 
 // Binds UI input to sound requests instead of direct plays
-struct UISoundBindingSystem : System<> {
+struct UISoundBindingSystem : afterhours::System<> {
   input::PossibleInputCollector inpc;
 
   virtual bool should_run(float) override {
@@ -150,19 +150,19 @@ struct UISoundBindingSystem : System<> {
         action_matches(actions_done.action, InputAction::WidgetNext) ||
         action_matches(actions_done.action, InputAction::WidgetBack);
     if (is_move) {
-      auto opt = EntityQuery({.force_merge = true})
-                     .template whereHasComponent<sound_system::SoundEmitter>()
+      auto opt = afterhours::EntityQuery({.force_merge = true})
+                     .template whereHasComponent<afterhours::sound_system::SoundEmitter>()
                      .gen_first();
       if (opt.valid()) {
-        Entity &ent = opt.asE();
-        sound_system::PlaySoundRequest &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
-        req.policy = sound_system::PlaySoundRequest::Policy::Enum;
-        req.file = sound_system::SoundFile::UI_Move;
+        afterhours::Entity &ent = opt.asE();
+        afterhours::sound_system::PlaySoundRequest &req = ent.addComponentIfMissing<afterhours::sound_system::PlaySoundRequest>();
+        req.policy = afterhours::sound_system::PlaySoundRequest::Policy::Name;
+        req.name = sound_file_to_str(SoundFile::UI_Move);
       }
     }
   }
 
-  virtual void for_each_with(Entity &, float) override {
+  virtual void for_each_with(afterhours::Entity &, float) override {
     if (!inpc.has_value()) {
       return;
     }

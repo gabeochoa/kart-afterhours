@@ -49,7 +49,7 @@ struct MapManager {
   [[nodiscard]] int get_selected_map() const { return selected_map_index; }
 
   void cleanup_map_generated_entities() {
-    auto map_generated_entities = EntityQuery({.force_merge = true})
+    auto map_generated_entities = afterhours::EntityQuery({.force_merge = true})
                                       .whereHasTag(GameTag::MapGenerated)
                                       .gen();
     for (auto &entity : map_generated_entities) {
