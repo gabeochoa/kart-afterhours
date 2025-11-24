@@ -6,33 +6,29 @@
 #include <magic_enum/magic_enum.hpp>
 #include <sstream>
 
-// Include round_settings.h after other headers to avoid namespace issues
 #include "round_settings.h"
 
-// Ensure we're in global namespace for all definitions
-namespace {
+using namespace afterhours;
 
-void to_json_impl(nlohmann::json &j,
-                  const ::afterhours::window_manager::Resolution &resolution) {
+void to_json(nlohmann::json &j, const window_manager::Resolution &resolution) {
   j = nlohmann::json{
       {"width", resolution.width},
       {"height", resolution.height},
   };
 }
 
-void from_json_impl(const nlohmann::json &j,
-                    ::afterhours::window_manager::Resolution &resolution) {
+void from_json(const nlohmann::json &j,
+               window_manager::Resolution &resolution) {
   j.at("width").get_to(resolution.width);
   j.at("height").get_to(resolution.height);
 }
 
-void to_json_impl(nlohmann::json &j,
-                  const translation_manager::Language &language) {
+void to_json(nlohmann::json &j, const translation_manager::Language &language) {
   j = magic_enum::enum_name(language);
 }
 
-void from_json_impl(const nlohmann::json &j,
-                    translation_manager::Language &language) {
+void from_json(const nlohmann::json &j,
+               translation_manager::Language &language) {
   if (j.is_string()) {
     auto lang_enum = magic_enum::enum_cast<translation_manager::Language>(
         j.get<std::string>());
@@ -44,33 +40,12 @@ void from_json_impl(const nlohmann::json &j,
   }
 }
 
-} // namespace
-
-void to_json(nlohmann::json &j,
-             const ::afterhours::window_manager::Resolution &resolution) {
-  to_json_impl(j, resolution);
-}
-
-void from_json(const nlohmann::json &j,
-               ::afterhours::window_manager::Resolution &resolution) {
-  from_json_impl(j, resolution);
-}
-
-void to_json(nlohmann::json &j, const translation_manager::Language &language) {
-  to_json_impl(j, language);
-}
-
-void from_json(const nlohmann::json &j,
-               translation_manager::Language &language) {
-  from_json_impl(j, language);
-}
-
 bool Settings::load_save_file(int width, int height) {
   auto &data = Settings::get();
   data.resolution.width = width;
   data.resolution.height = height;
 
-  if (!afterhours::settings::load<SettingsData>()) {
+  if (!settings::load<SettingsData>()) {
     return false;
   }
 
@@ -81,7 +56,7 @@ bool Settings::load_save_file(int width, int height) {
 
 void Settings::write_save_file() {
   Settings::save_round_settings();
-  afterhours::settings::save<SettingsData>();
+  settings::save<SettingsData>();
 }
 
 void Settings::reset() {
@@ -94,7 +69,7 @@ int Settings::get_screen_width() { return Settings::get().resolution.width; }
 
 int Settings::get_screen_height() { return Settings::get().resolution.height; }
 
-void Settings::update_resolution(::afterhours::window_manager::Resolution rez) {
+void Settings::update_resolution(window_manager::Resolution rez) {
   Settings::get().resolution = rez;
 }
 

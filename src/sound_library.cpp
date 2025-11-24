@@ -2,24 +2,7 @@
 #include <afterhours/src/plugins/files.h>
 #include "sound_library.h"
 
-namespace {
-  template<int = 0>
-  std::filesystem::path get_sound_resource_path_impl(const std::string& group, const std::string& name) {
-    struct FilesAccessor {
-      typedef ::afterhours::files FilesType;
-      static std::filesystem::path get_path(const std::string& g, const std::string& n) {
-        return FilesType::get_resource_path(g, n);
-      }
-    };
-    return FilesAccessor::get_path(group, name);
-  }
-}
-
-namespace sound_library_internal {
-  std::filesystem::path get_sound_resource_path(const std::string& group, const std::string& name) {
-    return get_sound_resource_path_impl(group, name);
-  }
-}
+using namespace afterhours;
 
 void load_sounds() {
   magic_enum::enum_for_each<SoundFile>([](auto val) {
@@ -58,7 +41,7 @@ void load_sounds() {
       break;
     }
     SoundLibrary::get().load(
-        sound_library_internal::get_sound_resource_path("sounds", filename).string().c_str(),
+        files::get_resource_path("sounds", filename).string().c_str(),
         sound_file_to_str(file));
   });
 
@@ -68,7 +51,7 @@ void load_sounds() {
     std::string stem = std::string(mg_prefix) + std::to_string(i);
     std::string path = std::string("gdc/") + stem + ".wav";
     SoundLibrary::get().load(
-        sound_library_internal::get_sound_resource_path("sounds", path).string().c_str(), stem.c_str());
+        files::get_resource_path("sounds", path).string().c_str(), stem.c_str());
   }
 
   const char *boost_prefix = "AIRBrst_Steam_Release_Short_03_JSE_SG_Mono_";
@@ -76,23 +59,23 @@ void load_sounds() {
     std::string stem = std::string(boost_prefix) + std::to_string(i);
     std::string path = std::string("gdc/") + stem + ".wav";
     SoundLibrary::get().load(
-        sound_library_internal::get_sound_resource_path("sounds", path).string().c_str(), stem.c_str());
+        files::get_resource_path("sounds", path).string().c_str(), stem.c_str());
   }
 
   SoundLibrary::get().load(
-      sound_library_internal::get_sound_resource_path("sounds", "gdc/"
+      files::get_resource_path("sounds", "gdc/"
                                          "1993_Suzuki_VS_800_GL_Intruder_pass-"
                                          "by_back_to_front_asphalt_M-S_LR2.wav").string().c_str(),
       "IntroPassBy_0");
   SoundLibrary::get().load(
-      sound_library_internal::get_sound_resource_path(
+      files::get_resource_path(
               "sounds", "gdc/"
                         "VEHCar_1967_Corvette_EXT-Group_A_Approach_In_"
                         "Accelerate_MEDIUM_Lead_car_then_Vette_Left_to_Right_"
                         "02_M1_GoldSND_M1C_101419_aaOVPpPmTQSk_LR1.wav").string().c_str(),
       "IntroPassBy_1");
   SoundLibrary::get().load(
-      sound_library_internal::get_sound_resource_path("sounds",
+      files::get_resource_path("sounds",
                                "gdc/"
                                "VEHCar_Audi_Q7_EXTERIOR_Approach_Fast_Stop_"
                                "Drive_Away_Fast_ORTF_DRCA_AUQ7_MK012_LR3.wav").string().c_str(),
@@ -104,11 +87,11 @@ void load_sounds() {
     std::string stem = std::string(horn_prefix) + std::to_string(i);
     std::string path = std::string("gdc/") + stem + ".wav";
     SoundLibrary::get().load(
-        sound_library_internal::get_sound_resource_path("sounds", path).string().c_str(), stem.c_str());
+        files::get_resource_path("sounds", path).string().c_str(), stem.c_str());
     for (int copy = 1; copy <= 3; ++copy) {
       std::string alias = stem + std::string("_a") + std::to_string(copy);
       SoundLibrary::get().load(
-          sound_library_internal::get_sound_resource_path("sounds", path).string().c_str(),
+          files::get_resource_path("sounds", path).string().c_str(),
           alias.c_str());
     }
   }

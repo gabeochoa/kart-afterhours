@@ -33,17 +33,16 @@ std::string get_font_name(FontID id) {
   case FontID::Japanese:
     return "NotoSansMonoCJKjp-Bold.otf";
   case FontID::raylibFont:
-    return afterhours::ui::UIComponent::DEFAULT_FONT;
+    return ui::UIComponent::DEFAULT_FONT;
   case FontID::SYMBOL_FONT:
     return "NotoSansMonoCJKkr-Bold.otf";
-    // return "eqprorounded-regular.ttf";
   }
-  return afterhours::ui::UIComponent::DEFAULT_FONT;
+  return ui::UIComponent::DEFAULT_FONT;
 }
 
 static void load_gamepad_mappings() {
   std::ifstream ifs(
-      ::afterhours::files::get_resource_path("", "gamecontrollerdb.txt").string().c_str());
+      files::get_resource_path("", "gamecontrollerdb.txt").string().c_str());
   if (!ifs.is_open()) {
     std::cout << "Failed to load game controller db" << std::endl;
     return;
@@ -83,58 +82,53 @@ Preload &Preload::init(const char *title) {
   load_gamepad_mappings();
   load_sounds();
   MusicLibrary::get().load(
-      ::afterhours::files::get_resource_path("sounds", "replace/cobolt.mp3").string().c_str(),
+      files::get_resource_path("sounds", "replace/cobolt.mp3").string().c_str(),
       "menu_music");
 
-  // TODO add load folder for shaders
-
   ShaderLibrary::get().load(
-      ::afterhours::files::get_resource_path("shaders", "post_processing.fs").string().c_str(),
+      files::get_resource_path("shaders", "post_processing.fs").string().c_str(),
       "post_processing");
 
   ShaderLibrary::get().load(
-      ::afterhours::files::get_resource_path("shaders", "post_processing_tag.fs").string().c_str(),
+      files::get_resource_path("shaders", "post_processing_tag.fs").string().c_str(),
       "post_processing_tag");
 
   ShaderLibrary::get().load(
-      ::afterhours::files::get_resource_path("shaders", "entity_test.fs").string().c_str(),
+      files::get_resource_path("shaders", "entity_test.fs").string().c_str(),
       "entity_test");
 
   ShaderLibrary::get().load(
-      ::afterhours::files::get_resource_path("shaders", "car.fs").string().c_str(), "car");
+      files::get_resource_path("shaders", "car.fs").string().c_str(), "car");
 
   ShaderLibrary::get().load(
-      ::afterhours::files::get_resource_path("shaders", "car.fs").string().c_str(),
+      files::get_resource_path("shaders", "car.fs").string().c_str(),
       "car_winner");
 
   ShaderLibrary::get().load(
-      ::afterhours::files::get_resource_path("shaders", "entity_enhanced.fs").string().c_str(),
+      files::get_resource_path("shaders", "entity_enhanced.fs").string().c_str(),
       "entity_enhanced");
 
   ShaderLibrary::get().load(
-      ::afterhours::files::get_resource_path("shaders", "text_mask.fs").string().c_str(),
+      files::get_resource_path("shaders", "text_mask.fs").string().c_str(),
       "text_mask");
 
-  // TODO how safe is the path combination here esp for mac vs windows
-  ::afterhours::files::for_resources_in_folder(
+  files::for_resources_in_folder(
       "images", "controls/keyboard_default",
       [](const std::string &name, const std::string &filename) {
         TextureLibrary::get().load(filename.c_str(), name.c_str());
       });
 
-  // TODO how safe is the path combination here esp for mac vs windows
-  ::afterhours::files::for_resources_in_folder(
+  files::for_resources_in_folder(
       "images", "controls/xbox_default",
       [](const std::string &name, const std::string &filename) {
         TextureLibrary::get().load(filename.c_str(), name.c_str());
       });
 
-  // TODO add to spritesheet
   TextureLibrary::get().load(
-      ::afterhours::files::get_resource_path("images", "dollar_sign.png").string().c_str(),
+      files::get_resource_path("images", "dollar_sign.png").string().c_str(),
       "dollar_sign");
   TextureLibrary::get().load(
-      ::afterhours::files::get_resource_path("images", "trashcan.png").string().c_str(),
+      files::get_resource_path("images", "trashcan.png").string().c_str(),
       "trashcan");
 
   return *this;
@@ -143,19 +137,19 @@ Preload &Preload::init(const char *title) {
 void setup_fonts(Entity &sophie) {
   sophie.get<ui::FontManager>().load_font(
       get_font_name(FontID::English),
-      ::afterhours::files::get_resource_path("", get_font_name(FontID::English)).string().c_str());
+      files::get_resource_path("", get_font_name(FontID::English)).string().c_str());
 
   auto &font_manager = sophie.get<ui::FontManager>();
   std::string font_file =
-      ::afterhours::files::get_resource_path("", get_font_name(FontID::Korean)).string();
+      files::get_resource_path("", get_font_name(FontID::Korean)).string();
 
   translation_manager::TranslationPlugin::load_cjk_fonts(
       font_manager, font_file, get_font_name,
       translation_manager::get_font_for_language_mapper);
 
   font_manager.load_font(
-      afterhours::ui::UIComponent::SYMBOL_FONT,
-      ::afterhours::files::get_resource_path("", get_font_name(FontID::SYMBOL_FONT)).string().c_str());
+      ui::UIComponent::SYMBOL_FONT,
+      files::get_resource_path("", get_font_name(FontID::SYMBOL_FONT)).string().c_str());
 }
 
 Preload &Preload::make_singleton() {
@@ -174,15 +168,15 @@ Preload &Preload::make_singleton() {
 
     texture_manager::add_singleton_components(
         sophie, raylib::LoadTexture(
-                    ::afterhours::files::get_resource_path("images", "spritesheet.png").string().c_str()));
+                    files::get_resource_path("images", "spritesheet.png").string().c_str()));
 
     setup_fonts(sophie);
     // making a root component to attach the UI to
     sophie.addComponent<ui::AutoLayoutRoot>();
     sophie.addComponent<ui::UIComponentDebug>("sophie");
     sophie.addComponent<ui::UIComponent>(sophie.id)
-        .set_desired_width(afterhours::ui::screen_pct(1.f))
-        .set_desired_height(afterhours::ui::screen_pct(1.f))
+        .set_desired_width(ui::screen_pct(1.f))
+        .set_desired_height(ui::screen_pct(1.f))
         .enable_font(get_font_name(FontID::English), 75.f);
 
     sophie.addComponent<ManagesAvailableColors>();
@@ -200,7 +194,7 @@ Preload &Preload::make_singleton() {
   {
     // Camera singleton for game world rendering
     auto &camera = EntityHelper::createEntity();
-    afterhours::camera::add_singleton_components(camera);
+    camera::add_singleton_components(camera);
   }
   return *this;
 }
@@ -213,5 +207,5 @@ Preload::~Preload() {
   raylib::CloseWindow();
 }
 
-std::shared_ptr<afterhours::sound_system::SoundLibrary> afterhours::sound_system::SoundLibrary_single;
-std::shared_ptr<afterhours::sound_system::MusicLibrary> afterhours::sound_system::MusicLibrary_single;
+std::shared_ptr<sound_system::SoundLibrary> sound_system::SoundLibrary_single;
+std::shared_ptr<sound_system::MusicLibrary> sound_system::MusicLibrary_single;
