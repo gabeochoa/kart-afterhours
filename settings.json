@@ -17,21 +17,18 @@
             "Hippo": {
                 "enabled_weapons": 4,
                 "show_countdown_timer": true,
-                "team_mode_enabled": false,
                 "time_option": 3,
                 "total_hippos": 50
             },
             "Kills": {
                 "enabled_weapons": 2,
                 "show_countdown_timer": true,
-                "team_mode_enabled": false,
                 "time_option": 3
             },
             "Lives": {
                 "enabled_weapons": 1,
                 "num_starting_lives": 1,
                 "show_countdown_timer": true,
-                "team_mode_enabled": true,
                 "time_option": 0
             },
             "TagAndGo": {
@@ -39,7 +36,6 @@
                 "enabled_weapons": 7,
                 "show_countdown_timer": true,
                 "speed_multiplier": 0.699999988079071,
-                "team_mode_enabled": false,
                 "time_option": 3
             }
         }
