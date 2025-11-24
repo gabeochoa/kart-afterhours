@@ -43,7 +43,7 @@ struct CheckKillsWinFFA : PausableSystem<> {
             max_kills_it == entities_with_kills.end()
                 ? 0
                 : max_kills_it->get().get<HasKillCountTracker>().kills;
-        afterhours::RefEntities winners;
+        RefEntities winners;
         std::ranges::copy_if(
             entities_with_kills, std::back_inserter(winners),
             [max_kills](const afterhours::RefEntity &entity_ref) {
@@ -116,7 +116,7 @@ struct CheckKillsWinTeam : PausableSystem<> {
         }
 
         // Collect all players from winning team
-        afterhours::RefEntities winners;
+        RefEntities winners;
         for (const auto &entity_ref : entities_with_kills) {
           Entity &entity = entity_ref.get();
           if (entity.has<TeamID>() &&

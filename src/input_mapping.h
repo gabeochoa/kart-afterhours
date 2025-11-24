@@ -38,7 +38,7 @@ inline bool action_matches(int action, InputAction expected) {
   return from_int(action) == expected;
 }
 
-using afterhours::input;
+using ::afterhours::input;
 
 inline auto get_mapping() {
   std::map<int, input::ValidInputs> mapping;

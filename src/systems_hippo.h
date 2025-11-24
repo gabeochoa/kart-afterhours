@@ -137,7 +137,7 @@ struct CheckHippoWinFFA : PausableSystem<> {
             ? 0
             : max_hippos_it->get().get<HasHippoCollection>().get_hippo_count();
 
-    afterhours::RefEntities winners;
+    RefEntities winners;
     std::ranges::copy_if(
         players_with_hippos, std::back_inserter(winners),
         [max_hippos](const afterhours::RefEntity &entity_ref) {
@@ -224,7 +224,7 @@ struct CheckHippoWinTeam : PausableSystem<> {
     }
 
     // Collect all players from winning team
-    afterhours::RefEntities winners;
+    RefEntities winners;
     for (const auto &entity_ref : players_with_hippos) {
       Entity &entity = entity_ref.get();
       if (entity.has<TeamID>() &&

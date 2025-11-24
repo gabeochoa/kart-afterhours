@@ -86,7 +86,7 @@ struct Cannon : Weapon {
                    .knockback_amt = 0.25f,
                    .base_damage = kill_shots_to_base_dmg(3),
                    .sound = SoundConfig{.name = sound_file_to_str(
-                                            sound_system::SoundFile::Weapon_Canon_Shot),
+                                            SoundFile::Weapon_Canon_Shot),
                                         .has_multiple = false},
                },
                fd) {}
@@ -101,7 +101,7 @@ struct Sniper : Weapon {
                    .knockback_amt = 0.50f,
                    .base_damage = kill_shots_to_base_dmg(1),
                    .sound = SoundConfig{.name = sound_file_to_str(
-                                            sound_system::SoundFile::Weapon_Sniper_Shot),
+                                            SoundFile::Weapon_Sniper_Shot),
                                         .has_multiple = false},
                },
                fd) {}
@@ -116,7 +116,7 @@ struct Shotgun : Weapon {
                    .knockback_amt = 0.50f,
                    .base_damage = kill_shots_to_base_dmg(4),
                    .sound = SoundConfig{.name = sound_file_to_str(
-                                            sound_system::SoundFile::Weapon_Shotgun_Shot),
+                                            SoundFile::Weapon_Shotgun_Shot),
                                         .has_multiple = false},
                },
                fd) {}
@@ -206,9 +206,8 @@ constexpr static std::array<std::pair<int, int>, WEAPON_COUNT>
         /* MachineGun  */ std::pair{3, 5},
 };
 
-inline afterhours::texture_manager::Rectangle
-weapon_icon_frame(Weapon::Type t) {
+inline texture_manager::Rectangle weapon_icon_frame(Weapon::Type t) {
   auto idx = static_cast<size_t>(t);
   auto [col, row] = WEAPON_ICON_COORDS[idx];
-  return afterhours::texture_manager::idx_to_sprite_frame(col, row);
+  return texture_manager::idx_to_sprite_frame(col, row);
 }

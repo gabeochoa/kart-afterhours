@@ -37,7 +37,7 @@ struct GameStateManager {
     log_info("Game started!");
   }
 
-  void end_game(const afterhours::RefEntities &winners = {}) {
+  void end_game(const RefEntities &winners = {}) {
     for (Entity &existing_winner : EntityQuery({.ignore_temp_warning = true})
                                        .whereHasTag(GameTag::IsLastRoundsWinner)
                                        .gen()) {

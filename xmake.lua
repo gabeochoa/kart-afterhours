@@ -64,6 +64,8 @@ target("kart")
     --
     add_files("src/*.cpp")
     add_files("src/ui/*.cpp")
+    add_files("vendor/afterhours/src/plugins/files.cpp")
+    add_files("vendor/afterhours/src/plugins/settings.cpp")
     --
     add_includedirs("vendor")
 

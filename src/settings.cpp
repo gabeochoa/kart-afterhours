@@ -1,59 +1,14 @@
-
 #include "settings.h"
-
-#include <algorithm>
-#include <memory>
-#include <nlohmann/json.hpp>
-
-#include "rl.h"
-
 #include "music_library.h"
+#include "rl.h"
 #include "round_settings.h"
 #include "sound_library.h"
-
-template <typename T> struct ValueHolder {
-  using value_type = T;
-  T data;
-
-  ValueHolder(const T &initial) : data(initial) {}
-  T &get() { return data; }
-  const T &get() const { return data; }
-  void set(const T &data_) { data = data_; }
-
-  operator const T &() { return get(); }
-};
-
-struct Pct : ValueHolder<float> {
-  Pct(const float &initial) : ValueHolder(0.f) { set(initial); }
-  void set(const float &data_) { data = std::min(1.f, std::max(0.f, data_)); }
-  float str() const { return data; }
-};
-
-struct S_Data {
-  afterhours::window_manager::Resolution resolution = {
-      .width = 1280,
-      .height = 720,
-  };
-
-  Pct master_volume = 0.1f;
-  Pct music_volume = 0.1f;
-  Pct sfx_volume = 0.1f;
-
-  bool fullscreen_enabled = false;
-  bool post_processing_enabled = true;
-
-  translation_manager::Language language =
-      translation_manager::Language::English;
-
-  // Round settings
-  nlohmann::json round_settings;
-
-  // not serialized
-  fs::path loaded_from;
-};
+#include <fstream>
+#include <magic_enum/magic_enum.hpp>
+#include <sstream>
 
 void to_json(nlohmann::json &j,
-             const afterhours::window_manager::Resolution &resolution) {
+             const ::afterhours::window_manager::Resolution &resolution) {
   j = nlohmann::json{
       {"width", resolution.width},
       {"height", resolution.height},
@@ -61,7 +16,7 @@ void to_json(nlohmann::json &j,
 }
 
 void from_json(const nlohmann::json &j,
-               afterhours::window_manager::Resolution &resolution) {
+               ::afterhours::window_manager::Resolution &resolution) {
   j.at("width").get_to(resolution.width);
   j.at("height").get_to(resolution.height);
 }
@@ -83,28 +38,31 @@ void from_json(const nlohmann::json &j,
   }
 }
 
-void to_json(nlohmann::json &j, const S_Data &data) {
-  nlohmann::json rez_j;
-  to_json(rez_j, data.resolution);
+::nlohmann::json ::SettingsData::to_json() const {
+  ::nlohmann::json j;
+  ::nlohmann::json rez_j;
+  to_json(rez_j, resolution);
   j["resolution"] = rez_j;
-  //
-  nlohmann::json audio_j;
-  audio_j["master_volume"] = data.master_volume.str();
-  audio_j["music_volume"] = data.music_volume.str();
-  audio_j["sfx_volume"] = data.sfx_volume.str();
+
+  ::nlohmann::json audio_j;
+  audio_j["master_volume"] = master_volume.str();
+  audio_j["music_volume"] = music_volume.str();
+  audio_j["sfx_volume"] = sfx_volume.str();
   j["audio"] = audio_j;
-  //
-  j["fullscreen_enabled"] = data.fullscreen_enabled;
-  j["post_processing_enabled"] = data.post_processing_enabled;
-  //
-  nlohmann::json lang_j;
-  to_json(lang_j, data.language);
+
+  j["fullscreen_enabled"] = fullscreen_enabled;
+  j["post_processing_enabled"] = post_processing_enabled;
+
+  ::nlohmann::json lang_j;
+  to_json(lang_j, language);
   j["language"] = lang_j;
-  //
-  j["round_settings"] = data.round_settings;
+
+  j["round_settings"] = round_settings;
+  return j;
 }
 
-void from_json(const nlohmann::json &j, S_Data &data) {
+SettingsData SettingsData::from_json(const nlohmann::json &j) {
+  SettingsData data;
   from_json(j.at("resolution"), data.resolution);
 
   nlohmann::json audio_j = j.at("audio");
@@ -125,45 +83,68 @@ void from_json(const nlohmann::json &j, S_Data &data) {
   if (j.contains("round_settings")) {
     data.round_settings = j.at("round_settings");
   }
+
+  return data;
 }
 
-// TODO load last used settings
-Settings::Settings() { data = new S_Data(); }
-Settings::~Settings() { delete data; }
+bool Settings::load_save_file(int width, int height) {
+  auto &data = Settings::get();
+  data.resolution.width = width;
+  data.resolution.height = height;
+
+  if (!afterhours::settings::load<SettingsData>()) {
+    return false;
+  }
+
+  refresh_settings();
+  load_round_settings();
+  return true;
+}
+
+void Settings::write_save_file() {
+  save_round_settings();
+  afterhours::settings::save<SettingsData>();
+}
 
 void Settings::reset() {
-  delete data;
-  data = new S_Data();
+  auto &data = Settings::get();
+  data = SettingsData();
   refresh_settings();
 }
 
-int Settings::get_screen_width() const { return data->resolution.width; }
-int Settings::get_screen_height() const { return data->resolution.height; }
-float Settings::get_music_volume() const { return data->music_volume; }
-float Settings::get_sfx_volume() const { return data->sfx_volume; }
-float Settings::get_master_volume() const { return data->master_volume; }
+int Settings::get_screen_width() { return Settings::get().resolution.width; }
 
-void Settings::update_resolution(afterhours::window_manager::Resolution rez) {
-  data->resolution = rez;
+int Settings::get_screen_height() { return Settings::get().resolution.height; }
+
+void Settings::update_resolution(::afterhours::window_manager::Resolution rez) {
+  Settings::get().resolution = rez;
+}
+
+float Settings::get_music_volume() {
+  return Settings::get().music_volume.str();
 }
 
 void Settings::update_music_volume(float vol) {
   MusicLibrary::get().update_volume(vol);
-  data->music_volume = vol;
+  Settings::get().music_volume.set(vol);
 }
+
+float Settings::get_sfx_volume() { return Settings::get().sfx_volume.str(); }
+
 void Settings::update_sfx_volume(float vol) {
   SoundLibrary::get().update_volume(vol);
-  data->sfx_volume = vol;
+  Settings::get().sfx_volume.set(vol);
+}
+
+float Settings::get_master_volume() {
+  return Settings::get().master_volume.str();
 }
 
 void Settings::update_master_volume(float vol) {
-  // TODO should these be updated after?
-  // because if not, then why are we doing these at all
-  update_music_volume(data->music_volume);
-  update_sfx_volume(data->sfx_volume);
-
+  update_music_volume(Settings::get().music_volume.str());
+  update_sfx_volume(Settings::get().sfx_volume.str());
   raylib::SetMasterVolume(vol);
-  data->master_volume = vol;
+  Settings::get().master_volume.set(vol);
 }
 
 void match_fullscreen_to_setting(bool fs_enabled) {
@@ -175,112 +156,47 @@ void match_fullscreen_to_setting(bool fs_enabled) {
 }
 
 void Settings::refresh_settings() {
-
-  // audio settings
-  {
-    update_music_volume(data->music_volume);
-    update_sfx_volume(data->sfx_volume);
-    update_master_volume(data->master_volume);
-  }
-
-  match_fullscreen_to_setting(data->fullscreen_enabled);
+  auto &data = Settings::get();
+  update_music_volume(data.music_volume.str());
+  update_sfx_volume(data.sfx_volume.str());
+  update_master_volume(data.master_volume.str());
+  match_fullscreen_to_setting(data.fullscreen_enabled);
 }
 
 void Settings::toggle_fullscreen() {
-  data->fullscreen_enabled = !data->fullscreen_enabled;
+  auto &data = Settings::get();
+  data.fullscreen_enabled = !data.fullscreen_enabled;
   raylib::ToggleFullscreen();
 }
 
-bool &Settings::get_fullscreen_enabled() { return data->fullscreen_enabled; }
+bool &Settings::get_fullscreen_enabled() {
+  return Settings::get().fullscreen_enabled;
+}
 
 bool &Settings::get_post_processing_enabled() {
-  return data->post_processing_enabled;
+  return Settings::get().post_processing_enabled;
 }
 
 void Settings::toggle_post_processing() {
-  data->post_processing_enabled = !data->post_processing_enabled;
+  auto &data = Settings::get();
+  data.post_processing_enabled = !data.post_processing_enabled;
 }
 
-bool Settings::load_save_file(int width, int height) {
-
-  this->data->resolution.width = width;
-  this->data->resolution.height = height;
-
-  auto settings_places = Files::get().relative_settings();
-
-  size_t file_loc = 0;
-  std::ifstream ifs;
-  while (true) {
-    if (file_loc >= settings_places.size()) {
-      std::stringstream buffer;
-      buffer << "Failed to find settings file (Read): \n";
-      for (auto place : settings_places)
-        buffer << place << ", \n";
-      log_warn("{}", buffer.str());
-      return false;
-    }
-
-    ifs = std::ifstream(settings_places[file_loc]);
-    if (ifs.is_open()) {
-      log_info("opened file {}", settings_places[file_loc]);
-      break;
-    }
-    file_loc++;
-  }
-  data->loaded_from = settings_places[file_loc];
-
-  try {
-    const auto settingsJSON = nlohmann::json::parse(
-        ifs, nullptr /*parser_callback_t*/, true /*allow_exceptions=*/,
-        true /* ignore comments */);
-
-    (*this->data) = settingsJSON;
-    this->data->loaded_from = settings_places[file_loc];
-    refresh_settings();
-    load_round_settings();
-    return true;
-
-  } catch (const std::exception &e) {
-    log_error("Settings::load_save_file: {} formatted improperly. {}",
-              data->loaded_from, e.what());
-    return false;
-  }
-  return false;
-}
-
-void Settings::write_save_file() {
-  save_round_settings();
-
-  std::ofstream ofs(data->loaded_from);
-  if (!ofs.good()) {
-    std::cerr << "write_json_config_file error: Couldn't open file "
-                 "for writing: "
-              << data->loaded_from << std::endl;
-    return;
-  }
-
-  log_info("Saving to {}", data->loaded_from);
-
-  nlohmann::json settingsJSON = *data;
-
-  ofs << settingsJSON.dump(4);
-  ofs.close();
-}
-
-void Settings::save_round_settings() {
-  data->round_settings = RoundManager::get().to_json();
-}
-
-void Settings::load_round_settings() {
-  if (!data->round_settings.is_null()) {
-    RoundManager::get().from_json(data->round_settings);
-  }
-}
-
-translation_manager::Language Settings::get_language() const {
-  return data->language;
+translation_manager::Language Settings::get_language() {
+  return Settings::get().language;
 }
 
 void Settings::set_language(translation_manager::Language language) {
-  data->language = language;
+  Settings::get().language = language;
+}
+
+void Settings::save_round_settings() {
+  Settings::get().round_settings = RoundManager::get().to_json();
+}
+
+void Settings::load_round_settings() {
+  auto &data = Settings::get();
+  if (!data.round_settings.is_null()) {
+    RoundManager::get().from_json(data.round_settings);
+  }
 }

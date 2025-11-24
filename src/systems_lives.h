@@ -81,7 +81,7 @@ struct CheckLivesWinTeam : PausableSystem<> {
 
     if (!team_a_has_players || !team_b_has_players) {
       // One team has no remaining players - game over
-      afterhours::RefEntities winning_team;
+      RefEntities winning_team;
 
       if (!team_a_has_players) {
         // Team B wins - collect all Team B players

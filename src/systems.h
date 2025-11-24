@@ -2305,7 +2305,7 @@ struct BeginPostProcessingRender : System<> {
 
 struct SetupPostProcessingShader : System<> {
   virtual void once(float) const override {
-    if (Settings::get().get_post_processing_enabled() &&
+    if (Settings::get_post_processing_enabled() &&
         ShaderLibrary::get().contains(ShaderType::post_processing)) {
       const auto &shader =
           ShaderLibrary::get().get(ShaderType::post_processing);
@@ -2348,7 +2348,7 @@ struct RenderScreenToWindow : System<> {
 
 struct EndPostProcessingShader : System<> {
   virtual void once(float) const override {
-    if (Settings::get().get_post_processing_enabled() &&
+    if (Settings::get_post_processing_enabled() &&
         ShaderLibrary::get().contains(ShaderType::post_processing)) {
       raylib::EndShaderMode();
     }

@@ -2281,7 +2281,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
         translation_manager::make_translatable_string(strings::i18n::back)
             .get_text(),
         []() {
-          Settings::get().update_resolution(
+          Settings::update_resolution(
               EntityHelper::get_singleton_cmp<
                   window_manager::ProvidesCurrentResolution>()
                   ->current_resolution);
@@ -2292,37 +2292,37 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
 
   // Master volume slider
   {
-    float master_volume = Settings::get().get_master_volume();
+    float master_volume = Settings::get_master_volume();
     ui_helpers::create_volume_slider(
         context, top_left.ent(),
         translation_manager::make_translatable_string(
             strings::i18n::master_volume)
             .get_text(),
         master_volume,
-        [](float volume) { Settings::get().update_master_volume(volume); }, 0);
+        [](float volume) { Settings::update_master_volume(volume); }, 0);
   }
 
   // Music volume slider
   {
-    float music_volume = Settings::get().get_music_volume();
+    float music_volume = Settings::get_music_volume();
     ui_helpers::create_volume_slider(
         context, top_left.ent(),
         translation_manager::make_translatable_string(
             strings::i18n::music_volume)
             .get_text(),
         music_volume,
-        [](float volume) { Settings::get().update_music_volume(volume); }, 1);
+        [](float volume) { Settings::update_music_volume(volume); }, 1);
   }
 
   // SFX volume slider
   {
-    float sfx_volume = Settings::get().get_sfx_volume();
+    float sfx_volume = Settings::get_sfx_volume();
     ui_helpers::create_volume_slider(
         context, top_left.ent(),
         translation_manager::make_translatable_string(strings::i18n::sfx_volume)
             .get_text(),
         sfx_volume,
-        [](float volume) { Settings::get().update_sfx_volume(volume); }, 2);
+        [](float volume) { Settings::update_sfx_volume(volume); }, 2);
   }
 
   // Resolution dropdown
@@ -2393,8 +2393,8 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
       }
 
       translation_manager::set_language(new_language);
-      Settings::get().set_language(new_language);
-      Settings::get().write_save_file();
+      Settings::set_language(new_language);
+      Settings::write_save_file();
 
       auto &styling_defaults = afterhours::ui::imm::UIStylingDefaults::get();
       auto font_name =
@@ -2406,7 +2406,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
   // Fullscreen checkbox
   if (imm::checkbox(
           context, mk(top_left.ent(), 5),
-          Settings::get().get_fullscreen_enabled(),
+          Settings::get_fullscreen_enabled(),
           ComponentConfig{}
               .with_label(translation_manager::make_translatable_string(
                               strings::i18n::fullscreen)
@@ -2415,13 +2415,13 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                                     .left = pixels(0.f),
                                     .bottom = pixels(5.f),
                                     .right = pixels(0.f)}))) {
-    Settings::get().toggle_fullscreen();
+    Settings::toggle_fullscreen();
   }
 
   // Post Processing checkbox
   if (imm::checkbox(
           context, mk(top_left.ent(), 6),
-          Settings::get().get_post_processing_enabled(),
+          Settings::get_post_processing_enabled(),
           ComponentConfig{}
               .with_label(translation_manager::make_translatable_string(
                               strings::i18n::post_processing)
@@ -2430,7 +2430,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                                     .left = pixels(0.f),
                                     .bottom = pixels(5.f),
                                     .right = pixels(0.f)}))) {
-    Settings::get().toggle_post_processing();
+    Settings::toggle_post_processing();
   }
 
   // leave control group without the back button now that it's top-left

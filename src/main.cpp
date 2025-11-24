@@ -13,6 +13,7 @@ backward::SignalHandling sh;
 #include "map_system.h"
 #include "preload.h"
 #include "settings.h"
+#include <afterhours/src/plugins/settings.h>
 #include "sound_systems.h"
 #include "systems.h"
 #include "systems_ai.h"
@@ -20,6 +21,7 @@ backward::SignalHandling sh;
 #include <afterhours/src/plugins/sound_system.h>
 #include <afterhours/src/plugins/animation.h>
 #include <afterhours/src/plugins/camera.h>
+#include <afterhours/src/plugins/files.h>
 
 // TODO add honking
 
@@ -34,15 +36,16 @@ using namespace afterhours;
 void intro();
 
 void game() {
-  mainRT = raylib::LoadRenderTexture(Settings::get().get_screen_width(),
-                                     Settings::get().get_screen_height());
-  screenRT = raylib::LoadRenderTexture(Settings::get().get_screen_width(),
-                                       Settings::get().get_screen_height());
+  mainRT = raylib::LoadRenderTexture(Settings::get_screen_width(),
+                                     Settings::get_screen_height());
+  screenRT = raylib::LoadRenderTexture(Settings::get_screen_width(),
+                                       Settings::get_screen_height());
 
   SystemManager systems;
 
   // debug systems
   {
+    ::afterhours::files::enforce_singletons(systems);
     window_manager::enforce_singletons(systems);
     ui::enforce_singletons<InputAction>(systems);
     input::enforce_singletons(systems);
@@ -50,6 +53,7 @@ void game() {
     camera::enforce_singletons(systems);
     translation_manager::TranslationPlugin::enforce_singletons(systems);
     sound_system::enforce_singletons(systems);
+    afterhours::settings::enforce_singletons<SettingsData>(systems);
   }
 
   // external plugins
@@ -218,13 +222,19 @@ int main(int argc, char *argv[]) {
   cmdl({"-w", "--width"}, 1280) >> screenWidth;
   cmdl({"-h", "--height"}, 720) >> screenHeight;
 
+  // Initialize files plugin first (needed for settings and resources)
+  ::afterhours::files::init("Cart Chaos", "resources");
+
+  // Initialize settings plugin
+  afterhours::settings::init<SettingsData>("settings.json");
+
   // Load savefile first
-  Settings::get().load_save_file(screenWidth, screenHeight);
+  Settings::load_save_file(screenWidth, screenHeight);
 
   Preload::get() //
       .init("Cart Chaos")
       .make_singleton();
-  Settings::get().refresh_settings();
+  Settings::refresh_settings();
 
   if (cmdl[{"-i", "--show-intro"}]) {
     intro();
@@ -232,7 +242,7 @@ int main(int argc, char *argv[]) {
 
   game();
 
-  Settings::get().write_save_file();
+  Settings::write_save_file();
 
   return 0;
 }

@@ -10,7 +10,6 @@
 #include "max_health.h"
 #include "rl.h"
 #include "shader_types.h"
-#include <afterhours/src/plugins/collision.h>
 
 // Note: This must be included after std includes
 #include "config.h"
@@ -37,26 +36,25 @@ constexpr static vec2 get_spawn_position(size_t id, int width, int height) {
   };
 }
 
-using namespace afterhours;
-
 static vec2 get_spawn_position(size_t id) {
-  auto *resolution_provider = EntityHelper::get_singleton_cmp<
-      window_manager::ProvidesCurrentResolution>();
+  auto *resolution_provider = afterhours::EntityHelper::get_singleton_cmp<
+      afterhours::window_manager::ProvidesCurrentResolution>();
   return get_spawn_position(id, resolution_provider->width(),
                             resolution_provider->height());
 }
 
 #include "../vendor/afterhours/src/bitset_utils.h"
+#include <afterhours/src/plugins/collision.h>
 // Forward declare RoundType to avoid heavy header include
 enum struct RoundType : size_t;
-struct ManagesAvailableColors : BaseComponent {
-  constexpr static std::array<raylib::Color, input::MAX_GAMEPAD_ID> colors = {{
-      raylib::BLUE,
-      raylib::ORANGE,
-      raylib::PURPLE,
-      raylib::SKYBLUE,
-      raylib::DARKGREEN,
-      raylib::BEIGE,
+struct ManagesAvailableColors : afterhours::BaseComponent {
+  constexpr static std::array<::raylib::Color, input::MAX_GAMEPAD_ID> colors = {{
+      ::raylib::BLUE,
+      ::raylib::ORANGE,
+      ::raylib::PURPLE,
+      ::raylib::SKYBLUE,
+      ::raylib::DARKGREEN,
+      ::raylib::BEIGE,
       raylib::MAROON,
       raylib::GOLD,
   }};
@@ -73,7 +71,7 @@ struct ManagesAvailableColors : BaseComponent {
     }
   }
 
-  raylib::Color release_and_get_next(size_t id) {
+  ::raylib::Color release_and_get_next(size_t id) {
     int bit_index = -1;
     if (users.contains(id)) {
       bit_index = static_cast<int>(users[id]);
@@ -96,7 +94,7 @@ struct ManagesAvailableColors : BaseComponent {
     return bitset_utils::get_next_disabled_bit(used, 0) != -1;
   }
 
-  raylib::Color get_next_NO_STORE(size_t start = 0) {
+  ::raylib::Color get_next_NO_STORE(size_t start = 0) {
     int index = bitset_utils::get_next_disabled_bit(used, start);
     if (index == -1) {
       index = 0;
@@ -104,7 +102,7 @@ struct ManagesAvailableColors : BaseComponent {
     return colors[index];
   }
 
-  raylib::Color get_next_available(size_t id, size_t start = 0) {
+  ::raylib::Color get_next_available(size_t id, size_t start = 0) {
     if (users.contains(id)) {
       return colors[users[id]];
     }
@@ -120,11 +118,11 @@ struct ManagesAvailableColors : BaseComponent {
   }
 };
 
-struct AIControlled : BaseComponent {
+struct AIControlled : afterhours::BaseComponent {
   vec2 target{0.f, 0.f};
 };
 
-struct AIDifficulty : BaseComponent {
+struct AIDifficulty : afterhours::BaseComponent {
   enum class Difficulty { Easy, Medium, Hard, Expert };
 
   Difficulty difficulty{Difficulty::Medium};
@@ -132,7 +130,7 @@ struct AIDifficulty : BaseComponent {
   AIDifficulty(Difficulty diff = Difficulty::Medium) : difficulty(diff) {}
 };
 
-struct AIMode : BaseComponent {
+struct AIMode : afterhours::BaseComponent {
   // If true, the mode will be kept in sync with RoundManager::active_round_type
   bool follow_round_type{true};
   RoundType mode{static_cast<RoundType>(0)};
@@ -141,7 +139,7 @@ struct AIMode : BaseComponent {
       : follow_round_type(follow), mode(m) {}
 };
 
-struct AIParams : BaseComponent {
+struct AIParams : afterhours::BaseComponent {
   // How close to the current target before choosing a new one (world units)
   float retarget_radius{10.0f};
 
@@ -174,27 +172,27 @@ struct AIParams : BaseComponent {
   float boost_cooldown_seconds{3.0f};
 };
 
-struct AIBoostCooldown : BaseComponent {
+struct AIBoostCooldown : afterhours::BaseComponent {
   float next_allowed_time = 0.0f;
   float cooldown_seconds = 3.0f;
 };
 
-struct HasEntityIDBasedColor : HasColor {
-  EntityID id{-1};
-  raylib::Color default_{raylib::RAYWHITE};
-  HasEntityIDBasedColor(EntityID id_in, raylib::Color col, raylib::Color backup)
-      : HasColor(col), id(id_in), default_(backup) {}
+struct HasEntityIDBasedColor : afterhours::HasColor {
+  afterhours::EntityID id{-1};
+  ::raylib::Color default_{::raylib::RAYWHITE};
+  HasEntityIDBasedColor(afterhours::EntityID id_in, ::raylib::Color col, ::raylib::Color backup)
+      : afterhours::HasColor(col), id(id_in), default_(backup) {}
 };
 
-struct TracksEntity : BaseComponent {
-  EntityID id{-1};
+struct TracksEntity : afterhours::BaseComponent {
+  afterhours::EntityID id{-1};
   vec2 offset = vec2{0, 0};
-  TracksEntity(EntityID id_, vec2 off) : id(id_), offset(off) {}
+  TracksEntity(afterhours::EntityID id_, vec2 off) : id(id_), offset(off) {}
 };
 
-using CollisionConfig = afterhours::collision::CollisionConfig;
+using CollisionConfig = ::afterhours::collision::CollisionConfig;
 
-struct Transform : BaseComponent {
+struct Transform : afterhours::BaseComponent {
   vec2 position{0.f, 0.f};
   vec2 velocity{0.f, 0.f};
   vec2 size{0.f, 0.f};
@@ -242,7 +240,7 @@ struct Transform : BaseComponent {
   float as_rad() const { return static_cast<float>(angle * (M_PI / 180.0f)); }
 };
 
-struct TireMarkComponent : BaseComponent {
+struct TireMarkComponent : afterhours::BaseComponent {
   struct MarkPoint {
     vec2 position;
     float time;
@@ -275,26 +273,26 @@ struct TireMarkComponent : BaseComponent {
   }
 };
 
-struct CanDamage : BaseComponent {
-  EntityID id;
+struct CanDamage : afterhours::BaseComponent {
+  afterhours::EntityID id;
   int amount;
 
-  CanDamage(EntityID id_in, int amount_in) : id{id_in}, amount{amount_in} {}
+  CanDamage(afterhours::EntityID id_in, int amount_in) : id{id_in}, amount{amount_in} {}
 };
 
-struct HasLifetime : BaseComponent {
+struct HasLifetime : afterhours::BaseComponent {
   float lifetime;
   HasLifetime(float life) : lifetime(life) {}
 };
 
-struct HasHealth : BaseComponent {
+struct HasHealth : afterhours::BaseComponent {
   int max_amount{0};
   int amount{0};
 
   float iframes = 0.5f;
   float iframesReset = 0.5f;
 
-  std::optional<EntityID> last_damaged_by{};
+  std::optional<afterhours::EntityID> last_damaged_by{};
 
   void pass_time(float dt) {
     if (iframes > 0)
@@ -308,30 +306,30 @@ struct HasHealth : BaseComponent {
       : max_amount{max_amount_in}, amount{amount_in} {}
 };
 
-struct PlayerID : BaseComponent {
+struct PlayerID : afterhours::BaseComponent {
   input::GamepadID id;
   PlayerID(input::GamepadID i) : id(i) {}
 };
 
-struct HasMultipleLives : BaseComponent {
+struct HasMultipleLives : afterhours::BaseComponent {
   int num_lives_remaining;
   HasMultipleLives(int num_lives) : num_lives_remaining(num_lives) {}
 };
 
-struct HasKillCountTracker : BaseComponent {
+struct HasKillCountTracker : afterhours::BaseComponent {
   int kills = 0;
   HasKillCountTracker() = default;
   HasKillCountTracker(int initial_kills) : kills(initial_kills) {}
 };
 
-struct HasTagAndGoTracking : BaseComponent {
+struct HasTagAndGoTracking : afterhours::BaseComponent {
   float time_as_not_it = 0.0f;
   bool is_tagger = false;
   float last_tag_time = -1.f;
   HasTagAndGoTracking() = default;
 };
 
-struct HasHippoCollection : BaseComponent {
+struct HasHippoCollection : afterhours::BaseComponent {
   int hippos_collected = 0;
 
   void collect_hippo() { hippos_collected++; }
@@ -339,7 +337,7 @@ struct HasHippoCollection : BaseComponent {
   int get_hippo_count() const { return hippos_collected; }
 };
 
-struct HippoItem : BaseComponent {
+struct HippoItem : afterhours::BaseComponent {
   bool collected = false;
   float spawn_time = 0.0f;
 
@@ -354,7 +352,7 @@ struct HippoItem : BaseComponent {
 /// This applies vertically as well.
 ///
 /// @param padding - this will wait X pixels before wrapping
-struct CanWrapAround : BaseComponent {
+struct CanWrapAround : afterhours::BaseComponent {
   float padding;
   CanWrapAround(float padd = 50.f) : padding(padd) {}
 };
@@ -374,7 +372,7 @@ struct LabelInfo {
   LabelType label_type;
 };
 
-struct HasLabels : public BaseComponent {
+struct HasLabels : public afterhours::BaseComponent {
   std::vector<LabelInfo> label_info{};
 
   HasLabels() = default;
@@ -382,7 +380,7 @@ struct HasLabels : public BaseComponent {
   HasLabels(std::vector<LabelInfo> labels) : label_info{std::move(labels)} {}
 };
 
-struct CollisionAbsorber : public BaseComponent {
+struct CollisionAbsorber : public afterhours::BaseComponent {
   CollisionAbsorber() = default;
 
   enum class AbsorberType {
@@ -392,17 +390,17 @@ struct CollisionAbsorber : public BaseComponent {
 
   CollisionAbsorber(AbsorberType absorber_type_in,
                     std::optional<size_t> parent_id_in = std::nullopt)
-      : BaseComponent{}, absorber_type{absorber_type_in},
+      : afterhours::BaseComponent{}, absorber_type{absorber_type_in},
         parent_id{parent_id_in} {}
 
   // Affects cleanup if objects touching are of opposite types
   AbsorberType absorber_type{AbsorberType::Absorber};
 
   // Optionally ignore collision if containing the same parent
-  std::optional<EntityID> parent_id{std::nullopt};
+  std::optional<afterhours::EntityID> parent_id{std::nullopt};
 };
 
-struct CarAffector : BaseComponent {};
+struct CarAffector : afterhours::BaseComponent {};
 struct SteeringAffector : CarAffector {
   float multiplier{1.f};
   SteeringAffector(float mult) : multiplier(mult) {}
@@ -422,7 +420,7 @@ struct SpeedAffector : CarAffector {
   SpeedAffector(float mult) : multiplier(mult) {}
 };
 
-struct HasShader : BaseComponent {
+struct HasShader : afterhours::BaseComponent {
   std::vector<ShaderType> shaders; // Multiple shaders per entity using enums
   RenderPriority render_priority = RenderPriority::Entities; // When to render
   bool enabled = true;
@@ -484,15 +482,15 @@ struct HasShader : BaseComponent {
   }
 };
 
-struct WantsBoost : BaseComponent {};
+struct WantsBoost : afterhours::BaseComponent {};
 
-struct HonkState : BaseComponent {
+struct HonkState : afterhours::BaseComponent {
   bool was_down = false;
 };
 
 #include "components_weapons.h"
 
-struct TeamID : BaseComponent {
+struct TeamID : afterhours::BaseComponent {
   int team_id; // 0 = Team A, 1 = Team B, -1 = No Team (individual mode)
   TeamID(int id = -1) : team_id(id) {}
 };

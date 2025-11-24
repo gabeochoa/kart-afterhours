@@ -200,7 +200,7 @@ struct CheckTagAndGoWinTeam : PausableSystem<> {
     }
 
     // Collect all players from winning team
-    afterhours::RefEntities winners;
+    RefEntities winners;
     for (const auto &entity_ref : players_with_tracking) {
       Entity &entity = entity_ref.get();
       if (entity.has<TeamID>() &&

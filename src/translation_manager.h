@@ -1,16 +1,17 @@
 #pragma once
 
+#include <functional>
+#include <map>
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include "font_info.h"
 #include "strings.h"
 #include <afterhours/src/ecs.h>
 #include <afterhours/src/plugins/translation.h>
 #include <fmt/format.h>
-#include <functional>
-#include <string_view>
 #include <magic_enum/magic_enum.hpp>
-#include <map>
-#include <string>
-#include <vector>
 
 namespace translation_manager {
 
