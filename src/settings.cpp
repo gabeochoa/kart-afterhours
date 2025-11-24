@@ -38,6 +38,125 @@ void from_json(const nlohmann::json &j,
   }
 }
 
+// Explicitly ensure we're in global namespace
+namespace {
+  void _ensure_global_namespace() {}
+}
+
+bool ::Settings::load_save_file(int width, int height) {
+  auto &data = ::Settings::get();
+  data.resolution.width = width;
+  data.resolution.height = height;
+
+  if (!::afterhours::settings::load<::SettingsData>()) {
+    return false;
+  }
+
+  ::Settings::refresh_settings();
+  ::Settings::load_round_settings();
+  return true;
+}
+
+void ::Settings::write_save_file() {
+  ::Settings::save_round_settings();
+  ::afterhours::settings::save<::SettingsData>();
+}
+
+void ::Settings::reset() {
+  auto &data = ::Settings::get();
+  data = ::SettingsData();
+  ::Settings::refresh_settings();
+}
+
+int ::Settings::get_screen_width() { return ::Settings::get().resolution.width; }
+
+int ::Settings::get_screen_height() { return ::Settings::get().resolution.height; }
+
+void ::Settings::update_resolution(::afterhours::window_manager::Resolution rez) {
+  ::Settings::get().resolution = rez;
+}
+
+float ::Settings::get_music_volume() {
+  return ::Settings::get().music_volume.str();
+}
+
+void ::Settings::update_music_volume(float vol) {
+  MusicLibrary::get().update_volume(vol);
+  ::Settings::get().music_volume.set(vol);
+}
+
+float ::Settings::get_sfx_volume() { return ::Settings::get().sfx_volume.str(); }
+
+void ::Settings::update_sfx_volume(float vol) {
+  SoundLibrary::get().update_volume(vol);
+  ::Settings::get().sfx_volume.set(vol);
+}
+
+float ::Settings::get_master_volume() {
+  return ::Settings::get().master_volume.str();
+}
+
+void ::Settings::update_master_volume(float vol) {
+  ::Settings::update_music_volume(::Settings::get().music_volume.str());
+  ::Settings::update_sfx_volume(::Settings::get().sfx_volume.str());
+  raylib::SetMasterVolume(vol);
+  ::Settings::get().master_volume.set(vol);
+}
+
+void match_fullscreen_to_setting(bool fs_enabled) {
+  if (raylib::IsWindowFullscreen() && fs_enabled)
+    return;
+  if (!raylib::IsWindowFullscreen() && !fs_enabled)
+    return;
+  raylib::ToggleFullscreen();
+}
+
+void ::Settings::refresh_settings() {
+  auto &data = ::Settings::get();
+  ::Settings::update_music_volume(data.music_volume.str());
+  ::Settings::update_sfx_volume(data.sfx_volume.str());
+  ::Settings::update_master_volume(data.master_volume.str());
+  match_fullscreen_to_setting(data.fullscreen_enabled);
+}
+
+void ::Settings::toggle_fullscreen() {
+  auto &data = ::Settings::get();
+  data.fullscreen_enabled = !data.fullscreen_enabled;
+  raylib::ToggleFullscreen();
+}
+
+bool &::Settings::get_fullscreen_enabled() {
+  return ::Settings::get().fullscreen_enabled;
+}
+
+bool &::Settings::get_post_processing_enabled() {
+  return ::Settings::get().post_processing_enabled;
+}
+
+void ::Settings::toggle_post_processing() {
+  auto &data = ::Settings::get();
+  data.post_processing_enabled = !data.post_processing_enabled;
+}
+
+translation_manager::Language ::Settings::get_language() {
+  return ::Settings::get().language;
+}
+
+void ::Settings::set_language(translation_manager::Language language) {
+  ::Settings::get().language = language;
+}
+
+void ::Settings::save_round_settings() {
+  ::Settings::get().round_settings = RoundManager::get().to_json();
+}
+
+void ::Settings::load_round_settings() {
+  auto &data = ::Settings::get();
+  if (!data.round_settings.is_null()) {
+    RoundManager::get().from_json(data.round_settings);
+  }
+}
+
 ::nlohmann::json ::SettingsData::to_json() const {
   ::nlohmann::json j;
   ::nlohmann::json rez_j;
@@ -61,11 +180,11 @@ void from_json(const nlohmann::json &j,
   return j;
 }
 
-SettingsData SettingsData::from_json(const nlohmann::json &j) {
-  SettingsData data;
+::SettingsData ::SettingsData::from_json(const ::nlohmann::json &j) {
+  ::SettingsData data;
   from_json(j.at("resolution"), data.resolution);
 
-  nlohmann::json audio_j = j.at("audio");
+  ::nlohmann::json audio_j = j.at("audio");
   data.master_volume.set(audio_j.at("master_volume"));
   data.music_volume.set(audio_j.at("music_volume"));
   data.sfx_volume.set(audio_j.at("sfx_volume"));
@@ -85,118 +204,4 @@ SettingsData SettingsData::from_json(const nlohmann::json &j) {
   }
 
   return data;
-}
-
-bool Settings::load_save_file(int width, int height) {
-  auto &data = Settings::get();
-  data.resolution.width = width;
-  data.resolution.height = height;
-
-  if (!afterhours::settings::load<SettingsData>()) {
-    return false;
-  }
-
-  refresh_settings();
-  load_round_settings();
-  return true;
-}
-
-void Settings::write_save_file() {
-  save_round_settings();
-  afterhours::settings::save<SettingsData>();
-}
-
-void Settings::reset() {
-  auto &data = Settings::get();
-  data = SettingsData();
-  refresh_settings();
-}
-
-int Settings::get_screen_width() { return Settings::get().resolution.width; }
-
-int Settings::get_screen_height() { return Settings::get().resolution.height; }
-
-void Settings::update_resolution(::afterhours::window_manager::Resolution rez) {
-  Settings::get().resolution = rez;
-}
-
-float Settings::get_music_volume() {
-  return Settings::get().music_volume.str();
-}
-
-void Settings::update_music_volume(float vol) {
-  MusicLibrary::get().update_volume(vol);
-  Settings::get().music_volume.set(vol);
-}
-
-float Settings::get_sfx_volume() { return Settings::get().sfx_volume.str(); }
-
-void Settings::update_sfx_volume(float vol) {
-  SoundLibrary::get().update_volume(vol);
-  Settings::get().sfx_volume.set(vol);
-}
-
-float Settings::get_master_volume() {
-  return Settings::get().master_volume.str();
-}
-
-void Settings::update_master_volume(float vol) {
-  update_music_volume(Settings::get().music_volume.str());
-  update_sfx_volume(Settings::get().sfx_volume.str());
-  raylib::SetMasterVolume(vol);
-  Settings::get().master_volume.set(vol);
-}
-
-void match_fullscreen_to_setting(bool fs_enabled) {
-  if (raylib::IsWindowFullscreen() && fs_enabled)
-    return;
-  if (!raylib::IsWindowFullscreen() && !fs_enabled)
-    return;
-  raylib::ToggleFullscreen();
-}
-
-void Settings::refresh_settings() {
-  auto &data = Settings::get();
-  update_music_volume(data.music_volume.str());
-  update_sfx_volume(data.sfx_volume.str());
-  update_master_volume(data.master_volume.str());
-  match_fullscreen_to_setting(data.fullscreen_enabled);
-}
-
-void Settings::toggle_fullscreen() {
-  auto &data = Settings::get();
-  data.fullscreen_enabled = !data.fullscreen_enabled;
-  raylib::ToggleFullscreen();
-}
-
-bool &Settings::get_fullscreen_enabled() {
-  return Settings::get().fullscreen_enabled;
-}
-
-bool &Settings::get_post_processing_enabled() {
-  return Settings::get().post_processing_enabled;
-}
-
-void Settings::toggle_post_processing() {
-  auto &data = Settings::get();
-  data.post_processing_enabled = !data.post_processing_enabled;
-}
-
-translation_manager::Language Settings::get_language() {
-  return Settings::get().language;
-}
-
-void Settings::set_language(translation_manager::Language language) {
-  Settings::get().language = language;
-}
-
-void Settings::save_round_settings() {
-  Settings::get().round_settings = RoundManager::get().to_json();
-}
-
-void Settings::load_round_settings() {
-  auto &data = Settings::get();
-  if (!data.round_settings.is_null()) {
-    RoundManager::get().from_json(data.round_settings);
-  }
 }
