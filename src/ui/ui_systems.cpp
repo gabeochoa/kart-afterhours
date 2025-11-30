@@ -60,51 +60,44 @@ struct SetupGameStylingDefaults
     styling_defaults.set_default_font(
         get_font_name(translation_manager::get_font_for_language()), 16.f);
 
+    // Enable grid snapping for consistent 8pt grid spacing
+    styling_defaults.set_grid_snapping(true);
+
     // Component-specific styling
     styling_defaults.set_component_config(
         ComponentType::Button,
         ComponentConfig{}
-            .with_padding(Padding{.top = screen_pct(5.f / 720.f),
-                                  .left = pixels(0.f),
-                                  .bottom = screen_pct(5.f / 720.f),
-                                  .right = pixels(0.f)})
-            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
-                                     screen_pct(50.f / 720.f)})
+            .with_size(ComponentSize{w1280(200.f), h720(50.f)})
             .with_color_usage(Theme::Usage::Primary));
 
     styling_defaults.set_component_config(
         ComponentType::Slider,
         ComponentConfig{}
-            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
-                                     screen_pct(50.f / 720.f)})
+            .with_size(ComponentSize{w1280(200.f), h720(50.f)})
             .with_color_usage(Theme::Usage::Secondary));
 
     styling_defaults.set_component_config(
         ComponentType::Checkbox,
         ComponentConfig{}
-            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
-                                     screen_pct(50.f / 720.f)})
+            .with_size(ComponentSize{w1280(200.f), h720(50.f)})
             .with_color_usage(Theme::Usage::Primary));
 
     styling_defaults.set_component_config(
         ComponentType::CheckboxNoLabel,
         ComponentConfig{}
-            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
-                                     screen_pct(50.f / 720.f)})
+            .with_size(ComponentSize{w1280(200.f), h720(50.f)})
             .with_color_usage(Theme::Usage::Primary));
 
     styling_defaults.set_component_config(
         ComponentType::Dropdown,
         ComponentConfig{}
-            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
-                                     screen_pct(50.f / 720.f)})
+            .with_size(ComponentSize{w1280(200.f), h720(50.f)})
             .with_color_usage(Theme::Usage::Primary));
 
     styling_defaults.set_component_config(
         ComponentType::NavigationBar,
         ComponentConfig{}
-            .with_size(ComponentSize{screen_pct(200.f / 1280.f),
-                                     screen_pct(50.f / 720.f)})
+            .with_size(ComponentSize{w1280(200.f), h720(50.f)})
             .with_color_usage(Theme::Usage::Primary));
   }
 };
@@ -443,15 +436,16 @@ ElementResult create_styled_button(UIContext<InputAction> &context,
                                    std::function<void()> on_click,
                                    int index = 0) {
 
-  if (imm::button(context, mk(parent, index),
-                  ComponentConfig{}
-                      .with_padding(Padding{.top = pixels(5.f),
-                                            .left = pixels(0.f),
-                                            .bottom = pixels(5.f),
-                                            .right = pixels(0.f)})
-                      .with_label(label)
-                      .with_opacity(0.0f)
-                      .with_translate(-2000.0f, 0.0f))) {
+  if (imm::button(
+          context, mk(parent, index),
+          ComponentConfig{}
+              .with_label(label)
+              .with_padding(Padding{.top = spacing_to_size(Spacing::xs),
+                                    .left = spacing_to_size(Spacing::xs),
+                                    .bottom = pixels(0.f),
+                                    .right = pixels(0.f)})
+              .with_opacity(0.0f)
+              .with_translate(-2000.0f, 0.0f))) {
     on_click();
     return {true, parent};
   }
@@ -2211,18 +2205,20 @@ void ScheduleMainMenuUI::start_game_with_random_animation() {
            .easing = afterhours::animation::animation::EasingType::EaseOutQuad},
       })
       .hold(0.5f)
-      .on_step(1.0f,
-               [](int) {
-                 auto opt = EntityQuery({.force_merge = true})
-                                .whereHasComponent<sound_system::SoundEmitter>()
-                                .gen_first();
-                 if (opt.valid()) {
-                   auto &ent = opt.asE();
-                   auto &req = ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
-                   req.policy = sound_system::PlaySoundRequest::Policy::Name;
-                   req.name = sound_file_to_str(SoundFile::UI_Move);
-                 }
-               })
+      .on_step(
+          1.0f,
+          [](int) {
+            auto opt = EntityQuery({.force_merge = true})
+                           .whereHasComponent<sound_system::SoundEmitter>()
+                           .gen_first();
+            if (opt.valid()) {
+              auto &ent = opt.asE();
+              auto &req =
+                  ent.addComponentIfMissing<sound_system::PlaySoundRequest>();
+              req.policy = sound_system::PlaySoundRequest::Policy::Name;
+              req.name = sound_file_to_str(SoundFile::UI_Move);
+            }
+          })
       .on_complete([final_map_index]() {
         MapManager::get().set_selected_map(final_map_index);
         MapManager::get().create_map();
@@ -2321,8 +2317,8 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
         context, top_left.ent(),
         translation_manager::make_translatable_string(strings::i18n::sfx_volume)
             .get_text(),
-        sfx_volume,
-        [](float volume) { Settings::update_sfx_volume(volume); }, 2);
+        sfx_volume, [](float volume) { Settings::update_sfx_volume(volume); },
+        2);
   }
 
   // Resolution dropdown
@@ -2405,8 +2401,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
 
   // Fullscreen checkbox
   if (imm::checkbox(
-          context, mk(top_left.ent(), 5),
-          Settings::get_fullscreen_enabled(),
+          context, mk(top_left.ent(), 5), Settings::get_fullscreen_enabled(),
           ComponentConfig{}
               .with_label(translation_manager::make_translatable_string(
                               strings::i18n::fullscreen)
