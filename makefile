@@ -36,7 +36,7 @@ ifeq ($(OS),Windows_NT)
 	sign_cmd:=
 	COMPILE = $(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp src/settings.cpp src/preload.cpp src/makers.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
 else
-	mkdir_cmd = mkdir -p output/resources/
+	mkdir_cmd = mkdir -p output/resources/ output/src/ui output/vendor/afterhours/src/plugins
 	cp_lib_cmd = cp vendor/raylib/*.dll output/
 	cp_resources_cmd = cp -r resources/* output/resources/
 	run_cmd := ./${OUTPUT_EXE}
@@ -66,7 +66,10 @@ old: $(OUTPUT_EXE)
 $(OUTPUT_EXE): $(H_FILES) $(OBJ_FILES)
 	$(CXX) $(FLAGS) $(LEAKFLAGS) $(NOFLAGS) $(INCLUDES) $(LIBS) $(OBJ_FILES) -o $(OUTPUT_EXE)
 
-$(OBJ_DIR)/%.o: %.cpp makefile
+dirs:
+	$(mkdir_cmd)
+
+$(OBJ_DIR)/%.o: %.cpp makefile | dirs
 	$(CXX) $(FLAGS) $(NOFLAGS) $(INCLUDES) -c $< -o $@ -MMD -MF $(@:.o=.d)
 
 %.d: %.cpp
