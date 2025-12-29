@@ -6,13 +6,13 @@ FLAGS = -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow \
 		-Wconversion -g 
 NOFLAGS = -Wno-deprecated-volatile -Wno-missing-field-initializers \
 		  -Wno-c99-extensions -Wno-unused-function -Wno-sign-conversion \
-		  -Wno-implicit-int-float-conversion -Werror
+		  -Wno-implicit-int-float-conversion
 
 INCLUDES = -Ivendor/ -Isrc/
 LIBS = -L. -Lvendor/ $(RAYLIB_LIB)
 
 H_FILES := $(wildcard src/**/*.h src/**/*.hpp)
-SRC_FILES := $(wildcard src/*.cpp src/**/*.cpp)
+SRC_FILES := $(wildcard src/*.cpp src/**/*.cpp vendor/afterhours/src/plugins/*.cpp)
 OBJ_DIR := ./output
 OBJ_FILES := $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
 
@@ -45,19 +45,21 @@ else
 	CXX := clang++ -std=c++23 -Wmost -fsanitize=address
 	# CXX := g++-14 -fmax-errors=10 -std=c++23 -DBACKWARD
 	FLAGS = -g $(RAYLIB_FLAGS) -ftime-trace 
-	COMPILE = xmake
+	COMPILE = $(CXX) $(FLAGS) $(NOFLAGS) $(INCLUDES) $(LIBS) $(OBJ_FILES) -o $(OUTPUT_EXE)
 endif
 
 
-.PHONY: all clean output count countall old clean
+.PHONY: all clean output count countall old clean xmake
 
 
 $(info SRC_FILES: $(SRC_FILES))
 $(info OBJ_FILES: $(OBJ_FILES))
 
 
-all: 
-	$(COMPILE) 
+all: $(OUTPUT_EXE)
+
+xmake:
+	xmake build
 
 old: $(OUTPUT_EXE)
 
@@ -72,7 +74,7 @@ $(OBJ_DIR)/%.o: %.cpp makefile
 
 clean:
 	rm -rf output/src/
-	mkdir output/src
+	mkdir -p output/src/ui output/vendor/afterhours/src/plugins
 
 output:
 	$(mkdir_cmd)
