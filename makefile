@@ -8,6 +8,12 @@ NOFLAGS = -Wno-deprecated-volatile -Wno-missing-field-initializers \
 		  -Wno-c99-extensions -Wno-unused-function -Wno-sign-conversion \
 		  -Wno-implicit-int-float-conversion
 
+ifdef MCP
+	MCP_FLAGS = -DAFTER_HOURS_ENABLE_MCP
+else
+	MCP_FLAGS =
+endif
+
 INCLUDES = -Ivendor/ -Isrc/
 LIBS = -L. -Lvendor/ $(RAYLIB_LIB)
 
@@ -64,10 +70,10 @@ xmake:
 old: $(OUTPUT_EXE)
 
 $(OUTPUT_EXE): $(H_FILES) $(OBJ_FILES)
-	$(CXX) $(FLAGS) $(LEAKFLAGS) $(NOFLAGS) $(INCLUDES) $(LIBS) $(OBJ_FILES) -o $(OUTPUT_EXE)
+	$(CXX) $(FLAGS) $(LEAKFLAGS) $(NOFLAGS) $(MCP_FLAGS) $(INCLUDES) $(LIBS) $(OBJ_FILES) -o $(OUTPUT_EXE)
 
 $(OBJ_DIR)/%.o: %.cpp makefile
-	$(CXX) $(FLAGS) $(NOFLAGS) $(INCLUDES) -c $< -o $@ -MMD -MF $(@:.o=.d)
+	$(CXX) $(FLAGS) $(NOFLAGS) $(MCP_FLAGS) $(INCLUDES) -c $< -o $@ -MMD -MF $(@:.o=.d)
 
 %.d: %.cpp
   $(MAKEDEPEND)

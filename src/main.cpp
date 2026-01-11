@@ -11,6 +11,7 @@ backward::SignalHandling sh;
 #include "./ui/navigation.h"
 #include "argh.h"
 #include "map_system.h"
+#include "mcp_integration.h"
 #include "preload.h"
 #include "settings.h"
 #include <afterhours/src/plugins/settings.h>
@@ -59,6 +60,7 @@ void game() {
   // external plugins
   {
     input::register_update_systems(systems);
+    mcp_integration::register_systems(systems);
     window_manager::register_update_systems(systems);
     sound_system::register_update_systems(systems);
   }
@@ -205,7 +207,13 @@ void game() {
     }
 
     while (running && !raylib::WindowShouldClose()) {
+      mcp_integration::update();
+      if (mcp_integration::exit_requested()) {
+        running = false;
+        break;
+      }
       systems.run(raylib::GetFrameTime());
+      mcp_integration::clear_frame_state();
     }
 
     std::cout << "Num entities: " << EntityHelper::get_entities().size()
@@ -236,11 +244,17 @@ int main(int argc, char *argv[]) {
       .make_singleton();
   Settings::refresh_settings();
 
+  if (cmdl[{"--mcp"}]) {
+    mcp_integration::init();
+  }
+
   if (cmdl[{"-i", "--show-intro"}]) {
     intro();
   }
 
   game();
+
+  mcp_integration::shutdown();
 
   Settings::write_save_file();
 
