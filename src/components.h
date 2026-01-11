@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include "entity_ref.h"
 #include "input_mapping.h"
 #include "math_util.h"
 #include "max_health.h"
@@ -274,10 +275,12 @@ struct TireMarkComponent : ::afterhours::BaseComponent {
 };
 
 struct CanDamage : ::afterhours::BaseComponent {
-  ::afterhours::EntityID id;
+  EntityRef source;
   int amount;
 
-  CanDamage(::afterhours::EntityID id_in, int amount_in) : id{id_in}, amount{amount_in} {}
+  CanDamage(::afterhours::Entity& source_entity, int amount_in) : amount{amount_in} {
+    source.set(source_entity);
+  }
 };
 
 struct HasLifetime : ::afterhours::BaseComponent {
@@ -292,7 +295,7 @@ struct HasHealth : ::afterhours::BaseComponent {
   float iframes = 0.5f;
   float iframesReset = 0.5f;
 
-  std::optional<::afterhours::EntityID> last_damaged_by{};
+  EntityRef last_damaged_by{};
 
   void pass_time(float dt) {
     if (iframes > 0)

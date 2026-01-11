@@ -160,7 +160,6 @@ Preload &Preload::make_singleton() {
     window_manager::add_singleton_components(sophie, 200);
     ui::add_singleton_components<InputAction>(sophie);
 
-    auto &settings = Settings::get();
     translation_manager::TranslationPlugin::add_singleton_components(
         sophie, translation_manager::get_translation_data(),
         Settings::get_language(), translation_manager::translation_param);

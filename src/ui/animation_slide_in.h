@@ -60,10 +60,6 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
 #endif
                              afterhours::ui::UIComponent &component,
                              const float) override {
-    if (&component == nullptr) {
-      return;
-    }
-
     auto current_screen = GameStateManager::get().active_screen;
     if (current_screen != last_screen) {
       triggered_ids.clear();

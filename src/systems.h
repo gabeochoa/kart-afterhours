@@ -473,14 +473,6 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
 
 struct BeginPostProcessingShader : System<> {
   virtual void once(float) const override {
-    const bool hasTag =
-        ShaderLibrary::get().contains(ShaderType::post_processing_tag);
-    auto &rm = RoundManager::get();
-    bool useTagShader = false;
-    if (rm.active_round_type == RoundType::TagAndGo) {
-      auto &settings = rm.get_active_settings();
-      useTagShader = (settings.state == RoundSettings::GameState::Countdown);
-    }
     if (!ShaderLibrary::get().contains(ShaderType::post_processing_tag)) {
       return;
     }
@@ -1895,13 +1887,16 @@ struct ProcessDamage : PausableSystem<Transform, HasHealth> {
 
     for (Entity &damager : can_damage) {
       const CanDamage &cd = damager.get<CanDamage>();
-      if (cd.id == entity.id)
+      if (cd.source.id == entity.id)
         continue;
       hasHealth.amount -= cd.amount;
       hasHealth.iframes = hasHealth.iframesReset;
 
-      // Track the entity that caused this damage for kill attribution
-      hasHealth.last_damaged_by = cd.id;
+      if (auto src = cd.source.resolve()) {
+        hasHealth.last_damaged_by.set(src.asE());
+      } else {
+        hasHealth.last_damaged_by.clear();
+      }
       damager.cleanup = true;
     }
   }
@@ -1990,17 +1985,13 @@ private:
       return;
     }
 
-    // Look up the entity that caused the damage
-    auto damager_entities = EntityQuery({.force_merge = true})
-                                .whereID(*hasHealth.last_damaged_by)
-                                .gen();
-
-    if (damager_entities.empty()) {
+    auto damager_opt = hasHealth.last_damaged_by.resolve();
+    if (!damager_opt) {
       log_warn("Player died but damager entity not found");
       return;
     }
 
-    Entity &damager = damager_entities[0].get();
+    Entity &damager = damager_opt.asE();
 
     if (damager.has<HasKillCountTracker>()) {
       damager.get<HasKillCountTracker>().kills++;

@@ -68,37 +68,37 @@ struct SetupGameStylingDefaults
         ComponentType::Button,
         ComponentConfig{}
             .with_size(ComponentSize{w1280(200.f), h720(50.f)})
-            .with_color_usage(Theme::Usage::Primary));
+            .with_background(Theme::Usage::Primary));
 
     styling_defaults.set_component_config(
         ComponentType::Slider,
         ComponentConfig{}
             .with_size(ComponentSize{w1280(200.f), h720(50.f)})
-            .with_color_usage(Theme::Usage::Secondary));
+            .with_background(Theme::Usage::Secondary));
 
     styling_defaults.set_component_config(
         ComponentType::Checkbox,
         ComponentConfig{}
             .with_size(ComponentSize{w1280(200.f), h720(50.f)})
-            .with_color_usage(Theme::Usage::Primary));
+            .with_background(Theme::Usage::Primary));
 
     styling_defaults.set_component_config(
         ComponentType::CheckboxNoLabel,
         ComponentConfig{}
             .with_size(ComponentSize{w1280(200.f), h720(50.f)})
-            .with_color_usage(Theme::Usage::Primary));
+            .with_background(Theme::Usage::Primary));
 
     styling_defaults.set_component_config(
         ComponentType::Dropdown,
         ComponentConfig{}
             .with_size(ComponentSize{w1280(200.f), h720(50.f)})
-            .with_color_usage(Theme::Usage::Primary));
+            .with_background(Theme::Usage::Primary));
 
     styling_defaults.set_component_config(
         ComponentType::NavigationBar,
         ComponentConfig{}
             .with_size(ComponentSize{w1280(200.f), h720(50.f)})
-            .with_color_usage(Theme::Usage::Primary));
+            .with_background(Theme::Usage::Primary));
   }
 };
 
@@ -360,7 +360,7 @@ void maybe_ai_buttons(UIContext<InputAction> &context, Entity &parent,
     maybe_difficulty_button(context, bottom_row.ent(), data);
 
     if (data.on_difficulty_change) {
-      auto spacer = imm::div(
+      imm::div(
           context, mk(bottom_row.ent()),
           ComponentConfig{}
               .with_size(ComponentSize{percent(0.15f, 0.1f), percent(1.f)})
@@ -388,8 +388,7 @@ ElementResult create_player_card(UIContext<InputAction> &context,
   auto card = imm::div(context, mk(parent),
                        ComponentConfig{}
                            .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                           .with_color_usage(Theme::Usage::Custom)
-                           .with_custom_color(data.bg_color)
+                           .with_custom_background(data.bg_color)
                            .disable_rounded_corners());
 
   // Top row: ID [color] [team switch]
@@ -417,8 +416,7 @@ ElementResult create_player_card(UIContext<InputAction> &context,
                                      .bottom = ui::h720(5.f),
                                      .right = ui::w1280(5.f)})
                .with_label(data.label)
-               .with_color_usage(Theme::Usage::Custom)
-               .with_custom_color(data.bg_color)
+               .with_custom_background(data.bg_color)
                .disable_rounded_corners()
                .with_debug_name("player_id_label"));
 
@@ -526,9 +524,6 @@ ElementResult create_top_left_container(UIContext<InputAction> &context,
 } // namespace ui_helpers
 
 using Screen = GameStateManager::Screen;
-//
-
-constexpr static vec2 button_size = vec2{100, 50};
 
 Padding button_group_padding = Padding{
     .top = spacing_to_size(Spacing::lg),
@@ -616,7 +611,6 @@ void ScheduleMainMenuUI::character_selector_column(
                       : afterhours::colors::opacity_pct(
                             colorManager.get_next_NO_STORE(index), 0.1f);
 
-  const auto num_cols = std::min(4.f, static_cast<float>(num_slots));
   bool team_mode = RoundManager::get().get_active_settings().team_mode_enabled;
 
   if (is_last_slot && (players.size() + ais.size()) >= input::MAX_GAMEPAD_ID) {
@@ -634,8 +628,7 @@ void ScheduleMainMenuUI::character_selector_column(
                                                    .left = ui::w1280(5.f),
                                                    .bottom = ui::h720(5.f),
                                                    .right = ui::w1280(5.f)})
-                             .with_color_usage(Theme::Usage::Custom)
-                             .with_custom_color(bg_color)
+                             .with_custom_background(bg_color)
                              .disable_rounded_corners());
 
   // Create player card using helper function
@@ -791,8 +784,7 @@ void ScheduleMainMenuUI::round_end_player_column(
                    .with_size(ComponentSize{percent(1.f / num_cols, 0.1f),
                                             percent(1.f, 0.4f)})
                    .with_margin(Spacing::xs)
-                   .with_color_usage(Theme::Usage::Custom)
-                   .with_custom_color(bg_color)
+                   .with_custom_background(bg_color)
                    .with_translate(0.0f, (1.0f - card_v) * 20.0f)
                    .with_opacity(card_v)
                    .disable_rounded_corners());
@@ -1007,8 +999,7 @@ void ScheduleMainMenuUI::render_team_column(
                    .with_flex_direction(FlexDirection::Column)
                    .with_padding(Padding{.left = ui::w1280(20.f),
                                          .right = ui::w1280(20.f)})
-                   .with_color_usage(Theme::Usage::Custom)
-                   .with_custom_color(team_color)
+                   .with_custom_background(team_color)
                    .disable_rounded_corners()
                    .with_debug_name(team_name + "_column"));
 
@@ -2504,8 +2495,7 @@ void ScheduleMainMenuUI::render_team_column_results(
                ComponentConfig{}
                    .with_size(ComponentSize{percent(0.5f), percent(1.f)})
                    .with_flex_direction(FlexDirection::Column)
-                   .with_color_usage(Theme::Usage::Custom)
-                   .with_custom_color(team_color)
+                   .with_custom_background(team_color)
                    .disable_rounded_corners()
                    .with_debug_name(team_name + "_column"));
 

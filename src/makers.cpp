@@ -117,7 +117,7 @@ void make_bullet(afterhours::Entity &parent, const Weapon &wp, float angle_offse
   bullet.addComponent<Transform>(bullet_spawn_pos, wp.config.size)
       .set_angle(angle_offset);
 
-  bullet.addComponent<CanDamage>(parent.id, wp.config.base_damage);
+  bullet.addComponent<CanDamage>(parent, wp.config.base_damage);
   bullet.addComponent<CollisionAbsorber>(
       CollisionAbsorber::AbsorberType::Absorbed, parent.id);
   bullet.addComponent<HasLifetime>(wp.config.life_time_seconds);
@@ -230,7 +230,7 @@ void make_bullet(afterhours::Entity &parent, const ProjectileConfig &cfg,
   bullet.addComponent<Transform>(bullet_spawn_pos, cfg.size)
       .set_angle(final_angle_offset);
 
-  bullet.addComponent<CanDamage>(parent.id, cfg.base_damage);
+  bullet.addComponent<CanDamage>(parent, cfg.base_damage);
   bullet.addComponent<CollisionAbsorber>(
       CollisionAbsorber::AbsorberType::Absorbed, parent.id);
   bullet.addComponent<HasLifetime>(cfg.life_time_seconds);
