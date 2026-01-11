@@ -63,6 +63,9 @@ struct SetupGameStylingDefaults
     // Enable grid snapping for consistent 8pt grid spacing
     styling_defaults.set_grid_snapping(true);
 
+    // Enable TV safe area validation
+    styling_defaults.enable_tv_safe_validation();
+
     // Component-specific styling
     styling_defaults.set_component_config(
         ComponentType::Button,
@@ -252,10 +255,10 @@ ElementResult player_card_cell(UIContext<InputAction> &context, Entity &parent,
       context, mk(parent, std::hash<std::string>{}(debug_name + "_cell")),
       ComponentConfig{}
           .with_size(ComponentSize{percent(width_percent), percent(1.f)})
-          .with_padding(Padding{.top = ui::h720(5.f),
-                                .left = ui::w1280(0.f),
-                                .bottom = ui::h720(5.f),
-                                .right = ui::w1280(0.f)})
+          .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                .left = imm::DefaultSpacing::tiny(),
+                                .bottom = imm::DefaultSpacing::tiny(),
+                                .right = imm::DefaultSpacing::tiny()})
           .with_debug_name(debug_name + "_cell"));
 }
 
@@ -396,14 +399,14 @@ ElementResult create_player_card(UIContext<InputAction> &context,
       imm::div(context, mk(card.ent()),
                ComponentConfig{}
                    .with_size(ComponentSize{percent(1.0f), percent(0.4f)})
-                   .with_margin(Margin{.top = ui::h720(5.f),
-                                       .left = ui::w1280(5.f),
-                                       .bottom = ui::h720(5.f),
-                                       .right = ui::w1280(5.f)})
-                   .with_padding(Padding{.top = ui::h720(5.f),
-                                         .left = ui::w1280(0.f),
-                                         .bottom = ui::h720(5.f),
-                                         .right = ui::w1280(0.f)})
+                   .with_margin(Margin{.top = imm::DefaultSpacing::tiny(),
+                                       .left = imm::DefaultSpacing::tiny(),
+                                       .bottom = imm::DefaultSpacing::tiny(),
+                                       .right = imm::DefaultSpacing::tiny()})
+                   .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                         .left = imm::DefaultSpacing::tiny(),
+                                         .bottom = imm::DefaultSpacing::tiny(),
+                                         .right = imm::DefaultSpacing::tiny()})
                    .with_flex_direction(FlexDirection::Row)
                    .with_debug_name("player_card_top_row"));
 
@@ -411,10 +414,10 @@ ElementResult create_player_card(UIContext<InputAction> &context,
   imm::div(context, mk(top_row.ent()),
            ComponentConfig{}
                .with_size(ComponentSize{percent(0.2f), percent(1.f)})
-               .with_padding(Padding{.top = ui::h720(5.f),
-                                     .left = ui::w1280(5.f),
-                                     .bottom = ui::h720(5.f),
-                                     .right = ui::w1280(5.f)})
+               .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                     .left = imm::DefaultSpacing::tiny(),
+                                     .bottom = imm::DefaultSpacing::tiny(),
+                                     .right = imm::DefaultSpacing::tiny()})
                .with_label(data.label)
                .with_custom_background(data.bg_color)
                .disable_rounded_corners()
@@ -438,10 +441,10 @@ ElementResult create_styled_button(UIContext<InputAction> &context,
           context, mk(parent, index),
           ComponentConfig{}
               .with_label(label)
-              .with_padding(Padding{.top = spacing_to_size(Spacing::xs),
-                                    .left = spacing_to_size(Spacing::xs),
-                                    .bottom = pixels(0.f),
-                                    .right = pixels(0.f)})
+              .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                    .left = imm::DefaultSpacing::tiny(),
+                                    .bottom = imm::DefaultSpacing::tiny(),
+                                    .right = imm::DefaultSpacing::tiny()})
               .with_opacity(0.0f)
               .with_translate(-2000.0f, 0.0f))) {
     on_click();
@@ -496,10 +499,10 @@ ElementResult create_control_group(UIContext<InputAction> &context,
       context, mk(parent),
       ComponentConfig{}
           .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-          .with_padding(Padding{.top = spacing_to_size(Spacing::lg),
-                                .left = spacing_to_size(Spacing::lg),
-                                .bottom = pixels(0.f),
-                                .right = pixels(0.f)})
+          .with_padding(Padding{.top = imm::DefaultSpacing::large(),
+                                .left = imm::DefaultSpacing::large(),
+                                .bottom = imm::DefaultSpacing::large(),
+                                .right = imm::DefaultSpacing::large()})
           .with_absolute_position()
           .with_debug_name(debug_name));
 }
@@ -513,8 +516,8 @@ ElementResult create_top_left_container(UIContext<InputAction> &context,
       context, mk(parent, index),
       ComponentConfig{}
           .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-          .with_padding(Padding{.top = spacing_to_size(Spacing::sm),
-                                .left = spacing_to_size(Spacing::sm),
+          .with_padding(Padding{.top = imm::DefaultSpacing::medium(),
+                                .left = imm::DefaultSpacing::medium(),
                                 .bottom = pixels(0.f),
                                 .right = pixels(0.f)})
           .with_absolute_position()
@@ -526,24 +529,24 @@ ElementResult create_top_left_container(UIContext<InputAction> &context,
 using Screen = GameStateManager::Screen;
 
 Padding button_group_padding = Padding{
-    .top = spacing_to_size(Spacing::lg),
-    .left = spacing_to_size(Spacing::lg),
-    .bottom = pixels(0.f),
-    .right = pixels(0.f),
+    .top = imm::DefaultSpacing::large(),
+    .left = imm::DefaultSpacing::large(),
+    .bottom = imm::DefaultSpacing::large(),
+    .right = imm::DefaultSpacing::large(),
 };
 
 Padding control_group_padding = Padding{
-    .top = spacing_to_size(Spacing::lg),
-    .left = spacing_to_size(Spacing::lg),
-    .bottom = pixels(0.f),
-    .right = pixels(0.f),
+    .top = imm::DefaultSpacing::large(),
+    .left = imm::DefaultSpacing::large(),
+    .bottom = imm::DefaultSpacing::large(),
+    .right = imm::DefaultSpacing::large(),
 };
 
 Padding button_padding = Padding{
-    .top = spacing_to_size(Spacing::xs),
-    .left = pixels(0.f),
-    .bottom = spacing_to_size(Spacing::xs),
-    .right = pixels(0.f),
+    .top = imm::DefaultSpacing::tiny(),
+    .left = imm::DefaultSpacing::tiny(),
+    .bottom = imm::DefaultSpacing::tiny(),
+    .right = imm::DefaultSpacing::tiny(),
 };
 
 void ScheduleMainMenuUI::update_resolution_cache() {
@@ -624,10 +627,10 @@ void ScheduleMainMenuUI::character_selector_column(
                          ComponentConfig{}
                              .with_size(ComponentSize{ui::w1280(card_width),
                                                       ui::h720(card_height)})
-                             .with_padding(Padding{.top = ui::h720(5.f),
-                                                   .left = ui::w1280(5.f),
-                                                   .bottom = ui::h720(5.f),
-                                                   .right = ui::w1280(5.f)})
+                             .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                                   .left = imm::DefaultSpacing::tiny(),
+                                                   .bottom = imm::DefaultSpacing::tiny(),
+                                                   .right = imm::DefaultSpacing::tiny()})
                              .with_custom_background(bg_color)
                              .disable_rounded_corners());
 
@@ -1676,10 +1679,10 @@ void SchedulePauseUI::for_each_with(Entity &entity,
 
   if (imm::button(context, mk(left_col.ent(), 1),
                   ComponentConfig{}
-                      .with_padding(Padding{.top = pixels(5.f),
-                                            .left = pixels(0.f),
-                                            .bottom = pixels(5.f),
-                                            .right = pixels(0.f)})
+                      .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                            .left = imm::DefaultSpacing::tiny(),
+                                            .bottom = imm::DefaultSpacing::tiny(),
+                                            .right = imm::DefaultSpacing::tiny()})
                       .with_label(translation_manager::make_translatable_string(
                                       strings::i18n::resume)
                                       .get_text()))) {
@@ -1688,10 +1691,10 @@ void SchedulePauseUI::for_each_with(Entity &entity,
 
   if (imm::button(context, mk(left_col.ent(), 2),
                   ComponentConfig{}
-                      .with_padding(Padding{.top = pixels(5.f),
-                                            .left = pixels(0.f),
-                                            .bottom = pixels(5.f),
-                                            .right = pixels(0.f)})
+                      .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                            .left = imm::DefaultSpacing::tiny(),
+                                            .bottom = imm::DefaultSpacing::tiny(),
+                                            .right = imm::DefaultSpacing::tiny()})
                       .with_label(translation_manager::make_translatable_string(
                                       strings::i18n::back_to_setup)
                                       .get_text()))) {
@@ -1700,10 +1703,10 @@ void SchedulePauseUI::for_each_with(Entity &entity,
 
   if (imm::button(context, mk(left_col.ent(), 3),
                   ComponentConfig{}
-                      .with_padding(Padding{.top = pixels(5.f),
-                                            .left = pixels(0.f),
-                                            .bottom = pixels(5.f),
-                                            .right = pixels(0.f)})
+                      .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                            .left = imm::DefaultSpacing::tiny(),
+                                            .bottom = imm::DefaultSpacing::tiny(),
+                                            .right = imm::DefaultSpacing::tiny()})
                       .with_label(translation_manager::make_translatable_string(
                                       strings::i18n::exit_game)
                                       .get_text()))) {
@@ -2321,10 +2324,10 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                 .with_label(translation_manager::make_translatable_string(
                                 strings::i18n::resolution)
                                 .get_text())
-                .with_padding(Padding{.top = pixels(5.f),
-                                      .left = pixels(0.f),
-                                      .bottom = pixels(5.f),
-                                      .right = pixels(0.f)}))) {
+                .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                      .left = imm::DefaultSpacing::tiny(),
+                                      .bottom = imm::DefaultSpacing::tiny(),
+                                      .right = imm::DefaultSpacing::tiny()}))) {
       resolution_provider->on_data_changed(resolution_index);
     }
   }
@@ -2353,10 +2356,10 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                 .with_label(translation_manager::make_translatable_string(
                                 strings::i18n::language)
                                 .get_text())
-                .with_padding(Padding{.top = pixels(5.f),
-                                      .left = pixels(0.f),
-                                      .bottom = pixels(5.f),
-                                      .right = pixels(0.f)}))) {
+                .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                      .left = imm::DefaultSpacing::tiny(),
+                                      .bottom = imm::DefaultSpacing::tiny(),
+                                      .right = imm::DefaultSpacing::tiny()}))) {
 
       auto new_language = translation_manager::Language::English;
       // Update language when selection changes
@@ -2397,10 +2400,10 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
               .with_label(translation_manager::make_translatable_string(
                               strings::i18n::fullscreen)
                               .get_text())
-              .with_padding(Padding{.top = pixels(5.f),
-                                    .left = pixels(0.f),
-                                    .bottom = pixels(5.f),
-                                    .right = pixels(0.f)}))) {
+              .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                    .left = imm::DefaultSpacing::tiny(),
+                                    .bottom = imm::DefaultSpacing::tiny(),
+                                    .right = imm::DefaultSpacing::tiny()}))) {
     Settings::toggle_fullscreen();
   }
 
@@ -2412,10 +2415,10 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
               .with_label(translation_manager::make_translatable_string(
                               strings::i18n::post_processing)
                               .get_text())
-              .with_padding(Padding{.top = pixels(5.f),
-                                    .left = pixels(0.f),
-                                    .bottom = pixels(5.f),
-                                    .right = pixels(0.f)}))) {
+              .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                                    .left = imm::DefaultSpacing::tiny(),
+                                    .bottom = imm::DefaultSpacing::tiny(),
+                                    .right = imm::DefaultSpacing::tiny()}))) {
     Settings::toggle_post_processing();
   }
 

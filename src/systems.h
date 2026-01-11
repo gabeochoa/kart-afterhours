@@ -2063,15 +2063,18 @@ struct RenderPlayerHUD : System<Transform, HasHealth> {
 
     vec2 rotation_origin{0, 0};
 
+    float health_bar_offset = transform.size.y * 0.5f;
+    float health_bar_centering = transform.size.x * 0.25f;
+
     // Render the red background bar
     raylib::DrawRectanglePro(
         Rectangle{
             transform.pos().x - ((transform.size.x * scale_x) / 2.f) +
-                5.f, // Center with scaling
+                health_bar_centering, // Center with scaling
             transform.pos().y -
-                (transform.size.y + 10.0f),    // Slightly above the entity
-            transform.size.x * scale_x,        // Adjust length
-            (transform.size.y / 4.f) * scale_y // Adjust height
+                (transform.size.y + health_bar_offset), // Slightly above the entity
+            transform.size.x * scale_x,                 // Adjust length
+            (transform.size.y / 4.f) * scale_y          // Adjust height
         },
         rotation_origin, 0.0f, raylib::RED);
 
@@ -2079,9 +2082,9 @@ struct RenderPlayerHUD : System<Transform, HasHealth> {
     raylib::DrawRectanglePro(
         Rectangle{
             transform.pos().x - ((transform.size.x * scale_x) / 2.f) +
-                5.f, // Start at the same position as red bar
+                health_bar_centering, // Start at the same position as red bar
             transform.pos().y -
-                (transform.size.y + 10.0f), // Same vertical position as red bar
+                (transform.size.y + health_bar_offset), // Same vertical position as red bar
             (transform.size.x * scale_x) *
                 health_as_percent, // Adjust length based on health percentage
             (transform.size.y / 4.f) * scale_y // Adjust height
@@ -2112,12 +2115,13 @@ private:
       return;
 
     const auto &hasMultipleLives = entity.get<HasMultipleLives>();
-    float rad = 5.f;
+    float rad = transform.size.x * 0.25f;
+    float y_offset = transform.size.y * 0.75f;
     vec2 off{rad * 2 + 2, 0.f};
     for (int i = 0; i < hasMultipleLives.num_lives_remaining; i++) {
       raylib::DrawCircleV(
           transform.pos() -
-              vec2{transform.size.x / 2.f, transform.size.y + 15.f + rad} +
+              vec2{transform.size.x / 2.f, transform.size.y + y_offset + rad} +
               (off * (float)i),
           rad, color);
     }
@@ -2131,11 +2135,13 @@ private:
     const auto &hasKillCountTracker = entity.get<HasKillCountTracker>();
     std::string kills_text =
         std::to_string(hasKillCountTracker.kills) + " kills";
-    float text_size = 12.f;
+    float text_size = transform.size.x * 0.6f;
+    float x_offset = transform.size.x * 1.5f;
+    float y_offset = transform.size.y * 1.25f;
 
     raylib::DrawText(
-        kills_text.c_str(), static_cast<int>(transform.pos().x - 30.f),
-        static_cast<int>(transform.pos().y - transform.size.y - 25.f),
+        kills_text.c_str(), static_cast<int>(transform.pos().x - x_offset),
+        static_cast<int>(transform.pos().y - y_offset),
         static_cast<int>(text_size), color);
   }
 
@@ -2150,8 +2156,8 @@ private:
     // Draw crown for the tagger
     if (taggerTracking.is_tagger) {
       // Draw a crown above the player who is "it"
-      const float crown_size = 15.f;
-      const float crown_y_offset = transform.size.y + 20.f;
+      const float crown_size = transform.size.x * 0.75f;
+      const float crown_y_offset = transform.size.y * 2.0f;
 
       // Crown position (centered above the player)
       vec2 crown_pos = transform.pos() - vec2{crown_size / 2.f, crown_y_offset};
@@ -2176,8 +2182,9 @@ private:
       }
 
       // Crown jewels (small circles)
+      float jewel_radius = transform.size.x * 0.1f;
       raylib::DrawCircleV(crown_pos + vec2{crown_size / 2.f, crown_size / 6.f},
-                          2.f, raylib::RED);
+                          jewel_radius, raylib::RED);
     }
 
     // Draw shield for players in cooldown (safe period)
@@ -2189,8 +2196,8 @@ private:
       // TODO: Add pulsing animation to shield to make it more obvious
       // TODO: Add countdown timer above shield showing remaining safe time
       // Draw a shield above the player who is safe
-      const float shield_size = 12.f;
-      const float shield_y_offset = transform.size.y + 35.f; // Above crown
+      const float shield_size = transform.size.x * 0.6f;
+      const float shield_y_offset = transform.size.y * 2.75f; // Above crown
 
       // Shield position (centered above the player)
       vec2 shield_pos =
