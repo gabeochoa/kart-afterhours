@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "kart": {
+      "command": "./output/kart.exe",
+      "args": ["--mcp"],
+      "env": {}
+    }
+  }
+}
