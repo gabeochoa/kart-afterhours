@@ -2038,7 +2038,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
         auto &ent = opt_ent.asE();
         if (ent.has<afterhours::ui::UIComponent>()) {
           auto rect = ent.get<afterhours::ui::UIComponent>().rect();
-          auto mp = context.mouse_pos;
+          auto mp = input::get_mouse_position();
           if (mp.x >= rect.x && mp.x <= rect.x + rect.width && mp.y >= rect.y &&
               mp.y <= rect.y + rect.height) {
             hovered_preview_index = MapManager::RANDOM_MAP_INDEX;
@@ -2128,7 +2128,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
         auto &ent = opt_ent.asE();
         if (ent.has<afterhours::ui::UIComponent>()) {
           auto rect = ent.get<afterhours::ui::UIComponent>().rect();
-          auto mp = context.mouse_pos;
+          auto mp = input::get_mouse_position();
           if (mp.x >= rect.x && mp.x <= rect.x + rect.width && mp.y >= rect.y &&
               mp.y <= rect.y + rect.height) {
             hovered_preview_index = map_index;

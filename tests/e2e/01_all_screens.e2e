@@ -1,0 +1,55 @@
+# Full UI E2E Test
+# Tests all screens with text validation and screenshots
+# Note: Some screens may crash due to layout issues from afterhours update
+
+# Main Menu
+wait 0.5
+expect_text "play"
+expect_text "about"
+expect_text "settings"
+expect_text "exit"
+screenshot 01_main_menu
+
+# Settings Screen
+goto_screen Settings
+wait 0.5
+expect_text "back"
+expect_text "resolution"
+screenshot 02_settings
+
+# Back to Main Menu
+goto_screen Main
+wait 0.3
+
+# About Screen
+goto_screen About
+wait 0.5
+expect_text "back"
+screenshot 03_about
+
+# Back to Main Menu
+goto_screen Main
+wait 0.3
+
+# Character Creation Screen
+goto_screen CharacterCreation
+wait 0.5
+expect_text "round settings"
+expect_text "back"
+screenshot 04_character_creation
+
+# Round Settings Screen
+goto_screen RoundSettings
+wait 0.5
+expect_text "select map"
+expect_text "back"
+screenshot 05_round_settings
+
+# Map Selection Screen
+goto_screen MapSelection
+wait 0.5
+screenshot 06_map_selection
+
+# Back to Main Menu
+goto_screen Main
+wait 0.3

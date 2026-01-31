@@ -7,7 +7,7 @@ backward::SignalHandling sh;
 #endif
 
 #include "game.h"
-//
+#include "e2e_integration.h"
 #include "./ui/navigation.h"
 #include "argh.h"
 #include "map_system.h"
@@ -151,6 +151,7 @@ void game() {
     });
 
     register_ui_systems(systems);
+    e2e_integration::register_systems(systems);
 
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
@@ -212,7 +213,19 @@ void game() {
         running = false;
         break;
       }
-      systems.run(raylib::GetFrameTime());
+
+      float dt = raylib::GetFrameTime();
+      e2e_integration::tick(dt);
+      systems.run(dt);
+      
+      e2e_integration::post_render(dt);
+      
+      if (e2e_integration::should_exit()) {
+        e2e_integration::print_results();
+        running = false;
+        break;
+      }
+
       mcp_integration::clear_frame_state();
     }
 
@@ -246,6 +259,10 @@ int main(int argc, char *argv[]) {
 
   if (cmdl[{"--mcp"}]) {
     mcp_integration::init();
+  }
+
+  if (cmdl[{"--e2e"}]) {
+    e2e_integration::init();
   }
 
   if (cmdl[{"-i", "--show-intro"}]) {

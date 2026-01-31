@@ -14,6 +14,12 @@ else
 	MCP_FLAGS =
 endif
 
+ifdef E2E
+	E2E_FLAGS = -DAFTER_HOURS_ENABLE_E2E_TESTING
+else
+	E2E_FLAGS =
+endif
+
 INCLUDES = -Ivendor/ -Isrc/
 LIBS = -L. -Lvendor/ $(RAYLIB_LIB)
 
@@ -70,10 +76,10 @@ xmake:
 old: $(OUTPUT_EXE)
 
 $(OUTPUT_EXE): $(H_FILES) $(OBJ_FILES)
-	$(CXX) $(FLAGS) $(LEAKFLAGS) $(NOFLAGS) $(MCP_FLAGS) $(INCLUDES) $(LIBS) $(OBJ_FILES) -o $(OUTPUT_EXE)
+	$(CXX) $(FLAGS) $(LEAKFLAGS) $(NOFLAGS) $(MCP_FLAGS) $(E2E_FLAGS) $(INCLUDES) $(LIBS) $(OBJ_FILES) -o $(OUTPUT_EXE)
 
 $(OBJ_DIR)/%.o: %.cpp makefile
-	$(CXX) $(FLAGS) $(NOFLAGS) $(MCP_FLAGS) $(INCLUDES) -c $< -o $@ -MMD -MF $(@:.o=.d)
+	$(CXX) $(FLAGS) $(NOFLAGS) $(MCP_FLAGS) $(E2E_FLAGS) $(INCLUDES) -c $< -o $@ -MMD -MF $(@:.o=.d)
 
 %.d: %.cpp
   $(MAKEDEPEND)
@@ -85,7 +91,8 @@ clean:
 clean-screenshots:
 	rm -rf screenshots/*.png
 
-e2e: $(OUTPUT_EXE) clean-screenshots
+e2e: clean clean-screenshots
+	$(MAKE) E2E=1 $(OUTPUT_EXE)
 	./$(OUTPUT_EXE) --e2e
 
 output:

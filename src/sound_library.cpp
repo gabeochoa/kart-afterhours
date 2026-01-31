@@ -1,6 +1,5 @@
-#include <functional>
-#include <afterhours/src/plugins/files.h>
 #include "sound_library.h"
+#include <functional>
 
 using namespace afterhours;
 
