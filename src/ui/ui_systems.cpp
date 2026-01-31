@@ -461,13 +461,15 @@ ElementResult create_volume_slider(UIContext<InputAction> &context,
                                    std::function<void(float)> on_change,
                                    int index = 0) {
 
-  // auto volume_label = fmt::format("{}\n {:2.0f}", label, volume * 100.f);
   if (auto result = slider(context, mk(parent, index), volume,
-                           ComponentConfig{}.with_label(label).with_padding(
-                               Padding{.top = spacing_to_size(Spacing::xs),
-                                       .left = pixels(0.f),
-                                       .bottom = spacing_to_size(Spacing::xs),
-                                       .right = pixels(0.f)}),
+                           ComponentConfig{}
+                               .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
+                               .with_label(label)
+                               .with_padding(
+                                   Padding{.top = spacing_to_size(Spacing::xs),
+                                           .left = pixels(0.f),
+                                           .bottom = spacing_to_size(Spacing::xs),
+                                           .right = pixels(0.f)}),
                            SliderHandleValueLabelPosition::OnHandle)) {
     volume = result.as<float>();
     on_change(volume);
@@ -1756,6 +1758,7 @@ void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
     if (auto result = imm::dropdown(
             context, mk(entity), options, option_index,
             ComponentConfig{}
+                .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
                 .with_label(translation_manager::make_translatable_string(
                                 strings::i18n::round_length)
                                 .get_text())
@@ -1793,6 +1796,7 @@ void round_tag_and_go_settings(Entity &entity,
     if (auto result = imm::dropdown(
             context, mk(entity), options, option_index,
             ComponentConfig{}
+                .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
                 .with_label(translation_manager::translate_formatted(
                     translation_manager::make_translatable_string(
                         strings::i18n::round_length)
@@ -1808,6 +1812,7 @@ void round_tag_and_go_settings(Entity &entity,
   if (imm::checkbox(
           context, mk(entity), cm_settings.allow_tag_backs,
           ComponentConfig{}
+              .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
               .with_label(translation_manager::make_translatable_string(
                               strings::i18n::allow_tag_backs)
                               .get_text())
@@ -2321,6 +2326,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
     if (imm::dropdown(
             context, mk(top_left.ent(), 3), resolution_strs, resolution_index,
             ComponentConfig{}
+                .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
                 .with_label(translation_manager::make_translatable_string(
                                 strings::i18n::resolution)
                                 .get_text())
@@ -2353,6 +2359,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
             context, mk(top_left.ent(), 4), language_names,
             language_dropdown_index,
             ComponentConfig{}
+                .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
                 .with_label(translation_manager::make_translatable_string(
                                 strings::i18n::language)
                                 .get_text())
@@ -2397,6 +2404,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
   if (imm::checkbox(
           context, mk(top_left.ent(), 5), Settings::get_fullscreen_enabled(),
           ComponentConfig{}
+              .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
               .with_label(translation_manager::make_translatable_string(
                               strings::i18n::fullscreen)
                               .get_text())
@@ -2412,6 +2420,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
           context, mk(top_left.ent(), 6),
           Settings::get_post_processing_enabled(),
           ComponentConfig{}
+              .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
               .with_label(translation_manager::make_translatable_string(
                               strings::i18n::post_processing)
                               .get_text())
