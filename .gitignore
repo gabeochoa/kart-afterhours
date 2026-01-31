@@ -38,3 +38,6 @@ tools/dependency_graph
 # ClangBuildAnalyzer output files
 build-analysis.html
 build-analysis.txt
+
+# E2E test screenshots
+screenshots/

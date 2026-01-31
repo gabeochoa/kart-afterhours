@@ -55,7 +55,7 @@ else
 endif
 
 
-.PHONY: all clean output count countall old clean xmake
+.PHONY: all clean output count countall old clean xmake e2e clean-screenshots
 
 
 $(info SRC_FILES: $(SRC_FILES))
@@ -81,6 +81,12 @@ $(OBJ_DIR)/%.o: %.cpp makefile
 clean:
 	rm -rf output/src/
 	mkdir -p output/src/ui output/vendor/afterhours/src/plugins
+
+clean-screenshots:
+	rm -rf screenshots/*.png
+
+e2e: $(OUTPUT_EXE) clean-screenshots
+	./$(OUTPUT_EXE) --e2e
 
 output:
 	$(mkdir_cmd)
