@@ -1893,9 +1893,9 @@ struct ProcessDamage : PausableSystem<Transform, HasHealth> {
       hasHealth.iframes = hasHealth.iframesReset;
 
       if (auto src = cd.source.resolve()) {
-        hasHealth.last_damaged_by.set(src.asE());
+        hasHealth.last_damaged_by = afterhours::OptEntityHandle::from_entity(src.asE());
       } else {
-        hasHealth.last_damaged_by.clear();
+        hasHealth.last_damaged_by = afterhours::OptEntityHandle{};
       }
       damager.cleanup = true;
     }
@@ -1980,7 +1980,7 @@ struct ProcessDeath : PausableSystem<Transform, HasHealth> {
 
 private:
   void handle_kill_attribution(const Entity &, const HasHealth &hasHealth) {
-    if (!hasHealth.last_damaged_by.has_value()) {
+    if (hasHealth.last_damaged_by.id < 0) {
       log_warn("Player died but we don't know why");
       return;
     }
