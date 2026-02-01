@@ -1,16 +1,16 @@
 #include "sound_systems.h"
-#include "components.h"
-#include "game_state_manager.h"
-#include "input_mapping.h"
-#include "library/music_library.h"
-#include "query.h"
-#include "library/sound_library.h"
+#include "../components.h"
+#include "../game_state_manager.h"
+#include "../input_mapping.h"
+#include "../library/music_library.h"
+#include "../query.h"
+#include "../library/sound_library.h"
 #include <afterhours/src/plugins/sound_system.h>
-#include "weapons.h"
+#include "../weapons.h"
 #if __APPLE__
-#include "rl.h"
+#include "../rl.h"
 #else
-#include "raylib.h"
+#include "../raylib.h"
 #endif
 #include <afterhours/src/plugins/ui/components.h>
 #include <afterhours/src/plugins/ui/context.h>

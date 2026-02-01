@@ -1,14 +1,14 @@
 #pragma once
 
-#include "car_affectors.h"
-#include "components.h"
-#include "game_state_manager.h"
-#include "makers.h"
-#include "map_system.h"
-#include "query.h"
-#include "round_settings.h"
-#include "library/shader_library.h"
-#include "weapons.h"
+#include "../car_affectors.h"
+#include "../components.h"
+#include "../game_state_manager.h"
+#include "../makers.h"
+#include "../map_system.h"
+#include "../query.h"
+#include "../round_settings.h"
+#include "../library/shader_library.h"
+#include "../weapons.h"
 #include <afterhours/ah.h>
 #include <algorithm>
 

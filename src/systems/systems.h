@@ -3,19 +3,19 @@
 #include <afterhours/ah.h>
 //
 
-#include "car_affectors.h"
-#include "components.h"
-#include "components_weapons.h"
-#include "game.h"
-#include "game_state_manager.h"
-#include "input_mapping.h"
-#include "makers.h"
-#include "map_system.h"
-#include "query.h"
-#include "round_settings.h"
-#include "settings.h"
-#include "library/shader_library.h"
-#include "tags.h"
+#include "../car_affectors.h"
+#include "../components.h"
+#include "../components_weapons.h"
+#include "../game.h"
+#include "../game_state_manager.h"
+#include "../input_mapping.h"
+#include "../makers.h"
+#include "../map_system.h"
+#include "../query.h"
+#include "../round_settings.h"
+#include "../settings.h"
+#include "../library/shader_library.h"
+#include "../tags.h"
 #include <afterhours/src/plugins/collision.h>
 #include <afterhours/src/plugins/sound_system.h>
 

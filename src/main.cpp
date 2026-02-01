@@ -15,9 +15,9 @@ backward::SignalHandling sh;
 #include "preload.h"
 #include "settings.h"
 #include <afterhours/src/plugins/settings.h>
-#include "sound_systems.h"
-#include "systems.h"
-#include "systems_ai.h"
+#include "systems/sound_systems.h"
+#include "systems/systems.h"
+#include "systems/systems_ai.h"
 #include "ui/ui_systems.h"
 #include <afterhours/src/plugins/sound_system.h>
 #include <afterhours/src/plugins/animation.h>
