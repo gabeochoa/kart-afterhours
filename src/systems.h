@@ -14,7 +14,7 @@
 #include "query.h"
 #include "round_settings.h"
 #include "settings.h"
-#include "shader_library.h"
+#include "library/shader_library.h"
 #include "tags.h"
 #include <afterhours/src/plugins/collision.h>
 #include <afterhours/src/plugins/sound_system.h>

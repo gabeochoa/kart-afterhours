@@ -7,7 +7,7 @@
 #include "map_system.h"
 #include "query.h"
 #include "round_settings.h"
-#include "shader_library.h"
+#include "library/shader_library.h"
 #include "weapons.h"
 #include <afterhours/ah.h>
 #include <algorithm>

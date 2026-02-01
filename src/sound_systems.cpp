@@ -2,9 +2,9 @@
 #include "components.h"
 #include "game_state_manager.h"
 #include "input_mapping.h"
-#include "music_library.h"
+#include "library/music_library.h"
 #include "query.h"
-#include "sound_library.h"
+#include "library/sound_library.h"
 #include <afterhours/src/plugins/sound_system.h>
 #include "weapons.h"
 #if __APPLE__

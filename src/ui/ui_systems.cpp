@@ -17,7 +17,7 @@
 #include "../round_settings.h"
 #include "../settings.h"
 #include "../strings.h"
-#include "../texture_library.h"
+#include "../library/texture_library.h"
 #include "../translation_manager.h"
 #include "animation_key.h"
 #include "animation_slide_in.h"

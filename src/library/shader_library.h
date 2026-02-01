@@ -1,10 +1,10 @@
 #pragma once
 
-#include "shader_types.h"
+#include "../shader_types.h"
 #include <afterhours/src/library.h>
 #include <afterhours/src/singleton.h>
 
-#include "rl.h"
+#include "../rl.h"
 #include <string>
 #include <unordered_map>
 

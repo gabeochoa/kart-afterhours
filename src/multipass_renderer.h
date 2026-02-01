@@ -1,7 +1,7 @@
 #pragma once
 
 #include "components.h"
-#include "shader_library.h"
+#include "library/shader_library.h"
 #include "shader_pass_registry.h"
 #include "shader_types.h"
 #include <afterhours/src/ecs.h>

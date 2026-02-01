@@ -11,10 +11,10 @@
 #include "font_info.h"
 #include "settings.h"
 
-#include "music_library.h"
-#include "shader_library.h"
-#include "sound_library.h"
-#include "texture_library.h"
+#include "library/music_library.h"
+#include "library/shader_library.h"
+#include "library/sound_library.h"
+#include "library/texture_library.h"
 #include "translation_manager.h"
 #include <afterhours/src/plugins/camera.h>
 #include <afterhours/src/plugins/files.h>

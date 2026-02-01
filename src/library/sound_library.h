@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rl.h"
+#include "../rl.h"
 #include <afterhours/src/plugins/sound_system.h>
 #include <afterhours/src/plugins/files.h>
 #include <magic_enum/magic_enum.hpp>
