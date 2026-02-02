@@ -21,7 +21,7 @@ else
 endif
 
 INCLUDES = -Ivendor/ -Isrc/
-LIBS = -L. -Lvendor/ $(RAYLIB_LIB)
+LIBS = -L. -Lvendor/ $(RAYLIB_LIB) -framework OpenGL
 
 H_FILES := $(wildcard src/**/*.h src/**/*.hpp)
 SRC_FILES := $(wildcard src/*.cpp src/**/*.cpp vendor/afterhours/src/plugins/*.cpp)

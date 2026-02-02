@@ -4,6 +4,10 @@
 #include "game.h"
 #include "input_mapping.h"
 #include <afterhours/src/plugins/e2e_testing/e2e_testing.h>
+#include <afterhours/src/graphics/graphics.h>
+
+// Extern reference to render texture for headless screenshot capture
+extern raylib::RenderTexture2D screenRT;
 
 namespace e2e_integration {
 
@@ -24,7 +28,14 @@ inline void init(const std::string& script_dir = "tests/e2e/") {
     
     detail::runner->set_screenshot_callback([](const std::string& name) {
         std::string path = "screenshots/" + name + ".png";
-        raylib::Image img = raylib::LoadImageFromScreen();
+        raylib::Image img;
+        if (afterhours::graphics::is_headless()) {
+            // In headless mode, capture from render texture
+            img = raylib::LoadImageFromTexture(screenRT.texture);
+            raylib::ImageFlipVertical(&img);
+        } else {
+            img = raylib::LoadImageFromScreen();
+        }
         raylib::ExportImage(img, path.c_str());
         raylib::UnloadImage(img);
         log_info("E2E: Screenshot saved to {}", path);
@@ -61,7 +72,14 @@ inline void register_systems(SystemManager& sm) {
     sm.register_update_system(
         std::make_unique<HandleScreenshotCommand>([](const std::string& name) {
             std::string path = "screenshots/" + name + ".png";
-            raylib::Image img = raylib::LoadImageFromScreen();
+            raylib::Image img;
+            if (afterhours::graphics::is_headless()) {
+                // In headless mode, capture from render texture
+                img = raylib::LoadImageFromTexture(screenRT.texture);
+                raylib::ImageFlipVertical(&img);
+            } else {
+                img = raylib::LoadImageFromScreen();
+            }
             raylib::ExportImage(img, path.c_str());
             raylib::UnloadImage(img);
             log_info("E2E: Screenshot saved to {}", path);

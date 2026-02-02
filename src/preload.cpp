@@ -18,6 +18,7 @@
 #include "translation_manager.h"
 #include <afterhours/src/plugins/camera.h>
 #include <afterhours/src/plugins/files.h>
+#include <afterhours/src/graphics/graphics.h>
 
 using namespace afterhours;
 // for HasTexture
@@ -54,36 +55,42 @@ static void load_gamepad_mappings() {
 
 Preload::Preload() {}
 
-Preload &Preload::init(const char *title) {
+Preload &Preload::init(const char *title, afterhours::graphics::DisplayMode mode) {
 
   int width = Settings::get_screen_width();
   int height = Settings::get_screen_height();
 
-  // raylib::SetConfigFlags(raylib::FLAG_WINDOW_HIGHDPI);
-  raylib::InitWindow(width, height, title);
-  raylib::SetWindowSize(width, height);
-  // Back to warnings
-  raylib::TraceLogLevel logLevel = raylib::LOG_ERROR;
-  raylib::SetTraceLogLevel(logLevel);
-  raylib::SetTargetFPS(200);
-  raylib::SetWindowState(raylib::FLAG_WINDOW_RESIZABLE);
+  // Configure graphics module
+  afterhours::graphics::Config cfg;
+  cfg.display = mode;
+  cfg.width = width;
+  cfg.height = height;
+  cfg.title = title;
+  cfg.target_fps = 200;
+  cfg.time_scale = 10.0f;  // 10x speed for headless
 
-  // Enlarge stream buffer to reduce dropouts on macOS/miniaudio
-  raylib::SetAudioStreamBufferSizeDefault(4096);
-  raylib::InitAudioDevice();
-  if (!raylib::IsAudioDeviceReady()) {
-    log_warn("audio device not ready; continuing without audio");
+  afterhours::graphics::init(cfg);
+
+  if (mode == afterhours::graphics::DisplayMode::Windowed) {
+    // Audio only in windowed mode
+    raylib::SetAudioStreamBufferSizeDefault(4096);
+    raylib::InitAudioDevice();
+    if (!raylib::IsAudioDeviceReady()) {
+      log_warn("audio device not ready; continuing without audio");
+    }
+    raylib::SetMasterVolume(1.f);
+
+    // Disable default escape key exit behavior so we can handle it manually
+    // Only relevant in windowed mode
+    raylib::SetExitKey(0);
+
+    // Sound and music only in windowed mode
+    load_gamepad_mappings();
+    load_sounds();
+    MusicLibrary::get().load(
+        files::get_resource_path("sounds", "replace/cobolt.mp3").string().c_str(),
+        "menu_music");
   }
-  raylib::SetMasterVolume(1.f);
-
-  // Disable default escape key exit behavior so we can handle it manually
-  raylib::SetExitKey(0);
-
-  load_gamepad_mappings();
-  load_sounds();
-  MusicLibrary::get().load(
-      files::get_resource_path("sounds", "replace/cobolt.mp3").string().c_str(),
-      "menu_music");
 
   ShaderLibrary::get().load(
       files::get_resource_path("shaders", "post_processing.fs").string().c_str(),
@@ -199,11 +206,10 @@ Preload &Preload::make_singleton() {
 }
 
 Preload::~Preload() {
-  if (raylib::IsAudioDeviceReady()) {
-    // nothing to stop currently
+  if (!afterhours::graphics::is_headless() && raylib::IsAudioDeviceReady()) {
+    raylib::CloseAudioDevice();
   }
-  raylib::CloseAudioDevice();
-  raylib::CloseWindow();
+  afterhours::graphics::shutdown();
 }
 
 std::shared_ptr<sound_system::SoundLibrary> sound_system::SoundLibrary_single;

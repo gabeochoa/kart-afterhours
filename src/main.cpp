@@ -23,6 +23,7 @@ backward::SignalHandling sh;
 #include <afterhours/src/plugins/animation.h>
 #include <afterhours/src/plugins/camera.h>
 #include <afterhours/src/plugins/files.h>
+#include <afterhours/src/graphics/graphics.h>
 
 // TODO add honking
 
@@ -207,14 +208,19 @@ void game() {
       //
     }
 
-    while (running && !raylib::WindowShouldClose()) {
+    while (running) {
+      // Check window close only in windowed mode
+      if (!afterhours::graphics::is_headless() && raylib::WindowShouldClose()) {
+        break;
+      }
+
       mcp_integration::update();
       if (mcp_integration::exit_requested()) {
         running = false;
         break;
       }
 
-      float dt = raylib::GetFrameTime();
+      float dt = afterhours::graphics::get_delta_time();
       e2e_integration::tick(dt);
       systems.run(dt);
       
@@ -252,8 +258,14 @@ int main(int argc, char *argv[]) {
   // Load savefile first
   Settings::load_save_file(screenWidth, screenHeight);
 
+  // Determine display mode based on --headless flag
+  afterhours::graphics::DisplayMode display_mode = afterhours::graphics::DisplayMode::Windowed;
+  if (cmdl[{"--headless"}]) {
+    display_mode = afterhours::graphics::DisplayMode::Headless;
+  }
+
   Preload::get() //
-      .init("Cart Chaos")
+      .init("Cart Chaos", display_mode)
       .make_singleton();
   Settings::refresh_settings();
 

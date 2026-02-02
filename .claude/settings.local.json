@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs basename:*)"
+      "Bash(xargs basename:*)",
+      "Bash(timeout 30 ./output/kart.exe:*)",
+      "Bash(timeout 120 ./output/kart.exe:*)",
+      "Bash(timeout 60 ./output/kart.exe:*)"
     ]
   }
 }

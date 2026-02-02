@@ -4,6 +4,7 @@
 #include <fmt/format.h>
 
 #include <afterhours/src/logging.h>
+#include <afterhours/src/graphics/graphics.h>
 
 //
 
@@ -552,6 +553,11 @@ Padding button_padding = Padding{
 };
 
 void ScheduleMainMenuUI::update_resolution_cache() {
+  // Skip resolution queries in headless mode - no window to query
+  if (afterhours::graphics::is_headless()) {
+    return;
+  }
+
   resolution_provider = EntityHelper::get_singleton_cmp<
       window_manager::ProvidesAvailableWindowResolutions>();
 

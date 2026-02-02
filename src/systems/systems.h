@@ -20,6 +20,7 @@
 #include <afterhours/src/plugins/sound_system.h>
 
 #include <afterhours/src/plugins/camera.h>
+#include <afterhours/src/graphics/graphics.h>
 
 // Hippo game constants
 constexpr float HIPPO_SPAWN_INTERVAL = 0.8f;
@@ -2005,6 +2006,10 @@ private:
 struct RenderLabels : System<Transform, HasLabels> {
   virtual void for_each_with(const Entity &, const Transform &transform,
                              const HasLabels &hasLabels, float) const override {
+    // Skip text rendering in headless mode - font texture access can cause issues
+    if (afterhours::graphics::is_headless()) {
+      return;
+    }
 
     const auto get_label_display_for_type = [](const Transform &transform_in,
                                                const LabelInfo &label_info_in) {
@@ -2298,7 +2303,12 @@ struct EndTagShaderRender : System<> {
 };
 
 struct BeginPostProcessingRender : System<> {
-  virtual void once(float) const override { raylib::BeginDrawing(); }
+  virtual void once(float) const override {
+    if (!afterhours::graphics::is_headless()) {
+      raylib::BeginDrawing();
+    }
+    raylib::ClearBackground(raylib::BLACK);
+  }
 };
 
 struct SetupPostProcessingShader : System<> {
@@ -2354,5 +2364,9 @@ struct EndPostProcessingShader : System<> {
 };
 
 struct EndDrawing : System<> {
-  virtual void once(float) const override { raylib::EndDrawing(); }
+  virtual void once(float) const override {
+    if (!afterhours::graphics::is_headless()) {
+      raylib::EndDrawing();
+    }
+  }
 };
