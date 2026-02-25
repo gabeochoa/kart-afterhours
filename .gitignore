@@ -42,3 +42,5 @@ build-analysis.txt
 # E2E test screenshots
 screenshots/
 concept/
+.claude
+.cursor
