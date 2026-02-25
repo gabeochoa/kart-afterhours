@@ -1,0 +1,18 @@
+# Screen Flow Test
+# Tests navigating through screens
+
+goto_screen MapSelection
+wait 0.2
+screenshot flow_01_map
+
+goto_screen RoundSettings
+wait 0.2
+screenshot flow_02_round_settings
+
+goto_screen CharacterCreation
+wait 0.2
+screenshot flow_03_char_creation
+
+goto_screen Main
+wait 0.2
+screenshot flow_04_main

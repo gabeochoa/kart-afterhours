@@ -1,0 +1,20 @@
+# Character Creation Navigation Test
+# Tests navigation in character creation screen
+
+goto_screen CharacterCreation
+wait 0.2
+screenshot char_01_initial
+
+# Arrow navigation
+arrow down
+wait 0.1
+screenshot char_02_down
+
+arrow right
+wait 0.1
+screenshot char_03_right
+
+# Go back
+goto_screen Main
+wait 0.2
+screenshot char_04_back

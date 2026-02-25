@@ -1,0 +1,14 @@
+# Menu Navigation Test - Simple Version
+# Just test screenshots on different screens
+
+goto_screen Main
+wait 0.1
+screenshot nav_main
+
+goto_screen Settings
+wait 0.1
+screenshot nav_settings
+
+goto_screen Main
+wait 0.1
+screenshot nav_main_again

@@ -1,0 +1,20 @@
+# Settings Navigation Test
+# Tests navigation in settings screen
+
+goto_screen Settings
+wait 0.2
+screenshot settings_01_initial
+
+# Arrow navigation
+arrow down
+wait 0.1
+screenshot settings_02_down
+
+arrow right
+wait 0.1
+screenshot settings_03_right
+
+# Escape back to main
+goto_screen Main
+wait 0.2
+screenshot settings_04_back

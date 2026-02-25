@@ -92,7 +92,7 @@ inline void register_systems(SystemManager& sm) {
         }));
     
     e2e_commands::register_app_commands(sm);
-    
+
     register_unknown_handler(sm);
     register_cleanup(sm);
 }
