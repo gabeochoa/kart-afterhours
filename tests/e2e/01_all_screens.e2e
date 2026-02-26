@@ -44,6 +44,10 @@ goto_screen RoundSettings
 wait 0.2
 expect_text "select map"
 expect_text "back"
+expect_text "Cannon"
+expect_text "Shotgun"
+expect_text "Sniper"
+expect_text "MachineGun"
 screenshot 05_round_settings
 
 # Map Selection Screen

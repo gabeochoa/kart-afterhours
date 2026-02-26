@@ -1,0 +1,43 @@
+# Settings Screen Interactions
+# Tests clicking buttons, toggling checkboxes, and verifying text on settings
+
+disable_animations
+
+goto_screen Settings
+wait 0.2
+
+# Verify all settings controls are visible
+expect_text "back"
+expect_text "master volume"
+expect_text "music volume"
+expect_text "sfx volume"
+expect_text "resolution"
+expect_text "fullscreen"
+expect_text "post processing"
+screenshot settings_int_01_initial
+
+# Click fullscreen checkbox to toggle it
+click_text "fullscreen"
+wait 0.2
+screenshot settings_int_02_fullscreen_toggled
+
+# Click post processing checkbox to toggle it
+click_text "post processing"
+wait 0.2
+screenshot settings_int_03_postproc_toggled
+
+# Click fullscreen again to toggle back
+click_text "fullscreen"
+wait 0.2
+screenshot settings_int_04_fullscreen_restored
+
+# Click post processing again to toggle back
+click_text "post processing"
+wait 0.2
+screenshot settings_int_05_postproc_restored
+
+# Navigate back
+click_button "back"
+wait 0.2
+expect_text "play"
+screenshot settings_int_06_back_to_main

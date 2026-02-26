@@ -1,5 +1,6 @@
 # Round Settings Mode Switching
-# Tests switching between win conditions and verifying each mode renders
+# Tests that clicking > and < on the navigation bar cycles through modes
+# Does not depend on which mode is initially active
 
 disable_animations
 
@@ -9,33 +10,27 @@ expect_text "select map"
 expect_text "back"
 screenshot rs_01_initial
 
-# Tab through controls to navigation bar
-tab
-wait 0.1
-tab
-wait 0.1
-
-# Arrow right to switch win condition
-arrow right
+# Click > four times to cycle through all modes and back
+click_button ">"
 wait 0.2
 screenshot rs_02_mode_2
 
-arrow right
+click_button ">"
 wait 0.2
 screenshot rs_03_mode_3
 
-arrow right
+click_button ">"
 wait 0.2
 screenshot rs_04_mode_4
 
-# Go back to first mode
-arrow left
-wait 0.1
-arrow left
-wait 0.1
-arrow left
+click_button ">"
 wait 0.2
-screenshot rs_05_back_to_mode_1
+screenshot rs_05_mode_wrap
+
+# Click < to go back one mode
+click_button "<"
+wait 0.2
+screenshot rs_06_mode_back
 
 # Return to main
 goto_screen Main

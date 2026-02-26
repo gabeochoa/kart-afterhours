@@ -1,0 +1,34 @@
+# Map Selection Screen
+# Tests that all map buttons and preview info are visible
+
+disable_animations
+
+goto_screen MapSelection
+wait 0.2
+
+# Verify map buttons are present
+expect_text "back"
+expect_text "Arena"
+expect_text "win condition"
+screenshot map_int_01_initial
+
+# Tab through the map buttons
+tab
+wait 0.1
+screenshot map_int_02_tab1
+
+tab
+wait 0.1
+screenshot map_int_03_tab2
+
+tab
+wait 0.1
+screenshot map_int_04_tab3
+
+tab
+wait 0.1
+screenshot map_int_05_tab4
+
+# Return to main
+goto_screen Main
+wait 0.2

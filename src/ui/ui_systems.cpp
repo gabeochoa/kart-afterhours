@@ -361,21 +361,19 @@ void maybe_next_color_button(UIContext<InputAction> &context, Entity &parent,
 void maybe_ai_buttons(UIContext<InputAction> &context, Entity &parent,
                       PlayerCardData &data) {
 
-  auto bottom_row = imm::div(
+  auto bottom_row = imm::hstack(
       context, mk(parent),
       ComponentConfig{}
           .with_size(ComponentSize{percent(1.f, 1.f), percent(0.4f, 1.f)})
-          .with_flex_direction(FlexDirection::Row)
           .with_debug_name("player_card_bottom_row"));
   if (data.is_ai) {
     maybe_difficulty_button(context, bottom_row.ent(), data);
 
     if (data.on_difficulty_change) {
-      imm::div(
+      imm::spacer(
           context, mk(bottom_row.ent()),
           ComponentConfig{}
-              .with_size(ComponentSize{percent(0.15f, 0.1f), percent(1.f)})
-              .with_debug_name("spacer"));
+              .with_size(ComponentSize{percent(0.15f, 0.1f), percent(1.f)}));
     }
 
     auto &trash_tex = TextureLibrary::get().get("trashcan");
@@ -404,7 +402,7 @@ ElementResult create_player_card(UIContext<InputAction> &context,
 
   // Top row: ID [color] [team switch]
   auto top_row =
-      imm::div(context, mk(card.ent()),
+      imm::hstack(context, mk(card.ent()),
                ComponentConfig{}
                    .with_size(ComponentSize{percent(1.0f), percent(0.4f)})
                    .with_margin(Margin{.top = imm::DefaultSpacing::tiny(),
@@ -415,7 +413,6 @@ ElementResult create_player_card(UIContext<InputAction> &context,
                                          .left = imm::DefaultSpacing::tiny(),
                                          .bottom = imm::DefaultSpacing::tiny(),
                                          .right = imm::DefaultSpacing::tiny()})
-                   .with_flex_direction(FlexDirection::Row)
                    .with_debug_name("player_card_top_row"));
 
   // Player ID label
@@ -452,9 +449,7 @@ ElementResult create_styled_button(UIContext<InputAction> &context,
                             .bottom = imm::DefaultSpacing::tiny(),
                             .right = imm::DefaultSpacing::tiny()});
 
-  if (!animation_control::disabled) {
-    config = config.with_opacity(0.0f).with_translate(-2000.0f, 0.0f);
-  }
+  animation_control::apply_slide_in(config);
 
   if (imm::button(context, mk(parent, index), config)) {
     on_click();
@@ -1024,10 +1019,9 @@ void ScheduleMainMenuUI::render_team_column(
           : raylib::Color{255, 150, 100, 50}; // Light orange for Team B
 
   auto column_container =
-      imm::div(context, mk(team_columns_container, team_index),
+      imm::vstack(context, mk(team_columns_container, team_index),
                ComponentConfig{}
                    .with_size(ComponentSize{ui::w1280(400.f), ui::h720(700.f)})
-                   .with_flex_direction(FlexDirection::Column)
                    .with_padding(Padding{.left = ui::w1280(20.f),
                                          .right = ui::w1280(20.f)})
                    .with_custom_background(team_color)
@@ -1052,14 +1046,10 @@ void ScheduleMainMenuUI::render_team_column(
     size_t team_rows = team_players.size();
 
     for (size_t row_id = 0; row_id < team_rows; row_id++) {
-      auto team_row = imm::div(
+      auto team_row = imm::hstack(
           context, mk(column_container.ent(), row_id),
           ComponentConfig{}
-              .with_size(ComponentSize{ui::w1280(400.f),
-                                       // Cap row height at 300/720 pixels
-                                       // (about 42% of screen height)
-                                       ui::h720(100.f)})
-              .with_flex_direction(FlexDirection::Row)
+              .with_size(ComponentSize{ui::w1280(400.f), ui::h720(100.f)})
               .with_debug_name(team_name + "_row"));
 
       // Render players for this row
@@ -1104,6 +1094,7 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                     active_settings.team_mode_enabled,
                     ComponentConfig{}
                         .with_label("Team Mode")
+                        .with_debug_name("team_mode_checkbox")
                         .with_margin(Margin{.top = screen_pct(0.01f)}))) {
     // Value already toggled by checkbox binding
     log_info("team mode toggled: {}", active_settings.team_mode_enabled);
@@ -1152,10 +1143,9 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
 
     // Create centered container for team columns
     auto team_columns_container =
-        imm::div(context, mk(btn_group.ent()),
+        imm::hstack(context, mk(btn_group.ent()),
                  ComponentConfig{}
                      .with_size(ComponentSize{percent(1.0f), percent(1.f)})
-                     .with_flex_direction(FlexDirection::Row)
                      .with_debug_name("team_columns_container"));
 
     render_team_column(context, team_columns_container.ent(), "Team A",
@@ -1168,11 +1158,10 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
         static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
 
     for (int row_id = 0; row_id < fours; row_id++) {
-      auto row = imm::div(
+      auto row = imm::hstack(
           context, mk(btn_group.ent(), row_id),
           ComponentConfig{}
               .with_size(ComponentSize{percent(1.f), percent(0.5f, 0.4f)})
-              .with_flex_direction(FlexDirection::Row)
               .with_debug_name("row"));
       size_t start = row_id * 4;
       for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
@@ -1626,11 +1615,10 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
     const int count_in_row = std::min(items_per_row, remaining);
     const float row_height = 1.f / static_cast<float>(num_rows);
 
-    auto row_elem = imm::div(
+    auto row_elem = imm::hstack(
         context, mk(screen_container.ent(), row),
         ComponentConfig{}
-            .with_size(ComponentSize{percent(1.f), percent(row_height)})
-            .with_flex_direction(FlexDirection::Row));
+            .with_size(ComponentSize{percent(1.f), percent(row_height)}));
 
     for (int j = 0; j < count_in_row; ++j) {
       const auto &spec = all_specs[start + j];
@@ -1684,12 +1672,11 @@ void SchedulePauseUI::for_each_with(Entity &entity,
                    .with_debug_name("pause_screen"));
 
   auto left_col =
-      imm::div(context, mk(elem.ent()),
+      imm::vstack(context, mk(elem.ent()),
                ComponentConfig{}
                    .with_size(ComponentSize{percent(0.2f), percent(1.0f)})
                    .with_padding(Padding{.top = screen_pct(0.02f),
                                          .left = screen_pct(0.02f)})
-                   .with_flex_direction(FlexDirection::Column)
                    .with_debug_name("pause_left"));
 
   imm::div(context, mk(left_col.ent(), 0),
@@ -1740,51 +1727,49 @@ void SchedulePauseUI::for_each_with(Entity &entity,
 void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundLivesSettings>();
 
-  imm::div(context, mk(entity),
-           ComponentConfig{}
-               .with_label(translation_manager::translate_formatted(
-                   translation_manager::make_translatable_string(
-                       strings::i18n::num_lives_label)
-                       .set_param(translation_manager::i18nParam::number_count,
-                                  rl_settings.num_starting_lives,
-                                  translation_manager::translation_param)))
-               .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
-               .with_margin(Margin{.top = screen_pct(0.01f)})
-               .with_debug_name("num_lives_text")
-               .with_opacity(0.0f)
-               .with_translate(-2000.0f, 0.0f));
+  auto config = ComponentConfig{}
+      .with_label(translation_manager::translate_formatted(
+          translation_manager::make_translatable_string(
+              strings::i18n::num_lives_label)
+              .set_param(translation_manager::i18nParam::number_count,
+                         rl_settings.num_starting_lives,
+                         translation_manager::translation_param)))
+      .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
+      .with_margin(Margin{.top = screen_pct(0.01f)})
+      .with_debug_name("num_lives_text");
+  animation_control::apply_slide_in(config);
+  imm::div(context, mk(entity), config);
 }
 
 void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
   auto &rl_settings = RoundManager::get().get_active_rt<RoundKillsSettings>();
 
-  imm::div(context, mk(entity),
-           ComponentConfig{}
-               .with_label(translation_manager::translate_formatted(
-                   translation_manager::make_translatable_string(
-                       strings::i18n::round_length_with_time)
-                       .set_param(translation_manager::i18nParam::number_time,
-                                  rl_settings.current_round_time,
-                                  translation_manager::translation_param)))
-               .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
-               .with_margin(Margin{.top = screen_pct(0.01f)})
-               .with_opacity(0.0f)
-               .with_translate(-2000.0f, 0.0f));
+  {
+    auto config = ComponentConfig{}
+        .with_label(translation_manager::translate_formatted(
+            translation_manager::make_translatable_string(
+                strings::i18n::round_length_with_time)
+                .set_param(translation_manager::i18nParam::number_time,
+                           rl_settings.current_round_time,
+                           translation_manager::translation_param)))
+        .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
+        .with_margin(Margin{.top = screen_pct(0.01f)});
+    animation_control::apply_slide_in(config);
+    imm::div(context, mk(entity), config);
+  }
 
   {
-    // TODO replace with actual strings
     auto options = magic_enum::enum_names<RoundSettings::TimeOptions>();
     auto option_index = magic_enum::enum_index(rl_settings.time_option).value();
 
+    auto config = ComponentConfig{}
+        .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
+        .with_label(translation_manager::make_translatable_string(
+                        strings::i18n::round_length)
+                        .get_text());
+    animation_control::apply_slide_in(config);
     if (auto result = imm::dropdown(
-            context, mk(entity), options, option_index,
-            ComponentConfig{}
-                .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-                .with_label(translation_manager::make_translatable_string(
-                                strings::i18n::round_length)
-                                .get_text())
-                .with_opacity(0.0f)
-                .with_translate(-2000.0f, 0.0f));
+            context, mk(entity), options, option_index, config);
         result) {
       rl_settings.set_time_option(result.as<int>());
     }
@@ -1814,32 +1799,31 @@ void round_tag_and_go_settings(Entity &entity,
     auto options = magic_enum::enum_names<RoundSettings::TimeOptions>();
     auto option_index = magic_enum::enum_index(cm_settings.time_option).value();
 
+    auto dd_config = ComponentConfig{}
+        .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
+        .with_label(translation_manager::translate_formatted(
+            translation_manager::make_translatable_string(
+                strings::i18n::round_length)
+                .set_param(translation_manager::i18nParam::number_time,
+                           30, translation_manager::translation_param)));
+    animation_control::apply_slide_in(dd_config);
     if (auto result = imm::dropdown(
-            context, mk(entity), options, option_index,
-            ComponentConfig{}
-                .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-                .with_label(translation_manager::translate_formatted(
-                    translation_manager::make_translatable_string(
-                        strings::i18n::round_length)
-                        .set_param(translation_manager::i18nParam::number_time,
-                                   30, translation_manager::translation_param)))
-                .with_opacity(0.0f)
-                .with_translate(-2000.0f, 0.0f));
+            context, mk(entity), options, option_index, dd_config);
         result) {
       cm_settings.set_time_option(result.as<int>());
     }
   }
 
-  if (imm::checkbox(
-          context, mk(entity), cm_settings.allow_tag_backs,
-          ComponentConfig{}
-              .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-              .with_label(translation_manager::make_translatable_string(
-                              strings::i18n::allow_tag_backs)
-                              .get_text())
-              .with_opacity(0.0f)
-              .with_translate(-2000.0f, 0.0f))) {
-    // value already toggled by checkbox binding
+  {
+    auto cb_config = ComponentConfig{}
+        .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
+        .with_label(translation_manager::make_translatable_string(
+                        strings::i18n::allow_tag_backs)
+                        .get_text());
+    animation_control::apply_slide_in(cb_config);
+    if (imm::checkbox(
+            context, mk(entity), cm_settings.allow_tag_backs, cb_config)) {
+    }
   }
 }
 
@@ -1873,28 +1857,26 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
       static size_t selected_round_type =
           static_cast<size_t>(RoundManager::get().active_round_type);
 
+      auto nav_config = ComponentConfig{};
+      animation_control::apply_slide_in(nav_config);
       if (auto result = imm::navigation_bar(
               context, mk(win_condition_div.ent()), RoundType_NAMES,
-              selected_round_type,
-              ComponentConfig{}.with_opacity(0.0f).with_translate(-2000.0f,
-                                                                  0.0f));
+              selected_round_type, nav_config);
           result) {
         RoundManager::get().set_active_round_type(
             static_cast<int>(selected_round_type));
       }
     }
 
-    // shared across all round types
     auto enabled_weapons = RoundManager::get().get_enabled_weapons();
 
+    auto cg_config = ComponentConfig{}
+        .with_flex_direction(FlexDirection::Column)
+        .with_margin(Margin{.top = screen_pct(0.01f)});
+    animation_control::apply_slide_in(cg_config);
     if (auto result = imm::checkbox_group(
             context, mk(top_left.ent()), enabled_weapons, WEAPON_STRING_LIST,
-            {1, 3},
-            ComponentConfig{}
-                .with_flex_direction(FlexDirection::Column)
-                .with_margin(Margin{.top = screen_pct(0.01f)})
-                .with_opacity(0.0f)
-                .with_translate(-2000.0f, 0.0f));
+            {1, 3}, cg_config);
         result) {
       auto mask = result.as<unsigned long>();
       log_info("weapon checkbox_group changed; mask={}", mask);
@@ -1934,20 +1916,18 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
 Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                                          UIContext<InputAction> &context) {
   auto elem =
-      imm::div(context, mk(entity),
+      imm::hstack(context, mk(entity),
                ComponentConfig{}
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_flex_direction(FlexDirection::Row)
                    .with_absolute_position()
                    .with_debug_name("map_selection"));
 
   auto left_col =
-      imm::div(context, mk(elem.ent()),
+      imm::vstack(context, mk(elem.ent()),
                ComponentConfig{}
                    .with_size(ComponentSize{percent(0.2f), percent(1.0f)})
                    .with_padding(Padding{.top = screen_pct(0.02f),
                                          .left = screen_pct(0.02f)})
-                   .with_flex_direction(FlexDirection::Column)
                    .with_debug_name("map_selection_left"));
 
   auto preview_box =
@@ -1957,7 +1937,6 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                    .with_margin(Margin{.top = percent(0.05f),
                                        .bottom = percent(0.05f),
                                        .right = percent(0.05f)})
-                   .with_opacity(0.0f)
                    .with_debug_name("preview_box")
                    .with_skip_tabbing(true));
 
@@ -1988,11 +1967,10 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
   }
 
   auto map_list =
-      imm::div(context, mk(left_col.ent(), 2),
+      imm::hstack(context, mk(left_col.ent(), 2),
                ComponentConfig{}
                    .with_size(ComponentSize{percent(1.f), percent(0.5f)})
                    .with_margin(Margin{.top = screen_pct(0.01f)})
-                   .with_flex_direction(FlexDirection::Row)
                    .with_debug_name("map_list"));
 
   auto map_grid_button_size =
@@ -2003,17 +1981,19 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     auto random_btn = imm::button(
         context,
         mk(map_list.ent(), static_cast<EntityID>(compatible_maps.size())),
-        ComponentConfig{}
-            .with_label("?")
-            .with_size(map_grid_button_size)
-            .with_margin(Margin{.top = percent(inner_margin),
-                                .bottom = percent(inner_margin),
-                                .left = percent(inner_margin),
-                                .right = percent(inner_margin)})
-            .with_flex_direction(FlexDirection::Row)
-            .with_opacity(0.0f)
-            .with_translate(-2000.0f, 0.0f)
-            .with_debug_name("map_card_random"));
+        [&]() {
+          auto cfg = ComponentConfig{}
+              .with_label("?")
+              .with_size(map_grid_button_size)
+              .with_margin(Margin{.top = percent(inner_margin),
+                                  .bottom = percent(inner_margin),
+                                  .left = percent(inner_margin),
+                                  .right = percent(inner_margin)})
+              .with_flex_direction(FlexDirection::Row)
+              .with_debug_name("map_card_random");
+          animation_control::apply_slide_in(cfg);
+          return cfg;
+        }());
     {
       size_t random_index = compatible_maps.size();
       float slide_v = 1.0f;
@@ -2111,19 +2091,19 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     float inner_margin_scale = 0.004f;
     float inner_margin = inner_margin_base - (inner_margin_scale * pulse_v);
     // off-screen-left translation applied below per-entity
+    auto mc_config = ComponentConfig{}
+        .with_label(map_config.display_name)
+        .with_size(map_grid_button_size)
+        .with_margin(Margin{.top = percent(inner_margin),
+                            .bottom = percent(inner_margin),
+                            .left = percent(inner_margin),
+                            .right = percent(inner_margin)})
+        .with_flex_direction(FlexDirection::Row)
+        .with_debug_name("map_card");
+    animation_control::apply_slide_in(mc_config);
     auto map_btn =
         imm::button(context, mk(map_list.ent(), static_cast<EntityID>(i)),
-                    ComponentConfig{}
-                        .with_label(map_config.display_name)
-                        .with_size(map_grid_button_size)
-                        .with_margin(Margin{.top = percent(inner_margin),
-                                            .bottom = percent(inner_margin),
-                                            .left = percent(inner_margin),
-                                            .right = percent(inner_margin)})
-                        .with_flex_direction(FlexDirection::Row)
-                        .with_opacity(0.0f)
-                        .with_translate(-2000.0f, 0.0f)
-                        .with_debug_name("map_card"));
+                    mc_config);
     if (map_btn) {
       MapManager::get().set_selected_map(map_index);
       MapManager::get().create_map();
@@ -2529,15 +2509,13 @@ void ScheduleMainMenuUI::render_team_column_results(
 
   // Create team column
   auto team_column =
-      imm::div(context, mk(parent, team_id),
+      imm::vstack(context, mk(parent, team_id),
                ComponentConfig{}
                    .with_size(ComponentSize{percent(0.5f), percent(1.f)})
-                   .with_flex_direction(FlexDirection::Column)
                    .with_custom_background(team_color)
                    .disable_rounded_corners()
                    .with_debug_name(team_name + "_column"));
 
-  // Team header
   imm::div(context, mk(team_column.ent()),
            ComponentConfig{}
                .with_label(team_name)
@@ -2634,10 +2612,9 @@ void ScheduleMainMenuUI::render_team_results(
 
   // Create two-column layout
   auto team_container =
-      imm::div(context, mk(parent),
+      imm::hstack(context, mk(parent),
                ComponentConfig{}
                    .with_size(ComponentSize{screen_pct(0.6f), screen_pct(0.6f)})
-                   .with_flex_direction(FlexDirection::Row)
                    .with_absolute_position(screen_pct(0.2f), screen_pct(0.2f))
                    .with_debug_name("team_results_container"));
 
@@ -2727,11 +2704,10 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
               .with_debug_name("player_group"));
 
       for (int row_id = 0; row_id < fours; row_id++) {
-        auto row = imm::div(
+        auto row = imm::hstack(
             context, mk(player_group.ent(), row_id),
             ComponentConfig{}
                 .with_size(ComponentSize{percent(1.f), percent(0.5f, 0.4f)})
-                .with_flex_direction(FlexDirection::Row)
                 .with_debug_name("row"));
         size_t start = row_id * 4;
         for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
