@@ -75,7 +75,16 @@ Had to manually include `<afterhours/src/core/key_codes.h>` for e2e navigation c
 
 **Ideal:** `init_ui_plugin` should detect headless mode and load fonts via the manual atlas path automatically, or provide a hook for custom font loading.
 
-### `std::bad_variant_access` crash on shutdown after E2E tests
-After the E2E test runner finishes and the game loop exits, entity cleanup triggers a `std::bad_variant_access` exception. This appears to be related to component variant storage during destruction of entities that were created/modified during the test run. The crash occurs after all tests pass and results are printed, so it doesn't affect test outcomes but does cause a non-zero exit code.
+### `std::bad_variant_access` crash on shutdown due to static destruction order
+The raylib backend stores its state in a `std::variant<std::monostate, RaylibWindowed, RaylibHeadless>` inside a function-local static. When the program exits, static destructors run in undefined order across translation units. If entity destruction or other static cleanups happen after the backend variant is destroyed, `std::visit` on the dead variant throws `bad_variant_access`.
 
-**Note:** This may be a game-side issue with component initialization rather than an engine bug. Needs further investigation.
+**Current workaround:** Explicitly call `EntityHelper::delete_all_entities_NO_REALLY_I_MEAN_ALL()` and then `Preload_single.reset()` (which calls `graphics::shutdown()`) before `main()` returns, ensuring deterministic teardown order.
+
+**Ideal:** The engine should provide a `graphics::cleanup_all()` or similar that handles entity collection teardown and backend shutdown in the correct order, or the backend variant should use a sentinel state that is safe to visit after destruction.
+
+### `SINGLETON_FWD` macro fails inside struct/class scope
+`SINGLETON_FWD(Type)` expands to `inline std::shared_ptr<Type> Type_single;` which is invalid inside a struct body (needs `static inline`). This affects `sound_system.h` where `SoundLibrary` and `MusicLibrary` use `SINGLETON_FWD` inside `struct sound_system`.
+
+**Current workaround:** Manually expand the macro with `static inline` in the vendor file.
+
+**Ideal:** Either provide a `SINGLETON_FWD_STATIC(Type)` variant for use inside class/struct scope, or change `SINGLETON_FWD` to use `static inline` (which works at both namespace and class scope).

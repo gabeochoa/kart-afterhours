@@ -298,5 +298,9 @@ int main(int argc, char *argv[]) {
 
   Settings::write_save_file();
 
+  EntityHelper::delete_all_entities_NO_REALLY_I_MEAN_ALL();
+
+  Preload_single.reset();
+
   return 0;
 }
