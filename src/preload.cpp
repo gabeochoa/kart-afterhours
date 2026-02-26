@@ -18,7 +18,7 @@
 #include "translation_manager.h"
 #include <afterhours/src/plugins/camera.h>
 #include <afterhours/src/plugins/files.h>
-#include <afterhours/src/graphics/graphics.h>
+#include <afterhours/src/graphics.h>
 
 using namespace afterhours;
 // for HasTexture
@@ -141,22 +141,46 @@ Preload &Preload::init(const char *title, afterhours::graphics::DisplayMode mode
   return *this;
 }
 
-void setup_fonts(Entity &sophie) {
-  sophie.get<ui::FontManager>().load_font(
-      get_font_name(FontID::English),
-      files::get_resource_path("", get_font_name(FontID::English)).string().c_str());
+raylib::Font load_font_for_mode(const char *filename, int fontSize = 32) {
+  if (afterhours::graphics::is_headless()) {
+    raylib::Font font = {0};
+    int dataSize = 0;
+    unsigned char *fontData = raylib::LoadFileData(filename, &dataSize);
+    if (!fontData || dataSize <= 0) {
+      log_warn("failed to load font file in headless: {}", filename);
+      return font;
+    }
+    font.baseSize = fontSize;
+    font.glyphCount = 95;
+    font.glyphs = raylib::LoadFontData(fontData, dataSize, fontSize, nullptr, 0, raylib::FONT_DEFAULT);
+    raylib::Image atlas = raylib::GenImageFontAtlas(
+        font.glyphs, &font.recs, font.glyphCount, fontSize, 1, 0);
+    font.texture = raylib::LoadTextureFromImage(atlas);
+    raylib::SetTextureFilter(font.texture, raylib::TEXTURE_FILTER_BILINEAR);
+    raylib::UnloadImage(atlas);
+    raylib::UnloadFileData(fontData);
+    return font;
+  }
+  return afterhours::load_font_from_file(filename);
+}
 
-  auto &font_manager = sophie.get<ui::FontManager>();
-  std::string font_file =
-      files::get_resource_path("", get_font_name(FontID::Korean)).string();
+void setup_fonts() {
+  auto *font_manager = EntityHelper::get_singleton_cmp<ui::FontManager>();
+  if (!font_manager) return;
 
-  translation_manager::TranslationPlugin::load_cjk_fonts(
-      font_manager, font_file, get_font_name,
-      translation_manager::get_font_for_language_mapper);
+  std::string eng_path = files::get_resource_path("", get_font_name(FontID::English)).string();
+  font_manager->load_font(get_font_name(FontID::English), load_font_for_mode(eng_path.c_str()));
 
-  font_manager.load_font(
-      ui::UIComponent::SYMBOL_FONT,
-      files::get_resource_path("", get_font_name(FontID::SYMBOL_FONT)).string().c_str());
+  if (!afterhours::graphics::is_headless()) {
+    std::string font_file =
+        files::get_resource_path("", get_font_name(FontID::Korean)).string();
+    translation_manager::TranslationPlugin::load_cjk_fonts(
+        *font_manager, font_file, get_font_name,
+        translation_manager::get_font_for_language_mapper);
+  }
+
+  std::string sym_path = files::get_resource_path("", get_font_name(FontID::SYMBOL_FONT)).string();
+  font_manager->load_font(ui::UIComponent::SYMBOL_FONT, load_font_for_mode(sym_path.c_str()));
 }
 
 Preload &Preload::make_singleton() {
@@ -165,8 +189,6 @@ Preload &Preload::make_singleton() {
   {
     input::add_singleton_components(sophie, get_mapping());
     window_manager::add_singleton_components(sophie, 200);
-    ui::add_singleton_components<InputAction>(sophie);
-
     translation_manager::TranslationPlugin::add_singleton_components(
         sophie, translation_manager::get_translation_data(),
         Settings::get_language(), translation_manager::translation_param);
@@ -176,14 +198,19 @@ Preload &Preload::make_singleton() {
         sophie, raylib::LoadTexture(
                     files::get_resource_path("images", "spritesheet.png").string().c_str()));
 
-    setup_fonts(sophie);
-    // making a root component to attach the UI to
-    sophie.addComponent<ui::AutoLayoutRoot>();
-    sophie.addComponent<ui::UIComponentDebug>("sophie");
-    sophie.addComponent<ui::UIComponent>(sophie.id)
-        .set_desired_width(ui::screen_pct(1.f))
-        .set_desired_height(ui::screen_pct(1.f))
-        .enable_font(get_font_name(FontID::English), 75.f);
+    ui::init_ui_plugin<InputAction>();
+
+    if (afterhours::graphics::is_headless()) {
+      auto *fm = EntityHelper::get_singleton_cmp<ui::FontManager>();
+      if (fm) {
+        std::string eng_path = files::get_resource_path("", get_font_name(FontID::English)).string();
+        raylib::Font fallback = load_font_for_mode(eng_path.c_str());
+        fm->load_font(ui::UIComponent::DEFAULT_FONT, fallback);
+        fm->load_font(ui::UIComponent::UNSET_FONT, fallback);
+      }
+    }
+
+    setup_fonts();
 
     sophie.addComponent<ManagesAvailableColors>();
     EntityHelper::registerSingleton<ManagesAvailableColors>(sophie);
@@ -211,6 +238,3 @@ Preload::~Preload() {
   }
   afterhours::graphics::shutdown();
 }
-
-std::shared_ptr<sound_system::SoundLibrary> sound_system::SoundLibrary_single;
-std::shared_ptr<sound_system::MusicLibrary> sound_system::MusicLibrary_single;

@@ -4,7 +4,7 @@
 #include <fmt/format.h>
 
 #include <afterhours/src/logging.h>
-#include <afterhours/src/graphics/graphics.h>
+#include <afterhours/src/graphics.h>
 
 //
 
@@ -20,6 +20,7 @@
 #include "../strings.h"
 #include "../library/texture_library.h"
 #include "../translation_manager.h"
+#include "animation_control.h"
 #include "animation_key.h"
 #include "animation_slide_in.h"
 #include "animation_ui_wiggle.h"
@@ -228,7 +229,6 @@ static inline void apply_slide_mods(afterhours::Entity &ent, float slide_v) {
       std::clamp(slide_v, 0.0f, 1.0f);
 }
 
-// Reusable UI component functions
 namespace ui_helpers {
 
 struct PlayerCardData {
@@ -438,16 +438,18 @@ ElementResult create_styled_button(UIContext<InputAction> &context,
                                    std::function<void()> on_click,
                                    int index = 0) {
 
-  if (imm::button(
-          context, mk(parent, index),
-          ComponentConfig{}
-              .with_label(label)
-              .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                    .left = imm::DefaultSpacing::tiny(),
-                                    .bottom = imm::DefaultSpacing::tiny(),
-                                    .right = imm::DefaultSpacing::tiny()})
-              .with_opacity(0.0f)
-              .with_translate(-2000.0f, 0.0f))) {
+  auto config = ComponentConfig{}
+      .with_label(label)
+      .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
+                            .left = imm::DefaultSpacing::tiny(),
+                            .bottom = imm::DefaultSpacing::tiny(),
+                            .right = imm::DefaultSpacing::tiny()});
+
+  if (!animation_control::disabled) {
+    config = config.with_opacity(0.0f).with_translate(-2000.0f, 0.0f);
+  }
+
+  if (imm::button(context, mk(parent, index), config)) {
     on_click();
     return {true, parent};
   }
@@ -553,8 +555,11 @@ Padding button_padding = Padding{
 };
 
 void ScheduleMainMenuUI::update_resolution_cache() {
-  // Skip resolution queries in headless mode - no window to query
   if (afterhours::graphics::is_headless()) {
+    if (resolution_strs.empty()) {
+      resolution_strs.push_back(fmt::format("{}x{}", Settings::get_screen_width(), Settings::get_screen_height()));
+      resolution_index = 0;
+    }
     return;
   }
 
@@ -785,10 +790,14 @@ void ScheduleMainMenuUI::round_end_player_column(
   const auto num_cols = std::min(
       4.f, static_cast<float>(round_players.size() + round_ais.size()));
 
-  afterhours::animation::one_shot(UIKey::RoundEndCard, index,
-                                  ui_anims::make_round_end_card_stagger(index));
-  float card_v = afterhours::animation::clamp_value(UIKey::RoundEndCard, index,
-                                                    0.0f, 1.0f);
+  float card_v = 1.0f;
+  if (!animation_control::disabled) {
+    afterhours::animation::one_shot(
+        UIKey::RoundEndCard, index,
+        ui_anims::make_round_end_card_stagger(index));
+    card_v = afterhours::animation::clamp_value(UIKey::RoundEndCard, index,
+                                                0.0f, 1.0f);
+  }
   auto column =
       imm::div(context, mk(parent, (int)index),
                ComponentConfig{}
@@ -868,11 +877,15 @@ void ScheduleMainMenuUI::round_end_player_column(
   }
 
   // Score roll-up value (0..1). We keep it generic regardless of round type
-  afterhours::animation::one_shot(UIKey::RoundEndScore, index, [](auto h) {
-    h.from(0.0f).to(1.0f, 0.8f, afterhours::animation::EasingType::EaseOutQuad);
-  });
-  float score_t = afterhours::animation::clamp_value(UIKey::RoundEndScore,
-                                                     index, 0.0f, 1.0f);
+  float score_t = 1.0f;
+  if (!animation_control::disabled) {
+    afterhours::animation::one_shot(UIKey::RoundEndScore, index, [](auto h) {
+      h.from(0.0f).to(1.0f, 0.8f,
+             afterhours::animation::EasingType::EaseOutQuad);
+    });
+    score_t = afterhours::animation::clamp_value(UIKey::RoundEndScore, index,
+                                                 0.0f, 1.0f);
+  }
 
   // Compute animated stats text per-round
   std::optional<std::string> animated_stats = std::nullopt;
@@ -1431,7 +1444,6 @@ void ScheduleMainMenuUI::render_map_preview(
 
 void ScheduleMainMenuUI::for_each_with(Entity &entity,
                                        UIContext<InputAction> &context, float) {
-  // Apply any queued screen changes at the start of the frame
   GameStateManager::get().update_screen();
 
   switch (get_active_screen()) {
@@ -1999,28 +2011,30 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
             .with_opacity(0.0f)
             .with_translate(-2000.0f, 0.0f)
             .with_debug_name("map_card_random"));
-    // apply one-time slide-in from off-screen left, and persist final state
     {
       size_t random_index = compatible_maps.size();
-      afterhours::animation::one_shot(
-          UIKey::MapCard, random_index,
-          ui_anims::make_map_card_slide(random_index));
+      float slide_v = 1.0f;
+      if (!animation_control::disabled) {
+        afterhours::animation::one_shot(
+            UIKey::MapCard, random_index,
+            ui_anims::make_map_card_slide(random_index));
 
-      static int random_card_anim_state = 0; // 0:not started, 1:playing, 2:done
-      float slide_v = 0.0f;
-      if (auto mv =
-              afterhours::animation::get_value(UIKey::MapCard, random_index);
-          mv.has_value()) {
-        slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
-        random_card_anim_state = 1;
-      } else {
-        if (random_card_anim_state == 1) {
-          random_card_anim_state = 2;
-          slide_v = 1.0f;
-        } else if (random_card_anim_state == 2) {
-          slide_v = 1.0f;
+        static int random_card_anim_state = 0;
+        slide_v = 0.0f;
+        if (auto mv =
+                afterhours::animation::get_value(UIKey::MapCard, random_index);
+            mv.has_value()) {
+          slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
+          random_card_anim_state = 1;
         } else {
-          slide_v = 0.0f;
+          if (random_card_anim_state == 1) {
+            random_card_anim_state = 2;
+            slide_v = 1.0f;
+          } else if (random_card_anim_state == 2) {
+            slide_v = 1.0f;
+          } else {
+            slide_v = 0.0f;
+          }
         }
       }
 
@@ -2066,32 +2080,33 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     const auto &map_config = map_pair.second;
     int map_index = map_pair.first;
 
-    // trigger once per app run
-    afterhours::animation::one_shot(UIKey::MapCard, i,
-                                    ui_anims::make_map_card_slide(i));
+    float pulse_v = 0.0f;
+    float slide_v = 1.0f;
+    if (!animation_control::disabled) {
+      afterhours::animation::one_shot(UIKey::MapCard, i,
+                                      ui_anims::make_map_card_slide(i));
+      pulse_v = afterhours::animation::get_value(UIKey::MapCardPulse, i)
+                    .value_or(0.0f);
 
-    // selection pulse value for this card (0..1 anim value)
-    float pulse_v =
-        afterhours::animation::get_value(UIKey::MapCardPulse, i).value_or(0.0f);
+      slide_v = 0.0f;
+      if (auto mv = afterhours::animation::get_value(UIKey::MapCard, i);
+          mv.has_value()) {
+        slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
+        map_card_anim_state[i] = 1;
+      } else {
+        if (map_card_anim_state[i] == 1) {
+          map_card_anim_state[i] = 2;
+          slide_v = 1.0f;
+        } else if (map_card_anim_state[i] == 2) {
+          slide_v = 1.0f;
+        } else {
+          slide_v = 0.0f;
+        }
+      }
+    }
     float inner_margin_base = 0.02f;
     float inner_margin_scale = 0.004f;
     float inner_margin = inner_margin_base - (inner_margin_scale * pulse_v);
-
-    float slide_v = 0.0f;
-    if (auto mv = afterhours::animation::get_value(UIKey::MapCard, i);
-        mv.has_value()) {
-      slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
-      map_card_anim_state[i] = 1;
-    } else {
-      if (map_card_anim_state[i] == 1) {
-        map_card_anim_state[i] = 2;
-        slide_v = 1.0f;
-      } else if (map_card_anim_state[i] == 2) {
-        slide_v = 1.0f;
-      } else {
-        slide_v = 0.0f;
-      }
-    }
     // off-screen-left translation applied below per-entity
     auto map_btn =
         imm::button(context, mk(map_list.ent(), static_cast<EntityID>(i)),
@@ -2159,17 +2174,19 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     effective_preview_index = focused_preview_index;
   }
 
-  if (effective_preview_index >= 0 && last_effective_preview_index < 0) {
-    afterhours::animation::anim(UIKey::MapPreviewFade)
-        .from(0.0f)
-        .to(1.0f, 0.2f, afterhours::animation::EasingType::EaseOutQuad);
-  } else if (effective_preview_index >= 0 &&
-             last_effective_preview_index >= 0 &&
-             effective_preview_index != last_effective_preview_index) {
-    prev_preview_index = last_effective_preview_index;
-    afterhours::animation::anim(UIKey::MapPreviewFade)
-        .from(0.0f)
-        .to(1.0f, 0.12f, afterhours::animation::EasingType::EaseOutQuad);
+  if (!animation_control::disabled) {
+    if (effective_preview_index >= 0 && last_effective_preview_index < 0) {
+      afterhours::animation::anim(UIKey::MapPreviewFade)
+          .from(0.0f)
+          .to(1.0f, 0.2f, afterhours::animation::EasingType::EaseOutQuad);
+    } else if (effective_preview_index >= 0 &&
+               last_effective_preview_index >= 0 &&
+               effective_preview_index != last_effective_preview_index) {
+      prev_preview_index = last_effective_preview_index;
+      afterhours::animation::anim(UIKey::MapPreviewFade)
+          .from(0.0f)
+          .to(1.0f, 0.12f, afterhours::animation::EasingType::EaseOutQuad);
+    }
   }
   last_effective_preview_index = effective_preview_index;
 

@@ -1,14 +1,43 @@
-# Menu Navigation Test - Simple Version
-# Just test screenshots on different screens
+# Menu Navigation via Keyboard
+# Tests tabbing through main menu buttons and pressing enter
+
+disable_animations
 
 goto_screen Main
-wait 0.1
-screenshot nav_main
+wait 0.2
 
-goto_screen Settings
+# Tab to first button (play) and screenshot
+tab
 wait 0.1
-screenshot nav_settings
+screenshot nav_01_focus_play
 
+# Tab to about
+tab
+wait 0.1
+screenshot nav_02_focus_about
+
+# Tab to settings
+tab
+wait 0.1
+screenshot nav_03_focus_settings
+
+# Tab to exit
+tab
+wait 0.1
+screenshot nav_04_focus_exit
+
+# Shift-tab back to settings
+shift_tab
+wait 0.1
+screenshot nav_05_back_to_settings
+
+# Press enter to go to settings
+enter
+wait 0.2
+expect_text "master volume"
+screenshot nav_06_entered_settings
+
+# Go back to main
 goto_screen Main
-wait 0.1
-screenshot nav_main_again
+wait 0.2
+screenshot nav_07_back_main

@@ -2,6 +2,7 @@
 
 #include "game_state_manager.h"
 #include "input_mapping.h"
+#include "ui/animation_control.h"
 #include "ui/navigation.h"
 #include <afterhours/src/plugins/e2e_testing/e2e_testing.h>
 #include <afterhours/src/core/key_codes.h>
@@ -144,6 +145,24 @@ struct HandleArrowCommand : System<PendingE2ECommand> {
     }
 };
 
+struct HandleDisableAnimationsCommand : System<PendingE2ECommand> {
+    void for_each_with(Entity &, PendingE2ECommand &cmd, float) override {
+        if (cmd.is_consumed() || !cmd.is("disable_animations"))
+            return;
+        animation_control::disabled = true;
+        cmd.consume();
+    }
+};
+
+struct HandleEnableAnimationsCommand : System<PendingE2ECommand> {
+    void for_each_with(Entity &, PendingE2ECommand &cmd, float) override {
+        if (cmd.is_consumed() || !cmd.is("enable_animations"))
+            return;
+        animation_control::disabled = false;
+        cmd.consume();
+    }
+};
+
 inline void register_app_commands(SystemManager &sm) {
     sm.register_update_system(std::make_unique<HandleGotoScreenCommand>());
     sm.register_update_system(std::make_unique<HandleAppActionCommand>());
@@ -154,6 +173,8 @@ inline void register_app_commands(SystemManager &sm) {
     sm.register_update_system(std::make_unique<HandleEnterCommand>());
     sm.register_update_system(std::make_unique<HandleEscapeCommand>());
     sm.register_update_system(std::make_unique<HandleArrowCommand>());
+    sm.register_update_system(std::make_unique<HandleDisableAnimationsCommand>());
+    sm.register_update_system(std::make_unique<HandleEnableAnimationsCommand>());
 }
 
 }

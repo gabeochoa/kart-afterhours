@@ -1,18 +1,36 @@
-# Screen Flow Test
-# Tests navigating through screens
+# Full Menu Flow via Input
+# Navigate the entire menu tree using keyboard only (no goto_screen teleporting)
 
-goto_screen MapSelection
-wait 0.2
-screenshot flow_01_map
+disable_animations
 
-goto_screen RoundSettings
+# Start at main menu
 wait 0.2
+expect_text "play"
+
+# Tab to play and enter
+tab
+wait 0.1
+enter
+wait 0.2
+expect_text "round settings"
+screenshot flow_01_character_creation
+
+# Tab to round settings button and enter
+tab
+wait 0.1
+enter
+wait 0.2
+expect_text "select map"
 screenshot flow_02_round_settings
 
-goto_screen CharacterCreation
+# Tab to select map and enter
+tab
+wait 0.1
+enter
 wait 0.2
-screenshot flow_03_char_creation
+screenshot flow_03_map_selection
 
+# Go back to main for clean exit
 goto_screen Main
 wait 0.2
-screenshot flow_04_main
+screenshot flow_04_back_main

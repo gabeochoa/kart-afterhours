@@ -20,7 +20,7 @@ else
 	E2E_FLAGS =
 endif
 
-INCLUDES = -Ivendor/ -Isrc/
+INCLUDES = -Ivendor/ -Isrc/ -DAFTER_HOURS_USE_RAYLIB -DAFTER_HOURS_UI_SINGLE_COLLECTION
 LIBS = -L. -Lvendor/ $(RAYLIB_LIB) -framework OpenGL
 
 H_FILES := $(wildcard src/**/*.h src/**/*.hpp)
@@ -62,6 +62,7 @@ endif
 
 
 .PHONY: all clean output count countall old clean xmake e2e clean-screenshots
+.PHONY: update-baselines validate-screenshots ci
 
 
 $(info SRC_FILES: $(SRC_FILES))
@@ -86,14 +87,41 @@ $(OBJ_DIR)/%.o: %.cpp makefile
 
 clean:
 	rm -rf output/src/
-	mkdir -p output/src/ui output/vendor/afterhours/src/plugins
+	mkdir -p output/src/ui output/src/library output/src/systems output/vendor/afterhours/src/plugins
 
 clean-screenshots:
 	rm -rf screenshots/*.png
 
 e2e: clean clean-screenshots
 	$(MAKE) E2E=1 $(OUTPUT_EXE)
-	./$(OUTPUT_EXE) --e2e
+	./$(OUTPUT_EXE) --e2e --headless
+
+BASELINE_DIR := screenshot-baselines/screens
+VALIDATE_DIR := /tmp/kart-screenshot-validate
+
+update-baselines: clean
+	$(MAKE) E2E=1 $(OUTPUT_EXE)
+	@mkdir -p $(BASELINE_DIR)
+	@rm -f $(BASELINE_DIR)/*.png
+	./$(OUTPUT_EXE) --e2e --headless
+	@cp screenshots/*.png $(BASELINE_DIR)/ 2>/dev/null || true
+	@echo ""
+	@echo "Baselines updated in $(BASELINE_DIR)/."
+	@echo "Review changes with: git diff --stat screenshot-baselines/"
+	@echo "Then commit: git add screenshot-baselines/ and git commit -m 'update screenshot baselines'"
+
+validate-screenshots: clean
+	$(MAKE) E2E=1 $(OUTPUT_EXE)
+	@mkdir -p $(VALIDATE_DIR)
+	@rm -f $(VALIDATE_DIR)/*.png
+	./$(OUTPUT_EXE) --e2e --headless
+	@cp screenshots/*.png $(VALIDATE_DIR)/ 2>/dev/null || true
+	@echo ""
+	@echo "Comparing against baselines..."
+	python3 scripts/compare_baselines.py $(BASELINE_DIR) $(VALIDATE_DIR)
+
+ci: validate-screenshots
+	@echo "CI passed."
 
 output:
 	$(mkdir_cmd)

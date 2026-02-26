@@ -6,7 +6,7 @@
 
 #include <afterhours/src/library.h>
 #include <afterhours/src/singleton.h>
-#include <afterhours/src/graphics/graphics.h>
+#include <afterhours/src/graphics.h>
 
 SINGLETON_FWD(Preload)
 struct Preload {

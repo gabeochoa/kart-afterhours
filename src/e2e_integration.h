@@ -4,7 +4,7 @@
 #include "game.h"
 #include "input_mapping.h"
 #include <afterhours/src/plugins/e2e_testing/e2e_testing.h>
-#include <afterhours/src/graphics/graphics.h>
+#include <afterhours/src/graphics.h>
 
 // Extern reference to render texture for headless screenshot capture
 extern raylib::RenderTexture2D screenRT;
@@ -17,6 +17,7 @@ using namespace afterhours::testing;
 namespace detail {
 inline bool enabled = false;
 inline std::unique_ptr<E2ERunner> runner;
+inline std::string pending_screenshot;
 }
 
 inline void init(const std::string& script_dir = "tests/e2e/") {
@@ -27,18 +28,7 @@ inline void init(const std::string& script_dir = "tests/e2e/") {
     detail::runner->set_timeout(30.0f);
     
     detail::runner->set_screenshot_callback([](const std::string& name) {
-        std::string path = "screenshots/" + name + ".png";
-        raylib::Image img;
-        if (afterhours::graphics::is_headless()) {
-            // In headless mode, capture from render texture
-            img = raylib::LoadImageFromTexture(screenRT.texture);
-            raylib::ImageFlipVertical(&img);
-        } else {
-            img = raylib::LoadImageFromScreen();
-        }
-        raylib::ExportImage(img, path.c_str());
-        raylib::UnloadImage(img);
-        log_info("E2E: Screenshot saved to {}", path);
+        detail::pending_screenshot = "screenshots/" + name + ".png";
     });
     
     detail::runner->set_reset_callback([]() {
@@ -71,18 +61,7 @@ inline void register_systems(SystemManager& sm) {
     
     sm.register_update_system(
         std::make_unique<HandleScreenshotCommand>([](const std::string& name) {
-            std::string path = "screenshots/" + name + ".png";
-            raylib::Image img;
-            if (afterhours::graphics::is_headless()) {
-                // In headless mode, capture from render texture
-                img = raylib::LoadImageFromTexture(screenRT.texture);
-                raylib::ImageFlipVertical(&img);
-            } else {
-                img = raylib::LoadImageFromScreen();
-            }
-            raylib::ExportImage(img, path.c_str());
-            raylib::UnloadImage(img);
-            log_info("E2E: Screenshot saved to {}", path);
+            detail::pending_screenshot = "screenshots/" + name + ".png";
         }));
     
     sm.register_update_system(
@@ -111,6 +90,28 @@ inline bool tick(float dt) {
 }
 
 inline void post_render(float) {
+    if (!detail::pending_screenshot.empty()) {
+        std::string path = detail::pending_screenshot;
+        detail::pending_screenshot.clear();
+        if (afterhours::graphics::is_headless()) {
+            auto &backend_rt = afterhours::graphics::get_render_texture();
+            raylib::BeginTextureMode(backend_rt);
+            raylib::ClearBackground(raylib::BLACK);
+            const raylib::Rectangle src{0.0f, 0.0f,
+                (float)screenRT.texture.width, -(float)screenRT.texture.height};
+            const raylib::Rectangle dst{0.0f, 0.0f,
+                (float)backend_rt.texture.width, (float)backend_rt.texture.height};
+            raylib::DrawTexturePro(screenRT.texture, src, dst,
+                {0.0f, 0.0f}, 0.0f, raylib::WHITE);
+            raylib::EndTextureMode();
+            afterhours::graphics::capture_frame(path);
+        } else {
+            raylib::Image img = raylib::LoadImageFromScreen();
+            raylib::ExportImage(img, path.c_str());
+            raylib::UnloadImage(img);
+        }
+        log_info("E2E: Screenshot saved to {}", path);
+    }
 }
 
 inline bool should_exit() {

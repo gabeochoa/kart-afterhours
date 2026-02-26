@@ -7,6 +7,8 @@
 #include <afterhours/src/plugins/ui/systems.h>
 #include <cstddef>
 
+#include "animation_control.h"
+
 using namespace afterhours;
 
 // Re-export in game space for convenience
@@ -49,6 +51,8 @@ struct UpdateUIWiggle : afterhours::ui::SystemWithUIContext<> {
                              afterhours::ui::UIComponent &component,
                              float) override {
     if (!component.was_rendered_to_screen)
+      return;
+    if (animation_control::disabled)
       return;
     const auto &cfg = ui_wiggle_config();
 

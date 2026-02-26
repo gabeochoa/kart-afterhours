@@ -1,20 +1,27 @@
-# Character Creation Navigation Test
-# Tests navigation in character creation screen
+# Character Creation Navigation
+# Tests team mode toggle and player slot navigation
+
+disable_animations
 
 goto_screen CharacterCreation
 wait 0.2
+expect_text "round settings"
+expect_text "back"
 screenshot char_01_initial
 
-# Arrow navigation
-arrow down
+# Tab through controls
+tab
 wait 0.1
-screenshot char_02_down
+screenshot char_02_tab1
 
-arrow right
+tab
 wait 0.1
-screenshot char_03_right
+screenshot char_03_tab2
 
-# Go back
+tab
+wait 0.1
+screenshot char_04_tab3
+
+# Return to main
 goto_screen Main
 wait 0.2
-screenshot char_04_back

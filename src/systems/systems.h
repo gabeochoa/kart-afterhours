@@ -20,7 +20,7 @@
 #include <afterhours/src/plugins/sound_system.h>
 
 #include <afterhours/src/plugins/camera.h>
-#include <afterhours/src/graphics/graphics.h>
+#include <afterhours/src/graphics.h>
 
 // Hippo game constants
 constexpr float HIPPO_SPAWN_INTERVAL = 0.8f;
@@ -1674,6 +1674,8 @@ struct VelFromInput
       case InputAction::ShootRight:
       case InputAction::WidgetRight:
       case InputAction::WidgetLeft:
+      case InputAction::WidgetUp:
+      case InputAction::WidgetDown:
       case InputAction::WidgetNext:
       case InputAction::WidgetPress:
       case InputAction::WidgetMod:
@@ -1683,7 +1685,6 @@ struct VelFromInput
       case InputAction::ToggleUIDebug:
       case InputAction::ToggleUILayoutDebug:
       case InputAction::None:
-        // These actions don't affect car movement
         break;
       }
     }
@@ -1726,6 +1727,8 @@ struct VelFromInput
       case InputAction::ShootRight:
       case InputAction::WidgetRight:
       case InputAction::WidgetLeft:
+      case InputAction::WidgetUp:
+      case InputAction::WidgetDown:
       case InputAction::WidgetNext:
       case InputAction::WidgetPress:
       case InputAction::WidgetMod:
@@ -1735,7 +1738,6 @@ struct VelFromInput
       case InputAction::ToggleUIDebug:
       case InputAction::ToggleUILayoutDebug:
       case InputAction::None:
-        // These actions don't affect car movement
         break;
       }
     }

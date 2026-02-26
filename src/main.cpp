@@ -23,7 +23,7 @@ backward::SignalHandling sh;
 #include <afterhours/src/plugins/animation.h>
 #include <afterhours/src/plugins/camera.h>
 #include <afterhours/src/plugins/files.h>
-#include <afterhours/src/graphics/graphics.h>
+#include <afterhours/src/graphics.h>
 
 // TODO add honking
 
@@ -63,6 +63,17 @@ void game() {
     input::register_update_systems(systems);
     mcp_integration::register_systems(systems);
     window_manager::register_update_systems(systems);
+    if (afterhours::graphics::is_headless()) {
+      systems.register_update_system([](float) {
+        auto *pcr = EntityHelper::get_singleton_cmp<
+            window_manager::ProvidesCurrentResolution>();
+        if (pcr && (pcr->width() == 0 || pcr->height() == 0)) {
+          pcr->current_resolution = window_manager::Resolution{
+              .width = Settings::get_screen_width(),
+              .height = Settings::get_screen_height()};
+        }
+      });
+    }
     sound_system::register_update_systems(systems);
   }
 
@@ -151,8 +162,8 @@ void game() {
       }
     });
 
-    register_ui_systems(systems);
     e2e_integration::register_systems(systems);
+    register_ui_systems(systems);
 
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
