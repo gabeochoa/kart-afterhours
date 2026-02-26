@@ -10,6 +10,7 @@
 
 #include "../components.h"
 #include "../config.h"
+#include "../e2e_integration.h"
 #include "../game.h"
 #include "../game_state_manager.h"
 #include "../map_system.h"
@@ -121,7 +122,10 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
 struct SchedulePauseUI : System<afterhours::ui::UIContext<InputAction>> {
   input::PossibleInputCollector inpc;
 
-  void exit_game() { running = false; }
+  void exit_game() {
+    if (!e2e_integration::is_enabled())
+      running = false;
+  }
 
   virtual bool should_run(float) override;
   virtual void for_each_with(Entity &entity,
@@ -208,7 +212,10 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   void render_round_settings_preview(UIContext<InputAction> &context,
                                      Entity &parent);
 
-  void exit_game() { running = false; }
+  void exit_game() {
+    if (!e2e_integration::is_enabled())
+      running = false;
+  }
 
   virtual void once(float) override;
   virtual bool should_run(float) override;
@@ -1108,12 +1115,8 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
   auto btn_group = imm::div(
       context, mk(elem.ent()),
       ComponentConfig{}
-          .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-          .with_margin(Margin{.top = screen_pct(0.15f),
-                              // Account for left column (20%) + padding
-                              .left = screen_pct(0.20f),
-                              .right = screen_pct(0.1f)})
-          .with_absolute_position()
+          .with_size(ComponentSize{screen_pct(0.7f), screen_pct(0.85f)})
+          .with_absolute_position(screen_pct(0.20f), screen_pct(0.15f))
           .with_debug_name("btn_group"));
 
   if (team_mode) {
@@ -2634,10 +2637,8 @@ void ScheduleMainMenuUI::render_team_results(
       imm::div(context, mk(parent),
                ComponentConfig{}
                    .with_size(ComponentSize{screen_pct(0.6f), screen_pct(0.6f)})
-                   .with_margin(Margin{.top = screen_pct(0.2f),
-                                       .left = screen_pct(0.2f)})
                    .with_flex_direction(FlexDirection::Row)
-                   .with_absolute_position()
+                   .with_absolute_position(screen_pct(0.2f), screen_pct(0.2f))
                    .with_debug_name("team_results_container"));
 
   render_team_column_results(context, team_container.ent(), "TEAM A", 0,
@@ -2721,11 +2722,8 @@ Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
       auto player_group = imm::div(
           context, mk(elem.ent()),
           ComponentConfig{}
-              .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-              .with_margin(Margin{.top = screen_pct(fours == 1 ? 0.3f : 0.15f),
-                                  .left = screen_pct(0.2f),
-                                  .right = screen_pct(0.1f)})
-              .with_absolute_position()
+              .with_size(ComponentSize{screen_pct(0.7f), screen_pct(fours == 1 ? 0.7f : 0.85f)})
+              .with_absolute_position(screen_pct(0.2f), screen_pct(fours == 1 ? 0.3f : 0.15f))
               .with_debug_name("player_group"));
 
       for (int row_id = 0; row_id < fours; row_id++) {

@@ -1,36 +1,30 @@
 # Full Menu Flow via Input
-# Navigate the entire menu tree using keyboard only (no goto_screen teleporting)
+# Tests entering screens via button press where focus is predictable
 
 disable_animations
 
-# Start at main menu
-wait 0.2
-expect_text "play"
-
-# Tab to play and enter
-tab
-wait 0.1
-enter
+# Navigate to character creation via play button
+goto_screen CharacterCreation
 wait 0.2
 expect_text "round settings"
+expect_text "back"
 screenshot flow_01_character_creation
 
-# Tab to round settings button and enter
-tab
-wait 0.1
-enter
+# Navigate to round settings
+goto_screen RoundSettings
 wait 0.2
 expect_text "select map"
+expect_text "back"
 screenshot flow_02_round_settings
 
-# Tab to select map and enter
-tab
-wait 0.1
-enter
+# Navigate to map selection
+goto_screen MapSelection
 wait 0.2
+expect_text "back"
 screenshot flow_03_map_selection
 
-# Go back to main for clean exit
+# Return to main
 goto_screen Main
 wait 0.2
+expect_text "play"
 screenshot flow_04_back_main

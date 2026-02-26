@@ -1,5 +1,6 @@
 #include "navigation.h"
 
+#include "../e2e_integration.h"
 #include "../game.h"
 #include "../query.h"
 
@@ -19,10 +20,11 @@ void to(Screen screen) {
 
 void back() {
   auto &gsm = GameStateManager::get();
-  // If we're on the main screen, exit the game
   if (gsm.active_screen == GameStateManager::Screen::Main ||
       nav().stack.empty()) {
-    running = false;
+    if (!e2e_integration::is_enabled()) {
+      running = false;
+    }
     return;
   }
   Screen previous = nav().stack.back();

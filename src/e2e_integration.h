@@ -4,6 +4,7 @@
 #include "game.h"
 #include "input_mapping.h"
 #include <afterhours/src/plugins/e2e_testing/e2e_testing.h>
+#include <afterhours/src/plugins/e2e_testing/ui_commands.h>
 #include <afterhours/src/graphics.h>
 
 // Extern reference to render texture for headless screenshot capture
@@ -71,6 +72,8 @@ inline void register_systems(SystemManager& sm) {
         }));
     
     e2e_commands::register_app_commands(sm);
+
+    ui_commands::register_ui_commands<InputAction>(sm);
 
     register_unknown_handler(sm);
     register_cleanup(sm);

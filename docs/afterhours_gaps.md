@@ -44,6 +44,11 @@ This is a common pattern in apps using afterhours UI: create elements hidden off
 
 **Suggestion:** A `with_slide_in()` config option that the layout system understands — elements start hidden and the slide-in system handles the rest, rather than requiring manual opacity/translate setup.
 
+### Checkbox internal layout overflow
+`imm::checkbox` creates a `checkbox_row` parent with `NoWrap`, then adds a label child at half the specified width and a toggle child at full width. The children are often taller than the row, causing layout overflow warnings (`checkbox label extends outside parent checkbox_row`). This is internal to the checkbox component and can't be fixed from the caller side.
+
+**Ideal:** The checkbox_row height should auto-size to fit its children, or the internal children should respect the parent's height constraint.
+
 ### No `with_disabled()` for interactive elements
 There's no way to disable a button/checkbox/dropdown without removing it. A `with_disabled(bool)` that grays out and skips interaction would be useful for settings that depend on other settings (e.g., disable "select map" until a win condition is chosen).
 

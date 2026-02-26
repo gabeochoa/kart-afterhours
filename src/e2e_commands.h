@@ -77,74 +77,6 @@ struct HandleAppActionCommand : System<PendingE2ECommand> {
     }
 };
 
-// Navigation commands for UI testing
-
-struct HandleTabCommand : System<PendingE2ECommand> {
-    void for_each_with(Entity &, PendingE2ECommand &cmd, float) override {
-        if (cmd.is_consumed() || !cmd.is("tab"))
-            return;
-        test_input::push_key(keys::TAB);
-        cmd.consume();
-    }
-};
-
-struct HandleShiftTabCommand : System<PendingE2ECommand> {
-    void for_each_with(Entity &, PendingE2ECommand &cmd, float) override {
-        if (cmd.is_consumed() || !cmd.is("shift_tab"))
-            return;
-        input_injector::set_key_down(keys::LEFT_SHIFT);
-        test_input::push_key(keys::TAB);
-        cmd.consume();
-    }
-};
-
-struct HandleEnterCommand : System<PendingE2ECommand> {
-    void for_each_with(Entity &, PendingE2ECommand &cmd, float) override {
-        if (cmd.is_consumed() || !cmd.is("enter"))
-            return;
-        test_input::push_key(keys::ENTER);
-        cmd.consume();
-    }
-};
-
-struct HandleEscapeCommand : System<PendingE2ECommand> {
-    void for_each_with(Entity &, PendingE2ECommand &cmd, float) override {
-        if (cmd.is_consumed() || !cmd.is("escape"))
-            return;
-        test_input::push_key(keys::ESCAPE);
-        cmd.consume();
-    }
-};
-
-struct HandleArrowCommand : System<PendingE2ECommand> {
-    void for_each_with(Entity &, PendingE2ECommand &cmd, float) override {
-        if (cmd.is_consumed() || !cmd.is("arrow"))
-            return;
-        if (!cmd.has_args(1)) {
-            cmd.fail("arrow requires direction (up/down/left/right)");
-            return;
-        }
-
-        const auto &dir = cmd.arg(0);
-        int key = 0;
-        if (dir == "up")
-            key = keys::UP;
-        else if (dir == "down")
-            key = keys::DOWN;
-        else if (dir == "left")
-            key = keys::LEFT;
-        else if (dir == "right")
-            key = keys::RIGHT;
-        else {
-            cmd.fail("Invalid arrow direction: " + dir);
-            return;
-        }
-
-        test_input::push_key(key);
-        cmd.consume();
-    }
-};
-
 struct HandleDisableAnimationsCommand : System<PendingE2ECommand> {
     void for_each_with(Entity &, PendingE2ECommand &cmd, float) override {
         if (cmd.is_consumed() || !cmd.is("disable_animations"))
@@ -166,13 +98,6 @@ struct HandleEnableAnimationsCommand : System<PendingE2ECommand> {
 inline void register_app_commands(SystemManager &sm) {
     sm.register_update_system(std::make_unique<HandleGotoScreenCommand>());
     sm.register_update_system(std::make_unique<HandleAppActionCommand>());
-
-    // Navigation commands
-    sm.register_update_system(std::make_unique<HandleTabCommand>());
-    sm.register_update_system(std::make_unique<HandleShiftTabCommand>());
-    sm.register_update_system(std::make_unique<HandleEnterCommand>());
-    sm.register_update_system(std::make_unique<HandleEscapeCommand>());
-    sm.register_update_system(std::make_unique<HandleArrowCommand>());
     sm.register_update_system(std::make_unique<HandleDisableAnimationsCommand>());
     sm.register_update_system(std::make_unique<HandleEnableAnimationsCommand>());
 }
