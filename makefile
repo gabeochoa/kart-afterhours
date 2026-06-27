@@ -48,7 +48,7 @@ ifeq ($(OS),Windows_NT)
 	sign_cmd:=
 	COMPILE = $(CXX) $(FLAGS) $(INCLUDES) $(LIBS) src/main.cpp src/settings.cpp src/preload.cpp src/makers.cpp -o $(OUTPUT_EXE) $(sign_cmd) && $(run_cmd)
 else
-	mkdir_cmd = mkdir -p output/resources/ output/src/ui output/vendor/afterhours/src/plugins
+	mkdir_cmd = mkdir -p output/resources/ output/src/ui output/src/library output/src/systems output/vendor/afterhours/src/plugins
 	cp_lib_cmd = cp vendor/raylib/*.dll output/
 	cp_resources_cmd = cp -r resources/* output/resources/
 	run_cmd := ./${OUTPUT_EXE}
@@ -93,9 +93,11 @@ clean:
 	mkdir -p output/src/ui output/src/library output/src/systems output/vendor/afterhours/src/plugins
 
 clean-screenshots:
-	rm -rf screenshots/*.png
+	@mkdir -p screenshots
+	rm -f screenshots/*.png
 
 e2e: clean clean-screenshots
+	@mkdir -p screenshots
 	$(MAKE) E2E=1 $(OUTPUT_EXE)
 	./$(OUTPUT_EXE) --e2e --headless
 
