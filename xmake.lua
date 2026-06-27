@@ -57,6 +57,12 @@ if is_host("macosx") then
     add_cxxflags("-DBACKWARD")
 end
 
+option("mcp")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Enable MCP server for AI automation")
+option_end()
+
 target("kart")
     --
     set_kind("binary")
@@ -68,6 +74,10 @@ target("kart")
     add_files("vendor/afterhours/src/plugins/settings.cpp")
     --
     add_includedirs("vendor")
+    
+    if has_config("mcp") then
+        add_defines("AFTER_HOURS_ENABLE_MCP")
+    end
 
     add_ldflags("-L.", "-Lvendor/")
     if is_host("windows") then

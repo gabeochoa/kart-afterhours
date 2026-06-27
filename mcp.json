@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "kart-game": {
+      "command": "./output/kart.exe",
+      "args": ["--mcp"],
+      "cwd": "/Users/gabeochoa/p/kart-afterhours"
+    }
+  }
+}
+

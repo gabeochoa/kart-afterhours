@@ -3,7 +3,7 @@
 #include <afterhours/src/library.h>
 #include <afterhours/src/singleton.h>
 
-#include "rl.h"
+#include "../rl.h"
 
 SINGLETON_FWD(MusicLibrary)
 struct MusicLibrary {

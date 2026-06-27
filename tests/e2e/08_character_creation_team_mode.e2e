@@ -1,0 +1,28 @@
+# Character Creation Team Mode Toggle
+# Tests toggling team mode on and off
+
+disable_animations
+
+goto_screen CharacterCreation
+wait 0.2
+
+expect_text "round settings"
+expect_text "back"
+expect_text "Team Mode"
+screenshot char_team_01_initial
+
+# Toggle team mode on via checkbox debug name
+toggle_checkbox team_mode_checkbox
+wait 0.3
+expect_text "Team A"
+expect_text "Team B"
+screenshot char_team_02_team_mode_on
+
+# Toggle team mode off
+toggle_checkbox team_mode_checkbox
+wait 0.3
+screenshot char_team_03_team_mode_off
+
+# Return to main
+goto_screen Main
+wait 0.2

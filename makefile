@@ -8,8 +8,20 @@ NOFLAGS = -Wno-deprecated-volatile -Wno-missing-field-initializers \
 		  -Wno-c99-extensions -Wno-unused-function -Wno-sign-conversion \
 		  -Wno-implicit-int-float-conversion
 
-INCLUDES = -Ivendor/ -Isrc/
-LIBS = -L. -Lvendor/ $(RAYLIB_LIB)
+ifdef MCP
+	MCP_FLAGS = -DAFTER_HOURS_ENABLE_MCP
+else
+	MCP_FLAGS =
+endif
+
+ifdef E2E
+	E2E_FLAGS = -DAFTER_HOURS_ENABLE_E2E_TESTING
+else
+	E2E_FLAGS =
+endif
+
+INCLUDES = -Ivendor/ -Isrc/ -DAFTER_HOURS_USE_RAYLIB -DAFTER_HOURS_UI_SINGLE_COLLECTION
+LIBS = -L. -Lvendor/ $(RAYLIB_LIB) -framework OpenGL
 
 H_FILES := $(wildcard src/**/*.h src/**/*.hpp)
 SRC_FILES := $(wildcard src/*.cpp src/**/*.cpp vendor/afterhours/src/plugins/*.cpp)
@@ -49,7 +61,8 @@ else
 endif
 
 
-.PHONY: all clean output count countall old clean xmake
+.PHONY: all clean output count countall old clean xmake e2e clean-screenshots
+.PHONY: update-baselines validate-screenshots ci
 
 
 $(info SRC_FILES: $(SRC_FILES))
@@ -64,20 +77,54 @@ xmake:
 old: $(OUTPUT_EXE)
 
 $(OUTPUT_EXE): $(H_FILES) $(OBJ_FILES)
-	$(CXX) $(FLAGS) $(LEAKFLAGS) $(NOFLAGS) $(INCLUDES) $(LIBS) $(OBJ_FILES) -o $(OUTPUT_EXE)
+	$(CXX) $(FLAGS) $(LEAKFLAGS) $(NOFLAGS) $(MCP_FLAGS) $(E2E_FLAGS) $(INCLUDES) $(LIBS) $(OBJ_FILES) -o $(OUTPUT_EXE)
 
 dirs:
 	$(mkdir_cmd)
 
 $(OBJ_DIR)/%.o: %.cpp makefile | dirs
-	$(CXX) $(FLAGS) $(NOFLAGS) $(INCLUDES) -c $< -o $@ -MMD -MF $(@:.o=.d)
+	$(CXX) $(FLAGS) $(NOFLAGS) $(MCP_FLAGS) $(E2E_FLAGS) $(INCLUDES) -c $< -o $@ -MMD -MF $(@:.o=.d)
 
 %.d: %.cpp
   $(MAKEDEPEND)
 
 clean:
 	rm -rf output/src/
-	mkdir -p output/src/ui output/vendor/afterhours/src/plugins
+	mkdir -p output/src/ui output/src/library output/src/systems output/vendor/afterhours/src/plugins
+
+clean-screenshots:
+	rm -rf screenshots/*.png
+
+e2e: clean clean-screenshots
+	$(MAKE) E2E=1 $(OUTPUT_EXE)
+	./$(OUTPUT_EXE) --e2e --headless
+
+BASELINE_DIR := screenshot-baselines/screens
+VALIDATE_DIR := /tmp/kart-screenshot-validate
+
+update-baselines: clean
+	$(MAKE) E2E=1 $(OUTPUT_EXE)
+	@mkdir -p $(BASELINE_DIR)
+	@rm -f $(BASELINE_DIR)/*.png
+	./$(OUTPUT_EXE) --e2e --headless
+	@cp screenshots/*.png $(BASELINE_DIR)/ 2>/dev/null || true
+	@echo ""
+	@echo "Baselines updated in $(BASELINE_DIR)/."
+	@echo "Review changes with: git diff --stat screenshot-baselines/"
+	@echo "Then commit: git add screenshot-baselines/ and git commit -m 'update screenshot baselines'"
+
+validate-screenshots: clean
+	$(MAKE) E2E=1 $(OUTPUT_EXE)
+	@mkdir -p $(VALIDATE_DIR)
+	@rm -f $(VALIDATE_DIR)/*.png
+	./$(OUTPUT_EXE) --e2e --headless
+	@cp screenshots/*.png $(VALIDATE_DIR)/ 2>/dev/null || true
+	@echo ""
+	@echo "Comparing against baselines..."
+	python3 scripts/compare_baselines.py $(BASELINE_DIR) $(VALIDATE_DIR)
+
+ci: validate-screenshots
+	@echo "CI passed."
 
 output:
 	$(mkdir_cmd)

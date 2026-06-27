@@ -1,7 +1,7 @@
 #include "settings.h"
-#include "music_library.h"
+#include "library/music_library.h"
 #include "rl.h"
-#include "sound_library.h"
+#include "library/sound_library.h"
 #include <fstream>
 #include <magic_enum/magic_enum.hpp>
 #include <sstream>

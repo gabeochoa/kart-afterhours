@@ -1,0 +1,30 @@
+# Full Menu Flow via Input
+# Tests entering screens via button press where focus is predictable
+
+disable_animations
+
+# Navigate to character creation via play button
+goto_screen CharacterCreation
+wait 0.2
+expect_text "round settings"
+expect_text "back"
+screenshot flow_01_character_creation
+
+# Navigate to round settings
+goto_screen RoundSettings
+wait 0.2
+expect_text "select map"
+expect_text "back"
+screenshot flow_02_round_settings
+
+# Navigate to map selection
+goto_screen MapSelection
+wait 0.2
+expect_text "back"
+screenshot flow_03_map_selection
+
+# Return to main
+goto_screen Main
+wait 0.2
+expect_text "play"
+screenshot flow_04_back_main

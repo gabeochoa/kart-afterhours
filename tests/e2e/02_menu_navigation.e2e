@@ -1,0 +1,42 @@
+# Menu Navigation via Keyboard
+# Tests tabbing through main menu buttons
+# Note: focus auto-grabs on first button (play) so no initial tab needed
+
+disable_animations
+
+goto_screen Main
+wait 0.2
+
+# Play is already focused (auto-grab)
+screenshot nav_01_focus_play
+
+# Tab to about
+tab
+wait 0.1
+screenshot nav_02_focus_about
+
+# Tab to settings
+tab
+wait 0.1
+screenshot nav_03_focus_settings
+
+# Tab to exit
+tab
+wait 0.1
+screenshot nav_04_focus_exit
+
+# Tab wraps back to play
+tab
+wait 0.1
+screenshot nav_05_wrap_to_play
+
+# Use goto_screen to navigate to settings (keyboard enter is tested separately)
+goto_screen Settings
+wait 0.2
+expect_text "master volume"
+screenshot nav_06_settings_screen
+
+# Return to main
+goto_screen Main
+wait 0.2
+screenshot nav_07_back_main

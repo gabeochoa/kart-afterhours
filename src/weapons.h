@@ -4,7 +4,7 @@
 #include "components.h"
 #include "components_weapons.h"
 #include "rl.h"
-#include "sound_library.h"
+#include "library/sound_library.h"
 
 struct Weapon {
   enum struct Type {

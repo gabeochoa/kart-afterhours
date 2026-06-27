@@ -1,0 +1,62 @@
+# All Screens Baseline Test
+# Visits every screen with animations disabled, validates text, takes screenshots
+# This is the primary visual regression test
+
+disable_animations
+
+# Main Menu
+goto_screen Main
+wait 0.2
+expect_text "play"
+expect_text "about"
+expect_text "settings"
+expect_text "exit"
+screenshot 01_main_menu
+
+# Settings Screen
+goto_screen Settings
+wait 0.2
+expect_text "back"
+expect_text "master volume"
+expect_text "music volume"
+expect_text "sfx volume"
+expect_text "resolution"
+expect_text "language"
+expect_text "fullscreen"
+expect_text "post processing"
+screenshot 02_settings
+
+# About Screen
+goto_screen About
+wait 0.2
+expect_text "back"
+screenshot 03_about
+
+# Character Creation Screen
+goto_screen CharacterCreation
+wait 0.2
+expect_text "round settings"
+expect_text "back"
+screenshot 04_character_creation
+
+# Round Settings Screen
+goto_screen RoundSettings
+wait 0.2
+expect_text "select map"
+expect_text "back"
+expect_text "Cannon"
+expect_text "Shotgun"
+expect_text "Sniper"
+expect_text "MachineGun"
+screenshot 05_round_settings
+
+# Map Selection Screen
+goto_screen MapSelection
+wait 0.2
+expect_text "back"
+screenshot 06_map_selection
+
+# Return to Main Menu
+goto_screen Main
+wait 0.2
+screenshot 07_main_menu_return

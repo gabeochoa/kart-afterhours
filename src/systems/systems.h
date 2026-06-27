@@ -3,23 +3,24 @@
 #include <afterhours/ah.h>
 //
 
-#include "car_affectors.h"
-#include "components.h"
-#include "components_weapons.h"
-#include "game.h"
-#include "game_state_manager.h"
-#include "input_mapping.h"
-#include "makers.h"
-#include "map_system.h"
-#include "query.h"
-#include "round_settings.h"
-#include "settings.h"
-#include "shader_library.h"
-#include "tags.h"
+#include "../car_affectors.h"
+#include "../components.h"
+#include "../components_weapons.h"
+#include "../game.h"
+#include "../game_state_manager.h"
+#include "../input_mapping.h"
+#include "../makers.h"
+#include "../map_system.h"
+#include "../query.h"
+#include "../round_settings.h"
+#include "../settings.h"
+#include "../library/shader_library.h"
+#include "../tags.h"
 #include <afterhours/src/plugins/collision.h>
 #include <afterhours/src/plugins/sound_system.h>
 
 #include <afterhours/src/plugins/camera.h>
+#include <afterhours/src/graphics.h>
 
 // Hippo game constants
 constexpr float HIPPO_SPAWN_INTERVAL = 0.8f;
@@ -473,14 +474,6 @@ struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
 
 struct BeginPostProcessingShader : System<> {
   virtual void once(float) const override {
-    const bool hasTag =
-        ShaderLibrary::get().contains(ShaderType::post_processing_tag);
-    auto &rm = RoundManager::get();
-    bool useTagShader = false;
-    if (rm.active_round_type == RoundType::TagAndGo) {
-      auto &settings = rm.get_active_settings();
-      useTagShader = (settings.state == RoundSettings::GameState::Countdown);
-    }
     if (!ShaderLibrary::get().contains(ShaderType::post_processing_tag)) {
       return;
     }
@@ -1681,6 +1674,8 @@ struct VelFromInput
       case InputAction::ShootRight:
       case InputAction::WidgetRight:
       case InputAction::WidgetLeft:
+      case InputAction::WidgetUp:
+      case InputAction::WidgetDown:
       case InputAction::WidgetNext:
       case InputAction::WidgetPress:
       case InputAction::WidgetMod:
@@ -1690,7 +1685,6 @@ struct VelFromInput
       case InputAction::ToggleUIDebug:
       case InputAction::ToggleUILayoutDebug:
       case InputAction::None:
-        // These actions don't affect car movement
         break;
       }
     }
@@ -1733,6 +1727,8 @@ struct VelFromInput
       case InputAction::ShootRight:
       case InputAction::WidgetRight:
       case InputAction::WidgetLeft:
+      case InputAction::WidgetUp:
+      case InputAction::WidgetDown:
       case InputAction::WidgetNext:
       case InputAction::WidgetPress:
       case InputAction::WidgetMod:
@@ -1742,7 +1738,6 @@ struct VelFromInput
       case InputAction::ToggleUIDebug:
       case InputAction::ToggleUILayoutDebug:
       case InputAction::None:
-        // These actions don't affect car movement
         break;
       }
     }
@@ -1895,13 +1890,16 @@ struct ProcessDamage : PausableSystem<Transform, HasHealth> {
 
     for (Entity &damager : can_damage) {
       const CanDamage &cd = damager.get<CanDamage>();
-      if (cd.id == entity.id)
+      if (cd.source.id == entity.id)
         continue;
       hasHealth.amount -= cd.amount;
       hasHealth.iframes = hasHealth.iframesReset;
 
-      // Track the entity that caused this damage for kill attribution
-      hasHealth.last_damaged_by = cd.id;
+      if (auto src = cd.source.resolve()) {
+        hasHealth.last_damaged_by = afterhours::OptEntityHandle::from_entity(src.asE());
+      } else {
+        hasHealth.last_damaged_by = afterhours::OptEntityHandle{};
+      }
       damager.cleanup = true;
     }
   }
@@ -1985,22 +1983,18 @@ struct ProcessDeath : PausableSystem<Transform, HasHealth> {
 
 private:
   void handle_kill_attribution(const Entity &, const HasHealth &hasHealth) {
-    if (!hasHealth.last_damaged_by.has_value()) {
+    if (hasHealth.last_damaged_by.id < 0) {
       log_warn("Player died but we don't know why");
       return;
     }
 
-    // Look up the entity that caused the damage
-    auto damager_entities = EntityQuery({.force_merge = true})
-                                .whereID(*hasHealth.last_damaged_by)
-                                .gen();
-
-    if (damager_entities.empty()) {
+    auto damager_opt = hasHealth.last_damaged_by.resolve();
+    if (!damager_opt) {
       log_warn("Player died but damager entity not found");
       return;
     }
 
-    Entity &damager = damager_entities[0].get();
+    Entity &damager = damager_opt.asE();
 
     if (damager.has<HasKillCountTracker>()) {
       damager.get<HasKillCountTracker>().kills++;
@@ -2014,6 +2008,10 @@ private:
 struct RenderLabels : System<Transform, HasLabels> {
   virtual void for_each_with(const Entity &, const Transform &transform,
                              const HasLabels &hasLabels, float) const override {
+    // Skip text rendering in headless mode - font texture access can cause issues
+    if (afterhours::graphics::is_headless()) {
+      return;
+    }
 
     const auto get_label_display_for_type = [](const Transform &transform_in,
                                                const LabelInfo &label_info_in) {
@@ -2072,15 +2070,18 @@ struct RenderPlayerHUD : System<Transform, HasHealth> {
 
     vec2 rotation_origin{0, 0};
 
+    float health_bar_offset = transform.size.y * 0.5f;
+    float health_bar_centering = transform.size.x * 0.25f;
+
     // Render the red background bar
     raylib::DrawRectanglePro(
         Rectangle{
             transform.pos().x - ((transform.size.x * scale_x) / 2.f) +
-                5.f, // Center with scaling
+                health_bar_centering, // Center with scaling
             transform.pos().y -
-                (transform.size.y + 10.0f),    // Slightly above the entity
-            transform.size.x * scale_x,        // Adjust length
-            (transform.size.y / 4.f) * scale_y // Adjust height
+                (transform.size.y + health_bar_offset), // Slightly above the entity
+            transform.size.x * scale_x,                 // Adjust length
+            (transform.size.y / 4.f) * scale_y          // Adjust height
         },
         rotation_origin, 0.0f, raylib::RED);
 
@@ -2088,9 +2089,9 @@ struct RenderPlayerHUD : System<Transform, HasHealth> {
     raylib::DrawRectanglePro(
         Rectangle{
             transform.pos().x - ((transform.size.x * scale_x) / 2.f) +
-                5.f, // Start at the same position as red bar
+                health_bar_centering, // Start at the same position as red bar
             transform.pos().y -
-                (transform.size.y + 10.0f), // Same vertical position as red bar
+                (transform.size.y + health_bar_offset), // Same vertical position as red bar
             (transform.size.x * scale_x) *
                 health_as_percent, // Adjust length based on health percentage
             (transform.size.y / 4.f) * scale_y // Adjust height
@@ -2121,12 +2122,13 @@ private:
       return;
 
     const auto &hasMultipleLives = entity.get<HasMultipleLives>();
-    float rad = 5.f;
+    float rad = transform.size.x * 0.25f;
+    float y_offset = transform.size.y * 0.75f;
     vec2 off{rad * 2 + 2, 0.f};
     for (int i = 0; i < hasMultipleLives.num_lives_remaining; i++) {
       raylib::DrawCircleV(
           transform.pos() -
-              vec2{transform.size.x / 2.f, transform.size.y + 15.f + rad} +
+              vec2{transform.size.x / 2.f, transform.size.y + y_offset + rad} +
               (off * (float)i),
           rad, color);
     }
@@ -2140,11 +2142,13 @@ private:
     const auto &hasKillCountTracker = entity.get<HasKillCountTracker>();
     std::string kills_text =
         std::to_string(hasKillCountTracker.kills) + " kills";
-    float text_size = 12.f;
+    float text_size = transform.size.x * 0.6f;
+    float x_offset = transform.size.x * 1.5f;
+    float y_offset = transform.size.y * 1.25f;
 
     raylib::DrawText(
-        kills_text.c_str(), static_cast<int>(transform.pos().x - 30.f),
-        static_cast<int>(transform.pos().y - transform.size.y - 25.f),
+        kills_text.c_str(), static_cast<int>(transform.pos().x - x_offset),
+        static_cast<int>(transform.pos().y - y_offset),
         static_cast<int>(text_size), color);
   }
 
@@ -2159,8 +2163,8 @@ private:
     // Draw crown for the tagger
     if (taggerTracking.is_tagger) {
       // Draw a crown above the player who is "it"
-      const float crown_size = 15.f;
-      const float crown_y_offset = transform.size.y + 20.f;
+      const float crown_size = transform.size.x * 0.75f;
+      const float crown_y_offset = transform.size.y * 2.0f;
 
       // Crown position (centered above the player)
       vec2 crown_pos = transform.pos() - vec2{crown_size / 2.f, crown_y_offset};
@@ -2185,8 +2189,9 @@ private:
       }
 
       // Crown jewels (small circles)
+      float jewel_radius = transform.size.x * 0.1f;
       raylib::DrawCircleV(crown_pos + vec2{crown_size / 2.f, crown_size / 6.f},
-                          2.f, raylib::RED);
+                          jewel_radius, raylib::RED);
     }
 
     // Draw shield for players in cooldown (safe period)
@@ -2198,8 +2203,8 @@ private:
       // TODO: Add pulsing animation to shield to make it more obvious
       // TODO: Add countdown timer above shield showing remaining safe time
       // Draw a shield above the player who is safe
-      const float shield_size = 12.f;
-      const float shield_y_offset = transform.size.y + 35.f; // Above crown
+      const float shield_size = transform.size.x * 0.6f;
+      const float shield_y_offset = transform.size.y * 2.75f; // Above crown
 
       // Shield position (centered above the player)
       vec2 shield_pos =
@@ -2300,7 +2305,12 @@ struct EndTagShaderRender : System<> {
 };
 
 struct BeginPostProcessingRender : System<> {
-  virtual void once(float) const override { raylib::BeginDrawing(); }
+  virtual void once(float) const override {
+    if (!afterhours::graphics::is_headless()) {
+      raylib::BeginDrawing();
+    }
+    raylib::ClearBackground(raylib::BLACK);
+  }
 };
 
 struct SetupPostProcessingShader : System<> {
@@ -2356,5 +2366,9 @@ struct EndPostProcessingShader : System<> {
 };
 
 struct EndDrawing : System<> {
-  virtual void once(float) const override { raylib::EndDrawing(); }
+  virtual void once(float) const override {
+    if (!afterhours::graphics::is_headless()) {
+      raylib::EndDrawing();
+    }
+  }
 };

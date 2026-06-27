@@ -9,6 +9,7 @@
 #include <unordered_set>
 
 #include "../game_state_manager.h"
+#include "animation_control.h"
 #include "animation_key.h"
 
 using namespace afterhours;
@@ -60,10 +61,6 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
 #endif
                              afterhours::ui::UIComponent &component,
                              const float) override {
-    if (&component == nullptr) {
-      return;
-    }
-
     auto current_screen = GameStateManager::get().active_screen;
     if (current_screen != last_screen) {
       triggered_ids.clear();
@@ -77,6 +74,15 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
     float limit = resolution.width * 0.25f;
     if (rightEdge > limit)
       return;
+
+    if (animation_control::disabled) {
+      auto &mods =
+          entity.addComponentIfMissing<afterhours::ui::HasUIModifiers>();
+      mods.translate_x = 0.0f;
+      mods.translate_y = 0.0f;
+      entity.addComponentIfMissing<afterhours::ui::HasOpacity>().value = 1.0f;
+      return;
+    }
 
     float normY = 0.0f;
     if (resolution.height > 0) {
@@ -227,13 +233,16 @@ struct ApplyInitialSlideInMask : afterhours::ui::SystemWithUIContext<> {
   virtual void for_each_with(afterhours::Entity &entity,
                              afterhours::ui::UIComponent &component,
                              const float) override {
+    if (animation_control::disabled)
+      return;
+
     auto current_screen = GameStateManager::get().active_screen;
     if (current_screen != last_screen) {
       initialized_ids.clear();
       last_screen = current_screen;
     }
 
-    if (!component.was_rendered_to_screen)
+    if (!component.was_rendered_to_screen) // NOLINT
       return;
 
     if (initialized_ids.contains(static_cast<size_t>(entity.id)))

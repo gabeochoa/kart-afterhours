@@ -1,0 +1,27 @@
+# Character Creation Navigation
+# Tests team mode toggle and player slot navigation
+
+disable_animations
+
+goto_screen CharacterCreation
+wait 0.2
+expect_text "round settings"
+expect_text "back"
+screenshot char_01_initial
+
+# Tab through controls
+tab
+wait 0.1
+screenshot char_02_tab1
+
+tab
+wait 0.1
+screenshot char_03_tab2
+
+tab
+wait 0.1
+screenshot char_04_tab3
+
+# Return to main
+goto_screen Main
+wait 0.2

@@ -36,4 +36,4 @@
   }
 
 #define log_once_per(interval, level, ...)                                     \
-  log_once_per(interval, level, __FILE__, __LINE__, __VA_ARGS__)
+  project_log_once_per(interval, level, __FILE__, __LINE__, __VA_ARGS__)

@@ -6,8 +6,8 @@
 #include "config.h"
 #include "font_info.h"
 #include "preload.h"
-#include "shader_library.h"
-#include "sound_library.h"
+#include "library/shader_library.h"
+#include "library/sound_library.h"
 
 using namespace afterhours;
 

@@ -7,21 +7,23 @@ backward::SignalHandling sh;
 #endif
 
 #include "game.h"
-//
+#include "e2e_integration.h"
 #include "./ui/navigation.h"
 #include "argh.h"
 #include "map_system.h"
+#include "mcp_integration.h"
 #include "preload.h"
 #include "settings.h"
 #include <afterhours/src/plugins/settings.h>
-#include "sound_systems.h"
-#include "systems.h"
-#include "systems_ai.h"
+#include "systems/sound_systems.h"
+#include "systems/systems.h"
+#include "systems/systems_ai.h"
 #include "ui/ui_systems.h"
 #include <afterhours/src/plugins/sound_system.h>
 #include <afterhours/src/plugins/animation.h>
 #include <afterhours/src/plugins/camera.h>
 #include <afterhours/src/plugins/files.h>
+#include <afterhours/src/graphics.h>
 
 // TODO add honking
 
@@ -59,7 +61,19 @@ void game() {
   // external plugins
   {
     input::register_update_systems(systems);
+    mcp_integration::register_systems(systems);
     window_manager::register_update_systems(systems);
+    if (afterhours::graphics::is_headless()) {
+      systems.register_update_system([](float) {
+        auto *pcr = EntityHelper::get_singleton_cmp<
+            window_manager::ProvidesCurrentResolution>();
+        if (pcr && (pcr->width() == 0 || pcr->height() == 0)) {
+          pcr->current_resolution = window_manager::Resolution{
+              .width = Settings::get_screen_width(),
+              .height = Settings::get_screen_height()};
+        }
+      });
+    }
     sound_system::register_update_systems(systems);
   }
 
@@ -148,6 +162,7 @@ void game() {
       }
     });
 
+    e2e_integration::register_systems(systems);
     register_ui_systems(systems);
 
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
@@ -204,8 +219,31 @@ void game() {
       //
     }
 
-    while (running && !raylib::WindowShouldClose()) {
-      systems.run(raylib::GetFrameTime());
+    while (running) {
+      // Check window close only in windowed mode
+      if (!afterhours::graphics::is_headless() && raylib::WindowShouldClose()) {
+        break;
+      }
+
+      mcp_integration::update();
+      if (mcp_integration::exit_requested()) {
+        running = false;
+        break;
+      }
+
+      float dt = afterhours::graphics::get_delta_time();
+      e2e_integration::tick(dt);
+      systems.run(dt);
+      
+      e2e_integration::post_render(dt);
+      
+      if (e2e_integration::should_exit()) {
+        e2e_integration::print_results();
+        running = false;
+        break;
+      }
+
+      mcp_integration::clear_frame_state();
     }
 
     std::cout << "Num entities: " << EntityHelper::get_entities().size()
@@ -231,10 +269,24 @@ int main(int argc, char *argv[]) {
   // Load savefile first
   Settings::load_save_file(screenWidth, screenHeight);
 
+  // Determine display mode based on --headless flag
+  afterhours::graphics::DisplayMode display_mode = afterhours::graphics::DisplayMode::Windowed;
+  if (cmdl[{"--headless"}]) {
+    display_mode = afterhours::graphics::DisplayMode::Headless;
+  }
+
   Preload::get() //
-      .init("Cart Chaos")
+      .init("Cart Chaos", display_mode)
       .make_singleton();
   Settings::refresh_settings();
+
+  if (cmdl[{"--mcp"}]) {
+    mcp_integration::init();
+  }
+
+  if (cmdl[{"--e2e"}]) {
+    e2e_integration::init();
+  }
 
   if (cmdl[{"-i", "--show-intro"}]) {
     intro();
@@ -242,7 +294,13 @@ int main(int argc, char *argv[]) {
 
   game();
 
+  mcp_integration::shutdown();
+
   Settings::write_save_file();
+
+  EntityHelper::delete_all_entities_NO_REALLY_I_MEAN_ALL();
+
+  Preload_single.reset();
 
   return 0;
 }

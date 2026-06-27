@@ -1,9 +1,9 @@
 #pragma once
 
-#include "components.h"
-#include "game_state_manager.h"
-#include "query.h"
-#include "round_settings.h"
+#include "../components.h"
+#include "../game_state_manager.h"
+#include "../query.h"
+#include "../round_settings.h"
 #include <afterhours/ah.h>
 
 using namespace afterhours;

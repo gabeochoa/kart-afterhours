@@ -1,0 +1,15 @@
+# Slide-In Animation Test
+# Animations are NOT disabled - captures the slide-in at different timings
+
+goto_screen Main
+wait 0.05
+screenshot anim_01_early
+
+wait 0.15
+screenshot anim_02_mid
+
+wait 0.3
+screenshot anim_03_settling
+
+wait 0.5
+screenshot anim_04_complete

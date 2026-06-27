@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include <afterhours/src/core/opt_entity_handle.h>
 #include "input_mapping.h"
 #include "math_util.h"
 #include "max_health.h"
@@ -274,10 +275,11 @@ struct TireMarkComponent : ::afterhours::BaseComponent {
 };
 
 struct CanDamage : ::afterhours::BaseComponent {
-  ::afterhours::EntityID id;
+  afterhours::OptEntityHandle source;
   int amount;
 
-  CanDamage(::afterhours::EntityID id_in, int amount_in) : id{id_in}, amount{amount_in} {}
+  CanDamage(::afterhours::Entity& source_entity, int amount_in)
+      : source{afterhours::OptEntityHandle::from_entity(source_entity)}, amount{amount_in} {}
 };
 
 struct HasLifetime : ::afterhours::BaseComponent {
@@ -292,7 +294,7 @@ struct HasHealth : ::afterhours::BaseComponent {
   float iframes = 0.5f;
   float iframesReset = 0.5f;
 
-  std::optional<::afterhours::EntityID> last_damaged_by{};
+  afterhours::OptEntityHandle last_damaged_by{};
 
   void pass_time(float dt) {
     if (iframes > 0)
