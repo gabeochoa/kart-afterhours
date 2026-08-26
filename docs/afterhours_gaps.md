@@ -93,3 +93,46 @@ The raylib backend stores its state in a `std::variant<std::monostate, RaylibWin
 **Current workaround:** Manually expand the macro with `static inline` in the vendor file.
 
 **Ideal:** Either provide a `SINGLETON_FWD_STATIC(Type)` variant for use inside class/struct scope, or change `SINGLETON_FWD` to use `static inline` (which works at both namespace and class scope).
+
+---
+
+## Windows Cross-Compilation
+
+kart's makefile now builds with `zig c++`, so `make windows` cross-compiles to
+`x86_64-windows-gnu` from macOS. The toolchain resolves mingw headers, libc++ and
+`vendor/raylib/libraylibdll.a` without complaint — every remaining failure is an
+afterhours portability gap. These block `make windows` today; the macOS build is
+unaffected. Listed easiest first.
+
+### `std::filesystem::path::c_str()` is `const wchar_t*` on Windows
+Three sites pass a `path` straight to raylib's `ExportImage`, which takes `const char*`:
+`backends/raylib/headless.h:147`, `backends/raylib/windowed.h:86`,
+`backends/raylib/drawing_helpers.h:450`.
+
+**Ideal:** `path.string().c_str()` at each site. raylib's API is `char*`-only, so
+the narrow conversion has to happen somewhere regardless.
+
+### `std::aligned_alloc` does not exist in mingw
+`memory/arena.h:32` falls back to `std::aligned_alloc` for non-Apple platforms.
+mingw's msvcrt has no such symbol, so the `#else` branch fails to compile.
+
+**Ideal:** Add a `_WIN32` branch using `_aligned_malloc`. That also needs a matching
+`aligned_free_compat`, since the two `std::free(memory_)` calls at `arena.h:67` and
+`arena.h:78` must become `_aligned_free` on Windows.
+
+### No headless GL backend for Windows
+`graphics/platform/headless_gl.h:28` is a hard `#error` — only
+`headless_gl_macos.h` and `headless_gl_linux.h` exist. This is not opt-in:
+`backends/raylib/backend.h:13` includes `headless.h` unconditionally, so every
+Windows TU that touches the raylib backend hits it, whether or not the project
+uses headless mode. The cascading `unknown type name 'HeadlessGL'` errors in
+`backends/raylib/headless.h` all come from this.
+
+**Ideal:** Two options, and it's worth deciding deliberately since a WGL pbuffer
+context is real work:
+- Write `headless_gl_windows.h` on WGL, so e2e/screenshot workflows run on Windows CI.
+- Or make headless compile out: guard the include in `backend.h` and let the
+  `#error` fire only when a project actually asks for a headless context.
+
+The second is enough to unblock shipping a Windows build; the first is needed
+before Windows can run the screenshot baselines.
