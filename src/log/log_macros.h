@@ -13,11 +13,16 @@
   if (static_cast<int>(LogLevel::LOG_WARN) >=                                  \
       static_cast<int>(AFTER_HOURS_LOG_LEVEL))                                 \
   log_me(LogLevel::LOG_WARN, __FILE__, __LINE__, __VA_ARGS__)
+// do/while(0) so the assert stays attached. Without it the assert is a
+// separate statement, so `if (x) log_error(...);` aborts whatever x is --
+// which is how afterhours' e2e runner started aborting on every command.
 #define log_error(...)                                                         \
-  if (static_cast<int>(LogLevel::LOG_ERROR) >=                                 \
-      static_cast<int>(AFTER_HOURS_LOG_LEVEL))                                 \
-    log_me(LogLevel::LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__);              \
-  assert(false)
+  do {                                                                         \
+    if (static_cast<int>(LogLevel::LOG_ERROR) >=                               \
+        static_cast<int>(AFTER_HOURS_LOG_LEVEL))                               \
+      log_me(LogLevel::LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__);            \
+    assert(false);                                                             \
+  } while (0)
 
 #define log_clean(level, ...)                                                  \
   if (static_cast<int>(level) >= static_cast<int>(AFTER_HOURS_LOG_LEVEL))      \
