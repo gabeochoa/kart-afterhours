@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cart Chaos — menu UI mock (Memphis '93)</title>
+<style>
+:root{
+  /* sampled from the 1993/1995 reference */
+  --bg:#2E1B69;          /* deep purple ground */
+  --bg-dk:#241350;       /* tonal shape, darker */
+  --bg-lt:#3A2280;       /* tonal shape, lighter */
+  --orchid:#E06BDD;      /* pink/magenta */
+  --sky:#5BA8F0;         /* sky blue */
+  --mint:#4FD6A6;        /* mint green */
+  --butter:#F0E85C;      /* yellow */
+  --ink:#120A2B;
+  --panelbg:#1B1040;   /* opaque: shapes must not shine through UI */
+  --wellbg:#150B33;
+  --p1:#E06BDD; --p2:#5BA8F0; --p3:#4FD6A6; --p4:#F0E85C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#150c33;color:#fff;padding:40px 20px 120px;
+  font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+h1{font-size:24px;margin-bottom:6px}
+h1 .p{color:var(--orchid)}
+.lede{color:#b3a6d6;max-width:940px;line-height:1.7;margin-bottom:8px;font-size:13px;
+  font-family:ui-sans-serif,system-ui,sans-serif}
+.screens{display:flex;flex-direction:column;align-items:center;gap:58px;margin-top:40px}
+.wrap{width:1280px;max-width:100%}
+.cap{display:flex;align-items:baseline;gap:12px;margin-bottom:10px;font-family:ui-sans-serif,system-ui,sans-serif}
+.cap .n{color:var(--butter);font-size:12px;font-weight:800}
+.cap .t{font-size:15px;font-weight:700}
+.cap .s{color:#7d6fa8;font-size:12px;margin-left:auto;font-family:monospace}
+.note{color:#b3a6d6;font-size:12px;line-height:1.7;margin-top:10px;padding-left:14px;
+  border-left:4px solid var(--mint);font-family:ui-sans-serif,system-ui,sans-serif}
+.note b{color:#fff;font-weight:700}
+code{background:rgba(255,255,255,.1);padding:1px 5px;font-size:12px;font-family:monospace}
+
+/* ================= frame ================= */
+.screen{position:relative;width:1280px;height:720px;max-width:100%;aspect-ratio:16/9;overflow:hidden;
+  background:var(--bg)}
+/* tonal background shapes — the faint darker/lighter blocks in the reference */
+.tonal{position:absolute;inset:0;z-index:1;
+  background-image:
+    radial-gradient(circle at 18% 30%, var(--bg-lt) 0 130px, transparent 131px),
+    radial-gradient(circle at 82% 74%, var(--bg-lt) 0 150px, transparent 151px),
+    repeating-linear-gradient(0deg, var(--bg-dk) 0 3px, transparent 3px 26px);
+  opacity:.5}
+.screen::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:99;
+  box-shadow:inset 0 0 110px rgba(0,0,0,.45)}
+.stage{position:absolute;inset:0;z-index:20;padding:26px 32px;display:flex;flex-direction:column}
+
+/* confetti layer */
+.mem{position:absolute;inset:0;z-index:2}
+.mem svg{position:absolute;overflow:visible}
+
+/* ---------- shape primitives, matching the reference ---------- */
+/* filled triangle */
+.t-fill{width:0;height:0;border-left:22px solid transparent;border-right:22px solid transparent}
+/* striped triangle — clip a striped block */
+.t-stripe{width:70px;height:60px;clip-path:polygon(50% 0,100% 100%,0 100%)}
+/* outlined triangle via nested clip */
+.t-out{position:relative;width:76px;height:66px;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.t-out i{position:absolute;inset:0;display:block}
+.t-out b{position:absolute;left:5px;right:5px;bottom:0;top:9px;display:block;background:var(--bg);
+  clip-path:polygon(50% 0,100% 100%,0 100%)}
+/* striped circle */
+.c-stripe{width:66px;height:66px;border-radius:50%}
+/* ring */
+.ring{border-radius:50%;border-style:solid}
+/* square outline */
+.sq-out{border-style:solid}
+
+/* ================= chrome ================= */
+/* flat panel on the purple, thin bright border — matches the outlined-shape language */
+.pan{background:var(--panelbg);border:3px solid var(--sky);padding:14px 16px;position:relative;border-radius:16px}
+.pan.mint{border-color:var(--mint)} .pan.orch{border-color:var(--orchid)}
+.pan.butter{border-color:var(--butter)}
+/* corner tick, a Memphis tell */
+.pan::before{content:"";position:absolute;left:-3px;top:-3px;width:14px;height:14px;
+  border-left:3px solid var(--butter);border-top:3px solid var(--butter)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:12px 28px;
+  background:var(--orchid);color:var(--ink);font-size:17px;font-weight:700;letter-spacing:.06em;
+  border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);border-radius:14px}
+.btn.mint{background:var(--mint)} .btn.sky{background:var(--sky)}
+.btn.butter{background:var(--butter)}
+.btn.hollow{background:transparent;color:var(--mint);border-color:var(--mint);box-shadow:6px 6px 0 rgba(79,214,166,.25)}
+.btn.sm{padding:7px 16px;font-size:12px;border-width:2px;box-shadow:4px 4px 0 var(--ink);border-radius:10px}
+.btn.big{padding:16px 38px;font-size:23px;border-radius:18px}
+/* selected: stripes fill in + offset grows */
+.btn.sel{box-shadow:10px 10px 0 var(--ink), 0 0 0 4px var(--butter);
+  /* stripe fill + march animation live in the MOTION block below */}
+
+/* pixel-glitch display type, like the 1993 in the reference */
+.glitch{font-family:ui-monospace,"Courier New",monospace;font-weight:700;letter-spacing:.06em;
+  line-height:.95}
+.glitch.pink{color:var(--orchid);text-shadow:4px 0 var(--mint), -4px 0 var(--sky), 6px 6px 0 var(--ink)}
+.glitch.butter{color:var(--butter);text-shadow:4px 0 var(--orchid), -4px 0 var(--sky), 6px 6px 0 var(--ink)}
+.glitch.mint{color:var(--mint);text-shadow:4px 0 var(--butter), -4px 0 var(--orchid), 6px 6px 0 var(--ink)}
+/* Screen headings stay clean. The chromatic split is reserved for the big
+   .glitch title -- at 30px it just reads as blur. */
+.hd{font-family:ui-monospace,monospace;font-weight:700;font-size:30px;letter-spacing:.08em;color:#fff;
+  text-shadow:4px 4px 0 var(--ink)}
+
+/* zigzag rule under headings */
+.zrule{height:12px;background:
+  linear-gradient(135deg,transparent 44%,var(--butter) 44% 56%,transparent 56%) 0 0/12px 12px repeat-x}
+
+/* ---------- CAR SPRITE ---------- */
+.car{position:relative;width:50px;height:70px}
+.car .body{position:absolute;inset:0 6px;border:3px solid var(--ink);background:var(--orchid);border-radius:11px}
+.car .glass{position:absolute;left:11px;right:11px;top:13px;height:16px;background:var(--ink);border-radius:4px}
+.car .stripe{position:absolute;left:20px;right:20px;top:35px;bottom:8px;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.75) 0 4px,transparent 4px 8px)}
+.car .w{position:absolute;width:11px;height:19px;background:var(--ink);border-radius:3px}
+.car .w.tl{left:0;top:9px} .car .w.tr{right:0;top:9px}
+.car .w.bl{left:0;bottom:8px} .car .w.br{right:0;bottom:8px}
+.car.sm{width:34px;height:47px}
+.car.sm .body{inset:0 4px;border-width:2px}
+.car.sm .glass{left:7px;right:7px;top:9px;height:10px}
+.car.sm .stripe{left:13px;right:13px;top:23px;bottom:5px}
+.car.sm .w{width:7px;height:12px}
+.car.sm .w.tl,.car.sm .w.tr{top:6px} .car.sm .w.bl,.car.sm .w.br{bottom:5px}
+
+/* ---------- WEAPON ICONS ---------- */
+.wico{position:relative;width:58px;height:42px}
+.wico span{position:absolute;border:3px solid var(--ink);display:block;border-radius:4px}
+.w-cannon .a{left:3px;top:11px;width:36px;height:16px;background:var(--sky)}
+.w-cannon .b{left:34px;top:6px;width:18px;height:26px;background:var(--butter)}
+.w-cannon .c{left:5px;bottom:0;width:15px;height:15px;border-radius:50%;background:var(--orchid)}
+.w-sniper .a{left:1px;top:17px;width:52px;height:9px;background:var(--mint)}
+.w-sniper .b{left:19px;top:5px;width:20px;height:11px;background:var(--butter)}
+.w-sniper .c{left:5px;bottom:1px;width:13px;height:12px;background:var(--orchid)}
+.w-shotgun .a{left:1px;top:9px;width:42px;height:9px;background:var(--butter)}
+.w-shotgun .b{left:1px;top:22px;width:42px;height:9px;background:var(--butter)}
+.w-shotgun .c{right:0;top:6px;width:14px;height:28px;background:var(--orchid)}
+.w-mg .a{left:3px;top:11px;width:44px;height:13px;background:var(--orchid)}
+.w-mg .b{left:13px;top:22px;width:13px;height:17px;background:var(--sky)}
+.w-mg .c{left:32px;top:3px;width:9px;height:11px;background:var(--mint)}
+
+/* wells */
+.well{width:94px;height:92px;background:var(--wellbg);border:3px solid var(--sky);border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.well.on{border-color:var(--butter);background:rgba(240,232,92,.14);
+  box-shadow:0 0 0 3px rgba(240,232,92,.28)}
+.well .lbl{font-size:9.5px;color:#cfc3ea;letter-spacing:.04em}
+.well.on .lbl{color:var(--butter)}
+
+/* Number-Factory item row: icon well + name + a yellow line saying what it
+   actually does. Weapons are currently picked with no information at all. */
+
+/* ---------- character-select cards ---------- */
+.pcard{background:var(--panelbg);border:3px solid var(--sky);border-radius:16px;padding:11px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:7px;position:relative}
+.pcard.ready{border-color:var(--mint)}
+.pcard.open{border-style:dashed;border-color:#5c4a94;background:var(--wellbg);justify-content:center}
+.pcard .who{font-size:11.5px;letter-spacing:.07em;color:var(--butter)}
+.pcard .dev{font-size:9px;letter-spacing:.06em;color:#b3a6d6;background:var(--wellbg);
+  border-radius:999px;padding:2px 9px}
+.pcard .stamp{position:absolute;top:-9px;right:9px;font-size:9px;letter-spacing:.12em;
+  background:var(--mint);color:var(--ink);padding:2px 9px;border-radius:999px;font-weight:700}
+.pcard .teambadge{position:absolute;top:-9px;left:9px;font-size:9px;letter-spacing:.1em;
+  padding:2px 9px;border-radius:999px;font-weight:700;color:var(--ink)}
+/* the 8-colour paint palette, from ManagesAvailableColors */
+.paint{display:flex;gap:4px}
+.paint i{width:13px;height:13px;border-radius:4px;border:2px solid var(--ink);display:block}
+.paint i.cur{outline:2px solid #fff;outline-offset:1px}
+.paint i.used{opacity:.28}
+/* CPU difficulty stepper */
+.diff{display:flex;align-items:center;gap:6px;font-size:9.5px;color:#cfc3ea;letter-spacing:.06em}
+.diff b{background:var(--wellbg);border-radius:999px;padding:2px 8px;color:var(--butter);font-weight:700}
+.diff span{color:var(--sky);cursor:pointer}
+
+/* big, unmissable mode switch -- the old one was a 60px toggle nobody saw */
+.seg2{display:inline-flex;border:3px solid var(--butter);border-radius:999px;padding:4px;gap:4px;
+  background:var(--wellbg)}
+.seg2 span{padding:9px 22px;border-radius:999px;font-size:12.5px;letter-spacing:.1em;color:#b3a6d6}
+.seg2 span.on{background:var(--butter);color:var(--ink);font-weight:700}
+.seg2 span:hover{cursor:pointer;color:#fff}
+
+.itemrow{display:flex;align-items:center;gap:11px;padding:6px 7px;margin-bottom:5px;
+  border:2px solid transparent;border-radius:12px}
+.itemrow.on{border-color:var(--butter);background:rgba(240,232,92,.09)}
+.iname{font-size:12px;letter-spacing:.08em;color:var(--butter);line-height:1.2}
+.idesc{font-size:10px;line-height:1.45;color:var(--butter);opacity:.82;margin-top:3px;
+  letter-spacing:.02em;max-width:250px}
+
+/* rows */
+.row{display:grid;grid-template-columns:165px 1fr 50px;align-items:center;gap:12px;padding:7px 0}
+.row .lb{font-size:12.5px;letter-spacing:.06em;color:#e6dcf7}
+.meter{height:20px;background:var(--wellbg);border:3px solid var(--sky);position:relative;border-radius:999px}
+.meter i{position:absolute;left:0;top:0;bottom:0;display:block;border-radius:999px;
+  background:repeating-linear-gradient(90deg,var(--mint) 0 8px,rgba(79,214,166,.55) 8px 14px)}
+.meter b{position:absolute;top:-6px;width:18px;height:26px;background:var(--butter);
+  border:3px solid var(--ink);display:block}
+.val{color:var(--butter);text-align:right;font-size:13px}
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:12px;border-radius:999px;
+  background:transparent;color:var(--mint);border:3px solid var(--mint);padding:6px 15px;font-size:12.5px;letter-spacing:.06em}
+.sw{width:60px;height:26px;background:var(--wellbg);border:3px solid var(--sky);position:relative;display:block;border-radius:999px}
+.sw i{position:absolute;top:0;left:0;width:24px;height:20px;background:#8f83b8;display:block;border-radius:999px}
+.sw.on{border-color:var(--mint)} .sw.on i{left:auto;right:0;background:var(--mint)}
+
+/* tabs */
+.tabs{display:flex;gap:8px}
+.tabs span{padding:8px 17px;font-size:12px;letter-spacing:.06em;color:#b3a6d6;
+  border:3px solid #5c4a94;background:var(--panelbg);border-radius:10px}
+.tabs span.on{color:var(--ink);background:var(--orchid);border-color:var(--ink);box-shadow:4px 4px 0 var(--ink)}
+
+/* tiles */
+.tile{background:var(--panelbg);border:3px solid var(--sky);padding:6px;border-radius:12px}
+.tile .pic{height:58px;border:2px solid var(--ink);border-radius:7px}
+.tile .nm{text-align:center;font-size:10.5px;color:#e6dcf7;padding-top:5px;letter-spacing:.05em}
+.tile.on{border-color:var(--butter);box-shadow:5px 5px 0 var(--ink),0 0 0 3px rgba(240,232,92,.3)}
+.tile.on .nm{color:var(--butter)}
+
+/* podium */
+.podium{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:end;flex:1;padding:0 62px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:7px}
+.pod .bar2{width:100%;border:3px solid var(--ink);border-radius:12px 12px 0 0;display:flex;align-items:flex-start;justify-content:center;
+  padding-top:8px;font-size:24px;color:var(--ink);background:var(--sky)}
+.pod.win .bar2{background:var(--butter);
+  background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0 8px,transparent 8px 16px)}
+.scrim{position:absolute;inset:0;z-index:8;background:rgba(20,10,48,.8)}
+
+.gaps{max-width:1280px;margin:80px auto 0;font-family:ui-sans-serif,system-ui,sans-serif}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.1);vertical-align:top}
+th{color:var(--butter);font-size:11px;font-weight:600}
+td.ok{color:var(--mint)} td.no{color:var(--orchid)}
+.sheet{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end;background:var(--bg);
+  border:3px solid var(--sky);padding:24px;margin-top:14px}
+.grp{display:flex;flex-direction:column;align-items:center;gap:9px}
+.cap2{font-size:10px;color:#b3a6d6;font-family:ui-sans-serif,sans-serif}
+.pal{display:flex;gap:8px;align-items:center;margin:12px 0 0}
+.chipc{width:30px;height:30px;border:3px solid var(--ink)}
+
+/* ======================================================================
+   MOTION
+   Uses the independent `rotate:` / `scale:` / `translate:` properties, not
+   `transform:`, so it composes with the tilts already set inline instead of
+   clobbering them.
+   ====================================================================== */
+
+/* the jiggle: fast, tight, slightly overscaled */
+@keyframes jiggle{
+  0%  {rotate:-2.2deg; scale:1.05}
+  25% {rotate: 1.8deg; scale:1.06}
+  50% {rotate:-1.6deg; scale:1.05}
+  75% {rotate: 2.2deg; scale:1.06}
+  100%{rotate:-2.2deg; scale:1.05}
+}
+/* idle breathing for the currently-focused item — slower, calmer */
+@keyframes idlejig{
+  0%  {rotate:-1.3deg; scale:1.03}
+  50% {rotate: 1.3deg; scale:1.045}
+  100%{rotate:-1.3deg; scale:1.03}
+}
+@keyframes press{ to{ scale:.95 } }
+
+.btn,.tile,.well,.pan,.tabs span,.sw,.pill{
+  /* ease_out_cubic from puzzle/src/juice.h -- decelerating, "coming to rest" */
+  transition:rotate .16s cubic-bezier(.215,.61,.355,1),
+             scale  .16s cubic-bezier(.215,.61,.355,1),
+             filter .16s cubic-bezier(.215,.61,.355,1)}
+
+/* impact: a short decaying shake + flash, the 094-juice pattern.
+   In the real build this is FX-gated AND pinned off under --e2e, or it breaks
+   the byte-stable screenshots. */
+@keyframes shake{
+  0%{translate:0 0} 12%{translate:-6px 2px} 25%{translate:5px -3px}
+  38%{translate:-4px -2px} 52%{translate:3px 3px} 66%{translate:-2px -1px}
+  80%{translate:1px 1px} 100%{translate:0 0}
+}
+@keyframes flash{ from{filter:brightness(2.4) saturate(.4)} to{filter:none} }
+.btn:active{animation:shake .28s cubic-bezier(.215,.61,.355,1),
+                      flash .18s ease-out}
+.screen:has(.btn:active){animation:shake .3s cubic-bezier(.215,.61,.355,1)}
+
+/* hover + keyboard focus both jiggle */
+.btn:hover,.tile:hover,.well:hover,.tabs span:hover,.pill:hover,
+.btn:focus-visible,.tile:focus-visible,.well:focus-visible{
+  animation:jiggle .26s ease-in-out infinite;
+  filter:brightness(1.08);cursor:pointer}
+.btn:active{animation:press .08s ease forwards}
+
+/* whatever is "selected" keeps a gentle idle wobble, the way a focused
+   menu item should read on a controller */
+.btn.sel,.tile.on,.well.on{animation:idlejig .9s ease-in-out infinite}
+.btn.sel:hover,.tile.on:hover,.well.on:hover{animation:jiggle .26s ease-in-out infinite}
+
+/* player cards lift on hover */
+.pan:hover{filter:brightness(1.06)}
+
+/* karts bob, and keep their inline tilt because translate composes */
+@keyframes bob{ to{ translate:0 -7px } }
+.car{animation:bob 1.5s ease-in-out infinite alternate}
+.car:nth-of-type(even){animation-duration:1.9s;animation-delay:-.4s}
+
+/* confetti TRAVELS across the screen and tumbles, rather than bobbing in place.
+   Negative delays spread them through the cycle so the screen is already busy
+   on the first frame. */
+@keyframes cross{
+  from{ translate:-220px 40px;  rotate:0deg }
+  to  { translate:1240px -90px; rotate:300deg }
+}
+@keyframes crossback{
+  from{ translate:1240px -30px; rotate:0deg }
+  to  { translate:-240px 90px;  rotate:-260deg }
+}
+.mem>*{animation:cross 26s linear infinite}
+.mem>*:nth-child(2n)  {animation:crossback 34s linear infinite; animation-delay:-11s}
+.mem>*:nth-child(3n)  {animation-duration:19s; animation-delay:-7s}
+.mem>*:nth-child(4n+1){animation-duration:31s; animation-delay:-19s}
+.mem>*:nth-child(5n+2){animation-duration:23s; animation-delay:-4s}
+.mem>*:nth-child(7n+3){animation-duration:40s; animation-delay:-26s}
+
+/* ---- cars drive around the menu, because your controls work in the menu ---- */
+.drive{position:absolute;inset:0;z-index:3;pointer-events:none}
+.drive .car{position:absolute;opacity:.9}
+@keyframes lap1{
+  0%  { translate:-90px 430px;  rotate:82deg }
+  22% { translate:330px 250px;  rotate:34deg }
+  46% { translate:760px 440px;  rotate:-38deg }
+  68% { translate:1080px 210px; rotate:26deg }
+  86% { translate:1340px 380px; rotate:96deg }
+  100%{ translate:-90px 430px;  rotate:82deg }
+}
+@keyframes lap2{
+  0%  { translate:1330px 180px; rotate:-96deg }
+  26% { translate:880px 380px;  rotate:-150deg }
+  52% { translate:420px 160px;  rotate:-52deg }
+  78% { translate:60px 400px;   rotate:-128deg }
+  100%{ translate:1330px 180px; rotate:-96deg }
+}
+@keyframes lap3{
+  0%  { translate:200px 620px; rotate:64deg }
+  33% { translate:640px 520px; rotate:8deg }
+  66% { translate:1100px 600px;rotate:-46deg }
+  100%{ translate:200px 620px; rotate:64deg }
+}
+.drive .c1{animation:lap1 17s linear infinite}
+.drive .c2{animation:lap2 22s linear infinite;animation-delay:-6s}
+.drive .c3{animation:lap3 13s linear infinite;animation-delay:-3s}
+
+/* marching stripes, always travelling left -> right.
+   Thicker and lighter than the first cut: 16px bands at 10% black, so black
+   text sits in a clear gap instead of being crossed by a hairline every 7px. */
+@keyframes march{ from{background-position:0 0} to{background-position:32px 0} }
+
+.btn.sel{
+  background-image:repeating-linear-gradient(90deg,
+    rgba(0,0,0,.10) 0 16px, transparent 16px 32px);
+  animation:march 1.1s linear infinite, idlejig .9s ease-in-out infinite}
+.btn.sel:hover{
+  animation:march 1.1s linear infinite, jiggle .26s ease-in-out infinite}
+
+.pod.win .bar2{
+  background-image:repeating-linear-gradient(90deg,
+    rgba(0,0,0,.10) 0 16px, transparent 16px 32px);
+  animation:march 1.4s linear infinite}
+
+.meter i{animation:march .9s linear infinite}
+
+/* the title flickers its chromatic split every few seconds */
+@keyframes glitchshift{
+  0%,92%,100%{ translate:0 0 }
+  94%{ translate:-3px 0 }
+  96%{ translate:3px 0 }
+  98%{ translate:-1px 0 }
+}
+.glitch{animation:glitchshift 4.5s steps(1,end) infinite}
+.glitch.pink{animation-delay:-1.2s}
+.glitch.mint{animation-delay:-2.4s}
+
+/* accessibility: honour the OS setting */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+}
+</style>
+</head>
+<body>
+
+<h1>CART CHAOS <span class="p">— menu UI mock, Memphis '93</span></h1>
+<p class="lede">
+Matched to the reference you pointed at. The grammar: <b>deep purple ground</b> with faint tonal blocks
+behind everything, <b>pastel-bright accents</b> (orchid / sky / mint / butter), shapes that are as often
+<b>outlined as filled</b>, <b>stripe fills</b> inside triangles and circles, squiggles and zigzags
+scattered loose, and <b>pixel-glitch type with chromatic offset</b> — the "1993" treatment.
+</p>
+<div class="pal">
+  <span class="cap2" style="margin-right:6px">PALETTE</span>
+  <span class="chipc" style="background:#2E1B69"></span><span class="chipc" style="background:#E06BDD"></span>
+  <span class="chipc" style="background:#5BA8F0"></span><span class="chipc" style="background:#4FD6A6"></span>
+  <span class="chipc" style="background:#F0E85C"></span>
+</div>
+<p class="lede" style="margin-top:14px">
+<b>Cars and weapons are drawn in the same language</b> — same 3px ink outline, same four accents, stripe
+fills instead of shading — so they read as part of the set rather than imported. Sheet at the bottom.
+</p>
+
+<div class="screens">
+
+<!-- ============ 1 MAIN ============ -->
+<div class="wrap">
+  <div class="cap"><span class="n">01</span><span class="t">MAIN MENU</span><span class="s">Screen::Main</span></div>
+  <div class="screen">
+    <div class="tonal"></div>
+    <div class="mem">
+      <!-- striped triangle -->
+      <div class="t-stripe" style="position:absolute;left:60%;top:6%;
+        background:repeating-linear-gradient(0deg,var(--orchid) 0 5px,transparent 5px 10px)"></div>
+      <!-- outlined triangle pair -->
+      <div class="t-out" style="position:absolute;left:76%;top:30%"><i style="background:var(--butter)"></i><b></b></div>
+      <div class="t-out" style="position:absolute;left:79%;top:33%"><i style="background:var(--orchid)"></i><b></b></div>
+      <!-- filled triangles -->
+      <div class="t-fill" style="position:absolute;left:54%;top:34%;border-bottom:34px solid var(--sky)"></div>
+      <div class="t-fill" style="position:absolute;left:92%;top:12%;border-top:26px solid var(--sky)"></div>
+      <!-- striped circle -->
+      <div class="c-stripe" style="position:absolute;left:64%;top:60%;
+        background:repeating-linear-gradient(0deg,var(--sky) 0 5px,rgba(91,168,240,.25) 5px 10px)"></div>
+      <!-- rings + squares -->
+      <div class="ring" style="position:absolute;left:88%;top:52%;width:54px;height:54px;border-width:4px;border-color:var(--butter)"></div>
+      <div class="sq-out" style="position:absolute;left:70%;top:16%;width:52px;height:52px;border-width:4px;border-color:var(--mint)"></div>
+      <!-- squiggles -->
+      <svg style="left:58%;top:22%" width="80" height="22"><path d="M2 12 q10 -12 20 0 t20 0 t20 0" stroke="#E06BDD" stroke-width="4" fill="none"/></svg>
+      <svg style="left:86%;top:78%" width="80" height="22"><path d="M2 12 q10 -12 20 0 t20 0 t20 0" stroke="#F0E85C" stroke-width="4" fill="none"/></svg>
+      <svg style="left:52%;top:78%" width="70" height="20"><polyline points="2,16 12,4 22,16 32,4 42,16 52,4 62,16" stroke="#5BA8F0" stroke-width="4" fill="none"/></svg>
+      <svg style="left:94%;top:34%" width="22" height="70"><polyline points="4,2 16,12 4,22 16,32 4,42 16,52 4,62" stroke="#4FD6A6" stroke-width="4" fill="none"/></svg>
+      <div class="t-fill" style="position:absolute;left:8%;top:64%;border-bottom:22px solid var(--mint)"></div>
+      <div class="ring" style="position:absolute;left:30%;top:88%;width:34px;height:34px;border-width:4px;border-color:var(--orchid)"></div>
+      <div class="sq-out" style="position:absolute;left:44%;top:54%;width:34px;height:34px;border-width:4px;border-color:var(--butter)"></div>
+      <div class="c-stripe" style="position:absolute;left:16%;top:80%;width:40px;height:40px;
+        background:repeating-linear-gradient(0deg,var(--orchid) 0 4px,rgba(224,107,221,.2) 4px 8px)"></div>
+      <div class="t-stripe" style="position:absolute;left:36%;top:70%;width:46px;height:40px;
+        background:repeating-linear-gradient(0deg,var(--mint) 0 4px,transparent 4px 8px)"></div>
+      <svg style="left:24%;top:56%" width="70" height="20"><polyline points="2,16 12,4 22,16 32,4 42,16 52,4 62,16" stroke="#F0E85C" stroke-width="4" fill="none"/></svg>
+      <svg style="left:6%;top:44%" width="80" height="22"><path d="M2 12 q10 -12 20 0 t20 0 t20 0" stroke="#4FD6A6" stroke-width="4" fill="none"/></svg>
+      <div class="t-out" style="position:absolute;left:48%;top:84%"><i style="background:var(--sky)"></i><b></b></div>
+      <div class="dot" style="position:absolute;left:88%;top:92%;width:16px;height:16px;border-radius:50%;background:var(--butter)"></div>
+    </div>
+    <div class="drive">
+      <div class="car c1"><div class="body" style="background:var(--p2)"></div><div class="glass"></div><div class="stripe"></div><div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div>
+      <div class="car c2"><div class="body" style="background:var(--p4)"></div><div class="glass"></div><div class="stripe"></div><div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div>
+      <div class="car c3"><div class="body" style="background:var(--p3)"></div><div class="glass"></div><div class="stripe"></div><div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div>
+    </div>
+    <div class="stage">
+      <div class="glitch butter" style="font-size:74px">CART</div>
+      <div class="glitch pink" style="font-size:74px;margin-left:34px">CHAOS</div>
+      <div class="zrule" style="width:330px;margin-top:16px"></div>
+      <div style="font-size:12.5px;color:var(--mint);letter-spacing:.14em;margin-top:14px">
+        GRAB A FRIEND &nbsp;//&nbsp; WRECK 'EM
+      </div>
+
+      <div style="display:flex;gap:24px;margin-top:24px;align-items:flex-start">
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+          <span class="btn big butter sel">PLAY</span>
+          <span class="btn mint">OPTIONS</span>
+          <span class="btn sky">HOW TO PLAY</span>
+          <span class="btn sm hollow">QUIT</span>
+        </div>
+        <div style="display:flex;gap:16px;padding-top:6px">
+          <div class="car" style="transform:rotate(-10deg)"><div class="body" style="background:var(--p1)"></div>
+            <div class="glass"></div><div class="stripe"></div>
+            <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div>
+          <div class="car" style="transform:rotate(8deg);margin-top:22px"><div class="body" style="background:var(--p3)"></div>
+            <div class="glass"></div><div class="stripe"></div>
+            <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div>
+        </div>
+      </div>
+
+      <div style="margin-top:auto;display:flex;align-items:center;font-size:11px;color:#b3a6d6;letter-spacing:.08em">
+        <span>&#9650;&#9660; PICK // ENTER GO // ESC OUT</span>
+        <span style="margin-left:auto">2 PADS // v0.1</span>
+      </div>
+    </div>
+  </div>
+  <div class="note">
+    <b>Changed:</b> title gets the "1993" treatment — pixel-weight type in butter and orchid with mint and
+    sky chromatic offsets and a hard ink shadow. The right side, empty on every screen today, carries the
+    confetti: striped triangle, overlapping outlined triangles, striped circle, rings, squiggles, zigzags.
+    Two karts sit in the same style they'll have in play. Stray gun sprite gone.
+  </div>
+</div>
+
+<!-- ============ 2 CHARACTER ============ -->
+<div class="wrap">
+  <div class="cap"><span class="n">02</span><span class="t">CHARACTER SELECT</span><span class="s">Screen::CharacterCreation</span></div>
+  <div class="screen">
+    <div class="tonal"></div>
+    <div class="mem">
+      <div class="t-fill" style="position:absolute;left:95%;top:8%;border-bottom:26px solid var(--mint)"></div>
+      <svg style="left:2%;top:88%" width="80" height="22"><path d="M2 12 q10 -12 20 0 t20 0 t20 0" stroke="#E06BDD" stroke-width="4" fill="none"/></svg>
+      <div class="ring" style="position:absolute;left:93%;top:82%;width:40px;height:40px;border-width:4px;border-color:var(--butter)"></div>
+    </div>
+    <div class="stage">
+      <div style="display:flex;align-items:center;margin-bottom:6px">
+        <div class="hd">WHO'S DRIVING</div>
+        <div class="seg2" style="margin-left:auto">
+          <span class="on">FREE FOR ALL</span><span>TEAMS</span>
+        </div>
+      </div>
+      <div class="zrule" style="width:260px;margin-bottom:16px"></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:13px">
+        <div class="pcard ready"><span class="stamp">READY</span>
+          <div class="car"><div class="body" style="background:var(--p1)"></div><div class="glass"></div><div class="stripe"></div><div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div><div class="who">PLAYER 1</div>
+          <span class="dev">&#9000; KEYBOARD</span><div class="paint"><i class="cur" style="background:var(--p1)"></i><i class="used" style="background:var(--p2)"></i><i class="used" style="background:var(--p3)"></i><i class="used" style="background:var(--p4)"></i><i class="" style="background:#FF7A6B"></i><i class="" style="background:#A97BFF"></i><i class="" style="background:#B6E85C"></i><i class="" style="background:#FFA43C"></i></div></div>
+        <div class="pcard ready"><span class="stamp">READY</span>
+          <div class="car"><div class="body" style="background:var(--p2)"></div><div class="glass"></div><div class="stripe"></div><div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div><div class="who">PLAYER 2</div>
+          <span class="dev">&#127918; PAD 1</span><div class="paint"><i class="used" style="background:var(--p1)"></i><i class="cur" style="background:var(--p2)"></i><i class="used" style="background:var(--p3)"></i><i class="used" style="background:var(--p4)"></i><i class="" style="background:#FF7A6B"></i><i class="" style="background:#A97BFF"></i><i class="" style="background:#B6E85C"></i><i class="" style="background:#FFA43C"></i></div></div>
+        <div class="pcard ready"><span class="stamp">READY</span>
+          <div class="car"><div class="body" style="background:var(--p3)"></div><div class="glass"></div><div class="stripe"></div><div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div><div class="who">ROBO-DAVE</div>
+          <span class="dev">&#129302; CPU</span><div class="paint"><i class="used" style="background:var(--p1)"></i><i class="used" style="background:var(--p2)"></i><i class="cur" style="background:var(--p3)"></i><i class="used" style="background:var(--p4)"></i><i class="" style="background:#FF7A6B"></i><i class="" style="background:#A97BFF"></i><i class="" style="background:#B6E85C"></i><i class="" style="background:#FFA43C"></i></div>
+          <div class="diff"><span>&#9664;</span><b>MEDIUM</b><span>&#9654;</span></div></div>
+        <div class="pcard ready"><span class="stamp">READY</span>
+          <div class="car"><div class="body" style="background:var(--p4)"></div><div class="glass"></div><div class="stripe"></div><div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div><div class="who">BOT #2</div>
+          <span class="dev">&#129302; CPU</span><div class="paint"><i class="used" style="background:var(--p1)"></i><i class="used" style="background:var(--p2)"></i><i class="used" style="background:var(--p3)"></i><i class="cur" style="background:var(--p4)"></i><i class="" style="background:#FF7A6B"></i><i class="" style="background:#A97BFF"></i><i class="" style="background:#B6E85C"></i><i class="" style="background:#FFA43C"></i></div>
+          <div class="diff"><span>&#9664;</span><b>EASY</b><span>&#9654;</span></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:13px">
+        <div class="pcard open" style="height:96px"><div style="font-size:26px;color:#5c4a94">+</div>
+          <div style="font-size:9.5px;color:#8f83b8;letter-spacing:.08em">PRESS START</div></div>
+        <div class="pcard open" style="height:96px"><div style="font-size:26px;color:#5c4a94">+</div>
+          <div style="font-size:9.5px;color:#8f83b8;letter-spacing:.08em">PRESS START</div></div>
+        <div class="pcard open" style="height:96px"><div style="font-size:26px;color:#5c4a94">+</div>
+          <div style="font-size:9.5px;color:#8f83b8;letter-spacing:.08em">PRESS START</div></div>
+        <div class="pcard open" style="height:96px"><div style="font-size:26px;color:#5c4a94">+</div>
+          <div style="font-size:9.5px;color:#8f83b8;letter-spacing:.08em">PRESS START</div></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-top:auto">
+        <span class="btn sm hollow">BACK</span>
+        <span style="font-size:11px;color:var(--mint);letter-spacing:.06em">
+          A ADD BOT // X PAINT // &#9664;&#9654; SKILL</span>
+        <span style="margin-left:auto"></span>
+        <span style="font-size:11px;color:var(--butter);letter-spacing:.08em;margin-right:4px">4 DRIVERS</span>
+        <span class="btn butter sel">NEXT</span>
+      </div>
+    </div>
+  </div>
+  <div class="note">
+    <b>Changed:</b> the most broken screen today — overlapping blue and brown boxes, "Team Mode" clipped by
+    a panel, stray <code>0 7</code> text. The kart art <i>is</i> the portrait, so what you pick is what you
+    drive. Panels use the outlined-shape language with a butter corner tick. Eight slots always visible.
+  </div>
+</div>
+
+<!-- ============ 3 RULES ============ -->
+<div class="wrap">
+  <div class="cap"><span class="n">03</span><span class="t">ROUND RULES</span><span class="s">Screen::RoundSettings</span></div>
+  <div class="screen">
+    <div class="tonal"></div>
+    <div class="mem">
+      <div class="t-out" style="position:absolute;left:93%;top:5%"><i style="background:var(--orchid)"></i><b></b></div>
+      <svg style="left:1%;top:90%" width="70" height="20"><polyline points="2,16 12,4 22,16 32,4 42,16 52,4 62,16" stroke="#4FD6A6" stroke-width="4" fill="none"/></svg>
+    </div>
+    <div class="stage">
+      <div class="hd">HOW DO WE WIN</div>
+      <div class="zrule" style="width:280px;margin:6px 0 14px"></div>
+      <div class="tabs" style="margin-bottom:14px">
+        <span>SURVIVAL</span><span class="on">MOST KILLS</span><span>HIPPO GRAB</span><span>TAG</span>
+      </div>
+      <div style="display:flex;gap:16px;flex:1;min-height:0">
+        <div class="pan mint" style="flex:1">
+          <div style="font-size:12.5px;line-height:1.8;color:#e6dcf7;letter-spacing:.04em">
+            BLOW UP THE MOST KARTS BEFORE THE CLOCK DIES.<br>
+            DYING JUST REFILLS YOU &mdash; NOTHING LOST.
+          </div>
+          <div style="margin-top:12px">
+            <div class="row"><span class="lb">CLOCK</span><span class="pill">&#9664; 1 MINUTE &#9654;</span><span></span></div>
+            <div class="row"><span class="lb">TEAMS</span><span></span><span class="sw on"><i></i></span></div>
+            <div class="row"><span class="lb">SHOW CLOCK</span><span></span><span class="sw on"><i></i></span></div>
+          </div>
+        </div>
+        <div class="pan orch" style="flex:1">
+          <div style="font-size:11.5px;color:var(--butter);letter-spacing:.08em;margin-bottom:10px">PICK TWO // ONE PER SIDE</div>
+          <div class="itemrow on">
+            <div class="well on" style="width:58px;height:52px"><div class="wico w-cannon" style="transform:scale(.72)"><span class="a"></span><span class="b"></span><span class="c"></span></div></div>
+            <div><div class="iname">CANNON</div>
+              <div class="idesc">ONE FAT SLUG. 3 HITS AND THEY POP. 1s BETWEEN SHOTS.</div></div>
+          </div>
+          <div class="itemrow">
+            <div class="well" style="width:58px;height:52px"><div class="wico w-sniper" style="transform:scale(.72);opacity:.45"><span class="a"></span><span class="b"></span><span class="c"></span></div></div>
+            <div><div class="iname" style="color:#b3a6d6">SNIPER</div>
+              <div class="idesc" style="opacity:.55">ONE SHOT, ONE KILL. 3s RELOAD. DON'T MISS.</div></div>
+          </div>
+          <div class="itemrow on">
+            <div class="well on" style="width:58px;height:52px"><div class="wico w-shotgun" style="transform:scale(.72)"><span class="a"></span><span class="b"></span><span class="c"></span></div></div>
+            <div><div class="iname">SHOTGUN</div>
+              <div class="idesc">4 PELLETS, WIDE SPRAY. USELESS AT RANGE.</div></div>
+          </div>
+          <div class="itemrow">
+            <div class="well" style="width:58px;height:52px"><div class="wico w-mg" style="transform:scale(.72);opacity:.45"><span class="a"></span><span class="b"></span><span class="c"></span></div></div>
+            <div><div class="iname" style="color:#b3a6d6">MACHINE GUN</div>
+              <div class="idesc" style="opacity:.55">12 SHOTS, 0.2s APART. BULLETS DIE AFTER 1s.</div></div>
+          </div>
+          <div style="font-size:11px;color:var(--mint);margin-top:8px;letter-spacing:.06em">BOTH SLOTS FULL // UNPICK TO SWAP</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:14px">
+        <span class="btn sm hollow">BACK</span><span style="margin-left:auto"></span>
+        <span class="btn butter sel">PICK A TRACK</span>
+      </div>
+    </div>
+  </div>
+  <div class="note">
+    <b>Changed:</b> four tabs, all visible, instead of a <code>&lt;</code>/<code>&gt;</code> stepper cycled
+    blind — which is also what made the e2e suite drift. Weapons are drawn now, in wells that light butter
+    when picked, not four nameless checkboxes. "BOTH SLOTS FULL" surfaces the silent cap where a third
+    weapon is dropped. Time reads <b>1 MINUTE</b>, not <code>Minutes_1</code> (TODO 11).
+  </div>
+</div>
+
+<!-- ============ 4 TRACK ============ -->
+<div class="wrap">
+  <div class="cap"><span class="n">04</span><span class="t">TRACK SELECT</span><span class="s">Screen::MapSelection</span></div>
+  <div class="screen">
+    <div class="tonal"></div>
+    <div class="mem">
+      <svg style="left:1%;top:6%" width="80" height="22"><path d="M2 12 q10 -12 20 0 t20 0 t20 0" stroke="#5BA8F0" stroke-width="4" fill="none"/></svg>
+      <div class="t-fill" style="position:absolute;left:96%;top:62%;border-bottom:24px solid var(--butter)"></div>
+    </div>
+    <div class="stage">
+      <div style="display:flex;align-items:center">
+        <div><div class="hd">PICK A TRACK</div><div class="zrule" style="width:240px;margin-top:6px"></div></div>
+        <span class="pill" style="margin-left:auto">MOST KILLS // 1 MIN // 3P</span>
+      </div>
+      <div style="display:flex;gap:16px;flex:1;min-height:0;margin-top:16px">
+        <div style="width:420px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-content:start">
+          <div class="tile on"><div class="pic" style="background:repeating-linear-gradient(45deg,var(--butter) 0 6px,var(--bg) 6px 12px);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--ink)">?</div><div class="nm">RANDOM</div></div>
+          <div class="tile"><div class="pic" style="background:var(--mint)"></div><div class="nm">ARENA</div></div>
+          <div class="tile"><div class="pic" style="background:repeating-linear-gradient(0deg,var(--orchid) 0 5px,rgba(224,107,221,.35) 5px 10px)"></div><div class="nm">MAZE</div></div>
+          <div class="tile"><div class="pic" style="background:var(--sky)"></div><div class="nm">RACE TRACK</div></div>
+          <div class="tile"><div class="pic" style="background:repeating-linear-gradient(90deg,var(--sky) 0 6px,var(--mint) 6px 12px)"></div><div class="nm">BATTLE PIT</div></div>
+          <div class="tile"><div class="pic" style="background:#6b5f96"></div><div class="nm">TEST MAP</div></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:14px">
+          <div class="pan butter" style="flex:1;display:flex;align-items:center;justify-content:center">
+            <div class="glitch butter" style="font-size:96px">?</div>
+          </div>
+          <div class="pan">
+            <div style="font-size:15px;color:var(--butter);letter-spacing:.08em">RANDOM TRACK</div>
+            <div style="font-size:11.5px;color:#cfc3ea;margin-top:5px;letter-spacing:.04em">
+              WE PICK ANY TRACK THAT SUITS MOST KILLS.</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:14px">
+        <span class="btn sm hollow">BACK</span><span style="margin-left:auto"></span>
+        <span class="btn big mint sel">GO</span>
+      </div>
+    </div>
+  </div>
+  <div class="note">
+    <b>Changed:</b> uniform tiles on a 3&times;2 grid — today they're buttons sized to their own text, which
+    is why "Arena" and "Race Track" are different widths. Thumbnails use stripe fills so they read as
+    part of the set even before real art exists. The unexplained floating <code>???</code> gets framed
+    and captioned.
+  </div>
+</div>
+
+<!-- ============ 5 OPTIONS ============ -->
+<div class="wrap">
+  <div class="cap"><span class="n">05</span><span class="t">OPTIONS</span><span class="s">Screen::Settings</span></div>
+  <div class="screen">
+    <div class="tonal"></div>
+    <div class="mem"><div class="ring" style="position:absolute;left:92%;top:84%;width:44px;height:44px;border-width:4px;border-color:var(--orchid)"></div></div>
+    <div class="stage">
+      <div class="hd">OPTIONS</div><div class="zrule" style="width:160px;margin:6px 0 18px"></div>
+      <div style="display:flex;gap:16px">
+        <div class="pan mint" style="flex:1">
+          <div style="font-size:11.5px;color:var(--butter);letter-spacing:.1em;margin-bottom:8px">SOUND</div>
+          <div class="row"><span class="lb">MASTER</span><span class="meter"><i style="width:70%"></i><b style="left:calc(70% - 9px)"></b></span><span class="val">70</span></div>
+          <div class="row"><span class="lb">MUSIC</span><span class="meter"><i style="width:45%"></i><b style="left:calc(45% - 9px)"></b></span><span class="val">45</span></div>
+          <div class="row"><span class="lb">EFFECTS</span><span class="meter"><i style="width:85%"></i><b style="left:calc(85% - 9px)"></b></span><span class="val">85</span></div>
+        </div>
+        <div class="pan orch" style="flex:1">
+          <div style="font-size:11.5px;color:var(--butter);letter-spacing:.1em;margin-bottom:8px">SCREEN</div>
+          <div class="row"><span class="lb">SIZE</span><span class="pill">1280 &times; 720 &#9662;</span><span></span></div>
+          <div class="row"><span class="lb">FULLSCREEN</span><span></span><span class="sw"><i></i></span></div>
+          <div class="row"><span class="lb">FILTER</span><span></span><span class="sw on"><i></i></span></div>
+          <div class="row"><span class="lb">LANGUAGE</span><span class="pill">ENGLISH &#9662;</span><span></span></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:auto">
+        <span class="btn sm hollow sel">BACK</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--mint);letter-spacing:.08em">SAVED AUTOMATICALLY</span>
+      </div>
+    </div>
+  </div>
+  <div class="note">
+    <b>Changed:</b> today the three volume rows overlap, the cyan fill bleeds outside its track, and three
+    <code>10</code> labels stack. Now outlined meters with a striped mint fill and a butter knob.
+    "SAVED AUTOMATICALLY" is a promise the code doesn't keep yet (TODO 8: settings persist on exit only).
+  </div>
+</div>
+
+<!-- ============ 6 HOW TO PLAY ============ -->
+<div class="wrap">
+  <div class="cap"><span class="n">06</span><span class="t">HOW TO PLAY</span><span class="s">Screen::About</span></div>
+  <div class="screen">
+    <div class="tonal"></div>
+    <div class="mem"><div class="t-fill" style="position:absolute;left:95%;top:12%;border-bottom:24px solid var(--sky)"></div></div>
+    <div class="stage">
+      <div class="hd">HOW TO PLAY</div><div class="zrule" style="width:220px;margin:6px 0 16px"></div>
+      <div style="display:flex;gap:16px;flex:1;min-height:0">
+        <div style="flex:1.05;display:flex;flex-direction:column;gap:14px">
+          <div class="pan orch">
+            <div style="font-size:17px;color:var(--orchid);letter-spacing:.06em">SMASH THEM. DON'T GET SMASHED.</div>
+            <div style="font-size:11.5px;color:#cfc3ea;margin-top:8px;letter-spacing:.04em;line-height:1.7">
+              EIGHT KARTS // ONE ARENA // FAR TOO MANY WEAPONS</div>
+          </div>
+          <div class="pan" style="flex:1">
+            <div style="font-size:11.5px;color:var(--butter);letter-spacing:.1em;margin-bottom:10px">FOUR WAYS TO PLAY</div>
+            <div style="font-size:11.5px;line-height:2.1;color:#e6dcf7;letter-spacing:.04em">
+              SURVIVAL &mdash; DON'T BLOW UP<br>
+              MOST KILLS &mdash; BLOW UP EVERYONE ELSE<br>
+              HIPPO GRAB &mdash; HOOVER THE PICKUPS<br>
+              TAG &mdash; DON'T BE "IT"
+            </div>
+          </div>
+        </div>
+        <div class="pan mint" style="flex:1">
+          <div style="font-size:11.5px;color:var(--butter);letter-spacing:.1em;margin-bottom:10px">BUTTONS</div>
+          <div style="font-size:11.5px;line-height:2.2;color:#e6dcf7;letter-spacing:.04em">
+            STICK / ARROWS &mdash; DRIVE<br>
+            RT / SPACE &mdash; <span style="color:var(--mint)">BOOST</span><br>
+            LB &amp; RB / Q &amp; E &mdash; SHOOT L &amp; R<br>
+            RS / H &mdash; <span style="color:var(--orchid)">HONK</span><br>
+            START / ESC &mdash; PAUSE
+          </div>
+          <div style="display:flex;gap:14px;margin-top:16px;align-items:flex-end">
+            <div class="wico w-cannon"><span class="a"></span><span class="b"></span><span class="c"></span></div>
+            <div class="wico w-shotgun"><span class="a"></span><span class="b"></span><span class="c"></span></div>
+            <div class="car sm"><div class="body" style="background:var(--p4)"></div><div class="glass"></div><div class="stripe"></div>
+              <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px"><span class="btn sm hollow sel">BACK</span></div>
+    </div>
+  </div>
+  <div class="note">
+    <b>Changed:</b> this screen has <i>no text at all</i> today — a back button and three spritesheet icons.
+    Now it teaches the game and shows the actual weapon and kart art, so the vocabulary is learned before
+    the first round. Controls otherwise live only in <code>HOW_TO_PLAY.md</code>.
+  </div>
+</div>
+
+<!-- ============ 7 RESULTS ============ -->
+<div class="wrap">
+  <div class="cap"><span class="n">07</span><span class="t">RESULTS</span><span class="s">Screen::RoundEnd</span></div>
+  <div class="screen">
+    <div class="tonal"></div>
+    <div class="mem">
+      <div class="t-fill" style="position:absolute;left:10%;top:9%;border-bottom:26px solid var(--mint)"></div>
+      <div class="t-out" style="position:absolute;left:84%;top:8%"><i style="background:var(--butter)"></i><b></b></div>
+      <svg style="left:60%;top:6%" width="80" height="22"><path d="M2 12 q10 -12 20 0 t20 0 t20 0" stroke="#E06BDD" stroke-width="4" fill="none"/></svg>
+      <svg style="left:22%;top:20%" width="70" height="20"><polyline points="2,16 12,4 22,16 32,4 42,16 52,4 62,16" stroke="#5BA8F0" stroke-width="4" fill="none"/></svg>
+      <div class="ring" style="position:absolute;left:92%;top:36%;width:40px;height:40px;border-width:4px;border-color:var(--orchid)"></div>
+      <div class="c-stripe" style="position:absolute;left:4%;top:34%;width:46px;height:46px;
+        background:repeating-linear-gradient(0deg,var(--sky) 0 4px,rgba(91,168,240,.2) 4px 8px)"></div>
+    </div>
+    <div class="stage" style="align-items:center">
+      <div class="glitch mint" style="font-size:50px;margin-top:6px">PLAYER 2 WINS</div>
+      <span class="pill" style="margin-top:14px">MOST KILLS // 1 MIN // ARENA</span>
+      <div class="podium" style="margin-top:16px">
+        <div class="pod" style="order:1">
+          <div class="car sm"><div class="body" style="background:var(--p1)"></div><div class="glass"></div><div class="stripe"></div>
+            <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div>
+          <div style="font-size:10.5px;letter-spacing:.06em">PLAYER 1</div><div class="bar2" style="height:86px">5</div></div>
+        <div class="pod win" style="order:2">
+          <div class="car sm"><div class="body" style="background:var(--p2)"></div><div class="glass"></div><div class="stripe"></div>
+            <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div>
+          <div style="font-size:11px;color:var(--butter);letter-spacing:.06em">PLAYER 2</div><div class="bar2" style="height:132px">7</div></div>
+        <div class="pod" style="order:3">
+          <div class="car sm"><div class="body" style="background:var(--p3)"></div><div class="glass"></div><div class="stripe"></div>
+            <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div>
+          <div style="font-size:10.5px;letter-spacing:.06em">ROBO-DAVE</div><div class="bar2" style="height:56px">3</div></div>
+        <div class="pod" style="order:4">
+          <div class="car sm"><div class="body" style="background:var(--p4)"></div><div class="glass"></div><div class="stripe"></div>
+            <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div>
+          <div style="font-size:10.5px;letter-spacing:.06em">BOT #2</div><div class="bar2" style="height:30px">1</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;width:100%;margin-top:14px">
+        <span class="btn sm hollow">MAIN MENU</span>
+        <span class="btn sm sky">CHANGE RULES</span>
+        <span style="margin-left:auto"></span>
+        <span class="btn big sel">RUN IT BACK</span>
+      </div>
+    </div>
+  </div>
+  <div class="note">
+    <b>Changed:</b> podium sorted by score with each driver's actual kart above their bar, instead of a
+    column of numbers. Winner's bar takes the butter stripe fill. Confetti is static Memphis geometry,
+    not particles — much cheaper. Header restates mode, time and map so a screenshot explains itself.
+  </div>
+</div>
+
+<!-- ============ 8 PAUSE ============ -->
+<div class="wrap">
+  <div class="cap"><span class="n">08</span><span class="t">PAUSED</span><span class="s">SchedulePauseUI — overlay, not a Screen</span></div>
+  <div class="screen">
+    <div style="position:absolute;inset:0;z-index:4;background:
+      repeating-linear-gradient(45deg,#3A2280 0 28px,#2E1B69 28px 56px)"></div>
+    <div class="scrim"></div>
+    <div class="stage" style="align-items:center;justify-content:center">
+      <div class="pan butter" style="width:400px;padding:26px;text-align:center">
+        <div class="glitch butter" style="font-size:40px">TIME OUT</div>
+        <div style="font-size:11px;color:#cfc3ea;margin-top:12px;letter-spacing:.08em">MOST KILLS // 0:42 LEFT</div>
+        <div style="display:flex;flex-direction:column;gap:11px;margin-top:20px;align-items:stretch">
+          <span class="btn butter sel">BACK TO IT</span>
+          <span class="btn mint">OPTIONS</span>
+          <span class="btn sm hollow">I GIVE UP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="note">
+    <b>Changed:</b> a bordered card over the dimmed arena rather than menu buttons drawn straight over live
+    gameplay. Says what you paused and how long is left. Zero e2e coverage today, because there's no
+    <code>start_game</code> command to reach it.
+  </div>
+</div>
+
+</div>
+
+<!-- ============ SPRITE SHEET ============ -->
+<div class="gaps">
+  <h1 style="font-size:18px;margin-bottom:6px">SPRITE DIRECTION <span class="p">— cars &amp; weapons</span></h1>
+  <p class="lede">
+  Same rules as the chrome, which is the point: <b>3px ink outline, flat fill from the four accents,
+  stripes instead of shading, no gradients, no anti-aliasing.</b> Write those down once and anything drawn
+  later fits automatically — including the tonal thumbnails on the track screen.
+  </p>
+  <div class="sheet">
+    <div class="grp"><div class="car"><div class="body" style="background:var(--p1)"></div><div class="glass"></div><div class="stripe"></div>
+      <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div><span class="cap2">P1 ORCHID</span></div>
+    <div class="grp"><div class="car"><div class="body" style="background:var(--p2)"></div><div class="glass"></div><div class="stripe"></div>
+      <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div><span class="cap2">P2 SKY</span></div>
+    <div class="grp"><div class="car"><div class="body" style="background:var(--p3)"></div><div class="glass"></div><div class="stripe"></div>
+      <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div><span class="cap2">P3 MINT</span></div>
+    <div class="grp"><div class="car"><div class="body" style="background:var(--p4)"></div><div class="glass"></div><div class="stripe"></div>
+      <div class="w tl"></div><div class="w tr"></div><div class="w bl"></div><div class="w br"></div></div><span class="cap2">P4 BUTTER</span></div>
+    <div class="grp" style="margin-left:20px"><div class="wico w-cannon"><span class="a"></span><span class="b"></span><span class="c"></span></div><span class="cap2">CANNON</span></div>
+    <div class="grp"><div class="wico w-sniper"><span class="a"></span><span class="b"></span><span class="c"></span></div><span class="cap2">SNIPER</span></div>
+    <div class="grp"><div class="wico w-shotgun"><span class="a"></span><span class="b"></span><span class="c"></span></div><span class="cap2">SHOTGUN</span></div>
+    <div class="grp"><div class="wico w-mg"><span class="a"></span><span class="b"></span><span class="c"></span></div><span class="cap2">MACHINE GUN</span></div>
+  </div>
+  <p class="lede" style="margin-top:14px">
+  <b>What's in the spritesheet today:</b> almost nothing. <code>resources/images/spritesheet.png</code> is
+  1024&times;1024 and roughly 90% empty. The used corner holds a few small greyscale items — a cannon, an
+  AK, a crosshair, a cat, a fridge, some explosion frames — drawn semi-realistically with no shared palette
+  or outline weight. That's also the source of the stray gun floating at top-centre of every menu: one of
+  these, placed by a system that was never finished. So "make the cars and weapons fit in" is a drawing job
+  in any direction; there's no existing style to preserve, which makes this the cheap moment to set one.
+  </p>
+</div>
+
+<!-- ============ GAPS ============ -->
+<div class="gaps" style="margin-top:56px">
+  <h1 style="font-size:18px;margin-bottom:14px">WHAT THIS COSTS <span class="p">— engine gap analysis</span></h1>
+  <p class="lede">Cheapest of the four passes. Flat fills, hard rectangles and solid borders are what the
+  UI plugin draws natively — no gloss, no bevels, no soft shadows, no rounded display font.</p>
+  <table>
+    <tr><th style="width:240px">Design element</th><th style="width:130px">Status</th><th>Detail</th></tr>
+    <tr><td>Flat fill + thin bright border</td><td class="ok">BUILDABLE</td>
+        <td>Background colour plus a border. Native today; this is the whole look.</td></tr>
+    <tr><td>Hard offset shadow</td><td class="ok">BUILDABLE</td>
+        <td><code>with_shadow(ShadowStyle, offset_x, offset_y)</code> at <code>component_config.h:753</code>, unused. No blur wanted — the easy case.</td></tr>
+    <tr><td>Stripe fills</td><td class="ok">BUILDABLE</td>
+        <td>A tiling sprite, or <code>with_on_draw_bg</code> (new in the bump). Reused for meters, the winner bar, thumbnails and selection.</td></tr>
+    <tr><td>Selection: stripes + ring</td><td class="ok">BUILDABLE</td>
+        <td>Border swap plus the stripe background. No scale or rotation needed, which sidesteps the hit-testing question entirely.</td></tr>
+    <tr><td>Confetti geometry</td><td class="ok">BUILDABLE</td>
+        <td>Static triangles, rings, squiggles — sprites or draw calls, laid out once per screen. No particle system.</td></tr>
+    <tr><td>Tabs, toggles, sliders, dropdowns</td><td class="ok">BUILDABLE</td>
+        <td><code>tab_container</code>, <code>toggle_switch</code>, slider, dropdown — all ship, mostly unused.</td></tr>
+    <tr><td>Grey-out until ready</td><td class="ok">BUILDABLE</td>
+        <td><code>with_disabled()</code> — zero calls today; the exact case the gaps doc first asked for.</td></tr>
+    <tr><td>Pause card</td><td class="ok">BUILDABLE</td><td><code>modal</code> ships, unused.</td></tr>
+    <tr><td>Chromatic-offset title</td><td class="ok">BUILDABLE</td>
+        <td>Draw the label three times at small offsets in three colours. Cheap, and <code>with_styled_label</code> (new in the bump) may do it in one.</td></tr>
+    <tr><td>Tilted karts on the menu</td><td class="ok">SIDESTEPPED</td>
+        <td>Bake the rotation into the sprite rather than rotating a UI element. Avoids the unresolved question of whether hit-testing respects rotation.</td></tr>
+    <tr><td>Car + weapon sprites</td><td class="no">NEEDS ART</td>
+        <td>The real cost, unavoidable in any direction. This style is the easiest of the four to draw consistently — "flat fill, ink outline, stripes not shading" is a rule anyone can follow and check.</td></tr>
+    <tr><td>Pixel display font</td><td class="no">NEEDS A FONT</td>
+        <td>Wants a blocky bitmap face. The bundled CJK mono is closer than you'd think — it's already monospace and blocky — so this may be the one direction that needs <i>no</i> new font. Worth testing before sourcing anything.</td></tr>
+    <tr><td>Real track thumbnails</td><td class="no">NEEDS CARE</td>
+        <td><code>generate_map_preview</code> can render real maps, but it builds each 100k units offscreen and deletes <i>anything</i> with a <code>Transform</code> in the preview rect. Harden first. Stripe-fill blocks work fine until then.</td></tr>
+  </table>
+  <p class="lede" style="margin-top:20px">
+  Two places the mock promises what the code doesn't do, both on the TODO: Options says "SAVED
+  AUTOMATICALLY" (item 8 — settings persist on exit only) and the podium implies clean per-round scores
+  (item 3 — trackers never reset, so round 2 inherits round 1).
+  </p>
+</div>
+
+</body>
+</html>
