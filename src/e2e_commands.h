@@ -77,29 +77,14 @@ struct HandleAppActionCommand : System<PendingE2ECommand> {
     }
 };
 
-struct HandleDisableAnimationsCommand : System<PendingE2ECommand> {
-    void for_each_with(Entity &, PendingE2ECommand &cmd, float) override {
-        if (cmd.is_consumed() || !cmd.is("disable_animations"))
-            return;
-        animation_control::disabled = true;
-        cmd.consume();
-    }
-};
-
-struct HandleEnableAnimationsCommand : System<PendingE2ECommand> {
-    void for_each_with(Entity &, PendingE2ECommand &cmd, float) override {
-        if (cmd.is_consumed() || !cmd.is("enable_animations"))
-            return;
-        animation_control::disabled = false;
-        cmd.consume();
-    }
-};
+// disable_animations/enable_animations used to be handled here. afterhours
+// ships them now, and registers its handler in register_builtin_handlers --
+// which runs first and consumes the command, so ours never fired. Our own
+// animations read the engine's flag via animation_control::disabled().
 
 inline void register_app_commands(SystemManager &sm) {
     sm.register_update_system(std::make_unique<HandleGotoScreenCommand>());
     sm.register_update_system(std::make_unique<HandleAppActionCommand>());
-    sm.register_update_system(std::make_unique<HandleDisableAnimationsCommand>());
-    sm.register_update_system(std::make_unique<HandleEnableAnimationsCommand>());
 }
 
 }

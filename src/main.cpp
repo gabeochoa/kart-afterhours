@@ -63,17 +63,6 @@ void game() {
     input::register_update_systems(systems);
     mcp_integration::register_systems(systems);
     window_manager::register_update_systems(systems);
-    if (afterhours::graphics::is_headless()) {
-      systems.register_update_system([](float) {
-        auto *pcr = EntityHelper::get_singleton_cmp<
-            window_manager::ProvidesCurrentResolution>();
-        if (pcr && (pcr->width() == 0 || pcr->height() == 0)) {
-          pcr->current_resolution = window_manager::Resolution{
-              .width = Settings::get_screen_width(),
-              .height = Settings::get_screen_height()};
-        }
-      });
-    }
     sound_system::register_update_systems(systems);
   }
 
@@ -274,6 +263,13 @@ int main(int argc, char *argv[]) {
   if (cmdl[{"--headless"}]) {
     display_mode = afterhours::graphics::DisplayMode::Headless;
   }
+
+  // What the backend reports when there is no window to measure. Replaces a
+  // per-frame system that used to patch a 0x0 resolution after the fact.
+  afterhours::window_manager::headless_resolution =
+      afterhours::window_manager::Resolution{
+          .width = Settings::get_screen_width(),
+          .height = Settings::get_screen_height()};
 
   Preload::get() //
       .init("Cart Chaos", display_mode)

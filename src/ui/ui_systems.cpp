@@ -793,7 +793,7 @@ void ScheduleMainMenuUI::round_end_player_column(
       4.f, static_cast<float>(round_players.size() + round_ais.size()));
 
   float card_v = 1.0f;
-  if (!animation_control::disabled) {
+  if (!animation_control::disabled()) {
     afterhours::animation::one_shot(
         UIKey::RoundEndCard, index,
         ui_anims::make_round_end_card_stagger(index));
@@ -880,7 +880,7 @@ void ScheduleMainMenuUI::round_end_player_column(
 
   // Score roll-up value (0..1). We keep it generic regardless of round type
   float score_t = 1.0f;
-  if (!animation_control::disabled) {
+  if (!animation_control::disabled()) {
     afterhours::animation::one_shot(UIKey::RoundEndScore, index, [](auto h) {
       h.from(0.0f).to(1.0f, 0.8f,
              afterhours::animation::EasingType::EaseOutQuad);
@@ -1997,7 +1997,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     {
       size_t random_index = compatible_maps.size();
       float slide_v = 1.0f;
-      if (!animation_control::disabled) {
+      if (!animation_control::disabled()) {
         afterhours::animation::one_shot(
             UIKey::MapCard, random_index,
             ui_anims::make_map_card_slide(random_index));
@@ -2065,7 +2065,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
 
     float pulse_v = 0.0f;
     float slide_v = 1.0f;
-    if (!animation_control::disabled) {
+    if (!animation_control::disabled()) {
       afterhours::animation::one_shot(UIKey::MapCard, i,
                                       ui_anims::make_map_card_slide(i));
       pulse_v = afterhours::animation::get_value(UIKey::MapCardPulse, i)
@@ -2157,7 +2157,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     effective_preview_index = focused_preview_index;
   }
 
-  if (!animation_control::disabled) {
+  if (!animation_control::disabled()) {
     if (effective_preview_index >= 0 && last_effective_preview_index < 0) {
       afterhours::animation::anim(UIKey::MapPreviewFade)
           .from(0.0f)

@@ -52,7 +52,7 @@ struct UpdateUIWiggle : afterhours::ui::SystemWithUIContext<> {
                              float) override {
     if (!component.was_rendered_to_screen)
       return;
-    if (animation_control::disabled)
+    if (animation_control::disabled())
       return;
     const auto &cfg = ui_wiggle_config();
 

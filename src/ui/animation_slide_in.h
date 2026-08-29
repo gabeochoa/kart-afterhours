@@ -75,7 +75,7 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
     if (rightEdge > limit)
       return;
 
-    if (animation_control::disabled) {
+    if (animation_control::disabled()) {
       auto &mods =
           entity.addComponentIfMissing<afterhours::ui::HasUIModifiers>();
       mods.translate_x = 0.0f;
@@ -233,7 +233,7 @@ struct ApplyInitialSlideInMask : afterhours::ui::SystemWithUIContext<> {
   virtual void for_each_with(afterhours::Entity &entity,
                              afterhours::ui::UIComponent &component,
                              const float) override {
-    if (animation_control::disabled)
+    if (animation_control::disabled())
       return;
 
     auto current_screen = GameStateManager::get().active_screen;
