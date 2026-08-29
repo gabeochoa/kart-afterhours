@@ -181,20 +181,19 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
 The submodule is shared with ~10 projects. Recorded here so they aren't re-derived; not actionable
 from this repo.
 
-- [ ] **Re-triage `docs/afterhours_gaps.md` — 3 of 17 are now closed.** Closed: `with_disabled()`
-  (`component_config.h:395`, and kart uses it zero times), `SINGLETON_CLASS_FWD` (`singleton.h:9`),
-  `key_codes.h` re-export (`e2e_testing.h:30`). Still open: animation instant-mode,
-  `animation::clear_all()`, built-in `disable_animations` command, `--screenshot-dir` (directly
-  blocks a clean baseline workflow — `screenshots/` is hardcoded at `e2e_integration.h:32,65`,
-  which is why the makefile has to `cp` between dirs), `--e2e-speed`, case-insensitive
-  `expect_text`, checkbox overflow, headless `ProvidesCurrentResolution` and `GetFontDefault()`
-  (workarounds at `main.cpp:66-76` and `preload.cpp:144-209`), shutdown `bad_variant_access`
-  (`main.cpp:301-303`).
-- [ ] **Windows cross-compile blocked on three afterhours issues:** `path.c_str()` is `wchar_t*` on
-  Windows (`headless.h:147`, `windowed.h:86`, `drawing_helpers.h:450`); `std::aligned_alloc` missing
-  in mingw (`memory/arena.h`); `graphics/platform/headless_gl.h:29` is a hard `#error` with no
-  Windows backend. Only the third needs a decision — WGL implementation vs. guarding the include.
-  See `~/p/port_to_zig_build.md`.
+- [x] ~~Re-triage `docs/afterhours_gaps.md`~~ — done 2026-08-29 against `fc4d625`. 10 of 17 closed.
+  Still open: `--screenshot-dir` (the one that blocks a clean baseline workflow), `--e2e-speed`,
+  headless `GetFontDefault()` (workaround still live at `preload.cpp:144-209`), checkbox overflow,
+  and adopting `Anim::on_appear()` in place of our own slide-in.
+- [x] ~~Windows blocked on three afterhours issues~~ — **all three fixed upstream.**
+  `make windows` now compiles clean through afterhours and reaches the link.
+- [ ] **`make windows` link fails on one symbol: `IsKeyPressedRepeat`.** `vendor/raylib/raylib.h`
+  is 5.5 and declares it (`:1174`), but `vendor/raylib/raylib.dll` and `libraylibdll.a` don't
+  export it — the vendored Windows binaries are an older raylib than the header beside them. Drop
+  in a real raylib 5.5 Windows build. This is the only thing between us and a Windows binary.
+- [ ] **Adopt `with_disabled()`** (`component_config.h:395`) — kart uses it zero times, and the
+  case that motivated the original gap report (disable "select map" until a win condition is
+  chosen) is still unimplemented.
 - [ ] **kart is coded against the pre-upgrade afterhours UI API.** Uses 13 of ~30 widgets; zero uses
   of `setting_row`, `modal`, `toast`, `tab_container`, `radio_group`, `toggle_switch`,
   `progress_bar`, `tray`, `stepper`, `expand()`/`flex_grow`, `with_gap`, `ButtonVariant`, or the

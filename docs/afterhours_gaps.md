@@ -2,137 +2,134 @@
 
 Feedback and feature requests for the afterhours engine, discovered while working on kart-afterhours.
 
----
+Last re-triaged 2026-08-29 against afterhours `fc4d625`. Every entry below was
+checked against the current submodule, not carried forward on trust.
 
-## Animation System
-
-### No global disable/instant-complete flag
-The animation plugin has no built-in way to disable animations or instantly complete them. This is needed for:
-- E2E testing (screenshots need UI at final state, not mid-animation)
-- Accessibility (reduce motion preferences)
-- Development (skip animations during rapid iteration)
-
-**Current workaround:** Game-side `animation_control::disabled` flag checked manually in every animation system and at every `animation::one_shot()` / `animation::anim()` call site. This is error-prone and requires touching every animation usage.
-
-**Ideal:** `animation::set_instant_mode(true)` that makes all animations complete immediately (duration=0, jump to final value). This way the animation code stays identical — it still runs — but everything resolves in one frame.
-
-### No way to clear/reset all animation tracks
-When switching screens, stale animation tracks from the previous screen persist. There's no `animation::clear_all()` or per-key `animation::clear<Key>()`.
+**Score: 10 of 17 previously-open gaps are now closed.** All three Windows
+blockers and every headless workaround but one are gone.
 
 ---
 
-## E2E Testing
+## Still open
 
-### No built-in `disable_animations` / `enable_animations` commands
-These are common enough across projects (kart, wm_afterhours, wordproc) that they should be built-in e2e commands in the framework rather than reimplemented per-project.
+### e2e: no `--screenshot-dir` flag
+The runner still writes to a hardcoded `screenshots/` path (`src/e2e_integration.h:32`, `:65`).
+This is the one gap that directly blocks a clean baseline workflow: `make update-baselines`
+and `make validate-screenshots` have to write to the same directory and then `cp` out of it,
+which is why neither target can safely skip a `clean-screenshots` first.
 
-### No `--screenshot-dir` CLI flag
-The e2e runner saves screenshots to a hardcoded `screenshots/` path. Other projects (wordproc, wm_afterhours) pass `--screenshot-dir` to control output location, which is needed for baseline comparison workflows (`make update-baselines` vs `make validate-screenshots` writing to different dirs).
+**Ideal:** `--screenshot-dir <path>`, or a settable `e2e::screenshot_directory`.
 
-### No `--e2e-speed` CLI flag  
-The wordproc runner supports `--e2e-speed` to multiply wait durations. Useful for running tests faster in CI. This should be built into the afterhours e2e runner.
-
-### `expect_text` needs case-insensitive option
-Game text is often displayed in different cases depending on styling. A case-insensitive `expect_text` variant (or a flag) would reduce false failures.
-
----
-
-## UI Components
-
-### Elements with `with_opacity(0.0f).with_translate(-2000.0f, 0.0f)` as slide-in initial state
-This is a common pattern in apps using afterhours UI: create elements hidden off-screen, then animate them in. The initial hidden state is baked into ComponentConfig, which means the element is invisible if the animation system doesn't run (headless, disabled, etc).
-
-**Suggestion:** A `with_slide_in()` config option that the layout system understands — elements start hidden and the slide-in system handles the rest, rather than requiring manual opacity/translate setup.
-
-### Checkbox internal layout overflow
-`imm::checkbox` creates a `checkbox_row` parent with `NoWrap`, then adds a label child at half the specified width and a toggle child at full width. The children are often taller than the row, causing layout overflow warnings (`checkbox label extends outside parent checkbox_row`). This is internal to the checkbox component and can't be fixed from the caller side.
-
-**Ideal:** The checkbox_row height should auto-size to fit its children, or the internal children should respect the parent's height constraint.
-
-### No `with_disabled()` for interactive elements
-There's no way to disable a button/checkbox/dropdown without removing it. A `with_disabled(bool)` that grays out and skips interaction would be useful for settings that depend on other settings (e.g., disable "select map" until a win condition is chosen).
-
----
-
-## Build / Integration
-
-### `SINGLETON_FWD` and `ENTITY_ID_GEN` fixes in latest
-The latest afterhours fixes `SINGLETON_FWD` (static -> inline) and `ENTITY_ID_GEN` (static -> inline). These are important correctness fixes that affect any multi-translation-unit project. Should be called out in release notes.
-
-### Missing `#include` for `key_codes.h`
-Had to manually include `<afterhours/src/core/key_codes.h>` for e2e navigation commands. The `e2e_testing.h` header could re-export this since e2e commands commonly need key constants.
-
----
-
-## Headless Mode
-
-### `ProvidesCurrentResolution` returns (0,0) in headless mode
-`window_manager::fetch_current_resolution()` calls `raylib::GetRenderWidth()`/`GetRenderHeight()` which return 0 in headless mode (no window). This causes `UIContext::screen_width/screen_height` to be 0, which makes all percentage-based layout sizes resolve to 0 and layout positions become NaN.
-
-**Current workaround:** Register a custom update system after `window_manager::register_update_systems()` that overrides the resolution with the configured screen dimensions when zero is detected.
-
-**Ideal:** `fetch_current_resolution()` should check `graphics::is_headless()` and return the configured render texture dimensions instead of querying a non-existent window. Alternatively, `add_singleton_components` should accept a resolution and `CollectCurrentResolution` should skip fetching in headless mode.
+### e2e: no `--e2e-speed` flag
+No way to scale wait durations. Useful for CI. wordproc's runner has one.
 
 ### `GetFontDefault()` returns an invalid font in headless mode
-`init_ui_plugin` calls `get_default_font()` which uses `raylib::GetFontDefault()`. In headless mode this returns a font with missing/invalid glyph data, causing crashes in `DrawTextEx` and incorrect measurements.
+Still open. `backends/raylib/font_helper.h:33,88,96,107` return `raylib::GetFontDefault()`
+with no `is_headless()` branch, and `plugins/ui/utilities.h:115-116` load it into
+`DEFAULT_FONT` and `SYMBOL_FONT`. In headless the glyph data is missing/invalid.
 
-**Current workaround:** After calling `init_ui_plugin`, override `DEFAULT_FONT` and `UNSET_FONT` in FontManager with fonts loaded via manual atlas generation (`LoadFontData` + `GenImageFontAtlas` + `LoadTextureFromImage`).
+**Current workaround (still in place):** after `init_ui_plugin`, override `DEFAULT_FONT`
+and `UNSET_FONT` via manual atlas generation — `preload.cpp:144-209`.
 
-**Ideal:** `init_ui_plugin` should detect headless mode and load fonts via the manual atlas path automatically, or provide a hook for custom font loading.
+**Related, still true:** CJK fonts are skipped in headless (`preload.cpp:174`), so a headless
+screenshot with language set to Korean or Japanese renders with the English font.
 
-### `std::bad_variant_access` crash on shutdown due to static destruction order
-The raylib backend stores its state in a `std::variant<std::monostate, RaylibWindowed, RaylibHeadless>` inside a function-local static. When the program exits, static destructors run in undefined order across translation units. If entity destruction or other static cleanups happen after the backend variant is destroyed, `std::visit` on the dead variant throws `bad_variant_access`.
+### Checkbox internal layout overflow
+`imm::checkbox` still builds a `checkbox_row` parent (`plugins/ui/imm_components.h:921`)
+whose children are often taller than the row, producing
+`checkbox label extends outside parent checkbox_row`. Not fixable from the caller side.
 
-**Current workaround:** Explicitly call `EntityHelper::delete_all_entities_NO_REALLY_I_MEAN_ALL()` and then `Preload_single.reset()` (which calls `graphics::shutdown()`) before `main()` returns, ensuring deterministic teardown order.
+**Ideal:** `checkbox_row` auto-sizes to its children, or the children respect the parent height.
 
-**Ideal:** The engine should provide a `graphics::cleanup_all()` or similar that handles entity collection teardown and backend shutdown in the correct order, or the backend variant should use a sentinel state that is safe to visit after destruction.
-
-### `SINGLETON_FWD` macro fails inside struct/class scope
-`SINGLETON_FWD(Type)` expands to `inline std::shared_ptr<Type> Type_single;` which is invalid inside a struct body (needs `static inline`). This affects `sound_system.h` where `SoundLibrary` and `MusicLibrary` use `SINGLETON_FWD` inside `struct sound_system`.
-
-**Current workaround:** Manually expand the macro with `static inline` in the vendor file.
-
-**Ideal:** Either provide a `SINGLETON_FWD_STATIC(Type)` variant for use inside class/struct scope, or change `SINGLETON_FWD` to use `static inline` (which works at both namespace and class scope).
+### `with_slide_in()` config option
+Open as originally written, but effectively obsoleted: `Anim::on_appear().opacity().translate_x()`
+covers the use case now. The real remaining item is on our side — adopt the declarative API and
+delete `src/ui/animation_slide_in.h`. See the TODO.
 
 ---
 
-## Windows Cross-Compilation
+## Closed by the `12a4571 -> fc4d625` bump
 
-kart's makefile now builds with `zig c++`, so `make windows` cross-compiles to
-`x86_64-windows-gnu` from macOS. The toolchain resolves mingw headers, libc++ and
-`vendor/raylib/libraylibdll.a` without complaint — every remaining failure is an
-afterhours portability gap. These block `make windows` today; the macOS build is
-unaffected. Listed easiest first.
+### Animation: global instant-complete — **CLOSED**
+`animation::set_instant(bool)` / `is_instant()` (`plugins/animation.h:102-103`). Deliberately
+not an enable/disable flag: the animation still runs and `on_complete` still fires, so nothing
+downstream has to branch.
 
-### `std::filesystem::path::c_str()` is `const wchar_t*` on Windows
-Three sites pass a `path` straight to raylib's `ExportImage`, which takes `const char*`:
-`backends/raylib/headless.h:147`, `backends/raylib/windowed.h:86`,
-`backends/raylib/drawing_helpers.h:450`.
+### Animation: `clear_all()` — **CLOSED**
 
-**Ideal:** `path.string().c_str()` at each site. raylib's API is `char*`-only, so
-the narrow conversion has to happen somewhere regardless.
+### e2e: built-in `disable_animations` / `enable_animations` — **CLOSED, and it shadowed ours**
+Worth recording as a lesson rather than just a tick. afterhours registers
+`HandleAnimationModeCommand` inside `register_builtin_handlers`, which we call *before*
+`register_app_commands`. Both handlers `consume()` the command, so the engine's won and ours
+silently stopped running — our hand-rolled slide-in and wiggle kept animating through every
+screenshot, and run-to-run screenshot noise went from 6 screens to 8.
 
-### `std::aligned_alloc` does not exist in mingw
-`memory/arena.h:32` falls back to `std::aligned_alloc` for non-Apple platforms.
-mingw's msvcrt has no such symbol, so the `#else` branch fails to compile.
+Fixed on our side by making `animation_control::disabled()` delegate to `animation::is_instant()`
+so one flag drives both, and deleting our duplicate handlers.
 
-**Ideal:** Add a `_WIN32` branch using `_aligned_malloc`. That also needs a matching
-`aligned_free_compat`, since the two `std::free(memory_)` calls at `arena.h:67` and
-`arena.h:78` must become `_aligned_free` on Windows.
+**Feedback for the engine:** a consumer has no way to know a new builtin will start eating a
+command it already handles, and nothing warns. Either warn on duplicate handling of the same
+command name, or let `register_builtin_handlers` take an opt-out set.
 
-### No headless GL backend for Windows
-`graphics/platform/headless_gl.h:28` is a hard `#error` — only
-`headless_gl_macos.h` and `headless_gl_linux.h` exist. This is not opt-in:
-`backends/raylib/backend.h:13` includes `headless.h` unconditionally, so every
-Windows TU that touches the raylib backend hits it, whether or not the project
-uses headless mode. The cascading `unknown type name 'HeadlessGL'` errors in
-`backends/raylib/headless.h` all come from this.
+### e2e: case-insensitive `expect_text` — **CLOSED** (`expect_text_i`)
 
-**Ideal:** Two options, and it's worth deciding deliberately since a WGL pbuffer
-context is real work:
-- Write `headless_gl_windows.h` on WGL, so e2e/screenshot workflows run on Windows CI.
-- Or make headless compile out: guard the include in `backend.h` and let the
-  `#error` fire only when a project actually asks for a headless context.
+### `with_disabled()` for interactive elements — **CLOSED**
+`component_config.h:395`, `is_disabled()` at `:733`, plus `Theme::disabled_opacity`.
+We use it zero times; the motivating case (disable "select map" until a win condition is
+chosen) is still unimplemented on our side.
 
-The second is enough to unblock shipping a Windows build; the first is needed
-before Windows can run the screenshot baselines.
+### `SINGLETON_FWD` in class scope — **CLOSED** (`SINGLETON_CLASS_FWD`)
+No hand-patched vendor file needed.
+
+### `key_codes.h` re-export — **CLOSED** (`e2e_testing.h:30`)
+
+### Headless: `ProvidesCurrentResolution` returns (0,0) — **CLOSED**
+`window_manager::headless_resolution` (`plugins/window_manager.h:62`) is the documented
+fallback, defaults to 1280x720, and `fetch_current_resolution` warns once when it uses it.
+Our per-frame patching system is deleted; we assign `headless_resolution` once before init.
+
+### Headless: `std::bad_variant_access` on shutdown — **CLOSED**
+`afterhours::shutdown()` (`src/shutdown.h`) does entities-then-backend, idempotent.
+We did not adopt it: `Preload::~Preload()` already calls `graphics::shutdown()` after our
+`delete_all_entities`, so our ordering is equivalent and switching would only move two calls.
+
+### Windows cross-compilation — **ALL THREE CLOSED**
+1. `path.string().c_str()` at every `ExportImage` site (`headless.h:156`, `windowed.h:123`,
+   `drawing_helpers.h:519`).
+2. `memory/arena.h:27` has `aligned_alloc_compat` with a `_aligned_malloc` branch.
+3. `graphics/platform/headless_gl_windows.h` exists; the hard `#error` is gone, and there is
+   an Emscripten stub too.
+
+`make windows` now compiles clean through all of afterhours.
+
+---
+
+## Our side, not the engine's
+
+Recorded here because they surfaced while chasing the above.
+
+### `make windows` link: `IsKeyPressedRepeat` undefined
+`vendor/raylib/raylib.h` is 5.5 and declares it (`:1174`), but `vendor/raylib/raylib.dll` and
+`libraylibdll.a` do not export it — the vendored Windows binaries are an older raylib than the
+vendored header beside them. Needs a real raylib 5.5 Windows build dropped in. This is the only
+thing between us and a Windows binary.
+
+### `log_error` aborted unconditionally
+`src/log/log_macros.h` put `assert(false)` outside the macro's own `if` and unbraced, so the
+macro was two statements and `if (x) log_error(...)` aborted whatever `x` was. Latent since it
+was written; the bump walked into it when `runner.h:292` added a `log_error` inside a brace-less
+`if`, aborting before the first e2e script. Now wrapped in `do/while(0)`.
+
+Not an engine bug, but a note for the engine: a header-only library calling a macro the consumer
+may have redefined is a sharp edge. `log_error` in a brace-less `if` is a reasonable thing to
+write and it detonated a downstream project.
+
+---
+
+## Not yet evaluated
+
+**Labels lost their free 5px inset.** `Theme::text_inset` replaces a hardcoded 5 and defaults to
+0, which is a deliberate re-baseline: edge-aligned text shifts and wrapped text re-breaks. Our
+screenshots move, but the suite still drifts run-to-run from the persisted-round-settings leak
+(TODO tier 2), so the visual delta cannot be attributed until that is fixed. `-DAFTERHOURS_DEFAULT_TEXT_INSET=5.f`
+restores the old pixels if we want them.
