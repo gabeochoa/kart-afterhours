@@ -45,3 +45,7 @@ screenshots/
 concept/
 .claude
 .cursor
+
+# zig build
+zig-out/
+.zig-cache/

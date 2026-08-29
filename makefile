@@ -1,95 +1,55 @@
 
-FLAGS = -Wall -Wextra -Wpedantic -Wuninitialized -Wshadow \
-		-Wconversion -g
-NOFLAGS = -Wno-deprecated-volatile -Wno-missing-field-initializers \
-		  -Wno-c99-extensions -Wno-unused-function -Wno-sign-conversion \
-		  -Wno-implicit-int-float-conversion
+# Compiling and linking live in build.zig. What's left here is shell glue:
+# resources, screenshots, profiling, counting. Source discovery, incremental
+# rebuilds and header dependencies are all zig's problem now.
+#
+# For Apple clang + AddressSanitizer (zig ships no macOS asan runtime), the
+# makefile is no longer the place -- build that variant by hand.
 
+ZIG_FLAGS :=
 ifdef MCP
-	MCP_FLAGS = -DAFTER_HOURS_ENABLE_MCP
-else
-	MCP_FLAGS =
+	ZIG_FLAGS += -Dmcp=true
 endif
-
 ifdef E2E
-	E2E_FLAGS = -DAFTER_HOURS_ENABLE_E2E_TESTING
-else
-	E2E_FLAGS =
-endif
-
-INCLUDES = -Ivendor/ -Isrc/ -DAFTER_HOURS_USE_RAYLIB -DAFTER_HOURS_UI_SINGLE_COLLECTION
-
-H_FILES := $(wildcard src/**/*.h src/**/*.hpp)
-SRC_FILES := $(wildcard src/*.cpp src/**/*.cpp vendor/afterhours/src/plugins/*.cpp)
-
-# zig c++ cross-compiles to any target from any host. For Apple clang +
-# AddressSanitizer (zig ships no macOS asan runtime), override on the CLI:
-#   make CXX="clang++ -std=c++23 -Wmost -fsanitize=address"
-# (?= would not fire here: make ships a built-in CXX default.)
-ifeq ($(origin CXX),default)
-CXX := zig c++ -std=c++23 -Wmost
+	ZIG_FLAGS += -De2e=true
 endif
 
 # TARGET=windows cross-compiles a .exe from macOS. Default: native.
 ifeq ($(TARGET),windows)
 	OUTPUT_FOLDER := output-win
-	RAYLIB_FLAGS := -Ivendor/raylib
-	RAYLIB_LIB := vendor/raylib/libraylibdll.a -lopengl32 -lgdi32 -lwinmm
-	FLAGS = -target x86_64-windows-gnu -g $(RAYLIB_FLAGS)
-	sign_cmd :=
-	run_cmd := @echo "built $(OUTPUT_EXE), run it on Windows"
+	OUTPUT_EXE := zig-out/bin/kart.exe
+	ZIG_FLAGS += -Dtarget=x86_64-windows-gnu
+	run_cmd = @echo "built $(OUTPUT_EXE), run it on Windows"
 else
 	OUTPUT_FOLDER := output
-	RAYLIB_FLAGS := $(shell pkg-config --cflags raylib)
-	RAYLIB_LIB := $(shell pkg-config --libs raylib) -framework OpenGL
-	FLAGS = -g $(RAYLIB_FLAGS) -ftime-trace
-	sign_cmd := && codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
-	run_cmd := ./${OUTPUT_EXE}
+	OUTPUT_EXE := zig-out/bin/kart
+	run_cmd = ./$(OUTPUT_EXE)
 endif
 
-LIBS = -L. -Lvendor/ $(RAYLIB_LIB)
-OBJ_DIR := ./$(OUTPUT_FOLDER)
-OUTPUT_EXE := $(OUTPUT_FOLDER)/kart.exe
-OBJ_FILES := $(SRC_FILES:%.cpp=$(OBJ_DIR)/%.o)
-
-# The .d files the compile rule emits were never included, so header edits
-# didn't trigger rebuilds.
--include $(OBJ_FILES:.o=.d)
-
-mkdir_cmd = mkdir -p $(OUTPUT_FOLDER)/resources/ $(sort $(dir $(OBJ_FILES)))
+mkdir_cmd = mkdir -p $(OUTPUT_FOLDER)/resources/
 cp_lib_cmd = cp vendor/raylib/*.dll $(OUTPUT_FOLDER)/
 cp_resources_cmd = cp -r resources/* $(OUTPUT_FOLDER)/resources/
 
 
-.PHONY: all clean output count countall old clean xmake e2e clean-screenshots windows
-.PHONY: update-baselines validate-screenshots ci
+.PHONY: all build clean output count countall old xmake e2e clean-screenshots windows
+.PHONY: update-baselines validate-screenshots ci dirs sign run
 
 
-$(info SRC_FILES: $(SRC_FILES))
-$(info OBJ_FILES: $(OBJ_FILES))
+all: build
 
-
-all: $(OUTPUT_EXE)
+build:
+	zig build $(ZIG_FLAGS)
 
 xmake:
 	xmake build
 
-old: $(OUTPUT_EXE)
-
-$(OUTPUT_EXE): $(H_FILES) $(OBJ_FILES)
-	$(CXX) $(FLAGS) $(LEAKFLAGS) $(NOFLAGS) $(MCP_FLAGS) $(E2E_FLAGS) $(INCLUDES) $(LIBS) $(OBJ_FILES) -o $(OUTPUT_EXE)
+old: build
 
 dirs:
 	$(mkdir_cmd)
 
-$(OBJ_DIR)/%.o: %.cpp makefile | dirs
-	$(CXX) $(FLAGS) $(NOFLAGS) $(MCP_FLAGS) $(E2E_FLAGS) $(INCLUDES) -c $< -o $@ -MMD -MF $(@:.o=.d)
-
-%.d: %.cpp
-  $(MAKEDEPEND)
-
 clean:
-	rm -rf $(OBJ_DIR)/src/ $(OBJ_DIR)/vendor/
+	rm -rf zig-out .zig-cache
 	$(mkdir_cmd)
 
 windows:
@@ -99,16 +59,16 @@ clean-screenshots:
 	@mkdir -p screenshots
 	rm -f screenshots/*.png
 
-e2e: clean clean-screenshots
+e2e: clean-screenshots
 	@mkdir -p screenshots
-	$(MAKE) E2E=1 $(OUTPUT_EXE)
+	$(MAKE) E2E=1 build
 	./$(OUTPUT_EXE) --e2e --headless
 
 BASELINE_DIR := screenshot-baselines/screens
 VALIDATE_DIR := /tmp/kart-screenshot-validate
 
-update-baselines: clean
-	$(MAKE) E2E=1 $(OUTPUT_EXE)
+update-baselines:
+	$(MAKE) E2E=1 build
 	@mkdir -p $(BASELINE_DIR)
 	@rm -f $(BASELINE_DIR)/*.png
 	./$(OUTPUT_EXE) --e2e --headless
@@ -118,8 +78,8 @@ update-baselines: clean
 	@echo "Review changes with: git diff --stat screenshot-baselines/"
 	@echo "Then commit: git add screenshot-baselines/ and git commit -m 'update screenshot baselines'"
 
-validate-screenshots: clean
-	$(MAKE) E2E=1 $(OUTPUT_EXE)
+validate-screenshots:
+	$(MAKE) E2E=1 build
 	@mkdir -p $(VALIDATE_DIR)
 	@rm -f $(VALIDATE_DIR)/*.png
 	./$(OUTPUT_EXE) --e2e --headless
@@ -139,7 +99,7 @@ output:
 sign:
 	codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
 
-run: 
+run: build
 	$(mkdir_cmd)
 	$(cp_resources_cmd)
 	$(run_cmd)
