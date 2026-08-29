@@ -255,8 +255,17 @@ int main(int argc, char *argv[]) {
   // Initialize settings plugin
   afterhours::settings::init<SettingsData>("Cart Chaos", "settings.json");
 
-  // Load savefile first
-  Settings::load_save_file(screenWidth, screenHeight);
+  // e2e runs neither read nor write the save file. Reading it made a
+  // screenshot depend on whatever the last run left behind -- round settings
+  // persist, and 06_round_settings_modes ends on a different mode than it
+  // started, so the suite drifted with period 4. Writing it meant a test run
+  // clobbered the player's own settings.
+  const bool e2e_mode = cmdl[{"--e2e"}];
+  if (e2e_mode) {
+    Settings::load_defaults(screenWidth, screenHeight);
+  } else {
+    Settings::load_save_file(screenWidth, screenHeight);
+  }
 
   // Determine display mode based on --headless flag
   afterhours::graphics::DisplayMode display_mode = afterhours::graphics::DisplayMode::Windowed;
@@ -292,7 +301,9 @@ int main(int argc, char *argv[]) {
 
   mcp_integration::shutdown();
 
-  Settings::write_save_file();
+  if (!e2e_mode) {
+    Settings::write_save_file();
+  }
 
   EntityHelper::delete_all_entities_NO_REALLY_I_MEAN_ALL();
 

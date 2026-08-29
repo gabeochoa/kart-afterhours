@@ -102,6 +102,9 @@ struct Settings {
   }
 
   static bool load_save_file(int width, int height);
+  // Defaults only, no disk read. e2e runs use this so a screenshot depends on
+  // the build and nothing else -- see the comment on the --e2e branch in main.
+  static void load_defaults(int width, int height);
   static void write_save_file();
   static void reset();
   static void refresh_settings();

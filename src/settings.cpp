@@ -54,6 +54,16 @@ bool Settings::load_save_file(int width, int height) {
   return true;
 }
 
+void Settings::load_defaults(int width, int height) {
+  auto &data = Settings::get();
+  data = SettingsData();
+  data.resolution.width = width;
+  data.resolution.height = height;
+  Settings::refresh_settings();
+  // Deliberately no load_round_settings(): RoundManager's constructed
+  // defaults are the deterministic starting point.
+}
+
 void Settings::write_save_file() {
   Settings::save_round_settings();
   settings::save<SettingsData>();
