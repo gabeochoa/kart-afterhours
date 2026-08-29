@@ -62,19 +62,11 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
 
 ## Tier 2 — Tests and CI
 
-- [ ] **Fix the e2e state leak before anything else here.** Round-settings screenshots drift
-  run-to-run. Root cause: `main.cpp:299` writes the save file on *every* run including
-  `--e2e --headless`; `active_round_type` and per-mode `enabled_weapons` persist to
-  `~/Library/Application Support/Cart Chaos/settings.json`; and
-  `tests/e2e/06_round_settings_modes.e2e` is asymmetric — four `click_button ">"` (which wraps over
-  4 round types) against one `click_button "<"`, leaving the mode one step behind where it started.
-  Period-4 cycle across runs. Fix at the root: isolated save dir for e2e, or skip
-  `write_save_file()` under `--e2e`. Balancing the script alone is a band-aid.
-  `06_map_selection`, `flow_03_map_selection` and `map_int_*` drift too, just under the 1%
-  threshold, via `render_round_settings_preview()` (`ui_systems.cpp:1177-1189`).
-- [ ] **`screenshot-baselines/` has never existed**, so `make ci` → `validate-screenshots` exits 1
-  at `scripts/compare_baselines.py:94` and the whole visual-regression apparatus is inert. Generate
-  and commit baselines — but only after the drift fix above, or they bake it in.
+- [x] ~~Fix the e2e state leak~~ — done. `--e2e` now starts from `SettingsData` defaults and never
+  writes the save file, so a screenshot depends on the build and nothing else. All 52 screenshots
+  are byte-identical across runs. Also stops test runs clobbering the player's own settings.
+- [x] ~~`screenshot-baselines/` has never existed~~ — done. 52 baselines committed (quantized,
+  16MB), `make ci` passes 52/52, and verified it fails at 3.09% on an injected change.
 - [ ] **Test 10 tests nothing.** `screenshots/anim_0{1..4}*.png` are byte-identical.
   `tests/e2e/10_slide_in_animation.e2e:2` claims animations are enabled, but
   `animation_control::disabled` is a plain global (`src/ui/animation_control.h:6`) never cleared
@@ -84,7 +76,9 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
   `goto_screen` for every transition, making it a duplicate of 01. This is Phase 5 of
   `docs/plans/2026-02-25-e2e-test-coverage.md`, still undelivered.
 - [ ] **`validate-screenshots` and `update-baselines` never clean `screenshots/`** — only `e2e`
-  depends on `clean-screenshots` (`makefile:70-75`), so `make e2e && make ci` copies stale PNGs.
+  depends on `clean-screenshots` (`makefile:62-65`), so `make e2e && make ci` copies stale PNGs.
+  Less dangerous now that runs are deterministic (a stale PNG equals a fresh one unless the build
+  changed), but still wrong across a rebuild.
 - [ ] **Use the assertions that already exist.** Zero scripts use `set_slider`, `expect_slider`,
   `select_dropdown`, `expect_checkbox`, `expect_focused`, `expect_no_text`, `assert_no_overflow`,
   `dump_ui`, `enter`, `escape`, `key`, `drag`, `resize`. `assert_no_overflow` is free coverage for
