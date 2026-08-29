@@ -61,21 +61,21 @@ template <typename... Args>
 inline void log_me(LogLevel level, const char *file, int line,
                    const char *format, Args &&...args) {
   vlog(level, file, line, format,
-       fmt::make_args_checked<Args...>(format, args...));
+       fmt::make_format_args(args...));
 }
 
 template <typename... Args>
 inline void log_me(LogLevel level, const char *file, int line,
                    const wchar_t *format, Args &&...args) {
   vlog(level, file, line, format,
-       fmt::make_args_checked<Args...>(format, args...));
+       fmt::make_format_args(args...));
 }
 
 template <>
 inline void log_me(LogLevel level, const char *file, int line,
                    const char *format, const char *&&args) {
   vlog(level, file, line, format,
-       fmt::make_args_checked<const char *>(format, args));
+       fmt::make_format_args(args));
 }
 
 // Thread-safe storage for log_once_per timing

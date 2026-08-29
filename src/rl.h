@@ -173,6 +173,8 @@ inline void DrawSplineLinear(const Vector2 *points, int pointCount, float thick,
 #include <magic_enum/magic_enum.hpp>
 
 #include "log.h"
+// Must precede autolayout.h below, which logs a ui::Axis.
+#include "log_axis_fmt.h"
 
 #define AFTER_HOURS_INPUT_VALIDATION_ASSERT
 #define AFTER_HOURS_ENTITY_HELPER
