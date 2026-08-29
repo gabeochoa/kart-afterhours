@@ -49,3 +49,4 @@ concept/
 # zig build
 zig-out/
 .zig-cache/
+test-failures/
