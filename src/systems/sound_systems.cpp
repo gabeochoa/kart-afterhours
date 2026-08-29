@@ -7,11 +7,9 @@
 #include "../library/sound_library.h"
 #include <afterhours/src/plugins/sound_system.h>
 #include "../weapons.h"
-#if __APPLE__
+// rl.h does its own raylib lookup on every platform. The old #else branch
+// included "../raylib.h", which does not exist, so it never compiled.
 #include "../rl.h"
-#else
-#include "../raylib.h"
-#endif
 #include <afterhours/src/plugins/ui/components.h>
 #include <afterhours/src/plugins/ui/context.h>
 #include <afterhours/src/plugins/ui/systems.h>

@@ -58,7 +58,9 @@ pub fn build(b: *std.Build) void {
     if (target.result.os.tag == .windows) {
         mod.addIncludePath(b.path("vendor/raylib"));
         mod.addObjectFile(b.path("vendor/raylib/libraylibdll.a"));
-        for ([_][]const u8{ "opengl32", "gdi32", "winmm" }) |lib| {
+        // ole32/shell32: sago's SHGetKnownFolderPath + CoTaskMemFree, used by
+        // the files plugin to find the save directory.
+        for ([_][]const u8{ "opengl32", "gdi32", "winmm", "ole32", "shell32" }) |lib| {
             mod.linkSystemLibrary(lib, .{});
         }
     } else {
