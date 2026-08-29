@@ -1,0 +1,1994 @@
+{
+"controller_xbox360": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 768
+},
+"controller_xbox_adaptive": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 768
+},
+"controller_xboxone": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 768
+},
+"controller_xboxseries": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 768
+},
+"keyboard_0": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 0
+},
+"keyboard_0_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 0
+},
+"keyboard_1": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 0
+},
+"keyboard_1_outline": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 0
+},
+"keyboard_2": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 0
+},
+"keyboard_2_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 0
+},
+"keyboard_3": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 0
+},
+"keyboard_3_outline": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 0
+},
+"keyboard_4": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 0
+},
+"keyboard_4_outline": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 0
+},
+"keyboard_5": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 0
+},
+"keyboard_5_outline": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 0
+},
+"keyboard_6": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 0
+},
+"keyboard_6_outline": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 0
+},
+"keyboard_7": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 0
+},
+"keyboard_7_outline": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 0
+},
+"keyboard_8": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 0
+},
+"keyboard_8_outline": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 0
+},
+"keyboard_9": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 0
+},
+"keyboard_9_outline": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 64
+},
+"keyboard_a": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 64
+},
+"keyboard_a_outline": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 64
+},
+"keyboard_alt": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 64
+},
+"keyboard_alt_outline": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 64
+},
+"keyboard_any": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 64
+},
+"keyboard_any_outline": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 64
+},
+"keyboard_apostrophe": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 64
+},
+"keyboard_apostrophe_outline": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 64
+},
+"keyboard_arrow_down": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 64
+},
+"keyboard_arrow_down_outline": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 64
+},
+"keyboard_arrow_left": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 64
+},
+"keyboard_arrow_left_outline": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 64
+},
+"keyboard_arrow_right": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 64
+},
+"keyboard_arrow_right_outline": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 64
+},
+"keyboard_arrow_up": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 64
+},
+"keyboard_arrow_up_outline": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 64
+},
+"keyboard_arrows": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 64
+},
+"keyboard_arrows_all": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 64
+},
+"keyboard_arrows_down": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 128
+},
+"keyboard_arrows_down_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 128
+},
+"keyboard_arrows_horizontal": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 128
+},
+"keyboard_arrows_horizontal_outline": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 128
+},
+"keyboard_arrows_left": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 128
+},
+"keyboard_arrows_left_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 128
+},
+"keyboard_arrows_none": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 128
+},
+"keyboard_arrows_right": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 128
+},
+"keyboard_arrows_right_outline": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 128
+},
+"keyboard_arrows_up": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 128
+},
+"keyboard_arrows_up_outline": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 128
+},
+"keyboard_arrows_vertical": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 128
+},
+"keyboard_arrows_vertical_outline": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 128
+},
+"keyboard_asterisk": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 128
+},
+"keyboard_asterisk_outline": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 128
+},
+"keyboard_b": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 128
+},
+"keyboard_b_outline": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 128
+},
+"keyboard_backspace": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 128
+},
+"keyboard_backspace_icon": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 128
+},
+"keyboard_backspace_icon_alternative": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 192
+},
+"keyboard_backspace_icon_alternative_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 192
+},
+"keyboard_backspace_icon_outline": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 192
+},
+"keyboard_backspace_outline": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 192
+},
+"keyboard_bracket_close": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 192
+},
+"keyboard_bracket_close_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 192
+},
+"keyboard_bracket_greater": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 192
+},
+"keyboard_bracket_greater_outline": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 192
+},
+"keyboard_bracket_less": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 192
+},
+"keyboard_bracket_less_outline": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 192
+},
+"keyboard_bracket_open": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 192
+},
+"keyboard_bracket_open_outline": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 192
+},
+"keyboard_c": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 192
+},
+"keyboard_c_outline": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 192
+},
+"keyboard_capslock": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 192
+},
+"keyboard_capslock_icon": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 192
+},
+"keyboard_capslock_icon_outline": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 192
+},
+"keyboard_capslock_outline": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 192
+},
+"keyboard_caret": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 192
+},
+"keyboard_caret_outline": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 256
+},
+"keyboard_colon": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 256
+},
+"keyboard_colon_outline": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 256
+},
+"keyboard_comma": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 256
+},
+"keyboard_comma_outline": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 256
+},
+"keyboard_command": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 256
+},
+"keyboard_command_outline": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 256
+},
+"keyboard_ctrl": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 256
+},
+"keyboard_ctrl_outline": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 256
+},
+"keyboard_d": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 256
+},
+"keyboard_d_outline": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 256
+},
+"keyboard_delete": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 256
+},
+"keyboard_delete_outline": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 256
+},
+"keyboard_e": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 256
+},
+"keyboard_e_outline": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 256
+},
+"keyboard_end": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 256
+},
+"keyboard_end_outline": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 256
+},
+"keyboard_enter": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 256
+},
+"keyboard_enter_outline": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 256
+},
+"keyboard_equals": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 320
+},
+"keyboard_equals_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 320
+},
+"keyboard_escape": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 320
+},
+"keyboard_escape_outline": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 320
+},
+"keyboard_exclamation": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 320
+},
+"keyboard_exclamation_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 320
+},
+"keyboard_f": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 320
+},
+"keyboard_f1": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 320
+},
+"keyboard_f10": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 320
+},
+"keyboard_f10_outline": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 320
+},
+"keyboard_f11": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 320
+},
+"keyboard_f11_outline": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 320
+},
+"keyboard_f12": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 320
+},
+"keyboard_f12_outline": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 320
+},
+"keyboard_f1_outline": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 320
+},
+"keyboard_f2": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 320
+},
+"keyboard_f2_outline": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 320
+},
+"keyboard_f3": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 320
+},
+"keyboard_f3_outline": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 320
+},
+"keyboard_f4": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 384
+},
+"keyboard_f4_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 384
+},
+"keyboard_f5": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 384
+},
+"keyboard_f5_outline": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 384
+},
+"keyboard_f6": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 384
+},
+"keyboard_f6_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 384
+},
+"keyboard_f7": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 384
+},
+"keyboard_f7_outline": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 384
+},
+"keyboard_f8": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 384
+},
+"keyboard_f8_outline": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 384
+},
+"keyboard_f9": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 384
+},
+"keyboard_f9_outline": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 384
+},
+"keyboard_f_outline": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 384
+},
+"keyboard_function": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 384
+},
+"keyboard_function_outline": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 384
+},
+"keyboard_g": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 384
+},
+"keyboard_g_outline": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 384
+},
+"keyboard_h": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 384
+},
+"keyboard_h_outline": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 384
+},
+"keyboard_home": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 448
+},
+"keyboard_home_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 448
+},
+"keyboard_i": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 448
+},
+"keyboard_i_outline": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 448
+},
+"keyboard_insert": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 448
+},
+"keyboard_insert_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 448
+},
+"keyboard_j": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 448
+},
+"keyboard_j_outline": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 448
+},
+"keyboard_k": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 448
+},
+"keyboard_k_outline": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 448
+},
+"keyboard_l": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 448
+},
+"keyboard_l_outline": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 448
+},
+"keyboard_m": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 448
+},
+"keyboard_m_outline": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 448
+},
+"keyboard_minus": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 448
+},
+"keyboard_minus_outline": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 448
+},
+"keyboard_n": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 448
+},
+"keyboard_n_outline": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 448
+},
+"keyboard_numlock": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 448
+},
+"keyboard_numlock_outline": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 512
+},
+"keyboard_numpad_enter": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 512
+},
+"keyboard_numpad_enter_outline": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 512
+},
+"keyboard_numpad_plus": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 512
+},
+"keyboard_numpad_plus_outline": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 512
+},
+"keyboard_o": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 512
+},
+"keyboard_o_outline": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 512
+},
+"keyboard_option": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 512
+},
+"keyboard_option_outline": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 512
+},
+"keyboard_p": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 512
+},
+"keyboard_p_outline": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 512
+},
+"keyboard_page_down": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 512
+},
+"keyboard_page_down_outline": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 512
+},
+"keyboard_page_up": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 512
+},
+"keyboard_page_up_outline": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 512
+},
+"keyboard_period": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 512
+},
+"keyboard_period_outline": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 512
+},
+"keyboard_plus": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 512
+},
+"keyboard_plus_outline": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 512
+},
+"keyboard_printscreen": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 576
+},
+"keyboard_printscreen_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 576
+},
+"keyboard_q": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 576
+},
+"keyboard_q_outline": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 576
+},
+"keyboard_question": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 576
+},
+"keyboard_question_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 576
+},
+"keyboard_quote": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 576
+},
+"keyboard_quote_outline": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 576
+},
+"keyboard_r": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 576
+},
+"keyboard_r_outline": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 576
+},
+"keyboard_return": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 576
+},
+"keyboard_return_outline": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 576
+},
+"keyboard_s": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 576
+},
+"keyboard_s_outline": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 576
+},
+"keyboard_semicolon": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 576
+},
+"keyboard_semicolon_outline": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 576
+},
+"keyboard_shift": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 576
+},
+"keyboard_shift_icon": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 576
+},
+"keyboard_shift_icon_outline": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 576
+},
+"keyboard_shift_outline": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 640
+},
+"keyboard_slash_back": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 640
+},
+"keyboard_slash_back_outline": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 640
+},
+"keyboard_slash_forward": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 640
+},
+"keyboard_slash_forward_outline": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 640
+},
+"keyboard_space": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 640
+},
+"keyboard_space_icon": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 640
+},
+"keyboard_space_icon_outline": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 640
+},
+"keyboard_space_outline": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 640
+},
+"keyboard_t": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 640
+},
+"keyboard_t_outline": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 640
+},
+"keyboard_tab": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 640
+},
+"keyboard_tab_icon": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 640
+},
+"keyboard_tab_icon_alternative": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 640
+},
+"keyboard_tab_icon_alternative_outline": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 640
+},
+"keyboard_tab_icon_outline": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 640
+},
+"keyboard_tab_outline": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 640
+},
+"keyboard_tilde": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 640
+},
+"keyboard_tilde_outline": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 640
+},
+"keyboard_u": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 704
+},
+"keyboard_u_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 704
+},
+"keyboard_v": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 704
+},
+"keyboard_v_outline": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 704
+},
+"keyboard_w": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 704
+},
+"keyboard_w_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 704
+},
+"keyboard_win": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 704
+},
+"keyboard_win_outline": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 704
+},
+"keyboard_x": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 704
+},
+"keyboard_x_outline": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 704
+},
+"keyboard_y": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 704
+},
+"keyboard_y_outline": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 704
+},
+"keyboard_z": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 704
+},
+"keyboard_z_outline": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 704
+},
+"mouse": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 704
+},
+"mouse_horizontal": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 704
+},
+"mouse_left": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 704
+},
+"mouse_left_outline": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 704
+},
+"mouse_move": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 704
+},
+"mouse_outline": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 768
+},
+"mouse_right": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 768
+},
+"mouse_right_outline": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 768
+},
+"mouse_scroll": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 768
+},
+"mouse_scroll_down": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 768
+},
+"mouse_scroll_down_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 768
+},
+"mouse_scroll_outline": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 768
+},
+"mouse_scroll_up": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 768
+},
+"mouse_scroll_up_outline": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 768
+},
+"mouse_scroll_vertical": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 768
+},
+"mouse_scroll_vertical_outline": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 768
+},
+"mouse_small": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 768
+},
+"mouse_vertical": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 768
+},
+"xbox_button_a": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 768
+},
+"xbox_button_a_outline": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 768
+},
+"xbox_button_b": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 832
+},
+"xbox_button_b_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 832
+},
+"xbox_button_back": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 832
+},
+"xbox_button_back_icon": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 832
+},
+"xbox_button_back_icon_outline": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 832
+},
+"xbox_button_back_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 832
+},
+"xbox_button_color_a": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 832
+},
+"xbox_button_color_a_outline": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 832
+},
+"xbox_button_color_b": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 832
+},
+"xbox_button_color_b_outline": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 832
+},
+"xbox_button_color_x": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 832
+},
+"xbox_button_color_x_outline": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 832
+},
+"xbox_button_color_y": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 832
+},
+"xbox_button_color_y_outline": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 832
+},
+"xbox_button_menu": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 832
+},
+"xbox_button_menu_outline": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 832
+},
+"xbox_button_share": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 832
+},
+"xbox_button_share_outline": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 832
+},
+"xbox_button_start": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 832
+},
+"xbox_button_start_icon": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 896
+},
+"xbox_button_start_icon_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 896
+},
+"xbox_button_start_outline": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 896
+},
+"xbox_button_view": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 896
+},
+"xbox_button_view_outline": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 896
+},
+"xbox_button_x": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 896
+},
+"xbox_button_x_outline": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 896
+},
+"xbox_button_y": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 896
+},
+"xbox_button_y_outline": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 896
+},
+"xbox_dpad": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 896
+},
+"xbox_dpad_all": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 896
+},
+"xbox_dpad_down": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 896
+},
+"xbox_dpad_down_outline": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 896
+},
+"xbox_dpad_horizontal": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 896
+},
+"xbox_dpad_horizontal_outline": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 896
+},
+"xbox_dpad_left": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 896
+},
+"xbox_dpad_left_outline": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 896
+},
+"xbox_dpad_none": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 896
+},
+"xbox_dpad_right": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 896
+},
+"xbox_dpad_right_outline": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 960
+},
+"xbox_dpad_round": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 960
+},
+"xbox_dpad_round_all": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 960
+},
+"xbox_dpad_round_down": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 960
+},
+"xbox_dpad_round_horizontal": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 960
+},
+"xbox_dpad_round_left": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 960
+},
+"xbox_dpad_round_right": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 960
+},
+"xbox_dpad_round_up": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 960
+},
+"xbox_dpad_round_vertical": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 960
+},
+"xbox_dpad_up": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 960
+},
+"xbox_dpad_up_outline": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 960
+},
+"xbox_dpad_vertical": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 960
+},
+"xbox_dpad_vertical_outline": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 960
+},
+"xbox_guide": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 960
+},
+"xbox_guide_outline": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 960
+},
+"xbox_lb": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 960
+},
+"xbox_lb_outline": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 960
+},
+"xbox_ls": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 960
+},
+"xbox_ls_outline": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 960
+},
+"xbox_lt": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 1024
+},
+"xbox_lt_outline": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 1024
+},
+"xbox_rb": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 1024
+},
+"xbox_rb_outline": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 1024
+},
+"xbox_rs": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 1024
+},
+"xbox_rs_outline": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 1024
+},
+"xbox_rt": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 1024
+},
+"xbox_rt_outline": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 1024
+},
+"xbox_stick_l": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 1024
+},
+"xbox_stick_l_down": {
+"h": 64,
+"w": 64,
+"x": 576,
+"y": 1024
+},
+"xbox_stick_l_horizontal": {
+"h": 64,
+"w": 64,
+"x": 640,
+"y": 1024
+},
+"xbox_stick_l_left": {
+"h": 64,
+"w": 64,
+"x": 704,
+"y": 1024
+},
+"xbox_stick_l_press": {
+"h": 64,
+"w": 64,
+"x": 768,
+"y": 1024
+},
+"xbox_stick_l_right": {
+"h": 64,
+"w": 64,
+"x": 832,
+"y": 1024
+},
+"xbox_stick_l_up": {
+"h": 64,
+"w": 64,
+"x": 896,
+"y": 1024
+},
+"xbox_stick_l_vertical": {
+"h": 64,
+"w": 64,
+"x": 960,
+"y": 1024
+},
+"xbox_stick_r": {
+"h": 64,
+"w": 64,
+"x": 1024,
+"y": 1024
+},
+"xbox_stick_r_down": {
+"h": 64,
+"w": 64,
+"x": 1088,
+"y": 1024
+},
+"xbox_stick_r_horizontal": {
+"h": 64,
+"w": 64,
+"x": 1152,
+"y": 1024
+},
+"xbox_stick_r_left": {
+"h": 64,
+"w": 64,
+"x": 0,
+"y": 1088
+},
+"xbox_stick_r_press": {
+"h": 64,
+"w": 64,
+"x": 64,
+"y": 1088
+},
+"xbox_stick_r_right": {
+"h": 64,
+"w": 64,
+"x": 128,
+"y": 1088
+},
+"xbox_stick_r_up": {
+"h": 64,
+"w": 64,
+"x": 192,
+"y": 1088
+},
+"xbox_stick_r_vertical": {
+"h": 64,
+"w": 64,
+"x": 256,
+"y": 1088
+},
+"xbox_stick_side_l": {
+"h": 64,
+"w": 64,
+"x": 320,
+"y": 1088
+},
+"xbox_stick_side_r": {
+"h": 64,
+"w": 64,
+"x": 384,
+"y": 1088
+},
+"xbox_stick_top_l": {
+"h": 64,
+"w": 64,
+"x": 448,
+"y": 1088
+},
+"xbox_stick_top_r": {
+"h": 64,
+"w": 64,
+"x": 512,
+"y": 1088
+}
+}

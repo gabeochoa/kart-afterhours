@@ -15,6 +15,7 @@
 #include "library/shader_library.h"
 #include "library/sound_library.h"
 #include "library/texture_library.h"
+#include "library/control_atlas.h"
 #include "translation_manager.h"
 #include <afterhours/src/plugins/camera.h>
 #include <afterhours/src/plugins/files.h>
@@ -119,17 +120,11 @@ Preload &Preload::init(const char *title, afterhours::graphics::DisplayMode mode
       files::get_resource_path("shaders", "text_mask.fs").string().c_str(),
       "text_mask");
 
-  files::for_resources_in_folder(
-      "images", "controls/keyboard_default",
-      [](const std::string &name, const std::string &filename) {
-        TextureLibrary::get().load(filename.c_str(), name.c_str());
-      });
-
-  files::for_resources_in_folder(
-      "images", "controls/xbox_default",
-      [](const std::string &name, const std::string &filename) {
-        TextureLibrary::get().load(filename.c_str(), name.c_str());
-      });
+  // One atlas instead of 332 individual textures. Regenerate after changing
+  // the source PNGs with: python3 scripts/pack_atlas.py
+  ControlAtlas::get().load(
+      files::get_resource_path("images", "controls_atlas.png").string(),
+      files::get_resource_path("images", "controls_atlas.json").string());
 
   TextureLibrary::get().load(
       files::get_resource_path("images", "dollar_sign.png").string().c_str(),
