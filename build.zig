@@ -36,6 +36,12 @@ pub fn build(b: *std.Build) void {
         "-ftime-trace",
         "-Ivendor/",
         "-Isrc/",
+        // Must be a build flag, not a #define in a header. It used to live in
+        // src/log.h, so any TU that pulled <fmt/format.h> without going
+        // through log.h -- ui_systems.cpp -- got the non-header-only fmt and
+        // referenced an extern fmt::vformat that nothing defines. -O0 kept the
+        // symbol alive; any optimised build failed to link.
+        "-DFMT_HEADER_ONLY",
         "-DAFTER_HOURS_USE_RAYLIB",
         "-DAFTER_HOURS_UI_SINGLE_COLLECTION",
     }) catch @panic("OOM");

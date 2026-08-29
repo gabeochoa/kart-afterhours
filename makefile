@@ -7,6 +7,15 @@
 # makefile is no longer the place -- build that variant by hand.
 
 ZIG_FLAGS :=
+
+# Builds are Debug by default: -O0 plus zig's UBSan instrumentation. That is
+# ~2.8x slower than release (e2e suite 35s vs 12s) and a 47MB binary vs 4.5MB.
+# Use RELEASE=1 for anything where speed matters -- profiling, playtesting,
+# shipping. Debug stays the default so asserts and UBSan keep catching things.
+ifdef RELEASE
+	ZIG_FLAGS += -Doptimize=ReleaseFast
+endif
+
 ifdef MCP
 	ZIG_FLAGS += -Dmcp=true
 endif

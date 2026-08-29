@@ -1,7 +1,8 @@
 
 #pragma once
 
-#define FMT_HEADER_ONLY
+// FMT_HEADER_ONLY now comes from build.zig so every TU agrees. Defining it
+// here only covered TUs that include this header.
 #include <fmt/args.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
