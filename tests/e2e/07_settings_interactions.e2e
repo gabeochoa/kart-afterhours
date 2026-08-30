@@ -7,7 +7,7 @@ goto_screen Settings
 wait 0.2
 
 # Verify all settings controls are visible
-expect_text "back"
+expect_text_i "back"
 expect_text "master volume"
 expect_text "music volume"
 expect_text "sfx volume"
@@ -37,7 +37,7 @@ wait 0.2
 screenshot settings_int_05_postproc_restored
 
 # Navigate back
-click_button "back"
+click_ui btn_back
 wait 0.2
 assert_ui btn_play hidden=false
 screenshot settings_int_06_back_to_main

@@ -41,6 +41,29 @@ whose children are often taller than the row, producing
 
 **Ideal:** `checkbox_row` auto-sizes to its children, or the children respect the parent height.
 
+### `with_opacity()` paints a dark rectangle over a transparent element
+`colors::opacity_pct` (`plugins/color.h:148`) **assigns** `a = 255 * pct` rather than
+scaling the colour's existing alpha. The background fill path
+(`plugins/ui/rendering.h:1531-1540`) calls it whenever `effective_opacity < 1`, then draws
+if `col.a > 0`.
+
+So an element with `with_transparent_bg()` — which is `Color{0,0,0,0}`
+(`component_config.h:347`) — plus any `with_opacity(v)` below 1 gets its alpha *raised*
+from 0 to `255v` and is filled with **black at that alpha**. Asking for 55% opacity on a
+transparent label paints a 55%-black box behind it.
+
+Verified: a `with_transparent_bg().with_opacity(0.55f)` div over the `#1B1040` panel
+sampled `(9,5,22)`; the identical div without the opacity call sampled the panel colour.
+0.85 came out darker than 0.55, which is the giveaway — higher requested opacity, more
+black.
+
+**Current workaround (in place):** never combine `with_opacity` with a transparent
+background. `round_rules::weapon_row` (`src/ui/ui_systems.cpp`) dims disabled weapon rows
+by choosing a muted text/tint colour instead.
+
+**Ideal:** `opacity_pct` should be `a = color.a * pct`. That is the meaning every caller
+already assumes, and it makes the `col.a > 0` guard actually skip transparent fills.
+
 ### `with_slide_in()` config option
 Open as originally written, but effectively obsoleted: `Anim::on_appear().opacity().translate_x()`
 covers the use case now. The real remaining item is on our side — adopt the declarative API and

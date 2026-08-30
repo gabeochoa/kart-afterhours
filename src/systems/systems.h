@@ -117,8 +117,11 @@ struct RenderSpritesWithShaders
         {&transform, &hasSprite, &hasColor, &hasShader});
   }
 
-  virtual void once(float) const override {
-    // Render all batches after collecting all entities
+  // after(), not once(): SystemManager::render calls once() *before* the
+  // entity loop, so rendering there drew the previous frame's batch. The batch
+  // holds raw component pointers, so one destroyed entity -- an eliminated
+  // player -- made every one of them dangle.
+  virtual void after(float) const override {
     render_all_batches();
     shader_batches.clear();
     uniforms_updated_this_frame = false;
@@ -800,6 +803,12 @@ struct UpdateColorBasedOnEntityID : System<HasEntityIDBasedColor> {
 };
 
 struct MatchKartsToPlayers : System<input::ProvidesMaxGamepadID> {
+
+  // Mid-round this would see an eliminated player as a gamepad with no kart
+  // and rebuild them with a full stock of lives.
+  virtual bool should_run(float) override {
+    return GameStateManager::get().is_menu_active();
+  }
 
   virtual void for_each_with(Entity &,
                              input::ProvidesMaxGamepadID &maxGamepadID,

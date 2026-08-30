@@ -12,53 +12,70 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
 
 ## Tier 1 — Broken
 
-- [ ] **Menu and UI sound is dead.** `register_sound_systems` (`src/systems/sound_systems.cpp:159`)
-  is defined and declared but never called — `main.cpp:18` includes the header, no call site exists.
-  Silently disables `BackgroundMusic` (menu music never plays), `UISoundBindingSystem`,
-  `UIClickSounds` and `CarRumble`. Lost in `e373360` when the sound system moved to an afterhours
-  plugin. Weapon/honk/boost sounds still work — those go through `sound_system::PlaySoundRequest`,
-  which *is* registered (`main.cpp:77`).
-- [ ] **`CarRumble` has an empty body** — `src/systems/sound_systems.cpp:21-24`, `for_each_with`
-  contains no statements.
-- [ ] **E2E failures cannot fail anything.** `e2e_integration::has_failed()`
-  (`src/e2e_integration.h:125`) is defined and never called. `main.cpp:240-243` prints results and
-  returns 0. A failed `expect_text`, a `click_button` that hits nothing, a 30s timeout — all exit 0.
-  `make e2e` is incapable of failing. Return non-zero from `main` when `has_failed()`.
-- [ ] **Per-round state never resets.** `RoundManager::reset_for_new_round()`
-  (`src/round_settings.h:336-341`) resets only countdown / round time / temp data on the *active*
-  settings object. `HasKillCountTracker::kills`, `HasMultipleLives::num_lives_remaining`,
-  `HasHippoCollection::hippos_collected` and `HasHealth::amount` are set once in `make_car`
-  (`src/makers.cpp:262`) and never cleared. Cars outlive rounds, so round 2+ starts with
-  carried-over scores.
-- [ ] **Cross-mode UB in TagAndGo.** `HandleTagAndGoTagTransfer`
-  (`src/systems/systems_tagandgo.h:27`) guards on `is_game_active()` and `is_tagger` but not on
-  `active_round_type == TagAndGo`, then calls `get_active_rt<RoundTagAndGoSettings>()`.
-  `get_active_rt` (`src/round_settings.h:215-232`) is a 4-way switch where every branch is the
-  identical unchecked `static_cast<T&>` — it reads as type-checking and isn't. `is_tagger` is only
-  cleared by `reset_temp_data()` on the active settings, so: play TagAndGo, switch to Lives, and a
-  stale tagger makes this reinterpret a `RoundLivesSettings` as a `RoundTagAndGoSettings`.
-- [ ] **Single-player Lives mode ends instantly.** `CheckLivesWinFFA`
-  (`src/systems/systems_lives.h:32`) declares a winner at `players_with_lives.size() == 1`, and
-  `main.cpp:94` always spawns exactly one player.
-- [ ] **`MarkEntitiesWithShaders` is registered twice** — `src/main.cpp:151` and `:169`.
-- [ ] **`num_starting_lives` is read at car-creation time** (`src/makers.cpp:265`), so changing the
-  Lives setting after players are added has no effect on existing cars.
-- [ ] **Settings only persist on exit.** `Settings::write_save_file()` is called from just
-  `main.cpp:299` and `ui_systems.cpp:2400` (language change). Volume, fullscreen, post-processing,
-  resolution and all round settings are lost on crash or force-quit.
-- [ ] **`strings::pre_translation` is an unlinkable declaration.** `src/strings.h:82` declares it
-  `extern`; nothing defines it. `strings::get_string()` (`:85-100`) reads it, so any call is a link
-  error. Zero callers — delete both.
-- [ ] **Japanese string contains a Korean character.** `src/translation_manager.cpp:337` uses
-  `"鬼: {:.1f}초"`. `초` is Korean for "seconds"; Japanese wants `秒`. Copy-paste from the Korean
-  table at `:231`.
-- [ ] **Round-length dropdowns show raw enum identifiers.** `src/ui/ui_systems.cpp:1762` and `:1799`
-  render `magic_enum::enum_names<RoundSettings::TimeOptions>()` directly, so the user sees
-  `Seconds_10`, `Seconds_30`, `Minutes_1`.
+- [ ] **`RenderSpritesWithShaders` renders the previous frame's pointers.** Fixed, but the shape
+  is worth remembering: `for_each_with` stored raw `const Transform*` / `HasShader*` etc. in a
+  batch and `once()` rendered it, and `SystemManager::render` calls `once()` *before* the entity
+  loop (`vendor/afterhours/src/core/system.h:513`). So the batch was always a frame stale, and
+  destroying any entity with a sprite and a shader left every pointer in it dangling. Unreachable
+  until eliminating a player could actually destroy a kart. Now renders from `after()`.
+  Covered by `tests/e2e/14`, which segfaults without the fix. **Audit the other systems that
+  cache component pointers across a hook boundary** — this one was found by accident.
+- [ ] **`MatchKartsToPlayers` can rebuild eliminated players mid-round.** Guarded to
+  `is_menu_active()` (`systems.h:802`), because `make_player` puts `PlayerID` on the car itself
+  and `ProcessDeath` destroys the car when lives run out. **Not covered:** with no gamepad,
+  `ProvidesMaxGamepadID::count()` is 1, so after the only player dies `size() + 1 == count()` is
+  true and the function returns early. Reaching the respawn needs two eliminations, so at least
+  two karts. Reverting the guard leaves all 14 passing.
+- [ ] **The "we are good" early return is off by one.** `existing_players.size() + 1 ==
+  maxGamepadID.count()` with `count() == max_gamepad_available + 1` reduces to `players == max`,
+  but steady state is `players == max + 1`. So the guard is essentially never true when things
+  are correct, and true exactly once when a player is missing. Noticed while testing the above;
+  not touched.
+
+- [x] ~~**Menu and UI sound is dead.**~~ — done. `register_sound_systems` is called again, placed
+  after `register_ui_systems` so `UIClickSounds` reads this frame's `HasClickListener.down` rather
+  than last frame's. **Still unheard:** `preload.cpp` puts `InitAudioDevice()` inside the
+  `Windowed` branch, so headless never opens an audio device and no test can confirm playback.
+  Needs a windowed listen.
+- [x] ~~**`CarRumble` has an empty body**~~ — deleted, along with its registration.
+- [x] ~~**E2E failures cannot fail anything.**~~ — done. `main` returns `has_failed() ? 1 : 0`.
+  Verified in both directions with a deliberately broken script 02, chosen over the last script
+  specifically to check that a mid-suite failure is not swallowed.
+- [x] ~~**Per-round state never resets.**~~ — done. `RoundManager::reset_car_trackers()`
+  (`round_settings.h:325`) clears lives, kills, hippos and health on every car at round start.
+  Covered by `tests/e2e/11_two_round_lives_reset.e2e`.
+- [x] ~~**Cross-mode UB in TagAndGo.**~~ — fixed, **but not under a discriminating test.**
+  `tests/e2e/12` exercises the mode switch and holds the stale `is_tagger` flag, but with one car
+  the `runners` query is empty, so the `find_if` predicate never runs and the bad cast is never
+  dereferenced — reverting both halves of the fix leaves all 14 passing. Closing the gap needs a
+  second car with `HasTagAndGoTracking` positioned to collide.
+- [x] ~~**Single-player Lives mode ends instantly.**~~ — done. `CheckLivesWinFFA` tracks
+  `most_contenders_seen` and only declares a one-survivor winner if there were ever two.
+  Covered by `tests/e2e/13`.
+- [x] ~~**`MarkEntitiesWithShaders` is registered twice**~~ — one registration remains.
+- [x] ~~**`num_starting_lives` is read at car-creation time**~~ — moot. `reset_car_trackers`
+  re-reads it from settings at the start of every round.
+- [x] ~~**Settings only persist on exit.**~~ — done. `Settings::save_if_changed()` is polled once
+  a second from `main.cpp`. It diffs against the last write rather than using a dirty flag,
+  because `get_fullscreen_enabled` and `get_post_processing_enabled` return a `bool&` that
+  callers mutate without going through a setter. Off under `--e2e` via
+  `Settings::autosave_enabled`, so a test run cannot clobber the player's own file.
+- [ ] **`strings::pre_translation` is an unlinkable declaration.** `src/strings.h:97` declares it
+  `extern`; nothing defines it. `strings::get_string()` (`:101-115`) reads it, so any call is a
+  link error. Zero callers — delete both.
+- [x] ~~**Japanese string contains a Korean character.**~~ — `translation_manager.cpp:410` now
+  reads `"鬼: {}秒"`.
+- [x] ~~**Round-length dropdowns show raw enum identifiers.**~~ — done. The dropdowns are gone;
+  the clock is a stepper reading `round_rules::time_option_label`, the one place the option is
+  put into words, and it is translated. The two duplicate `"10s"/"30s"/"1m"` switches in
+  `render_round_settings_preview` now call it too.
 - [ ] **Untranslated UI text** — renders English regardless of language: `"Team Mode"`
   (`ui_systems.cpp:1096`), `"No players"` (`:1042`), `"Score: "` (`:2528`), `"Team A"`/`"Team B"`
-  (`:1151,1153`), slot labels (`:653-660`), round type names (`:1186`, `:1863`), weapon names
-  (`weapons.h:197`), hardcoded `"10s"/"30s"/"1m"` (`:1240-1250`, `:1284-1294`).
+  (`:1151,1153`), slot labels (`:653-660`).
+  Round type names, weapon names and the hardcoded `"10s"/"30s"/"1m"` are done (see
+  `strings::i18n::round_type_*`, `weapon_*`, `time_*`). Still English-only on the rules screen:
+  the mode and weapon one-liners, the `HOW DO WE WIN` heading, the row labels and the panel
+  header/footer — new copy, added as literals the way the character-select screen did.
 
 ## Tier 2 — Tests and CI
 

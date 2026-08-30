@@ -54,6 +54,21 @@ enum struct i18n {
   // Round time
   round_length,
   unlimited,
+  time_10_seconds,
+  time_30_seconds,
+  time_1_minute,
+
+  // Round type names, as the player reads them on the rules screen
+  round_type_lives,
+  round_type_kills,
+  round_type_hippo,
+  round_type_tag,
+
+  // Weapon names
+  weapon_cannon,
+  weapon_shotgun,
+  weapon_sniper,
+  weapon_machine_gun,
 
   // AI difficulty settings
   easy,

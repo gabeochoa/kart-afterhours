@@ -64,9 +64,25 @@ void Settings::load_defaults(int width, int height) {
   // defaults are the deterministic starting point.
 }
 
+bool Settings::autosave_enabled = true;
+
+static std::string last_written_json;
+
 void Settings::write_save_file() {
+  if (!Settings::autosave_enabled)
+    return;
   Settings::save_round_settings();
   settings::save<SettingsData>();
+  last_written_json = Settings::get().to_json().dump();
+}
+
+void Settings::save_if_changed() {
+  if (!Settings::autosave_enabled)
+    return;
+  Settings::save_round_settings();
+  if (Settings::get().to_json().dump() == last_written_json)
+    return;
+  Settings::write_save_file();
 }
 
 void Settings::reset() {

@@ -1,0 +1,40 @@
+# Killing the last player must end the round, not crash
+#
+# What this covers: RenderSpritesWithShaders collected raw component pointers
+# in for_each_with and rendered them from once(). SystemManager::render calls
+# once() *before* the entity loop (core/system.h:513), so it was always drawing
+# the previous frame's batch -- fine until an entity is destroyed between
+# frames, at which point every pointer in it dangles. Eliminating a player is
+# the first thing in the game that destroys a kart, so this was unreachable
+# until CheckLivesWinFFA's solo-round guard landed. Before the fix this script
+# segfaults in HasShader::has_shader.
+#
+# What this does NOT cover: the MatchKartsToPlayers menu-only guard, added in
+# the same change. Verified by reverting it -- all 14 still pass. With no
+# gamepad connected ProvidesMaxGamepadID::count() is 1, so once the only player
+# dies "size() + 1 == count()" is true and the function returns before it can
+# rebuild anyone. Reaching that path needs at least two eliminations, so at
+# least two karts, and e2e spawns exactly one. Left uncovered rather than
+# faked.
+#
+# No screenshots: the kart is live and moving.
+
+disable_animations
+
+set_round_type Lives
+goto_screen Main
+wait 0.2
+
+start_round
+wait_frames 2
+expect_state Playing
+expect_tracker lives 1
+
+# Lives 1 -> 0 -> the kart is destroyed.
+set_tracker health 0
+wait_frames 10
+
+expect_state Menu
+
+goto_screen Main
+wait 0.2

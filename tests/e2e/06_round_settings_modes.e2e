@@ -1,37 +1,67 @@
-# Round Settings Mode Switching
-# Tests that clicking > and < on the navigation bar cycles through modes
-# Does not depend on which mode is initially active
+# Round Settings: pick a mode by name
+#
+# The old script clicked ">" four times and "<" once. Asymmetric, so every run
+# left active_round_type one step from where it found it -- and that persists
+# to the save file, which is what made the screenshots drift (TODO 14).
+#
+# The four tabs are addressable, so every selection here is absolute: the
+# screen ends in the same mode whatever it started in. Assertions are on
+# debug names, and on rows that only exist in one mode, so a tab that did not
+# actually switch fails rather than passing on a screenshot nobody reads.
 
 disable_animations
 
 goto_screen RoundSettings
 wait 0.2
-expect_text "select map"
-expect_text "back"
-screenshot rs_01_initial
+assert_ui btn_select_map hidden=false
+assert_ui btn_back hidden=false
 
-# Click > four times to cycle through all modes and back
-click_button ">"
+# --- SURVIVAL: lives, and no clock (Lives is the one mode with no timer) ---
+click_ui tab_mode_lives
 wait 0.2
-screenshot rs_02_mode_2
+assert_ui row_lives hidden=false
+assert_ui row_teams hidden=false
+screenshot rs_01_survival
 
-click_button ">"
+# --- MOST KILLS: clock, no lives row ---
+click_ui tab_mode_kills
 wait 0.2
-screenshot rs_03_mode_3
+assert_ui row_clock hidden=false
+assert_ui row_show_clock hidden=false
+screenshot rs_02_kills
 
-click_button ">"
+# --- HIPPO GRAB: clock plus a hippo count ---
+click_ui tab_mode_hippo
 wait 0.2
-screenshot rs_04_mode_4
+assert_ui row_hippos hidden=false
+assert_ui row_clock hidden=false
+screenshot rs_03_hippo
 
-click_button ">"
+# --- TAG: clock plus tag backs ---
+click_ui tab_mode_tag
 wait 0.2
-screenshot rs_05_mode_wrap
+assert_ui row_tag_backs hidden=false
+assert_ui row_clock hidden=false
+screenshot rs_04_tag
 
-# Click < to go back one mode
-click_button "<"
+# --- The clock stepper reads words, not "Minutes_1" (TODO 11).
+# Tag is the only mode on screen with one stepper, so the arrow is unambiguous.
+# Stepped forward then back: round settings persist to the save file, and a
+# script that leaves them moved is the drift this file used to cause.
+click_ui stepper_right
 wait 0.2
-screenshot rs_06_mode_back
+screenshot rs_05_clock_stepped
+click_ui stepper_left
+wait 0.2
 
-# Return to main
+# --- Weapons: two slots, and the cap is visible rather than silent.
+# Toggled and untoggled for the same reason. A pick that is locked by the cap
+# is a no-op both times, so either way the set is restored.
+click_ui weapon_well_3
+wait 0.2
+screenshot rs_06_weapon_toggled
+click_ui weapon_well_3
+wait 0.2
+
 goto_screen Main
 wait 0.2

@@ -106,6 +106,10 @@ struct Settings {
   // the build and nothing else -- see the comment on the --e2e branch in main.
   static void load_defaults(int width, int height);
   static void write_save_file();
+  // Compares against the last write rather than using a dirty flag, because
+  // get_fullscreen_enabled and get_post_processing_enabled hand out a bool&.
+  static void save_if_changed();
+  static bool autosave_enabled;
   static void reset();
   static void refresh_settings();
   static int get_screen_width();

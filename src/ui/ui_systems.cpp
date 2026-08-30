@@ -938,6 +938,463 @@ inline void slot_card(UIContext<InputAction> &context, Entity &cell,
 
 } // namespace character_select
 
+// ----------------------------------------------------------------------------
+// Round rules ("HOW DO WE WIN") -- see docs/ui-mock.html section 03.
+//
+// Tabs replaced a </> stepper: cycling meant 06_round_settings_modes.e2e left
+// active_round_type one step from where it found it on every run, and round
+// settings persist to the save file (TODO 14).
+//
+// Determinism: no clock, no rand(), no unordered iteration. Every label is a
+// pure function of RoundManager state.
+// ----------------------------------------------------------------------------
+namespace round_rules {
+
+namespace cs = character_select;
+using afterhours::Color;
+
+constexpr Color orchid{224, 107, 221, 255};
+constexpr Color body_text{230, 220, 247, 255};
+constexpr Color knob_off{143, 131, 184, 255};
+
+// makers.cpp has exactly two firing slots: ShootLeft and ShootRight.
+constexpr size_t max_weapon_slots = 2;
+
+inline std::string text_for(strings::i18n key) {
+  return translation_manager::make_translatable_string(key).get_text();
+}
+
+inline std::string mode_name(RoundType type) {
+  switch (type) {
+  case RoundType::Lives:
+    return text_for(strings::i18n::round_type_lives);
+  case RoundType::Kills:
+    return text_for(strings::i18n::round_type_kills);
+  case RoundType::Hippo:
+    return text_for(strings::i18n::round_type_hippo);
+  case RoundType::TagAndGo:
+    return text_for(strings::i18n::round_type_tag);
+  }
+  return text_for(strings::i18n::unknown);
+}
+
+// The one place the clock is put into words. There used to be three copies,
+// all emitting different text, plus a dropdown showing "Minutes_1" (TODO 11).
+inline std::string time_option_label(RoundSettings::TimeOptions option) {
+  switch (option) {
+  case RoundSettings::TimeOptions::Unlimited:
+    return text_for(strings::i18n::unlimited);
+  case RoundSettings::TimeOptions::Seconds_10:
+    return text_for(strings::i18n::time_10_seconds);
+  case RoundSettings::TimeOptions::Seconds_30:
+    return text_for(strings::i18n::time_30_seconds);
+  case RoundSettings::TimeOptions::Minutes_1:
+    return text_for(strings::i18n::time_1_minute);
+  }
+  return text_for(strings::i18n::unknown);
+}
+
+inline std::string weapon_name(Weapon::Type type) {
+  switch (type) {
+  case Weapon::Type::Cannon:
+    return text_for(strings::i18n::weapon_cannon);
+  case Weapon::Type::Shotgun:
+    return text_for(strings::i18n::weapon_shotgun);
+  case Weapon::Type::Sniper:
+    return text_for(strings::i18n::weapon_sniper);
+  case Weapon::Type::MachineGun:
+    return text_for(strings::i18n::weapon_machine_gun);
+  }
+  return text_for(strings::i18n::unknown);
+}
+
+// Numbers taken from weapons.h and ProjectileSpawnSystem, not invented.
+inline const char *weapon_blurb(Weapon::Type type) {
+  switch (type) {
+  case Weapon::Type::Cannon:
+    return "ONE FAT SLUG. 3 HITS AND THEY POP. 1s BETWEEN SHOTS.";
+  case Weapon::Type::Shotgun:
+    return "4 PELLETS, WIDE SPRAY. 3s BETWEEN SHOTS.";
+  case Weapon::Type::Sniper:
+    return "ONE SHOT, ONE KILL. 3s RELOAD. DON'T MISS.";
+  case Weapon::Type::MachineGun:
+    return "12 SHOTS, 0.2s APART. BULLETS DIE AFTER 1s.";
+  }
+  return "";
+}
+
+inline const char *mode_blurb(RoundType type) {
+  switch (type) {
+  case RoundType::Lives:
+    return "LAST KART STILL DRIVING TAKES IT.\n"
+           "RUN OUT OF LIVES AND YOU'RE OUT FOR GOOD.";
+  case RoundType::Kills:
+    return "BLOW UP THE MOST KARTS BEFORE THE CLOCK DIES.\n"
+           "DYING JUST REFILLS YOU - NOTHING LOST.";
+  case RoundType::Hippo:
+    return "HOOVER UP MORE HIPPOS THAN ANYONE ELSE.\n"
+           "THE CLOCK DECIDES WHEN IT'S OVER.";
+  case RoundType::TagAndGo:
+    return "DON'T BE \"IT\". THE TAGGER DRIVES A BIGGER KART.\n"
+           "MOST TIME NOT-IT TAKES IT.";
+  }
+  return "";
+}
+
+// Corner tick goes in the fg hook: on_draw_bg draws behind the panel fill.
+inline ComponentConfig panel_config(Color edge, const std::string &debug_name) {
+  return ComponentConfig{}
+      .with_size(ComponentSize{expand(), percent(1.f)})
+      .with_custom_background(cs::panel_bg)
+      .with_border(edge, 3.f)
+      .with_corner_radius(16.f)
+      .with_padding(Padding{.top = ui::h720(12.f),
+                            .left = ui::w1280(14.f),
+                            .bottom = ui::h720(12.f),
+                            .right = ui::w1280(14.f)})
+      .with_on_draw_fg([](RectangleType r) {
+        raylib::DrawRectangleRec(RectangleType{r.x, r.y, 16.f, 4.f}, cs::butter);
+        raylib::DrawRectangleRec(RectangleType{r.x, r.y, 4.f, 16.f}, cs::butter);
+      })
+      .with_debug_name(debug_name);
+}
+
+inline ElementResult settings_row(UIContext<InputAction> &context,
+                                  Entity &parent, int index,
+                                  const std::string &label,
+                                  const std::string &debug_name) {
+  auto row = imm::hstack(context, mk(parent, index),
+                         ComponentConfig{}
+                             .with_size(ComponentSize{percent(1.f),
+                                                      ui::h720(38.f)})
+                             .with_align_items(AlignItems::Center)
+                             .with_transparent_bg()
+                             .with_no_wrap()
+                             .with_debug_name(debug_name));
+
+  imm::div(context, mk(row.ent(), 0),
+           ComponentConfig{}
+               .with_size(ComponentSize{ui::w1280(150.f), percent(1.f)})
+               .with_label(label)
+               .with_transparent_bg()
+               .with_custom_text_color(body_text)
+               .with_alignment(TextAlignment::Left)
+               .with_font_size(13.f)
+               .with_skip_tabbing(true)
+               .with_debug_name(debug_name + "_label"));
+
+  return row;
+}
+
+inline bool toggle_row(UIContext<InputAction> &context, Entity &parent,
+                       int index, const std::string &label, bool &value,
+                       const std::string &debug_name) {
+  auto row = settings_row(context, parent, index, label, debug_name);
+
+  const bool on = value;
+  auto config = ComponentConfig{}
+                    .with_size(ComponentSize{ui::w1280(56.f), ui::h720(24.f)})
+                    .with_padding(Padding{})
+                    .with_custom_background(cs::well_bg)
+                    .with_custom_hover_bg(cs::panel_bg)
+                    .with_border(on ? cs::mint : cs::sky, 3.f)
+                    .with_corner_radius(12.f)
+                    .with_on_draw_fg([on](RectangleType r) {
+                      const float knob = r.width * 0.42f;
+                      const float pad = 4.f;
+                      raylib::DrawRectangleRounded(
+                          RectangleType{on ? r.x + r.width - knob - pad
+                                           : r.x + pad,
+                                        r.y + pad, knob, r.height - pad * 2.f},
+                          1.f, 6, on ? cs::mint : knob_off);
+                    })
+                    .with_debug_name(debug_name + "_switch");
+  cs::keep_visuals(config, 12.f);
+
+  if (imm::button(context, mk(row.ent(), 1), config)) {
+    value = !value;
+    return true;
+  }
+  return false;
+}
+
+inline bool stepper_row(UIContext<InputAction> &context, Entity &parent,
+                        int index, const std::string &label,
+                        const std::vector<std::string> &options,
+                        size_t &option_index, const std::string &debug_name) {
+  auto row = settings_row(context, parent, index, label, debug_name);
+
+  return static_cast<bool>(imm::stepper(
+      context, mk(row.ent(), 1), options, option_index,
+      ComponentConfig{}
+          .with_size(ComponentSize{ui::w1280(190.f), ui::h720(30.f)})
+          .with_transparent_bg()
+          .with_border(cs::mint, 3.f)
+          .with_corner_radius(15.f)
+          .with_custom_text_color(cs::mint)
+          .with_font_size(13.f)
+          .with_debug_name(debug_name + "_stepper")));
+}
+
+inline void clock_row(UIContext<InputAction> &context, Entity &parent,
+                      int index, RoundSettings &settings) {
+  std::vector<std::string> options;
+  options.reserve(magic_enum::enum_count<RoundSettings::TimeOptions>());
+  for (auto option : magic_enum::enum_values<RoundSettings::TimeOptions>())
+    options.push_back(time_option_label(option));
+
+  size_t selected = magic_enum::enum_index(settings.time_option).value();
+  if (stepper_row(context, parent, index, text_for(strings::i18n::round_length),
+                  options, selected, "row_clock"))
+    settings.set_time_option(selected);
+}
+
+// Only rows backed by a real field in round_settings.h. Nothing here invents
+// a setting the game does not read.
+inline void mode_rows(UIContext<InputAction> &context, Entity &parent) {
+  auto &manager = RoundManager::get();
+  auto &settings = manager.get_active_settings();
+
+  switch (manager.active_round_type) {
+  case RoundType::Lives: {
+    auto &lives = manager.get_active_rt<RoundLivesSettings>();
+    static const std::vector<std::string> counts{"1", "2", "3", "4", "5"};
+    size_t selected = static_cast<size_t>(
+        std::clamp(lives.num_starting_lives, 1, 5) - 1);
+    if (stepper_row(context, parent, 0, "LIVES", counts, selected, "row_lives"))
+      lives.num_starting_lives = static_cast<int>(selected) + 1;
+    break;
+  }
+  case RoundType::Kills:
+    clock_row(context, parent, 0, settings);
+    break;
+  case RoundType::Hippo: {
+    auto &hippo = manager.get_active_rt<RoundHippoSettings>();
+    clock_row(context, parent, 0, settings);
+    static constexpr std::array<int, 4> hippo_counts{10, 25, 50, 100};
+    static const std::vector<std::string> hippo_labels{"10", "25", "50", "100"};
+    size_t selected = 2;
+    for (size_t i = 0; i < hippo_counts.size(); i++) {
+      if (hippo.total_hippos <= hippo_counts[i]) {
+        selected = i;
+        break;
+      }
+    }
+    if (stepper_row(context, parent, 1, "HIPPOS", hippo_labels, selected,
+                    "row_hippos"))
+      hippo.set_total_hippos(hippo_counts[selected]);
+    break;
+  }
+  case RoundType::TagAndGo: {
+    auto &tag = manager.get_active_rt<RoundTagAndGoSettings>();
+    clock_row(context, parent, 0, settings);
+    toggle_row(context, parent, 1, text_for(strings::i18n::allow_tag_backs),
+               tag.allow_tag_backs, "row_tag_backs");
+    break;
+  }
+  }
+
+  toggle_row(context, parent, 2, "TEAMS", settings.team_mode_enabled,
+             "row_teams");
+  if (manager.uses_timer())
+    toggle_row(context, parent, 3, "SHOW CLOCK", settings.show_countdown_timer,
+               "row_show_clock");
+}
+
+inline void left_panel(UIContext<InputAction> &context, Entity &parent) {
+  auto panel = imm::vstack(context, mk(parent, 0),
+                           panel_config(cs::mint, "round_mode_panel"));
+
+  imm::div(context, mk(panel.ent(), 0),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(64.f)})
+               .with_label(mode_blurb(RoundManager::get().active_round_type))
+               .with_transparent_bg()
+               .with_custom_text_color(body_text)
+               .with_alignment(TextAlignment::Left)
+               .with_font_size(13.f)
+               .with_skip_tabbing(true)
+               .with_debug_name("round_mode_blurb"));
+
+  auto rows = imm::vstack(context, mk(panel.ent(), 1),
+                          ComponentConfig{}
+                              .with_size(ComponentSize{percent(1.f), expand()})
+                              .with_transparent_bg()
+                              .with_debug_name("round_mode_rows"));
+  mode_rows(context, rows.ent());
+}
+
+inline void weapon_row(UIContext<InputAction> &context, Entity &parent,
+                       int index, Weapon::Type type, WeaponSet &weapons) {
+  const size_t bit = static_cast<size_t>(type);
+  const bool on = weapons.test(bit);
+  const size_t picked = weapons.count();
+  // Min one, max two: makers.cpp falls back to a fixed pair when the set is
+  // empty, which would quietly ignore the player.
+  const bool locked = on ? picked <= 1 : picked >= max_weapon_slots;
+
+  auto row = imm::hstack(
+      context, mk(parent, index),
+      ComponentConfig{}
+          .with_size(ComponentSize{percent(1.f), ui::h720(62.f)})
+          .with_align_items(AlignItems::Center)
+          .with_custom_background(on ? Color{40, 36, 30, 255} : cs::panel_bg)
+          .with_border(on ? cs::butter : cs::panel_bg, 2.f)
+          .with_corner_radius(12.f)
+          .with_no_wrap()
+          .with_debug_name(fmt::format("weapon_row_{}", bit)));
+
+  const auto toggle = [&weapons, bit, on, locked]() {
+    if (locked)
+      return;
+    if (on)
+      weapons.reset(bit);
+    else
+      weapons.set(bit);
+    RoundManager::get().set_enabled_weapons(weapons.to_ulong());
+  };
+
+  auto *sheet_cmp = EntityHelper::get_singleton_cmp<
+      afterhours::texture_manager::HasSpritesheet>();
+
+  auto well = ComponentConfig{}
+                  .with_size(ComponentSize{ui::w1280(58.f), ui::h720(50.f)})
+                  .with_padding(Padding{})
+                  .with_custom_background(cs::well_bg)
+                  .with_custom_hover_bg(cs::panel_bg)
+                  .with_border(on      ? cs::butter
+                               : locked ? cs::open_edge
+                                        : cs::sky,
+                               3.f)
+                  .with_corner_radius(12.f)
+                  .with_debug_name(fmt::format("weapon_well_{}", bit));
+  if (sheet_cmp) {
+    const auto sheet = sheet_cmp->texture;
+    const auto src = weapon_icon_frame(type);
+    // Dimmed via tint: with_opacity on a transparent bg paints a black box.
+    // See docs/afterhours_gaps.md.
+    const Color tint = on ? cs::butter : locked ? cs::open_text : cs::muted;
+    well.with_on_draw_fg([sheet, src, tint](RectangleType r) {
+      const float side = std::min(r.width, r.height) * 0.72f;
+      const RectangleType dest{r.x + (r.width - side) * 0.5f,
+                               r.y + (r.height - side) * 0.5f, side, side};
+      raylib::DrawTexturePro(sheet, src, dest, raylib::Vector2{0.f, 0.f}, 0.f,
+                             tint);
+    });
+  }
+  cs::keep_visuals(well, 11.f);
+
+  if (imm::button(context, mk(row.ent(), 0), well))
+    toggle();
+
+  auto text = imm::vstack(
+      context, mk(row.ent(), 1),
+      ComponentConfig{}
+          .with_size(ComponentSize{expand(), percent(1.f)})
+          .with_padding(Padding{.left = ui::w1280(10.f)})
+          .with_transparent_bg()
+          .with_debug_name(fmt::format("weapon_text_{}", bit)));
+
+  // A second hit target: the well alone is a small one.
+  auto name = ComponentConfig{}
+                  .with_size(ComponentSize{percent(1.f), ui::h720(20.f)})
+                  .with_padding(Padding{})
+                  .with_label(weapon_name(type))
+                  .with_transparent_bg()
+                  .with_custom_hover_bg(cs::panel_bg)
+                  .with_custom_text_color(on ? cs::butter : cs::muted)
+                  .with_alignment(TextAlignment::Left)
+                  .with_skip_tabbing(true)
+                  .with_debug_name(fmt::format("weapon_name_{}", bit));
+  cs::keep_visuals(name, 13.f);
+  if (imm::button(context, mk(text.ent(), 0), name))
+    toggle();
+
+  imm::div(context, mk(text.ent(), 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(18.f)})
+               .with_label(weapon_blurb(type))
+               .with_transparent_bg()
+               .with_custom_text_color(on ? Color{240, 232, 92, 210}
+                                          : cs::open_text)
+               .with_alignment(TextAlignment::Left)
+               .with_font_size(10.f)
+               .with_skip_tabbing(true)
+               .with_debug_name(fmt::format("weapon_desc_{}", bit)));
+}
+
+inline void right_panel(UIContext<InputAction> &context, Entity &parent) {
+  auto panel = imm::vstack(context, mk(parent, 1),
+                           panel_config(orchid, "round_weapon_panel"));
+
+  imm::div(context, mk(panel.ent(), 0),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(20.f)})
+               .with_label("PICK TWO // ONE PER SIDE")
+               .with_transparent_bg()
+               .with_custom_text_color(cs::butter)
+               .with_alignment(TextAlignment::Left)
+               .with_font_size(12.f)
+               .with_skip_tabbing(true)
+               .with_debug_name("weapon_panel_header"));
+
+  auto &weapons = RoundManager::get().get_enabled_weapons();
+  for (size_t i = 0; i < WEAPON_COUNT; i++)
+    weapon_row(context, panel.ent(), static_cast<int>(i) + 1,
+               static_cast<Weapon::Type>(i), weapons);
+
+  imm::div(context, mk(panel.ent(), 90),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(18.f)})
+               .with_label(weapons.count() >= max_weapon_slots
+                               ? "BOTH SLOTS FULL // UNPICK TO SWAP"
+                               : "")
+               .with_transparent_bg()
+               .with_custom_text_color(cs::mint)
+               .with_alignment(TextAlignment::Left)
+               .with_font_size(11.f)
+               .with_skip_tabbing(true)
+               .with_debug_name("weapon_panel_footer"));
+}
+
+// Selection is absolute, so an e2e script can name the mode it wants.
+inline void mode_tabs(UIContext<InputAction> &context, Entity &parent) {
+  static constexpr std::array<const char *, num_round_types> debug_names{
+      "tab_mode_lives", "tab_mode_kills", "tab_mode_hippo", "tab_mode_tag"};
+
+  auto tabs = imm::hstack(context, mk(parent, 2),
+                          ComponentConfig{}
+                              .with_size(ComponentSize{percent(1.f),
+                                                       ui::h720(38.f)})
+                              .with_gap(ui::w1280(8.f))
+                              .with_transparent_bg()
+                              .with_no_wrap()
+                              .with_debug_name("round_mode_tabs"));
+
+  const RoundType active = RoundManager::get().active_round_type;
+  for (size_t i = 0; i < num_round_types; i++) {
+    const auto type = static_cast<RoundType>(i);
+    const bool on = (type == active);
+
+    auto config = ComponentConfig{}
+                      .with_size(ComponentSize{ui::w1280(150.f), percent(1.f)})
+                      .with_padding(Padding{})
+                      .with_label(mode_name(type))
+                      .with_custom_background(on ? orchid : cs::panel_bg)
+                      .with_custom_hover_bg(on ? orchid : cs::well_bg)
+                      .with_custom_text_color(on ? cs::ink : cs::muted)
+                      .with_border(on ? cs::ink : cs::open_edge, 3.f)
+                      .with_corner_radius(10.f)
+                      .with_debug_name(debug_names[i]);
+    cs::keep_visuals(config, 13.f);
+
+    if (imm::button(context, mk(tabs.ent(), static_cast<int>(i)), config) && !on)
+      RoundManager::get().set_active_round_type(static_cast<int>(i));
+  }
+}
+
+} // namespace round_rules
+
 void ScheduleMainMenuUI::round_end_player_column(
     Entity &parent, UIContext<InputAction> &context, const size_t index,
     const std::vector<OptEntity> &round_players,
@@ -1400,7 +1857,7 @@ void ScheduleMainMenuUI::render_round_settings_preview(
               strings::i18n::win_condition_label)
               .set_param(
                   translation_manager::i18nParam::weapon_name,
-                  magic_enum::enum_name(RoundManager::get().active_round_type),
+                  round_rules::mode_name(RoundManager::get().active_round_type),
                   translation_manager::translation_param))));
 
   auto *spritesheet_component = EntityHelper::get_singleton_cmp<
@@ -1448,23 +1905,7 @@ void ScheduleMainMenuUI::render_round_settings_preview(
   }
   case RoundType::Kills: {
     auto &s = RoundManager::get().get_active_rt<RoundKillsSettings>();
-    std::string time_display;
-    switch (s.time_option) {
-    case RoundSettings::TimeOptions::Unlimited:
-      time_display = translation_manager::make_translatable_string(
-                         strings::i18n::unlimited)
-                         .get_text();
-      break;
-    case RoundSettings::TimeOptions::Seconds_10:
-      time_display = "10s";
-      break;
-    case RoundSettings::TimeOptions::Seconds_30:
-      time_display = "30s";
-      break;
-    case RoundSettings::TimeOptions::Minutes_1:
-      time_display = "1m";
-      break;
-    }
+    const std::string time_display = round_rules::time_option_label(s.time_option);
     imm::div(
         context, mk(parent),
         ComponentConfig{}.with_label(translation_manager::translate_formatted(
@@ -1489,23 +1930,7 @@ void ScheduleMainMenuUI::render_round_settings_preview(
   }
   case RoundType::TagAndGo: {
     auto &s = RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
-    std::string time_display;
-    switch (s.time_option) {
-    case RoundSettings::TimeOptions::Unlimited:
-      time_display = translation_manager::make_translatable_string(
-                         strings::i18n::unlimited)
-                         .get_text();
-      break;
-    case RoundSettings::TimeOptions::Seconds_10:
-      time_display = "10s";
-      break;
-    case RoundSettings::TimeOptions::Seconds_30:
-      time_display = "30s";
-      break;
-    case RoundSettings::TimeOptions::Minutes_1:
-      time_display = "1m";
-      break;
-    }
+    const std::string time_display = round_rules::time_option_label(s.time_option);
     imm::div(
         context, mk(parent),
         ComponentConfig{}.with_label(translation_manager::translate_formatted(
@@ -1941,111 +2366,11 @@ void SchedulePauseUI::for_each_with(Entity &entity,
   }
 }
 
-void round_lives_settings(Entity &entity, UIContext<InputAction> &context) {
-  auto &rl_settings = RoundManager::get().get_active_rt<RoundLivesSettings>();
-
-  auto config = ComponentConfig{}
-      .with_label(translation_manager::translate_formatted(
-          translation_manager::make_translatable_string(
-              strings::i18n::num_lives_label)
-              .set_param(translation_manager::i18nParam::number_count,
-                         rl_settings.num_starting_lives,
-                         translation_manager::translation_param)))
-      .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
-      .with_margin(Margin{.top = screen_pct(0.01f)})
-      .with_debug_name("num_lives_text");
-  animation_control::apply_slide_in(config);
-  imm::div(context, mk(entity), config);
-}
-
-void round_kills_settings(Entity &entity, UIContext<InputAction> &context) {
-  auto &rl_settings = RoundManager::get().get_active_rt<RoundKillsSettings>();
-
-  {
-    auto config = ComponentConfig{}
-        .with_label(translation_manager::translate_formatted(
-            translation_manager::make_translatable_string(
-                strings::i18n::round_length_with_time)
-                .set_param(translation_manager::i18nParam::number_time,
-                           rl_settings.current_round_time,
-                           translation_manager::translation_param)))
-        .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)})
-        .with_margin(Margin{.top = screen_pct(0.01f)});
-    animation_control::apply_slide_in(config);
-    imm::div(context, mk(entity), config);
-  }
-
-  {
-    auto options = magic_enum::enum_names<RoundSettings::TimeOptions>();
-    auto option_index = magic_enum::enum_index(rl_settings.time_option).value();
-
-    auto config = ComponentConfig{}
-        .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-        .with_label(translation_manager::make_translatable_string(
-                        strings::i18n::round_length)
-                        .get_text());
-    animation_control::apply_slide_in(config);
-    if (auto result = imm::dropdown(
-            context, mk(entity), options, option_index, config);
-        result) {
-      rl_settings.set_time_option(result.as<int>());
-    }
-  }
-}
-
-void round_hippo_settings(Entity &entity, UIContext<InputAction> &context) {
-  auto &rl_settings = RoundManager::get().get_active_rt<RoundHippoSettings>();
-
-  imm::div(context, mk(entity),
-           ComponentConfig{}
-               .with_label(translation_manager::translate_formatted(
-                   translation_manager::make_translatable_string(
-                       strings::i18n::total_hippos_label)
-                       .set_param(translation_manager::i18nParam::number_count,
-                                  rl_settings.total_hippos,
-                                  translation_manager::translation_param)))
-               .with_size(ComponentSize{screen_pct(0.15f), screen_pct(0.06f)}));
-}
-
-void round_tag_and_go_settings(Entity &entity,
-                               UIContext<InputAction> &context) {
-  auto &cm_settings =
-      RoundManager::get().get_active_rt<RoundTagAndGoSettings>();
-
-  {
-    auto options = magic_enum::enum_names<RoundSettings::TimeOptions>();
-    auto option_index = magic_enum::enum_index(cm_settings.time_option).value();
-
-    auto dd_config = ComponentConfig{}
-        .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-        .with_label(translation_manager::translate_formatted(
-            translation_manager::make_translatable_string(
-                strings::i18n::round_length)
-                .set_param(translation_manager::i18nParam::number_time,
-                           30, translation_manager::translation_param)));
-    animation_control::apply_slide_in(dd_config);
-    if (auto result = imm::dropdown(
-            context, mk(entity), options, option_index, dd_config);
-        result) {
-      cm_settings.set_time_option(result.as<int>());
-    }
-  }
-
-  {
-    auto cb_config = ComponentConfig{}
-        .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-        .with_label(translation_manager::make_translatable_string(
-                        strings::i18n::allow_tag_backs)
-                        .get_text());
-    animation_control::apply_slide_in(cb_config);
-    if (imm::checkbox(
-            context, mk(entity), cm_settings.allow_tag_backs, cb_config)) {
-    }
-  }
-}
-
 Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                                           UIContext<InputAction> &context) {
+  namespace rr = round_rules;
+  namespace cs = character_select;
+
   auto elem =
       imm::div(context, mk(entity),
                ComponentConfig{}
@@ -2053,77 +2378,97 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
                    .with_absolute_position());
 
-  auto top_left = ui_helpers::create_top_left_container(
-      context, elem.ent(), "round_settings_top_left", 0);
+  auto content =
+      imm::vstack(context, mk(elem.ent()),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{screen_pct(0.90f, 1.f),
+                                               screen_pct(0.86f, 1.f)})
+                      .with_absolute_position(screen_pct(0.05f),
+                                              screen_pct(0.07f))
+                      .with_transparent_bg()
+                      .with_debug_name("round_settings_content"));
 
-  // Top-left controls scheduled first so "select map" gets initial focus
-  {
-    ui_helpers::create_styled_button(
-        context, top_left.ent(),
-        translation_manager::make_translatable_string(strings::i18n::select_map)
-            .get_text(),
-        []() { navigation::to(GameStateManager::Screen::MapSelection); }, 0);
+  imm::div(context, mk(content.ent(), 0),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(48.f)})
+               .with_label("HOW DO WE WIN")
+               .with_font_size(34.f)
+               .with_alignment(TextAlignment::Left)
+               .with_transparent_bg()
+               .with_skip_tabbing(true)
+               .with_debug_name("round_settings_heading"));
 
-    {
-      auto win_condition_div =
-          imm::div(context, mk(top_left.ent()),
-                   ComponentConfig{}
-                       .with_size(ComponentSize{percent(1.f), percent(0.2f)})
-                       .with_debug_name("win_condition_div"));
+  imm::div(context, mk(content.ent(), 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{ui::w1280(280.f), ui::h720(8.f)})
+               .with_custom_background(cs::butter)
+               .with_skip_tabbing(true)
+               .with_debug_name("round_settings_rule"));
 
-      static size_t selected_round_type =
-          static_cast<size_t>(RoundManager::get().active_round_type);
+  rr::mode_tabs(context, content.ent());
 
-      auto nav_config = ComponentConfig{};
-      animation_control::apply_slide_in(nav_config);
-      if (auto result = imm::navigation_bar(
-              context, mk(win_condition_div.ent()), RoundType_NAMES,
-              selected_round_type, nav_config);
-          result) {
-        RoundManager::get().set_active_round_type(
-            static_cast<int>(selected_round_type));
-      }
-    }
+  auto panels =
+      imm::hstack(context, mk(content.ent(), 3),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), expand()})
+                      .with_gap(ui::w1280(16.f))
+                      .with_margin(Margin{.top = ui::h720(12.f),
+                                          .bottom = ui::h720(12.f)})
+                      .with_transparent_bg()
+                      .with_no_wrap()
+                      .with_debug_name("round_settings_panels"));
 
-    auto enabled_weapons = RoundManager::get().get_enabled_weapons();
+  rr::left_panel(context, panels.ent());
+  rr::right_panel(context, panels.ent());
 
-    auto cg_config = ComponentConfig{}
-        .with_flex_direction(FlexDirection::Column)
-        .with_margin(Margin{.top = screen_pct(0.01f)});
-    animation_control::apply_slide_in(cg_config);
-    if (auto result = imm::checkbox_group(
-            context, mk(top_left.ent()), enabled_weapons, WEAPON_STRING_LIST,
-            {1, 3}, cg_config);
-        result) {
-      auto mask = result.as<unsigned long>();
-      log_info("weapon checkbox_group changed; mask={}", mask);
-      RoundManager::get().set_enabled_weapons(mask);
-    }
+  auto bottom =
+      imm::hstack(context, mk(content.ent(), 4),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), ui::h720(48.f)})
+                      .with_align_items(AlignItems::Center)
+                      .with_transparent_bg()
+                      .with_no_wrap()
+                      .with_debug_name("round_settings_bottom_bar"));
 
-    switch (RoundManager::get().active_round_type) {
-    case RoundType::Lives:
-      round_lives_settings(top_left.ent(), context);
-      break;
-    case RoundType::Kills:
-      round_kills_settings(top_left.ent(), context);
-      break;
-    case RoundType::Hippo:
-      round_hippo_settings(top_left.ent(), context);
-      break;
-    case RoundType::TagAndGo:
-      round_tag_and_go_settings(top_left.ent(), context);
-      break;
-    default:
-      log_error("You need to add a handler for UI settings for round type {}",
-                (int)RoundManager::get().active_round_type);
-      break;
-    }
+  const auto chrome_button = [&](int idx, const std::string &label,
+                                 Color fill, Color text,
+                                 const char *debug_name) {
+    auto config = ComponentConfig{}
+                      .with_size(ComponentSize{ui::w1280(190.f),
+                                               ui::h720(42.f)})
+                      .with_label(label)
+                      .with_custom_background(fill)
+                      .with_custom_text_color(text)
+                      .with_border(cs::ink, 3.f)
+                      .with_corner_radius(12.f)
+                      .with_debug_name(debug_name);
+    cs::keep_visuals(config, 15.f);
+    animation_control::apply_slide_in(config);
+    return static_cast<bool>(
+        imm::button(context, mk(bottom.ent(), idx), config));
+  };
 
-    ui_helpers::create_styled_button(
-        context, top_left.ent(),
-        translation_manager::make_translatable_string(strings::i18n::back)
-            .get_text(),
-        []() { navigation::back(); }, 2);
+  if (chrome_button(0,
+                    translation_manager::make_translatable_string(
+                        strings::i18n::back)
+                        .get_text(),
+                    cs::well_bg, cs::mint, "btn_back")) {
+    navigation::back();
+  }
+
+  imm::div(context, mk(bottom.ent(), 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{expand(), percent(1.f)})
+               .with_transparent_bg()
+               .with_skip_tabbing(true)
+               .with_debug_name("round_settings_bottom_gap"));
+
+  if (chrome_button(2,
+                    translation_manager::make_translatable_string(
+                        strings::i18n::select_map)
+                        .get_text(),
+                    cs::butter, cs::ink, "btn_select_map")) {
+    navigation::to(GameStateManager::Screen::MapSelection);
   }
 
   return GameStateManager::get().next_screen.value_or(
@@ -2400,7 +2745,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
       context, left_col.ent(),
       translation_manager::make_translatable_string(strings::i18n::back)
           .get_text(),
-      []() { navigation::back(); }, 0);
+      []() { navigation::back(); }, 0, "btn_back");
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
@@ -2532,7 +2877,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                   ->current_resolution);
           navigation::back();
         },
-        0);
+        0, "btn_back");
   }
 
   // Master volume slider
@@ -2706,7 +3051,7 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
         context, top_left.ent(),
         translation_manager::make_translatable_string(strings::i18n::back)
             .get_text(),
-        []() { navigation::back(); }, 0);
+        []() { navigation::back(); }, 0, "btn_back");
   }
 
   // Clear the top-left back button, which shares this origin.

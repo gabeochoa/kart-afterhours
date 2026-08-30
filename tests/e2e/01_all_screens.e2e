@@ -16,7 +16,7 @@ screenshot 01_main_menu
 # Settings Screen
 goto_screen Settings
 wait 0.2
-expect_text "back"
+expect_text_i "back"
 expect_text "master volume"
 expect_text "music volume"
 expect_text "sfx volume"
@@ -29,7 +29,7 @@ screenshot 02_settings
 # About Screen
 goto_screen About
 wait 0.2
-expect_text "back"
+expect_text_i "back"
 screenshot 03_about
 
 # Character Creation Screen
@@ -42,18 +42,20 @@ screenshot 04_character_creation
 # Round Settings Screen
 goto_screen RoundSettings
 wait 0.2
-expect_text "select map"
-expect_text "back"
-expect_text "Cannon"
-expect_text "Shotgun"
-expect_text "Sniper"
-expect_text "MachineGun"
+assert_ui btn_select_map hidden=false
+assert_ui btn_back hidden=false
+# By id, not by label: weapon names are translated now, so "Cannon" is not
+# text the player ever sees.
+assert_ui weapon_row_0 hidden=false
+assert_ui weapon_row_1 hidden=false
+assert_ui weapon_row_2 hidden=false
+assert_ui weapon_row_3 hidden=false
 screenshot 05_round_settings
 
 # Map Selection Screen
 goto_screen MapSelection
 wait 0.2
-expect_text "back"
+expect_text_i "back"
 screenshot 06_map_selection
 
 # Return to Main Menu

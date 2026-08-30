@@ -159,6 +159,17 @@ void game() {
     // frame. Registered before it, they would be a frame stale.
     register_sound_systems(systems);
 
+    // Polled rather than written per edit: dragging a volume slider would
+    // otherwise be one file write per frame.
+    systems.register_update_system([](float dt) {
+      static float since_last_check = 0.f;
+      since_last_check += dt;
+      if (since_last_check < 1.f)
+        return;
+      since_last_check = 0.f;
+      Settings::save_if_changed();
+    });
+
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
 
     // renders
@@ -267,6 +278,7 @@ int main(int argc, char *argv[]) {
   // clobbered the player's own settings.
   const bool e2e_mode = cmdl[{"--e2e"}];
   if (e2e_mode) {
+    Settings::autosave_enabled = false;
     Settings::load_defaults(screenWidth, screenHeight);
   } else {
     Settings::load_save_file(screenWidth, screenHeight);
@@ -306,9 +318,7 @@ int main(int argc, char *argv[]) {
 
   mcp_integration::shutdown();
 
-  if (!e2e_mode) {
-    Settings::write_save_file();
-  }
+  Settings::write_save_file();
 
   EntityHelper::delete_all_entities_NO_REALLY_I_MEAN_ALL();
 
