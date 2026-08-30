@@ -28,6 +28,12 @@ struct HandleTagAndGoTagTransfer : System<Transform, HasTagAndGoTracking> {
   virtual void for_each_with(Entity &, Transform &transform,
                              HasTagAndGoTracking &taggerTracking,
                              float) override {
+    // is_tagger is only cleared by the TagAndGo settings' reset_temp_data, so
+    // it can still be set while another mode is active. Without this guard the
+    // get_active_rt below would reinterpret that mode's settings object.
+    if (RoundManager::get().active_round_type != RoundType::TagAndGo) {
+      return;
+    }
     if (!GameStateManager::get().is_game_active()) {
       return;
     }

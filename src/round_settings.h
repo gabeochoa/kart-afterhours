@@ -212,42 +212,29 @@ struct RoundManager {
     return *(settings[enum_to_index(active_round_type)]);
   };
 
+  // Callers must only ask for the settings type matching active_round_type.
+  // A mismatch used to be an unchecked static_cast (UB); now it logs and hands
+  // back an inert default so a stale caller can't scribble over another mode.
   template <typename T> T &get_active_rt() {
-    auto &rt_settings = get_active_settings();
-    switch (active_round_type) {
-    case RoundType::Lives:
-      return static_cast<T &>(rt_settings);
-    case RoundType::Kills:
-      return static_cast<T &>(rt_settings);
-    case RoundType::Hippo:
-      return static_cast<T &>(rt_settings);
-    case RoundType::TagAndGo:
-      return static_cast<T &>(rt_settings);
-    default:
-      // This should never happen, but provides a clear error
-      log_error("Invalid round type in get_active_rt: {}",
-                static_cast<size_t>(active_round_type));
-      return static_cast<T &>(rt_settings);
+    if (auto *typed = dynamic_cast<T *>(&get_active_settings())) {
+      return *typed;
     }
+    log_error("get_active_rt: requested settings type does not match active "
+              "round type {}",
+              static_cast<size_t>(active_round_type));
+    static T fallback{};
+    return fallback;
   }
 
   template <typename T> const T &get_active_rt() const {
-    const auto &rt_settings = get_active_settings();
-    switch (active_round_type) {
-    case RoundType::Lives:
-      return static_cast<const T &>(rt_settings);
-    case RoundType::Kills:
-      return static_cast<const T &>(rt_settings);
-    case RoundType::Hippo:
-      return static_cast<const T &>(rt_settings);
-    case RoundType::TagAndGo:
-      return static_cast<const T &>(rt_settings);
-    default:
-      // This should never happen, but provides a clear error
-      log_error("Invalid round type in get_active_rt const: {}",
-                static_cast<size_t>(active_round_type));
-      return static_cast<const T &>(rt_settings);
+    if (const auto *typed = dynamic_cast<const T *>(&get_active_settings())) {
+      return *typed;
     }
+    log_error("get_active_rt const: requested settings type does not match "
+              "active round type {}",
+              static_cast<size_t>(active_round_type));
+    static const T fallback{};
+    return fallback;
   }
 
   void set_active_round_type(const int index) {
@@ -333,11 +320,36 @@ struct RoundManager {
     }
   }
 
+  // Cars are created once (character creation) and outlive rounds, so their
+  // score/health trackers have to be cleared here or round 2 inherits round 1.
+  void reset_car_trackers() {
+    const int starting_lives = fetch_num_starting_lives();
+    for (afterhours::Entity &car :
+         afterhours::EntityQuery({.ignore_temp_warning = true})
+             .whereHasComponent<HasMultipleLives>()
+             .gen()) {
+      car.get<HasMultipleLives>().num_lives_remaining = starting_lives;
+      if (car.has<HasKillCountTracker>()) {
+        car.get<HasKillCountTracker>().kills = 0;
+      }
+      if (car.has<HasHippoCollection>()) {
+        car.get<HasHippoCollection>().hippos_collected = 0;
+      }
+      if (car.has<HasHealth>()) {
+        auto &health = car.get<HasHealth>();
+        health.amount = health.max_amount;
+        health.iframes = health.iframesReset;
+        health.last_damaged_by = {};
+      }
+    }
+  }
+
   void reset_for_new_round() {
     auto &active_settings = get_active_settings();
     active_settings.reset_countdown();
     active_settings.reset_round_time();
     active_settings.reset_temp_data();
+    reset_car_trackers();
   }
 
   float get_current_round_time() const {

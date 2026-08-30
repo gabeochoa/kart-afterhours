@@ -15,6 +15,7 @@ backward::SignalHandling sh;
 #include "preload.h"
 #include "settings.h"
 #include <afterhours/src/plugins/settings.h>
+#include "systems/menu_backdrop.h"
 #include "systems/sound_systems.h"
 #include "systems/systems.h"
 #include "systems/systems_ai.h"
@@ -155,11 +156,11 @@ void game() {
     register_ui_systems(systems);
 
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
-    systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());
 
     // renders
     {
       systems.register_render_system(std::make_unique<BeginWorldRender>());
+      systems.register_render_system(std::make_unique<RenderMenuBackdrop>());
 
       {
         camera::register_begin_camera(systems);

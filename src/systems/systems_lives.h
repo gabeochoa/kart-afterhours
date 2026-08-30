@@ -5,15 +5,22 @@
 #include "../query.h"
 #include "../round_settings.h"
 #include <afterhours/ah.h>
+#include <algorithm>
+#include <map>
 
 using namespace afterhours;
 
 struct CheckLivesWinFFA : PausableSystem<> {
+  // Eliminated cars are cleaned up, so "one left standing" is only a win if
+  // there were ever at least two. Otherwise a solo round ends on frame one.
+  size_t most_contenders_seen = 0;
+
   virtual void once(float) override {
     if (RoundManager::get().active_round_type != RoundType::Lives) {
       return;
     }
     if (!GameStateManager::get().is_game_active()) {
+      most_contenders_seen = 0;
       return;
     }
 
@@ -29,7 +36,9 @@ struct CheckLivesWinFFA : PausableSystem<> {
               return e.get<HasMultipleLives>().num_lives_remaining > 0;
             })
             .gen();
-    if (players_with_lives.size() == 1) {
+    most_contenders_seen =
+        std::max(most_contenders_seen, players_with_lives.size());
+    if (most_contenders_seen > 1 && players_with_lives.size() == 1) {
       Entity &winner = players_with_lives[0].get();
       GameStateManager::get().end_game({winner});
       return;
@@ -42,11 +51,16 @@ struct CheckLivesWinFFA : PausableSystem<> {
 };
 
 struct CheckLivesWinTeam : PausableSystem<> {
+  // Same guard as the FFA case: wiping out a team is only a win if both teams
+  // were populated at some point this round.
+  bool both_teams_seen = false;
+
   virtual void once(float) override {
     if (RoundManager::get().active_round_type != RoundType::Lives) {
       return;
     }
     if (!GameStateManager::get().is_game_active()) {
+      both_teams_seen = false;
       return;
     }
 
@@ -80,8 +94,10 @@ struct CheckLivesWinTeam : PausableSystem<> {
     // Check if any team has no remaining players
     bool team_a_has_players = team_lives_count[0] > 0;
     bool team_b_has_players = team_lives_count[1] > 0;
+    both_teams_seen =
+        both_teams_seen || (team_a_has_players && team_b_has_players);
 
-    if (!team_a_has_players || !team_b_has_players) {
+    if (both_teams_seen && (!team_a_has_players || !team_b_has_players)) {
       // One team has no remaining players - game over
       RefEntities winning_team;
 
