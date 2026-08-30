@@ -120,11 +120,6 @@ struct ScheduleDebugUI : System<afterhours::ui::UIContext<InputAction>> {
 struct SchedulePauseUI : System<afterhours::ui::UIContext<InputAction>> {
   input::PossibleInputCollector inpc;
 
-  void exit_game() {
-    if (!e2e_integration::is_enabled())
-      running = false;
-  }
-
   virtual bool should_run(float) override;
   virtual void for_each_with(Entity &entity,
                              afterhours::ui::UIContext<InputAction> &context,
@@ -155,35 +150,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   input::PossibleInputCollector inpc;
 
   void update_resolution_cache();
-  void round_end_player_column(Entity &parent, UIContext<InputAction> &context,
-                               const size_t index,
-                               const std::vector<OptEntity> &round_players,
-                               const std::vector<OptEntity> &round_ais,
-                               std::optional<int> ranking = std::nullopt);
-  std::map<EntityID, int>
-  get_tag_and_go_rankings(const std::vector<OptEntity> &round_players,
-                          const std::vector<OptEntity> &round_ais);
-  void render_lives_stats(UIContext<InputAction> &context, Entity &parent,
-                          const OptEntity &car, raylib::Color bg_color);
-  void render_kills_stats(UIContext<InputAction> &context, Entity &parent,
-                          const OptEntity &car, raylib::Color bg_color);
-  void render_score_stats(UIContext<InputAction> &context, Entity &parent,
-                          const OptEntity &car, raylib::Color bg_color);
-  void render_hippo_stats(UIContext<InputAction> &context, Entity &parent,
-                          const OptEntity &car, raylib::Color bg_color);
-  void render_tag_and_go_stats(UIContext<InputAction> &context, Entity &parent,
-                               const OptEntity &car, raylib::Color bg_color);
-  void render_unknown_stats(UIContext<InputAction> &context, Entity &parent,
-                            const OptEntity &car, raylib::Color bg_color);
-  void render_team_results(UIContext<InputAction> &context, Entity &parent,
-                           const std::vector<OptEntity> &round_players,
-                           const std::vector<OptEntity> &round_ais);
-  void render_team_column_results(UIContext<InputAction> &context,
-                                  Entity &parent, const std::string &team_name,
-                                  int team_id,
-                                  const std::vector<OptEntity> &team_players,
-                                  int team_score);
-
   Screen character_creation(Entity &entity, UIContext<InputAction> &context);
   Screen map_selection(Entity &entity, UIContext<InputAction> &context);
   Screen round_settings(Entity &entity, UIContext<InputAction> &context);
@@ -205,203 +171,14 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
 
 namespace ui_helpers {
 
-struct PlayerCardData {
-  Entity &parent;
-  int index;
-  const std::string &label;
-  raylib::Color bg_color;
-  bool is_ai = false;
-
-  std::optional<int> ranking = std::nullopt;
-  std::optional<std::string> stats_text = std::nullopt;
-
-  std::function<void()> on_next_color = nullptr;
-  std::function<void()> on_remove = nullptr;
-  std::function<void()> on_add_ai = nullptr;
-  std::function<void()> on_team_switch = nullptr;
-  std::optional<AIDifficulty::Difficulty> ai_difficulty = std::nullopt;
-  std::function<void(AIDifficulty::Difficulty)> on_difficulty_change = nullptr;
-};
-
-ElementResult player_card_cell(UIContext<InputAction> &context, Entity &parent,
-                               const std::string &debug_name,
-                               float width_percent = 0.125f) {
-  return imm::div(
-      context, mk(parent, std::hash<std::string>{}(debug_name + "_cell")),
-      ComponentConfig{}
-          .with_size(ComponentSize{percent(width_percent), percent(1.f)})
-          .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                .left = imm::DefaultSpacing::tiny(),
-                                .bottom = imm::DefaultSpacing::tiny(),
-                                .right = imm::DefaultSpacing::tiny()})
-          .with_debug_name(debug_name + "_cell"));
+// with_absolute_position resolves BOTH axes against the screen height
+// (component_init.h:441), so an absolute x written as a screen_pct lands at
+// pct * height. Spelling it in h720 units is what makes it mean what it reads.
+// See docs/afterhours_gaps.md.
+inline afterhours::ui::Size absolute_x(float px_at_720p) {
+  return afterhours::ui::h720(px_at_720p);
 }
 
-void maybe_button(UIContext<InputAction> &context, Entity &parent,
-                  const std::string &label, const std::string &debug_name,
-                  std::function<void()> action = nullptr,
-                  float width_percent = 0.125f) {
-
-  if (!action) {
-    return;
-  }
-
-  auto button_cell =
-      player_card_cell(context, parent, debug_name, width_percent);
-
-  if (imm::button(context,
-                  mk(button_cell.ent(),
-                     std::hash<std::string>{}(debug_name + "_button")),
-                  ComponentConfig{}
-                      .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                      .with_label(label)
-                      .with_debug_name(debug_name + "_button"))) {
-    action();
-  }
-}
-
-void maybe_image_button(UIContext<InputAction> &context, Entity &parent,
-                        const std::string &debug_name, raylib::Texture2D sheet,
-                        Rectangle spriteSheetSrc,
-                        std::function<void()> action = nullptr,
-                        float width_percent = 0.125f) {
-
-  if (!action) {
-    return;
-  }
-  auto button_cell =
-      player_card_cell(context, parent, debug_name, width_percent);
-
-  if (imm::image_button(
-          context,
-          mk(button_cell.ent(),
-             std::hash<std::string>{}(debug_name + "_button")),
-          sheet, spriteSheetSrc,
-          ComponentConfig{}
-              .with_size(ComponentSize{percent(1.f), percent(1.f)})
-              .with_debug_name(debug_name))) {
-    action();
-  }
-}
-
-void maybe_difficulty_button(UIContext<InputAction> &context, Entity &parent,
-                             PlayerCardData &data) {
-  if (data.ai_difficulty.has_value() && data.on_difficulty_change) {
-    auto difficulty_options = std::vector<std::string>{
-        translation_manager::make_translatable_string(strings::i18n::easy)
-            .get_text(),
-        translation_manager::make_translatable_string(strings::i18n::medium)
-            .get_text(),
-        translation_manager::make_translatable_string(strings::i18n::hard)
-            .get_text(),
-        translation_manager::make_translatable_string(strings::i18n::expert)
-            .get_text()};
-    auto current_difficulty = static_cast<size_t>(data.ai_difficulty.value());
-
-    auto difficulty_cell =
-        player_card_cell(context, parent, "difficulty_cell", 0.7f);
-
-    if (auto result = imm::navigation_bar(
-            context, mk(difficulty_cell.ent()), difficulty_options,
-            current_difficulty,
-            ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                .disable_rounded_corners()
-                .with_debug_name("ai_difficulty_navigation_bar"))) {
-      data.on_difficulty_change(
-          static_cast<AIDifficulty::Difficulty>(current_difficulty));
-    }
-  }
-}
-
-void maybe_next_color_button(UIContext<InputAction> &context, Entity &parent,
-                             PlayerCardData &data) {
-  raylib::Texture2D sheet = EntityHelper::get_singleton_cmp<
-                                afterhours::texture_manager::HasSpritesheet>()
-                                ->texture;
-
-  maybe_image_button(context, parent, "next_color", sheet,
-                     afterhours::texture_manager::idx_to_sprite_frame(0, 6),
-                     data.on_next_color);
-}
-
-void maybe_ai_buttons(UIContext<InputAction> &context, Entity &parent,
-                      PlayerCardData &data) {
-
-  auto bottom_row = imm::hstack(
-      context, mk(parent),
-      ComponentConfig{}
-          .with_size(ComponentSize{percent(1.f, 1.f), percent(0.4f, 1.f)})
-          .with_debug_name("player_card_bottom_row"));
-  if (data.is_ai) {
-    maybe_difficulty_button(context, bottom_row.ent(), data);
-
-    if (data.on_difficulty_change) {
-      imm::spacer(
-          context, mk(bottom_row.ent()),
-          ComponentConfig{}
-              .with_size(ComponentSize{percent(0.15f, 0.1f), percent(1.f)}));
-    }
-
-    auto &trash_tex = TextureLibrary::get().get("trashcan");
-    raylib::Rectangle src{0.f, 0.f, static_cast<float>(trash_tex.width),
-                          static_cast<float>(trash_tex.height)};
-    maybe_image_button(context, bottom_row.ent(), "delete", trash_tex, src,
-                       data.on_remove);
-  }
-
-  auto &dollar_tex = TextureLibrary::get().get("dollar_sign");
-  raylib::Rectangle src{0.f, 0.f, static_cast<float>(dollar_tex.width),
-                        static_cast<float>(dollar_tex.height)};
-  maybe_image_button(context, bottom_row.ent(), "add_ai", dollar_tex, src,
-                     data.on_add_ai, 1.f);
-}
-
-// Reusable player card component
-ElementResult create_player_card(UIContext<InputAction> &context,
-                                 Entity &parent, PlayerCardData &data) {
-
-  auto card = imm::div(context, mk(parent),
-                       ComponentConfig{}
-                           .with_size(ComponentSize{percent(1.f), percent(1.f)})
-                           .with_custom_background(data.bg_color)
-                           .disable_rounded_corners());
-
-  // Top row: ID [color] [team switch]
-  auto top_row =
-      imm::hstack(context, mk(card.ent()),
-               ComponentConfig{}
-                   .with_size(ComponentSize{percent(1.0f), percent(0.4f)})
-                   .with_margin(Margin{.top = imm::DefaultSpacing::tiny(),
-                                       .left = imm::DefaultSpacing::tiny(),
-                                       .bottom = imm::DefaultSpacing::tiny(),
-                                       .right = imm::DefaultSpacing::tiny()})
-                   .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                         .left = imm::DefaultSpacing::tiny(),
-                                         .bottom = imm::DefaultSpacing::tiny(),
-                                         .right = imm::DefaultSpacing::tiny()})
-                   .with_debug_name("player_card_top_row"));
-
-  // Player ID label
-  imm::div(context, mk(top_row.ent()),
-           ComponentConfig{}
-               .with_size(ComponentSize{percent(0.2f), percent(1.f)})
-               .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                     .left = imm::DefaultSpacing::tiny(),
-                                     .bottom = imm::DefaultSpacing::tiny(),
-                                     .right = imm::DefaultSpacing::tiny()})
-               .with_label(data.label)
-               .with_custom_background(data.bg_color)
-               .disable_rounded_corners()
-               .with_debug_name("player_id_label"));
-
-  maybe_next_color_button(context, top_row.ent(), data);
-  maybe_button(context, top_row.ent(), "<->", "team_switch",
-               data.on_team_switch);
-  maybe_ai_buttons(context, card.ent(), data);
-
-  return {true, card.ent()};
-}
 
 // Reusable styled button component
 ElementResult create_styled_button(UIContext<InputAction> &context,
@@ -547,10 +324,17 @@ void ScheduleMainMenuUI::once(float) {
 
 bool ScheduleMainMenuUI::should_run(float) {
   // Visibility managed by NavigationSystem; render if menu active and UI
-  // visible
+  // visible.
+  //
+  // Paused counts too. OPTIONS on the pause card puts a menu screen up over a
+  // live round, and this is the only system that applies a queued screen
+  // change -- gated on menu state alone, navigating from the card would hang
+  // on a next_screen nothing ever reads. While paused with no screen up the
+  // switch below has nothing to draw.
   auto *nav = EntityHelper::get_singleton_cmp<MenuNavigationStack>();
-  return GameStateManager::get().is_menu_active() &&
-         (nav ? nav->ui_visible : true);
+  return GameStateManager::get().is_paused() ||
+         (GameStateManager::get().is_menu_active() &&
+          (nav ? nav->ui_visible : true));
 }
 
 // ----------------------------------------------------------------------------
@@ -613,10 +397,41 @@ inline Padding card_padding() {
                  .right = ui::w1280(10.f)};
 }
 
+inline std::string driver_name(size_t seat, bool is_ai) {
+  if (is_ai)
+    return bot_names[seat % bot_names.size()];
+  return fmt::format("PLAYER {}", seat + 1);
+}
+
 inline std::string driver_name(const Slot &slot) {
-  if (slot.is_ai)
-    return bot_names[slot.seat % bot_names.size()];
-  return fmt::format("PLAYER {}", slot.seat + 1);
+  return driver_name(slot.seat, slot.is_ai);
+}
+
+// The screen-chrome button: flat fill, ink keyline, no rounding beyond the
+// radius. Every bottom bar in the game is made of these.
+struct ChromeButton {
+  std::string label;
+  Color fill;
+  Color text;
+  std::string debug_name;
+  Size width = ui::w1280(150.f);
+  Size height = ui::h720(42.f);
+  float font_px = 15.f;
+};
+
+inline bool chrome_button(UIContext<InputAction> &context, Entity &parent,
+                          int index, const ChromeButton &spec) {
+  auto config = ComponentConfig{}
+                    .with_size(ComponentSize{spec.width, spec.height})
+                    .with_label(spec.label)
+                    .with_custom_background(spec.fill)
+                    .with_custom_text_color(spec.text)
+                    .with_border(ink, 3.f)
+                    .with_corner_radius(12.f)
+                    .with_debug_name(spec.debug_name);
+  keep_visuals(config, spec.font_px);
+  animation_control::apply_slide_in(config);
+  return static_cast<bool>(imm::button(context, mk(parent, index), config));
 }
 
 inline std::string device_chip(const Slot &slot) {
@@ -630,35 +445,41 @@ inline std::string device_chip(const Slot &slot) {
   return "KEYBOARD";
 }
 
-// The kart the player will drive, drawn in their paint. imm::sprite always
-// tints white (see docs/afterhours_gaps.md), so the tinted draw goes through
-// the custom-draw escape hatch instead.
+// A kart in a driver's paint, sized to fit whatever rect it lands in.
+// imm::sprite always tints white (see docs/afterhours_gaps.md), so the tinted
+// draw goes through the custom-draw escape hatch instead. Null before the
+// spritesheet singleton exists.
+inline std::function<void(RectangleType)> kart_sprite(Color tint) {
+  auto *sheet_cmp = EntityHelper::get_singleton_cmp<
+      afterhours::texture_manager::HasSpritesheet>();
+  if (!sheet_cmp)
+    return nullptr;
+
+  const auto sheet = sheet_cmp->texture;
+  const auto src = afterhours::texture_manager::idx_to_sprite_frame(0, 1);
+  return [sheet, src, tint](RectangleType r) {
+    const float side = std::min(r.width, r.height) * 0.86f;
+    const RectangleType dest{r.x + (r.width - side) * 0.5f,
+                             r.y + (r.height - side) * 0.5f, side, side};
+    raylib::DrawTexturePro(sheet, src, dest, raylib::Vector2{0.f, 0.f}, 0.f,
+                           tint);
+  };
+}
+
+// The kart the player will drive, as a button that cycles their paint.
 inline void kart_portrait(UIContext<InputAction> &context, Entity &card,
                           int slot_index, Color tint,
                           const std::function<void()> &on_click) {
-  auto *sheet_cmp = EntityHelper::get_singleton_cmp<
-      afterhours::texture_manager::HasSpritesheet>();
-  const std::string dbg = fmt::format("slot_{}_kart", slot_index);
-
   auto config = ComponentConfig{}
                     .with_size(ComponentSize{percent(1.f), expand()})
                     .with_custom_background(well_bg)
                     .with_custom_hover_bg(panel_bg)
                     .with_corner_radius(10.f)
-                    .with_debug_name(dbg);
+                    .with_debug_name(fmt::format("slot_{}_kart", slot_index));
   keep_visuals(config, 12.f);
 
-  if (sheet_cmp) {
-    const auto sheet = sheet_cmp->texture;
-    const auto src = afterhours::texture_manager::idx_to_sprite_frame(0, 1);
-    config.with_on_draw_fg([sheet, src, tint](RectangleType r) {
-      const float side = std::min(r.width, r.height) * 0.86f;
-      const RectangleType dest{r.x + (r.width - side) * 0.5f,
-                               r.y + (r.height - side) * 0.5f, side, side};
-      raylib::DrawTexturePro(sheet, src, dest, raylib::Vector2{0.f, 0.f}, 0.f,
-                             tint);
-    });
-  }
+  if (auto sprite = kart_sprite(tint))
+    config.with_on_draw_fg(sprite);
 
   if (imm::button(context, mk(card, 1), config))
     on_click();
@@ -944,6 +765,16 @@ inline std::string time_option_label(RoundSettings::TimeOptions option) {
     return text_for(strings::i18n::time_1_minute);
   }
   return text_for(strings::i18n::unknown);
+}
+
+// What the middle slot of a "MODE // ? // ..." pill says. Lives has no clock,
+// so it states the stake it does have.
+inline std::string clock_or_lives() {
+  auto &manager = RoundManager::get();
+  if (manager.uses_timer())
+    return time_option_label(manager.get_active_settings().time_option);
+  const int lives = manager.fetch_num_starting_lives();
+  return fmt::format("{} {}", lives, lives == 1 ? "LIFE" : "LIVES");
 }
 
 inline std::string weapon_name(Weapon::Type type) {
@@ -1429,14 +1260,9 @@ inline void draw_thumb(RectangleType r, const Thumb &thumb) {
 }
 
 inline std::string rules_pill_text(size_t driver_count) {
-  auto &manager = RoundManager::get();
-  const std::string middle =
-      manager.uses_timer()
-          ? rr::time_option_label(manager.get_active_settings().time_option)
-          : fmt::format("{} LIVES", manager.fetch_num_starting_lives());
   return fmt::format("{} // {} // {}P",
-                     rr::mode_name(manager.active_round_type), middle,
-                     driver_count);
+                     rr::mode_name(RoundManager::get().active_round_type),
+                     rr::clock_or_lives(), driver_count);
 }
 
 inline std::string track_name(int map_index) {
@@ -1703,247 +1529,224 @@ inline void sound_panel(UIContext<InputAction> &context, Entity &parent) {
 
 } // namespace options
 
-void ScheduleMainMenuUI::round_end_player_column(
-    Entity &parent, UIContext<InputAction> &context, const size_t index,
-    const std::vector<OptEntity> &round_players,
-    const std::vector<OptEntity> &round_ais, std::optional<int> ranking) {
+// ----------------------------------------------------------------------------
+// Results ("<DRIVER> WINS") -- see docs/ui-mock.html section 07.
+//
+// A podium: each driver's kart above a bar whose height is their score, tallest
+// first, the winner's bar in the butter stripe. It replaces a row of coloured
+// cards each holding a sentence of numbers, which said who scored what but not
+// who won.
+//
+// The mock also asks for static confetti. That is already on screen and cost
+// nothing: RenderMenuBackdrop (src/systems/menu_backdrop.h) draws its Memphis
+// geometry behind every menu screen, and RoundEnd is one.
+//
+// Determinism: no clock, no rand(). Scores come off the cars the round left
+// behind and ties break on entity id, so the order is the same every run.
+// ----------------------------------------------------------------------------
+namespace results {
 
-  bool is_slot_ai = index >= round_players.size();
+namespace cs = character_select;
+namespace rr = round_rules;
+namespace ts = track_select;
+using afterhours::Color;
 
-  OptEntity car;
-  if (index < round_players.size()) {
-    car = round_players[index];
-  } else {
-    car = round_ais[index - round_players.size()];
-  }
+// Podium geometry. A zero score still gets bar_min so the kart above it has
+// something to stand on and the row keeps a common baseline.
+constexpr float bar_min = 30.f;
+constexpr float bar_max = 150.f;
 
-  if (!car.has_value()) {
-    return;
-  }
+// butter with the mock's 12% black over it, precomputed: the stripe has to be
+// opaque, because it is painted by the same bg hook as the fill under it.
+constexpr Color butter_stripe{211, 204, 81, 255};
 
-  auto bg_color = car->get<HasColor>().color();
-  const auto num_cols = std::min(
-      4.f, static_cast<float>(round_players.size() + round_ais.size()));
-
-  float card_v = 1.0f;
-  if (!animation_control::disabled()) {
-    afterhours::animation::one_shot(
-        UIKey::RoundEndCard, index,
-        ui_anims::make_round_end_card_stagger(index));
-    card_v = afterhours::animation::clamp_value(UIKey::RoundEndCard, index,
-                                                0.0f, 1.0f);
-  }
-  auto column =
-      imm::div(context, mk(parent, (int)index),
-               ComponentConfig{}
-                   .with_size(ComponentSize{percent(1.f / num_cols, 0.1f),
-                                            percent(1.f, 0.4f)})
-                   .with_margin(Spacing::xs)
-                   .with_custom_background(bg_color)
-                   .with_translate(0.0f, (1.0f - card_v) * 20.0f)
-                   .with_opacity(card_v)
-                   .disable_rounded_corners());
-
-  // Create player label
-  std::string player_label = fmt::format("{} {}", index, car->id);
-
-  // Get stats text based on round type
-  std::optional<std::string> stats_text;
+// What the bar measures, per mode. The team totals sum the same call, so this
+// screen has one definition of "score".
+inline int driver_score(const Entity &car) {
   switch (RoundManager::get().active_round_type) {
   case RoundType::Lives:
-    if (car->has<HasMultipleLives>()) {
-      stats_text = translation_manager::translate_formatted(
-          translation_manager::make_translatable_string(
-              strings::i18n::lives_label)
-              .set_param(translation_manager::i18nParam::number_count,
-                         car->get<HasMultipleLives>().num_lives_remaining,
-                         translation_manager::translation_param));
-    }
-    break;
+    return car.has<HasMultipleLives>()
+               ? car.get<HasMultipleLives>().num_lives_remaining
+               : 0;
   case RoundType::Kills:
-    if (car->has<HasKillCountTracker>()) {
-      stats_text = translation_manager::translate_formatted(
-          translation_manager::make_translatable_string(
-              strings::i18n::kills_label)
-              .set_param(translation_manager::i18nParam::number_count,
-                         car->get<HasKillCountTracker>().kills,
-                         translation_manager::translation_param));
-    }
-    break;
+    return car.has<HasKillCountTracker>()
+               ? car.get<HasKillCountTracker>().kills
+               : 0;
   case RoundType::Hippo:
-    if (car->has<HasHippoCollection>()) {
-      stats_text = translation_manager::translate_formatted(
-          translation_manager::make_translatable_string(
-              strings::i18n::hippos_label)
-              .set_param(translation_manager::i18nParam::number_count,
-                         car->get<HasHippoCollection>().get_hippo_count(),
-                         translation_manager::translation_param));
-    } else {
-      stats_text = translation_manager::make_translatable_string(
-                       strings::i18n::hippos_zero)
-                       .get_text();
-    }
-    break;
+    return car.has<HasHippoCollection>()
+               ? car.get<HasHippoCollection>().get_hippo_count()
+               : 0;
   case RoundType::TagAndGo:
-    if (car->has<HasTagAndGoTracking>()) {
-      stats_text = translation_manager::translate_formatted(
-          translation_manager::make_translatable_string(
-              strings::i18n::not_it_timer)
-              // Rounded here, not in the format string: TranslatableString
-              // stringifies every param, so "{:.1f}" would throw.
-              .set_param(translation_manager::i18nParam::number_time,
-                         fmt::format("{:.1f}", car->get<HasTagAndGoTracking>()
-                                                   .time_as_not_it),
-                         translation_manager::translation_param));
-    }
-    break;
-  default:
-    stats_text =
-        translation_manager::make_translatable_string(strings::i18n::unknown)
-            .get_text();
-    break;
+    return car.has<HasTagAndGoTracking>()
+               ? static_cast<int>(
+                     car.get<HasTagAndGoTracking>().time_as_not_it)
+               : 0;
   }
+  return 0;
+}
 
-  std::optional<std::string> kills_text;
-  if (car->has<HasKillCountTracker>()) {
-    kills_text = translation_manager::translate_formatted(
-        translation_manager::make_translatable_string(
-            strings::i18n::kills_label)
-            .set_param(translation_manager::i18nParam::number_count,
-                       car->get<HasKillCountTracker>().kills,
-                       translation_manager::translation_param));
-  }
+struct Finisher {
+  EntityID id{0};
+  std::string name;
+  Color paint;
+  int score{0};
+  int team{-1};
+};
 
-  // Score roll-up value (0..1). We keep it generic regardless of round type
-  float score_t = 1.0f;
-  if (!animation_control::disabled()) {
-    afterhours::animation::one_shot(UIKey::RoundEndScore, index, [](auto h) {
-      h.from(0.0f).to(1.0f, 0.8f,
-             afterhours::animation::EasingType::EaseOutQuad);
-    });
-    score_t = afterhours::animation::clamp_value(UIKey::RoundEndScore, index,
-                                                 0.0f, 1.0f);
-  }
+inline std::vector<Finisher>
+standings(const std::vector<OptEntity> &round_players,
+          const std::vector<OptEntity> &round_ais) {
+  std::vector<Finisher> board;
+  board.reserve(round_players.size() + round_ais.size());
 
-  // Compute animated stats text per-round
-  std::optional<std::string> animated_stats = std::nullopt;
-  switch (RoundManager::get().active_round_type) {
-  case RoundType::Lives: {
-    if (car->has<HasMultipleLives>()) {
-      int final_val = car->get<HasMultipleLives>().num_lives_remaining;
-      int shown = static_cast<int>(std::round(score_t * final_val));
-      animated_stats = translation_manager::translate_formatted(
-          translation_manager::make_translatable_string(
-              strings::i18n::lives_label)
-              .set_param(translation_manager::i18nParam::number_count, shown,
-                         translation_manager::translation_param));
-    }
-    break;
-  }
-  case RoundType::Kills: {
-    if (car->has<HasKillCountTracker>()) {
-      int final_val = car->get<HasKillCountTracker>().kills;
-      int shown = static_cast<int>(std::round(score_t * final_val));
-      animated_stats = translation_manager::translate_formatted(
-          translation_manager::make_translatable_string(
-              strings::i18n::kills_label)
-              .set_param(translation_manager::i18nParam::number_count, shown,
-                         translation_manager::translation_param));
-    }
-    break;
-  }
-  case RoundType::Hippo: {
-    int final_val = car->has<HasHippoCollection>()
-                        ? car->get<HasHippoCollection>().get_hippo_count()
-                        : 0;
-    int shown = static_cast<int>(std::round(score_t * final_val));
-    animated_stats = translation_manager::translate_formatted(
-        translation_manager::make_translatable_string(
-            strings::i18n::hippos_label)
-            .set_param(translation_manager::i18nParam::number_count, shown,
-                       translation_manager::translation_param));
-    break;
-  }
-  case RoundType::TagAndGo: {
-    if (car->has<HasTagAndGoTracking>()) {
-      float final_val = car->get<HasTagAndGoTracking>().time_as_not_it;
-      animated_stats = translation_manager::translate_formatted(
-          translation_manager::make_translatable_string(
-              strings::i18n::not_it_timer)
-              .set_param(translation_manager::i18nParam::number_time,
-                         fmt::format("{:.1f}", score_t * final_val),
-                         translation_manager::translation_param));
-    }
-    break;
-  }
-  default: {
-    break;
-  }
-  }
-
-  // Combine round-specific stats with kill count
-  std::optional<std::string> combined_stats;
-  std::string final_stats_text =
-      animated_stats.has_value()
-          ? animated_stats.value()
-          : (stats_text.has_value() ? stats_text.value() : "");
-
-  if (kills_text.has_value()) {
-    if (!final_stats_text.empty()) {
-      combined_stats = final_stats_text + " | " + kills_text.value();
-    } else {
-      combined_stats = kills_text.value();
-    }
-  } else if (!final_stats_text.empty()) {
-    combined_stats = final_stats_text;
-  }
-
-  ui_helpers::PlayerCardData data{
-      .parent = column.ent(),
-      .index = 0,
-      .label = player_label,
-      .bg_color = bg_color,
-      .is_ai = is_slot_ai,
-      .ranking = ranking,
-      .stats_text = combined_stats,
+  const auto add = [&board](const OptEntity &opt, size_t seat, bool is_ai) {
+    if (!opt.has_value())
+      return;
+    const Entity &car = opt.asE();
+    board.push_back({car.id, cs::driver_name(seat, is_ai),
+                     car.get<HasColor>().color(), driver_score(car),
+                     car.has<TeamID>() ? car.get<TeamID>().team_id : -1});
   };
 
-  ui_helpers::create_player_card(context, column.ent(), data);
+  for (size_t i = 0; i < round_players.size(); i++)
+    add(round_players[i], i, false);
+  for (size_t i = 0; i < round_ais.size(); i++)
+    add(round_ais[i], i, true);
+
+  // Entity id breaks ties so two drivers on the same score never swap columns
+  // between frames.
+  std::ranges::sort(board, [](const Finisher &a, const Finisher &b) {
+    return a.score != b.score ? a.score > b.score : a.id < b.id;
+  });
+  return board;
 }
 
-std::map<EntityID, int> ScheduleMainMenuUI::get_tag_and_go_rankings(
-    const std::vector<OptEntity> &round_players,
-    const std::vector<OptEntity> &round_ais) {
-  std::map<EntityID, int> rankings;
-
-  // Combine all players and AIs
-  std::vector<std::pair<EntityID, float>> player_times;
-
-  for (const auto &player : round_players) {
-    if (player->has<HasTagAndGoTracking>()) {
-      player_times.emplace_back(
-          player->id, player->get<HasTagAndGoTracking>().time_as_not_it);
-    }
-  }
-
-  for (const auto &ai : round_ais) {
-    if (ai->has<HasTagAndGoTracking>()) {
-      player_times.emplace_back(ai->id,
-                                ai->get<HasTagAndGoTracking>().time_as_not_it);
-    }
-  }
-
-  // Sort by runner time (highest first - most time not it wins)
-  std::sort(player_times.begin(), player_times.end(),
-            [](const auto &a, const auto &b) { return a.second > b.second; });
-
-  // Assign rankings (1-based)
-  for (size_t i = 0; i < player_times.size(); ++i) {
-    rankings[player_times[i].first] = static_cast<int>(i + 1);
-  }
-
-  return rankings;
+inline int team_score(const std::vector<Finisher> &board, int team) {
+  int total = 0;
+  for (const Finisher &f : board)
+    if (f.team == team)
+      total += f.score;
+  return total;
 }
+
+inline std::string headline(const std::vector<Finisher> &board,
+                            bool team_mode) {
+  if (team_mode) {
+    const int a = team_score(board, 0);
+    const int b = team_score(board, 1);
+    if (a == b)
+      return "DEAD HEAT";
+    return a > b ? "TEAM A WINS" : "TEAM B WINS";
+  }
+  // A round where nobody scored has no winner to name, and claiming one on a
+  // score of zero reads as a bug.
+  if (board.empty() || board[0].score == 0)
+    return "NOBODY WINS";
+  if (board.size() > 1 && board[1].score == board[0].score)
+    return "DEAD HEAT";
+  return board[0].name + " WINS";
+}
+
+// Restates the rules so a screenshot of this screen explains itself.
+inline std::string rules_pill_text() {
+  return fmt::format("{} // {} // {}",
+                     rr::mode_name(RoundManager::get().active_round_type),
+                     rr::clock_or_lives(),
+                     ts::track_name(MapManager::get().get_selected_map()));
+}
+
+inline void podium_column(UIContext<InputAction> &context, Entity &row,
+                          int place, const Finisher &finisher, int top_score,
+                          bool is_winner) {
+  const std::string dbg = fmt::format("podium_{}", place);
+
+  // +1 leaves index 0 for the leading shoulder, so sibling index order and
+  // creation order agree.
+  auto column =
+      imm::vstack(context, mk(row, place + 1),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{expand(), percent(1.f)})
+                      .with_padding(Padding{.left = ui::w1280(8.f),
+                                            .right = ui::w1280(8.f)})
+                      .with_transparent_bg()
+                      .with_debug_name(dbg));
+
+  // Bars are read against a shared floor, so the column packs from the bottom:
+  // everything above the kart is one expanding spacer.
+  imm::div(context, mk(column.ent(), 0),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), expand()})
+               .with_transparent_bg()
+               .with_skip_tabbing(true)
+               .with_debug_name(dbg + "_gap"));
+
+  auto kart = ComponentConfig{}
+                  .with_size(ComponentSize{percent(1.f), ui::h720(64.f)})
+                  .with_transparent_bg()
+                  .with_skip_tabbing(true)
+                  .with_debug_name(dbg + "_kart");
+  if (auto sprite = cs::kart_sprite(finisher.paint))
+    kart.with_on_draw_fg(sprite);
+  imm::div(context, mk(column.ent(), 1), kart);
+
+  imm::div(context, mk(column.ent(), 2),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(18.f)})
+               .with_label(finisher.name)
+               .with_transparent_bg()
+               .with_custom_text_color(is_winner ? cs::butter : cs::muted)
+               .with_font_size(11.f)
+               .with_skip_tabbing(true)
+               .with_debug_name(dbg + "_name"));
+
+  float grow = 1.0f;
+  if (!animation_control::disabled()) {
+    afterhours::animation::one_shot(UIKey::RoundEndScore, place, [](auto h) {
+      h.from(0.0f).to(1.0f, 0.8f,
+                      afterhours::animation::EasingType::EaseOutQuad);
+    });
+    grow = afterhours::animation::clamp_value(UIKey::RoundEndScore, place, 0.0f,
+                                              1.0f);
+  }
+
+  const float share = top_score > 0 ? static_cast<float>(finisher.score) /
+                                          static_cast<float>(top_score)
+                                    : 0.f;
+  const float height = bar_min + share * (bar_max - bar_min) * grow;
+  const int shown = static_cast<int>(std::round(grow * finisher.score));
+
+  imm::div(
+      context, mk(column.ent(), 3),
+      ComponentConfig{}
+          .with_size(ComponentSize{percent(1.f), pixels(height)})
+          .with_label(std::to_string(shown))
+          // The fill goes in the bg hook, not with_custom_background: the
+          // widget's own fill would paint over it, and the fg hook draws after
+          // the label, which would bury the score.
+          .with_transparent_bg()
+          .with_custom_text_color(cs::ink)
+          .with_border(cs::ink, 3.f)
+          .with_rounded_corners(RoundedCorners{})
+          .with_corner_radius(0.f)
+          .with_alignment(TextAlignment::Center)
+          .with_font_size(24.f)
+          .with_skip_tabbing(true)
+          .with_on_draw_bg([is_winner](RectangleType r) {
+            raylib::DrawRectangleRec(r, is_winner ? cs::butter : cs::sky);
+            if (!is_winner)
+              return;
+            begin_scissor_mode(static_cast<int>(r.x), static_cast<int>(r.y),
+                               static_cast<int>(r.width),
+                               static_cast<int>(r.height));
+            for (float x = r.x; x < r.x + r.width; x += 16.f)
+              raylib::DrawRectangleRec(RectangleType{x, r.y, 8.f, r.height},
+                                       butter_stripe);
+            end_scissor_mode();
+          })
+          .with_debug_name(dbg + "_bar"));
+}
+
+} // namespace results
 
 Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                                               UIContext<InputAction> &context) {
@@ -1961,7 +1764,7 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                   ComponentConfig{}
                       .with_size(ComponentSize{screen_pct(0.90f, 1.f),
                                                screen_pct(0.86f, 1.f)})
-                      .with_absolute_position(screen_pct(0.05f),
+                      .with_absolute_position(ui_helpers::absolute_x(64.f),
                                               screen_pct(0.07f))
                       .with_transparent_bg()
                       .with_debug_name("character_content"));
@@ -2100,28 +1903,13 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                       .with_no_wrap()
                       .with_debug_name("character_bottom_bar"));
 
-  const auto chrome_button = [&](int idx, const std::string &label,
-                                 Color fill, Color text,
-                                 const char *debug_name) {
-    auto config = ComponentConfig{}
-                      .with_size(ComponentSize{ui::w1280(150.f),
-                                               ui::h720(42.f)})
-                      .with_label(label)
-                      .with_custom_background(fill)
-                      .with_custom_text_color(text)
-                      .with_border(cs::ink, 3.f)
-                      .with_corner_radius(12.f)
-                      .with_debug_name(debug_name);
-    cs::keep_visuals(config, 15.f);
-    animation_control::apply_slide_in(config);
-    return static_cast<bool>(imm::button(context, mk(bottom.ent(), idx), config));
-  };
-
-  if (chrome_button(0,
-                    translation_manager::make_translatable_string(
-                        strings::i18n::back)
-                        .get_text(),
-                    cs::well_bg, cs::mint, "btn_back")) {
+  if (cs::chrome_button(context, bottom.ent(), 0,
+                        {.label = translation_manager::
+                             make_translatable_string(strings::i18n::back)
+                                 .get_text(),
+                         .fill = cs::well_bg,
+                         .text = cs::mint,
+                         .debug_name = "btn_back"})) {
     navigation::back();
   }
 
@@ -2148,7 +1936,11 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                .with_skip_tabbing(true)
                .with_debug_name("character_driver_count"));
 
-  if (chrome_button(3, "NEXT", cs::butter, cs::ink, "btn_next")) {
+  if (cs::chrome_button(context, bottom.ent(), 3,
+                        {.label = "NEXT",
+                         .fill = cs::butter,
+                         .text = cs::ink,
+                         .debug_name = "btn_next"})) {
     navigation::to(GameStateManager::Screen::RoundSettings);
   }
 
@@ -2365,8 +2157,43 @@ bool SchedulePauseUI::should_run(float) {
          GameStateManager::get().is_paused();
 }
 
+// ----------------------------------------------------------------------------
+// Pause ("TIME OUT") -- see docs/ui-mock.html section 08.
+//
+// A bordered card over a dimmed arena, rather than three menu buttons drawn
+// straight onto live gameplay. The card says what you paused and how much of
+// it is left.
+//
+// The scrim is a flat colour, not with_opacity(): opacity on a transparent
+// element paints black (see docs/afterhours_gaps.md).
+// ----------------------------------------------------------------------------
+namespace pause_menu {
+
+namespace cs = character_select;
+namespace rr = round_rules;
+using afterhours::Color;
+
+// The mock's rgba(20,10,48,.8), precomputed.
+constexpr Color scrim{20, 10, 48, 204};
+
+inline std::string status_line() {
+  auto &manager = RoundManager::get();
+  const std::string mode = rr::mode_name(manager.active_round_type);
+  if (!manager.uses_timer())
+    return fmt::format("{} // {}", mode, rr::clock_or_lives());
+
+  const int left =
+      std::max(0, static_cast<int>(manager.get_current_round_time()));
+  return fmt::format("{} // {}:{:02} LEFT", mode, left / 60, left % 60);
+}
+
+} // namespace pause_menu
+
 void SchedulePauseUI::for_each_with(Entity &entity,
                                     UIContext<InputAction> &context, float) {
+  namespace pm = pause_menu;
+  namespace cs = character_select;
+
   const bool pause_pressed =
       std::ranges::any_of(inpc.inputs_pressed(), [](const auto &actions_done) {
         return action_matches(actions_done.action, InputAction::PauseButton);
@@ -2386,63 +2213,90 @@ void SchedulePauseUI::for_each_with(Entity &entity,
     return;
   }
 
-  auto elem =
-      imm::div(context, mk(entity),
-               ComponentConfig{}
-                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_absolute_position()
-                   .with_debug_name("pause_screen"));
-
-  auto left_col =
-      imm::vstack(context, mk(elem.ent()),
-               ComponentConfig{}
-                   .with_size(ComponentSize{percent(0.2f), percent(1.0f)})
-                   .with_padding(Padding{.top = screen_pct(0.02f),
-                                         .left = screen_pct(0.02f)})
-                   .with_debug_name("pause_left"));
-
-  imm::div(context, mk(left_col.ent(), 0),
+  imm::div(context, mk(entity),
            ComponentConfig{}
-               .with_label(translation_manager::make_translatable_string(
-                               strings::i18n::paused)
-                               .get_text())
-               .with_skip_tabbing(true)
-               .with_size(ComponentSize{pixels(400.f), pixels(100.f)}));
+               .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+               .with_absolute_position()
+               .with_custom_background(pm::scrim)
+               .with_debug_name("pause_scrim"));
 
-  if (imm::button(context, mk(left_col.ent(), 1),
+  // OPTIONS hands the screen to ScheduleMainMenuUI, which renders after this
+  // system and so draws over the scrim. The card would fight it, so it steps
+  // aside until the screen is dismissed.
+  if (GameStateManager::get().active_screen != Screen::None)
+    return;
+
+  auto card =
+      imm::vstack(context, mk(entity, 1),
                   ComponentConfig{}
-                      .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                            .left = imm::DefaultSpacing::tiny(),
-                                            .bottom = imm::DefaultSpacing::tiny(),
-                                            .right = imm::DefaultSpacing::tiny()})
-                      .with_label(translation_manager::make_translatable_string(
-                                      strings::i18n::resume)
-                                      .get_text()))) {
+                      .with_size(ComponentSize{ui::w1280(400.f),
+                                               ui::h720(304.f)})
+                      .with_absolute_position(ui_helpers::absolute_x(440.f),
+                                              ui::h720(208.f))
+                      .with_custom_background(cs::panel_bg)
+                      .with_border(cs::butter, 3.f)
+                      .with_corner_radius(16.f)
+                      .with_gap(pixels(12.f))
+                      .with_padding(Padding{.top = ui::h720(24.f),
+                                            .left = ui::w1280(24.f),
+                                            .bottom = ui::h720(24.f),
+                                            .right = ui::w1280(24.f)})
+                      .with_debug_name("pause_card"));
+
+  imm::div(context, mk(card.ent(), 0),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(52.f)})
+               .with_label("TIME OUT")
+               .with_font_size(40.f)
+               .with_alignment(TextAlignment::Center)
+               .with_transparent_bg()
+               .with_custom_text_color(cs::butter)
+               .with_skip_tabbing(true)
+               .with_debug_name("pause_heading"));
+
+  imm::div(context, mk(card.ent(), 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(22.f)})
+               .with_label(pm::status_line())
+               .with_font_size(11.f)
+               .with_alignment(TextAlignment::Center)
+               .with_transparent_bg()
+               .with_custom_text_color(cs::muted)
+               .with_skip_tabbing(true)
+               .with_debug_name("pause_status"));
+
+  if (cs::chrome_button(context, card.ent(), 2,
+                        {.label = "BACK TO IT",
+                         .fill = cs::butter,
+                         .text = cs::ink,
+                         .debug_name = "btn_back_to_it",
+                         .width = percent(1.f),
+                         .height = ui::h720(44.f)})) {
     GameStateManager::get().unpause_game();
   }
 
-  if (imm::button(context, mk(left_col.ent(), 2),
-                  ComponentConfig{}
-                      .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                            .left = imm::DefaultSpacing::tiny(),
-                                            .bottom = imm::DefaultSpacing::tiny(),
-                                            .right = imm::DefaultSpacing::tiny()})
-                      .with_label(translation_manager::make_translatable_string(
-                                      strings::i18n::back_to_setup)
-                                      .get_text()))) {
-    GameStateManager::get().end_game();
+  if (cs::chrome_button(context, card.ent(), 3,
+                        {.label = translation_manager::
+                             make_translatable_string(strings::i18n::settings)
+                                 .get_text(),
+                         .fill = cs::mint,
+                         .text = cs::ink,
+                         .debug_name = "btn_pause_options",
+                         .width = percent(1.f),
+                         .height = ui::h720(44.f)})) {
+    navigation::to(GameStateManager::Screen::Settings);
   }
 
-  if (imm::button(context, mk(left_col.ent(), 3),
-                  ComponentConfig{}
-                      .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                            .left = imm::DefaultSpacing::tiny(),
-                                            .bottom = imm::DefaultSpacing::tiny(),
-                                            .right = imm::DefaultSpacing::tiny()})
-                      .with_label(translation_manager::make_translatable_string(
-                                      strings::i18n::exit_game)
-                                      .get_text()))) {
-    exit_game();
+  // Ends the round rather than the process. Quitting the game lives on the
+  // main menu, which this is now two clicks from.
+  if (cs::chrome_button(context, card.ent(), 4,
+                        {.label = "I GIVE UP",
+                         .fill = cs::well_bg,
+                         .text = cs::mint,
+                         .debug_name = "btn_give_up",
+                         .width = percent(1.f),
+                         .height = ui::h720(44.f)})) {
+    GameStateManager::get().end_game();
   }
 }
 
@@ -2463,7 +2317,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                   ComponentConfig{}
                       .with_size(ComponentSize{screen_pct(0.90f, 1.f),
                                                screen_pct(0.86f, 1.f)})
-                      .with_absolute_position(screen_pct(0.05f),
+                      .with_absolute_position(ui_helpers::absolute_x(64.f),
                                               screen_pct(0.07f))
                       .with_transparent_bg()
                       .with_debug_name("round_settings_content"));
@@ -2510,29 +2364,16 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                       .with_no_wrap()
                       .with_debug_name("round_settings_bottom_bar"));
 
-  const auto chrome_button = [&](int idx, const std::string &label,
-                                 Color fill, Color text,
-                                 const char *debug_name) {
-    auto config = ComponentConfig{}
-                      .with_size(ComponentSize{ui::w1280(190.f),
-                                               ui::h720(42.f)})
-                      .with_label(label)
-                      .with_custom_background(fill)
-                      .with_custom_text_color(text)
-                      .with_border(cs::ink, 3.f)
-                      .with_corner_radius(12.f)
-                      .with_debug_name(debug_name);
-    cs::keep_visuals(config, 15.f);
-    animation_control::apply_slide_in(config);
-    return static_cast<bool>(
-        imm::button(context, mk(bottom.ent(), idx), config));
-  };
+  const Size wide = ui::w1280(190.f);
 
-  if (chrome_button(0,
-                    translation_manager::make_translatable_string(
-                        strings::i18n::back)
-                        .get_text(),
-                    cs::well_bg, cs::mint, "btn_back")) {
+  if (cs::chrome_button(context, bottom.ent(), 0,
+                        {.label = translation_manager::
+                             make_translatable_string(strings::i18n::back)
+                                 .get_text(),
+                         .fill = cs::well_bg,
+                         .text = cs::mint,
+                         .debug_name = "btn_back",
+                         .width = wide})) {
     navigation::back();
   }
 
@@ -2543,11 +2384,14 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
                .with_skip_tabbing(true)
                .with_debug_name("round_settings_bottom_gap"));
 
-  if (chrome_button(2,
-                    translation_manager::make_translatable_string(
-                        strings::i18n::select_map)
-                        .get_text(),
-                    cs::butter, cs::ink, "btn_select_map")) {
+  if (cs::chrome_button(context, bottom.ent(), 2,
+                        {.label = translation_manager::
+                             make_translatable_string(strings::i18n::select_map)
+                                 .get_text(),
+                         .fill = cs::butter,
+                         .text = cs::ink,
+                         .debug_name = "btn_select_map",
+                         .width = wide})) {
     navigation::to(GameStateManager::Screen::MapSelection);
   }
 
@@ -2587,7 +2431,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                   ComponentConfig{}
                       .with_size(ComponentSize{screen_pct(0.90f, 1.f),
                                                screen_pct(0.86f, 1.f)})
-                      .with_absolute_position(screen_pct(0.05f),
+                      .with_absolute_position(ui_helpers::absolute_x(64.f),
                                               screen_pct(0.07f))
                       .with_transparent_bg()
                       .with_debug_name("map_selection_content"));
@@ -2736,29 +2580,16 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                       .with_no_wrap()
                       .with_debug_name("map_bottom_bar"));
 
-  const auto chrome_button = [&](int idx, const std::string &label,
-                                 Color fill, Color text,
-                                 const char *debug_name) {
-    auto config = ComponentConfig{}
-                      .with_size(ComponentSize{ui::w1280(190.f),
-                                               ui::h720(42.f)})
-                      .with_label(label)
-                      .with_custom_background(fill)
-                      .with_custom_text_color(text)
-                      .with_border(cs::ink, 3.f)
-                      .with_corner_radius(12.f)
-                      .with_debug_name(debug_name);
-    cs::keep_visuals(config, 15.f);
-    animation_control::apply_slide_in(config);
-    return static_cast<bool>(
-        imm::button(context, mk(bottom.ent(), idx), config));
-  };
+  const Size wide = ui::w1280(190.f);
 
-  if (chrome_button(0,
-                    translation_manager::make_translatable_string(
-                        strings::i18n::back)
-                        .get_text(),
-                    cs::well_bg, cs::mint, "btn_back")) {
+  if (cs::chrome_button(context, bottom.ent(), 0,
+                        {.label = translation_manager::
+                             make_translatable_string(strings::i18n::back)
+                                 .get_text(),
+                         .fill = cs::well_bg,
+                         .text = cs::mint,
+                         .debug_name = "btn_back",
+                         .width = wide})) {
     navigation::back();
   }
 
@@ -2770,7 +2601,12 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
                .with_debug_name("map_bottom_gap"));
 
   // create_map resolves RANDOM itself, so GO is one path either way.
-  if (chrome_button(2, "GO", cs::mint, cs::ink, "btn_go")) {
+  if (cs::chrome_button(context, bottom.ent(), 2,
+                        {.label = "GO",
+                         .fill = cs::mint,
+                         .text = cs::ink,
+                         .debug_name = "btn_go",
+                         .width = wide})) {
     maps.create_map();
     GameStateManager::get().start_game();
   }
@@ -2863,7 +2699,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                   ComponentConfig{}
                       .with_size(ComponentSize{screen_pct(0.90f, 1.f),
                                                screen_pct(0.86f, 1.f)})
-                      .with_absolute_position(screen_pct(0.05f),
+                      .with_absolute_position(ui_helpers::absolute_x(64.f),
                                               screen_pct(0.07f))
                       .with_transparent_bg()
                       .with_debug_name("settings_content"));
@@ -3084,256 +2920,200 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
       GameStateManager::get().active_screen);
 }
 
-void ScheduleMainMenuUI::render_team_column_results(
-    UIContext<InputAction> &context, Entity &parent,
-    const std::string &team_name, int team_id,
-    const std::vector<OptEntity> &team_players, int team_score) {
-  // Determine team color
-  auto team_color =
-      team_id == 0
-          ? afterhours::ui::imm::ThemeDefaults::get().get_theme().from_usage(
-                Theme::Usage::Primary) // Light blue for Team A
-          : afterhours::ui::imm::ThemeDefaults::get().get_theme().from_usage(
-                Theme::Usage::Accent); // Light orange for Team B
-
-  // Create team column
-  auto team_column =
-      imm::vstack(context, mk(parent, team_id),
-               ComponentConfig{}
-                   .with_size(ComponentSize{percent(0.5f), percent(1.f)})
-                   .with_custom_background(team_color)
-                   .disable_rounded_corners()
-                   .with_debug_name(team_name + "_column"));
-
-  imm::div(context, mk(team_column.ent()),
-           ComponentConfig{}
-               .with_label(team_name)
-               .with_size(ComponentSize{percent(1.f), percent(0.15f)})
-               .with_debug_name(team_name + "_header"));
-
-  // Team score
-  imm::div(context, mk(team_column.ent()),
-           ComponentConfig{}
-               .with_label("Score: " + std::to_string(team_score))
-               .with_size(ComponentSize{percent(1.f), percent(0.1f)})
-               .with_debug_name(team_name + "_score"));
-
-  // Team players
-  for (size_t i = 0; i < team_players.size(); i++) {
-    const auto &player = team_players[i];
-    if (player.has_value()) {
-      std::string player_name = "Player" + std::to_string(i + 1);
-      if (player->has<PlayerID>()) {
-        player_name = "Player" + std::to_string(player->get<PlayerID>().id);
-      } else if (player->has<AIControlled>()) {
-        player_name = "AI" + std::to_string(i + 1);
-      }
-
-      imm::div(
-          context, mk(team_column.ent(), i),
-          ComponentConfig{}
-              .with_label(player_name)
-              .with_size(ComponentSize{percent(1.f), percent(0.1f)})
-              .with_debug_name(team_name + "_player_" + std::to_string(i)));
-    }
-  }
-}
-
-void ScheduleMainMenuUI::render_team_results(
-    UIContext<InputAction> &context, Entity &parent,
-    const std::vector<OptEntity> &round_players,
-    const std::vector<OptEntity> &round_ais) {
-  // Group players by team
-  std::map<int, std::vector<OptEntity>> team_groups;
-
-  // Group players by team
-  for (const auto &player : round_players) {
-    if (player.has_value()) {
-      int team_id = -1; // Default to no team
-      if (player->has<TeamID>()) {
-        team_id = player->get<TeamID>().team_id;
-      }
-      team_groups[team_id].push_back(player);
-    }
-  }
-
-  // Group AIs by team
-  for (const auto &ai : round_ais) {
-    if (ai.has_value()) {
-      int team_id = -1; // Default to no team
-      if (ai->has<TeamID>()) {
-        team_id = ai->get<TeamID>().team_id;
-      }
-      team_groups[team_id].push_back(ai);
-    }
-  }
-
-  // Calculate team scores
-  std::map<int, int> team_scores;
-  for (const auto &[team_id, players] : team_groups) {
-    int total_score = 0;
-    for (const auto &player : players) {
-      if (player.has_value()) {
-        // Calculate score based on game mode
-        if (RoundManager::get().active_round_type == RoundType::Hippo) {
-          if (player->has<HasHippoCollection>()) {
-            total_score += player->get<HasHippoCollection>().get_hippo_count();
-          }
-        } else if (RoundManager::get().active_round_type == RoundType::Kills) {
-          if (player->has<HasKillCountTracker>()) {
-            total_score += player->get<HasKillCountTracker>().kills;
-          }
-        } else if (RoundManager::get().active_round_type == RoundType::Lives) {
-          if (player->has<HasMultipleLives>()) {
-            total_score += player->get<HasMultipleLives>().num_lives_remaining;
-          }
-        } else if (RoundManager::get().active_round_type ==
-                   RoundType::TagAndGo) {
-          if (player->has<HasTagAndGoTracking>()) {
-            total_score += static_cast<int>(
-                player->get<HasTagAndGoTracking>().time_as_not_it);
-          }
-        }
-      }
-    }
-    team_scores[team_id] = total_score;
-  }
-
-  // Create two-column layout
-  auto team_container =
-      imm::hstack(context, mk(parent),
-               ComponentConfig{}
-                   .with_size(ComponentSize{screen_pct(0.6f), screen_pct(0.6f)})
-                   .with_absolute_position(screen_pct(0.2f), screen_pct(0.2f))
-                   .with_debug_name("team_results_container"));
-
-  render_team_column_results(context, team_container.ent(), "TEAM A", 0,
-                             team_groups[0], team_scores[0]);
-  render_team_column_results(context, team_container.ent(), "TEAM B", 1,
-                             team_groups[1], team_scores[1]);
-}
-
 Screen ScheduleMainMenuUI::round_end_screen(Entity &entity,
                                             UIContext<InputAction> &context) {
-  auto elem =
-      ui_helpers::create_screen_container(context, entity, "round_end_screen");
-  auto top_left = ui_helpers::create_top_left_container(
-      context, elem.ent(), "round_end_top_left", 0);
-  // Get players from the round (filter out entities marked for cleanup)
+  namespace rs = results;
+  namespace cs = character_select;
+
+  // Cars marked for cleanup are the ones the round destroyed; they are still
+  // in the world for a frame or two and would show up as ghost columns.
   std::vector<OptEntity> round_players;
   std::vector<OptEntity> round_ais;
+  for (Entity &player : EQ(EntityQuery<EQ>::QueryOptions{
+                               .ignore_temp_warning = true})
+                            .whereHasComponent<PlayerID>()
+                            .orderByPlayerID()
+                            .gen())
+    if (!player.cleanup)
+      round_players.push_back(OptEntity{player});
+  for (Entity &ai : EQ(EntityQuery<EQ>::QueryOptions{.ignore_temp_warning =
+                                                         true})
+                        .whereHasComponent<AIControlled>()
+                        .gen())
+    if (!ai.cleanup)
+      round_ais.push_back(OptEntity{ai});
 
-  try {
-    auto round_players_ref =
-        EQ(EntityQuery<EQ>::QueryOptions{.ignore_temp_warning = true})
-            .whereHasComponent<PlayerID>()
-            .orderByPlayerID()
-            .gen();
-    for (const auto &player_ref : round_players_ref) {
-      if (!player_ref.get().cleanup) {
-        round_players.push_back(OptEntity{player_ref.get()});
-      }
-    }
-  } catch (...) {
-    // If query fails, just continue with empty list
-  }
+  const bool team_mode =
+      RoundManager::get().get_active_settings().team_mode_enabled;
+  const std::vector<rs::Finisher> board =
+      rs::standings(round_players, round_ais);
+  const int top_score = board.empty() ? 0 : board.front().score;
 
-  try {
-    auto round_ais_ref =
-        EQ(EntityQuery<EQ>::QueryOptions{.ignore_temp_warning = true})
-            .whereHasComponent<AIControlled>()
-            .gen();
-    for (const auto &ai_ref : round_ais_ref) {
-      if (!ai_ref.get().cleanup) {
-        round_ais.push_back(OptEntity{ai_ref.get()});
-      }
-    }
-  } catch (...) {
-    // If query fails, just continue with empty list
-  }
+  auto elem =
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute_position()
+                   .with_debug_name("round_end"));
 
-  // Title
-  {
-    imm::div(context, mk(elem.ent()),
+  auto content =
+      imm::vstack(context, mk(elem.ent()),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{screen_pct(0.90f, 1.f),
+                                               screen_pct(0.86f, 1.f)})
+                      .with_absolute_position(ui_helpers::absolute_x(64.f),
+                                              screen_pct(0.07f))
+                      .with_transparent_bg()
+                      .with_debug_name("round_end_content"));
+
+  imm::div(context, mk(content.ent(), 0),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(56.f)})
+               .with_label(rs::headline(board, team_mode))
+               .with_font_size(44.f)
+               .with_alignment(TextAlignment::Center)
+               .with_transparent_bg()
+               .with_custom_text_color(cs::mint)
+               .with_skip_tabbing(true)
+               .with_debug_name("round_end_headline"));
+
+  // Centred by a spacer either side. A vstack's align_items is untested here
+  // and this is one line longer and certain.
+  auto pill_row =
+      imm::hstack(context, mk(content.ent(), 1),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), ui::h720(30.f)})
+                      .with_gap(pixels(10.f))
+                      .with_transparent_bg()
+                      .with_no_wrap()
+                      .with_debug_name("round_end_pill_row"));
+
+  const auto pill_gap = [&](int idx) {
+    imm::div(context, mk(pill_row.ent(), idx),
              ComponentConfig{}
-                 .with_label(translation_manager::make_translatable_string(
-                                 strings::i18n::round_end)
-                                 .get_text())
+                 .with_size(ComponentSize{expand(), percent(1.f)})
+                 .with_transparent_bg()
                  .with_skip_tabbing(true)
-                 .with_size(ComponentSize{percent(0.5f), percent(0.2f)})
-                 .with_margin(Margin{
-                     .top = screen_pct(0.05f),
-                     .left = screen_pct(0.2f),
-                 })
-                 .with_debug_name("round_end_title"));
+                 .with_debug_name(fmt::format("round_end_pill_gap_{}", idx)));
+  };
+
+  pill_gap(0);
+  imm::div(context, mk(pill_row.ent(), 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{ui::w1280(340.f), percent(1.f)})
+               .with_label(rs::rules_pill_text())
+               .with_custom_background(cs::well_bg)
+               .with_custom_text_color(cs::butter)
+               .with_corner_radius(15.f)
+               .with_font_size(12.f)
+               .with_skip_tabbing(true)
+               .with_debug_name("round_end_rules_pill"));
+
+  // Team mode has no podium of its own: the bars are still per driver, and
+  // this is the only thing the old two-column layout said that they do not.
+  if (team_mode)
+    imm::div(context, mk(pill_row.ent(), 2),
+             ComponentConfig{}
+                 .with_size(ComponentSize{ui::w1280(260.f), percent(1.f)})
+                 .with_label(fmt::format("TEAM A {} // TEAM B {}",
+                                         rs::team_score(board, 0),
+                                         rs::team_score(board, 1)))
+                 .with_custom_background(cs::well_bg)
+                 .with_custom_text_color(cs::mint)
+                 .with_corner_radius(15.f)
+                 .with_font_size(12.f)
+                 .with_skip_tabbing(true)
+                 .with_debug_name("round_end_team_pill"));
+  pill_gap(3);
+
+  auto podium =
+      imm::hstack(context, mk(content.ent(), 2),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), expand()})
+                      // Column padding rather than a row gap: the shoulders
+                      // below are percentages that have to sum to exactly the
+                      // row, and a gap is width the percentages cannot see.
+                      // No horizontal margin either -- a percent(1.f) row keeps
+                      // its full width and a left margin just slides it off the
+                      // right edge (measured: x=98 w=1152 inside a 1152 box).
+                      .with_margin(Margin{.top = ui::h720(12.f),
+                                          .bottom = ui::h720(12.f)})
+                      .with_transparent_bg()
+                      .with_no_wrap()
+                      .with_debug_name("round_end_podium"));
+
+  // The mock's podium is a four-column grid whatever the field size. Columns
+  // expand into what is left, so a short field is centred by padding it out to
+  // four with a spacer on each side rather than by stretching one driver's bar
+  // across the whole screen.
+  const float shoulder =
+      board.size() < 4
+          ? (4.f - static_cast<float>(board.size())) / 8.f
+          : 0.f;
+  const auto podium_shoulder = [&](int idx) {
+    if (shoulder <= 0.f)
+      return;
+    imm::div(context, mk(podium.ent(), idx),
+             ComponentConfig{}
+                 .with_size(ComponentSize{percent(shoulder), percent(1.f)})
+                 .with_transparent_bg()
+                 .with_skip_tabbing(true)
+                 .with_debug_name(fmt::format("podium_shoulder_{}", idx)));
+  };
+
+  podium_shoulder(0);
+  for (size_t place = 0; place < board.size(); place++)
+    rs::podium_column(context, podium.ent(), static_cast<int>(place),
+                      board[place], top_score,
+                      !team_mode && place == 0 && top_score > 0);
+  podium_shoulder(static_cast<int>(board.size()) + 1);
+
+  auto bottom =
+      imm::hstack(context, mk(content.ent(), 3),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), ui::h720(64.f)})
+                      .with_align_items(AlignItems::Center)
+                      .with_transparent_bg()
+                      .with_no_wrap()
+                      .with_debug_name("round_end_bottom_bar"));
+
+  if (cs::chrome_button(context, bottom.ent(), 0,
+                        {.label = "MAIN MENU",
+                         .fill = cs::well_bg,
+                         .text = cs::mint,
+                         .debug_name = "btn_main_menu"})) {
+    navigation::to(GameStateManager::Screen::Main);
   }
 
-  // Check if team mode is enabled
-  auto &settings = RoundManager::get().get_active_settings();
-  if (settings.team_mode_enabled) {
-    // Render team results in two columns
-    render_team_results(context, elem.ent(), round_players, round_ais);
-  } else {
-    // Render individual results in grid layout
-    std::map<EntityID, int> rankings;
-    if (RoundManager::get().active_round_type == RoundType::TagAndGo) {
-      rankings = get_tag_and_go_rankings(round_players, round_ais);
-    }
-
-    size_t num_slots = round_players.size() + round_ais.size();
-    if (num_slots > 0) {
-      int fours =
-          static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
-
-      auto player_group = imm::div(
-          context, mk(elem.ent()),
-          ComponentConfig{}
-              .with_size(ComponentSize{screen_pct(0.7f), screen_pct(fours == 1 ? 0.7f : 0.85f)})
-              .with_absolute_position(screen_pct(0.2f), screen_pct(fours == 1 ? 0.3f : 0.15f))
-              .with_debug_name("player_group"));
-
-      for (int row_id = 0; row_id < fours; row_id++) {
-        auto row = imm::hstack(
-            context, mk(player_group.ent(), row_id),
-            ComponentConfig{}
-                .with_size(ComponentSize{percent(1.f), percent(0.5f, 0.4f)})
-                .with_debug_name("row"));
-        size_t start = row_id * 4;
-        for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
-          OptEntity car;
-          if (i < round_players.size()) {
-            car = round_players[i];
-          } else {
-            car = round_ais[i - round_players.size()];
-          }
-
-          std::optional<int> ranking;
-          if (car.has_value() &&
-              RoundManager::get().active_round_type == RoundType::TagAndGo) {
-            auto it = rankings.find(car->id);
-            if (it != rankings.end() && it->second <= 3) {
-              ranking = it->second;
-            }
-          }
-
-          round_end_player_column(row.ent(), context, i, round_players,
-                                  round_ais, ranking);
-        }
-      }
-    }
+  if (cs::chrome_button(context, bottom.ent(), 1,
+                        {.label = "CHANGE RULES",
+                         .fill = cs::sky,
+                         .text = cs::ink,
+                         .debug_name = "btn_change_rules",
+                         .width = ui::w1280(170.f)})) {
+    navigation::to(GameStateManager::Screen::RoundSettings);
   }
 
-  ui_helpers::create_styled_button(
-      context, top_left.ent(),
-      translation_manager::make_translatable_string(
-          strings::i18n::continue_game)
-          .get_text(),
-      []() { navigation::to(GameStateManager::Screen::CharacterCreation); }, 0);
-  ui_helpers::create_styled_button(
-      context, top_left.ent(),
-      translation_manager::make_translatable_string(strings::i18n::quit)
-          .get_text(),
-      [this]() { exit_game(); }, 1);
+  imm::div(context, mk(bottom.ent(), 2),
+           ComponentConfig{}
+               .with_size(ComponentSize{expand(), percent(1.f)})
+               .with_transparent_bg()
+               .with_skip_tabbing(true)
+               .with_debug_name("round_end_bottom_gap"));
+
+  if (cs::chrome_button(context, bottom.ent(), 3,
+                        {.label = "RUN IT BACK",
+                         .fill = cs::butter,
+                         .text = cs::ink,
+                         .debug_name = "btn_run_it_back",
+                         .width = ui::w1280(250.f),
+                         .height = ui::h720(54.f),
+                         .font_px = 22.f})) {
+    // Same rules, same drivers, same track -- but a rebuilt arena. Without
+    // create_map the hippos picked up last round are still gone.
+    MapManager::get().create_map();
+    GameStateManager::get().start_game();
+  }
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
@@ -3351,8 +3131,10 @@ void register_ui_systems(afterhours::SystemManager &systems) {
     systems.register_update_system(
         std::make_unique<ui_game::UpdateUIWiggle<InputAction>>());
     systems.register_update_system(std::make_unique<NavigationSystem>());
-    systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
+    // Pause first: its scrim has to be built before whatever screen OPTIONS
+    // puts on top of it, and the UI draws in the order the tree was built.
     systems.register_update_system(std::make_unique<SchedulePauseUI>());
+    systems.register_update_system(std::make_unique<ScheduleMainMenuUI>());
     systems.register_update_system(std::make_unique<ScheduleDebugUI>());
   }
   ui::register_after_ui_updates<InputAction>(systems);

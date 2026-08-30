@@ -134,6 +134,39 @@ adding another; a screen-relative gap compiles, applies, and does nothing visibl
 
 ---
 
+### `with_absolute_position()` resolves **x** against the screen *height*
+`apply_modifiers` (`plugins/ui/component_init.h:431-443`) reads one number:
+
+    float screen_height = 720.f;
+    if (auto *pcr = ...ProvidesCurrentResolution>()) screen_height = pcr->current_resolution.height;
+    float resolved_tx = resolve_to_pixels(config.translate_x, screen_height, scaling, uis);
+    float resolved_ty = resolve_to_pixels(config.translate_y, screen_height, scaling, uis);
+
+and hands `screen_height` to both axes. For an absolute element those two values *are* its
+position (`:446-452`), so an x expressed as a fraction lands at `pct * height`, never
+`pct * width`. Sizes do not have this problem — `ComponentSize` goes through the dim-aware
+path, so the same `screen_pct` means different pixels for `x` and for `w` on the same element.
+
+Verified here: the pause card at `.with_absolute_position(screen_pct(0.34375f), ...)` measured
+`x=248` — `0.34375 * 720` — where centring a 400px card in 1280 needs 440 (`dump_ui`, headless
+1280x720). Respelling it `ui::h720(440.f)` produced exactly `x=440`.
+
+**Consequence beyond the one call site.** Every redesigned screen positions its content box at
+`screen_pct(0.05f)` and sizes it `screen_pct(0.90f, 1.f)`. The size is dim-aware and gives 1152;
+the position is not and gives 36, not 64. So all five screens sit in a 36px / 92px left-right
+frame rather than 64 / 64 — off centre by 28px, on `ui_systems.cpp:1758`, `:2315`, `:2429`,
+`:2697` and `:2959`. Not corrected: the five would have to move together and every baseline
+with them.
+
+**Workaround (in place on Pause):** spell an absolute x with `ui::h720(px)`, which is the same
+"px at 720p, scales with the window" contract the resolver actually implements. Commented at the
+call site, because `h720` on an x coordinate reads like a typo.
+
+**Ideal:** resolve `translate_x` against width when the element is absolute, the way
+`ComponentSize` already distinguishes the axes.
+
+---
+
 ### `disable_rounded_corners()` gives you a rounded focus ring
 `disable_rounded_corners` (`plugins/ui/component_config.h:484`) sets `rounded_corners` to an
 all-zero `bitset<4>`. `apply_visuals` (`plugins/ui/component_init.h:331`) attaches

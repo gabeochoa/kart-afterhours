@@ -19,7 +19,7 @@ assert_ui tile_random w=124
 assert_ui tile_map_3 w=124
 # A screen-relative gap resolves to zero (docs/afterhours_gaps.md), which put
 # the third tile's border one pixel from the preview panel's.
-assert_ui map_preview_panel x=456
+assert_ui map_preview_panel x=484
 assert_no_overflow
 screenshot map_int_01_initial
 

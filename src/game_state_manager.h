@@ -82,6 +82,10 @@ struct GameStateManager {
   void unpause_game() {
     if (current_state == GameState::Paused) {
       current_state = GameState::Playing;
+      // OPTIONS on the pause card can leave a menu screen up. Gameplay has no
+      // screen, so returning to it has to clear one either way.
+      active_screen = Screen::None;
+      next_screen = {};
     }
   }
 

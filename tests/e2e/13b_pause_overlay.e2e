@@ -1,0 +1,113 @@
+# Pause: the card, the scrim, and the three ways out
+#
+# First coverage this screen has ever had -- there was no command that could
+# reach it. pause_round/unpause_round in src/e2e_commands.h drive
+# GameStateManager directly, the same way start_round does, because clicking
+# through a real round is not reproducible.
+#
+# Numbered 13b for the same reason as 13a: 14_eliminated_player_stays_dead
+# leaves the process with no kart.
+#
+# Lives mode on purpose. Kills, Hippo and TagAndGo all run a countdown, so the
+# status line -- "0:42 LEFT" -- changes with wall time and no screenshot of it
+# would be reproducible. Lives has no clock, so the whole card is a pure
+# function of round settings.
+#
+# The arena under the scrim is whatever map the suite last built, which is a
+# concrete index by the time this runs, not RANDOM -- so no GetRandomValue is
+# in the path and the shot is byte-identical run to run. If an earlier script
+# ever leaves RANDOM selected, this screenshot is the one that starts drifting.
+
+disable_animations
+
+set_round_type Lives
+goto_screen Main
+wait 0.2
+
+start_round
+wait_frames 2
+expect_state Playing
+
+pause_round
+wait_frames 2
+expect_state Paused
+
+assert_ui pause_scrim hidden=false
+assert_ui pause_card hidden=false
+assert_ui pause_heading hidden=false
+assert_ui pause_status hidden=false
+assert_ui btn_back_to_it hidden=false
+assert_ui btn_pause_options hidden=false
+assert_ui btn_give_up hidden=false
+
+# The card is centred, not parked in the top-left corner where the old pause
+# menu drew its buttons. 400x304 at 1280x720, so (1280-400)/2 and (720-304)/2.
+# x is the assertion that matters: with_absolute_position resolves x against
+# the screen height, so the obvious w1280(440) spelling lands it at 248.
+assert_ui pause_card x=440 w=400
+assert_ui pause_card y=208 h=304
+
+# The scrim covers the arena rather than sitting behind the card
+assert_ui pause_scrim x=0 y=0 w=1280 h=720
+
+expect_text "TIME OUT"
+assert_no_overflow
+
+screenshot pause_01_card
+
+# BACK TO IT resumes
+click_ui btn_back_to_it
+wait_frames 3
+expect_state Playing
+
+# OPTIONS puts the settings screen over the paused round. It only works
+# because ScheduleMainMenuUI runs while paused; gated on menu state alone this
+# click queues a screen change nothing applies and the card just sits there.
+pause_round
+wait_frames 2
+click_ui btn_pause_options
+wait 0.3
+expect_state Paused
+assert_ui sound_panel hidden=false
+assert_ui pause_scrim hidden=false
+screenshot pause_02_options_over_round
+
+# ...and BACK from there returns to the card, still paused
+click_ui btn_back
+wait 0.3
+expect_state Paused
+assert_ui pause_card hidden=false
+
+click_ui btn_back_to_it
+wait_frames 3
+expect_state Playing
+
+# Resuming while a screen is still up has to clear it. unpause_game leaves
+# active_screen alone and the next pause finds Settings still selected, so the
+# card never draws again and this pause_card assertion times out.
+pause_round
+wait_frames 2
+click_ui btn_pause_options
+wait 0.3
+assert_ui sound_panel hidden=false
+unpause_round
+wait_frames 3
+expect_state Playing
+pause_round
+wait_frames 3
+assert_ui pause_card hidden=false
+assert_ui pause_heading hidden=false
+click_ui btn_back_to_it
+wait_frames 3
+expect_state Playing
+
+# I GIVE UP ends the round and lands on the results screen
+pause_round
+wait_frames 2
+click_ui btn_give_up
+wait 0.3
+expect_state Menu
+assert_ui btn_run_it_back hidden=false
+
+goto_screen Main
+wait 0.2

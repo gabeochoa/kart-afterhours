@@ -156,6 +156,10 @@ struct HandleGameplayCommand : System<PendingE2ECommand> {
             return start_round(cmd);
         if (cmd.is("end_round"))
             return end_round(cmd);
+        if (cmd.is("pause_round"))
+            return pause_round(cmd);
+        if (cmd.is("unpause_round"))
+            return unpause_round(cmd);
         if (cmd.is("expect_state"))
             return expect_state(cmd);
         if (cmd.is("set_tracker"))
@@ -187,6 +191,27 @@ private:
 
     static void end_round(PendingE2ECommand &cmd) {
         GameStateManager::get().end_game();
+        cmd.consume();
+    }
+
+    // pause_game/unpause_game are no-ops from the wrong state, so a script
+    // that paused from the menu would sail past and then assert against a
+    // pause card that was never drawn. Fail where the mistake is.
+    static void pause_round(PendingE2ECommand &cmd) {
+        if (!GameStateManager::get().is_game_active()) {
+            cmd.fail("pause_round: no round is playing");
+            return;
+        }
+        GameStateManager::get().pause_game();
+        cmd.consume();
+    }
+
+    static void unpause_round(PendingE2ECommand &cmd) {
+        if (!GameStateManager::get().is_paused()) {
+            cmd.fail("unpause_round: not paused");
+            return;
+        }
+        GameStateManager::get().unpause_game();
         cmd.consume();
     }
 

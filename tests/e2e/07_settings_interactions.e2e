@@ -21,8 +21,8 @@ expect_text "FILTER"
 assert_ui row_master y=150 h=40
 assert_ui row_music y=190 h=40
 assert_ui row_effects y=230 h=40
-assert_ui row_master_meter x=202 w=340
-assert_ui sound_panel x=36 w=568
+assert_ui row_master_meter x=230 w=340
+assert_ui sound_panel x=64 w=568
 screenshot settings_int_01_initial
 
 # Toggles are custom rows, not imm::checkbox, so they are clicked by id.

@@ -1,0 +1,92 @@
+# Results: the podium, and that it is sorted by score
+#
+# Numbered 13a because 14_eliminated_player_stays_dead destroys the only kart
+# in the process and nothing respawns it -- see the note in that file. Any
+# script after it has no driver to put on a podium.
+#
+# This screen was reachable from a menu all along (goto_screen RoundEnd), so
+# unlike Pause it can be screenshotted: the karts are parked, the Memphis
+# backdrop is frozen under --e2e, and set_tracker fixes the score. Every value
+# on screen is pinned by an assertion below, so the baseline is a picture of
+# state this file already decided.
+
+disable_animations
+
+set_round_type Kills
+goto_screen Main
+wait 0.2
+
+# A score the bar height can be checked against, rather than whatever the
+# previous script left behind.
+start_round
+wait_frames 2
+set_tracker kills 6
+end_round
+wait_frames 2
+expect_state Menu
+
+wait 0.2
+assert_ui round_end_headline hidden=false
+assert_ui round_end_rules_pill hidden=false
+assert_ui btn_main_menu hidden=false
+assert_ui btn_change_rules hidden=false
+assert_ui btn_run_it_back hidden=false
+
+# One driver, so one column, and it is the winner: bar at the full 150px.
+# A bar that stopped tracking the score would sit at the 30px floor.
+assert_ui podium_0 hidden=false
+assert_ui podium_0_kart hidden=false
+assert_ui podium_0_name hidden=false
+assert_ui podium_0_bar text=6
+assert_ui podium_0_bar h=150
+expect_text "PLAYER 1"
+
+# The pill has to name the mode, not just exist -- it is the only thing on the
+# screen that says which rules produced this score.
+expect_text "PLAYER 1 WINS"
+expect_text_i "kills"
+
+# Nothing on this screen may run off the viewport or truncate its own text.
+assert_no_overflow
+
+screenshot round_end_01_podium
+
+# Halve the score: same driver, same layout, shorter bar. Still the top score,
+# so the ratio pins it back at full height -- what changes is the number.
+start_round
+wait_frames 2
+set_tracker kills 3
+end_round
+wait_frames 2
+wait 0.2
+assert_ui podium_0_bar text=3
+screenshot round_end_02_lower_score
+
+# Zero score: bar drops to the floor and nobody wins.
+start_round
+wait_frames 2
+set_tracker kills 0
+end_round
+wait_frames 2
+wait 0.2
+assert_ui podium_0_bar text=0
+assert_ui podium_0_bar h=30
+expect_text "NOBODY WINS"
+screenshot round_end_03_zero_score
+
+# RUN IT BACK replays on the spot rather than sending you back through
+# character select, which is what the old CONTINUE button did.
+click_ui btn_run_it_back
+wait_frames 3
+expect_state Playing
+end_round
+wait_frames 2
+wait 0.2
+
+# CHANGE RULES is a real route out, not a label
+click_ui btn_change_rules
+wait 0.3
+assert_ui btn_select_map hidden=false
+
+goto_screen Main
+wait 0.2
