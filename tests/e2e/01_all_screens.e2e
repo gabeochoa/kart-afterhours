@@ -7,10 +7,10 @@ disable_animations
 # Main Menu
 goto_screen Main
 wait 0.2
-expect_text "play"
-expect_text "about"
-expect_text "settings"
-expect_text "exit"
+assert_ui btn_play hidden=false
+assert_ui btn_howtoplay hidden=false
+assert_ui btn_options hidden=false
+assert_ui btn_quit hidden=false
 screenshot 01_main_menu
 
 # Settings Screen

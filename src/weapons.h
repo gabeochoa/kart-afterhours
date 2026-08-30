@@ -66,17 +66,7 @@ struct Weapon {
     return false;
   }
 
-  void apply_recoil(Transform &transform, const float knockback_amt) const {
-    vec2 recoil = {std::cos(transform.as_rad()), std::sin(transform.as_rad())};
-
-    recoil = vec_norm(vec2{-recoil.y, recoil.x});
-    transform.velocity += (recoil * knockback_amt);
-  }
 };
-
-void make_poof_anim(afterhours::Entity &, const Weapon &,
-                    float angle_offset = 0);
-void make_bullet(afterhours::Entity &, const Weapon &, float angle_offset = 0);
 
 struct Cannon : Weapon {
 
@@ -180,15 +170,6 @@ struct CanShoot : afterhours::BaseComponent {
     if (!weapons.contains(action))
       return false;
     return weapons[action]->pass_time(dt);
-  }
-
-  bool fire(afterhours::Entity &, InputAction action, float dt) {
-    if (!weapons.contains(action))
-      return false;
-    if (weapons[action]->fire(dt)) {
-      return true;
-    }
-    return false;
   }
 };
 

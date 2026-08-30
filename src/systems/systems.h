@@ -1155,6 +1155,12 @@ public:
                 const window_manager::ProvidesCurrentResolution &resolution,
                 float) const override {
 
+    // The weapon HUD is gameplay chrome. Without this it draws in every menu,
+    // centred at screen_center_x -- that is the stray gun sprite floating at
+    // the top of every menu screenshot.
+    if (!GameStateManager::get().is_game_active())
+      return;
+
     auto layout = calculateLayout(resolution, maxGamepadID);
     if (layout.total_players == 0)
       return;
@@ -2249,7 +2255,9 @@ struct ApplyWinnerShader : System<HasShader> {
 struct BeginWorldRender : System<> {
   virtual void once(float) const override {
     raylib::BeginTextureMode(mainRT);
-    raylib::ClearBackground(raylib::DARKGRAY);
+    // Was hardcoded DARKGRAY, which is why the themed Background colour was
+    // defined and never visible -- everything sat on flat grey.
+    raylib::ClearBackground(raylib::Color{46, 27, 105, 255}); // Memphis purple
   }
 };
 

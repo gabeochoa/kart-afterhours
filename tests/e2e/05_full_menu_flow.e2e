@@ -26,5 +26,5 @@ screenshot flow_03_map_selection
 # Return to main
 goto_screen Main
 wait 0.2
-expect_text "play"
+assert_ui btn_play hidden=false
 screenshot flow_04_back_main

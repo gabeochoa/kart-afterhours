@@ -39,5 +39,5 @@ screenshot settings_int_05_postproc_restored
 # Navigate back
 click_button "back"
 wait 0.2
-expect_text "play"
+assert_ui btn_play hidden=false
 screenshot settings_int_06_back_to_main

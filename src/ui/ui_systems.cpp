@@ -41,23 +41,21 @@ struct SetupGameStylingDefaults
   virtual void once(float) override {
     auto &styling_defaults = afterhours::ui::imm::UIStylingDefaults::get();
 
-    // 80s Synthwave Theme
+    // Memphis '93. Deep purple ground, pastel-bright accents, shapes as often
+    // outlined as filled. See docs/ui-mock.html.
     styling_defaults
         .set_theme_color(afterhours::ui::Theme::Usage::Primary,
-                         afterhours::Color{96, 0, 255, 255}) // Deep purple
+                         afterhours::Color{224, 107, 221, 255}) // orchid
         .set_theme_color(afterhours::ui::Theme::Usage::Secondary,
-                         afterhours::Color{0, 224, 255, 255}) // Electric blue
+                         afterhours::Color{91, 168, 240, 255}) // sky
         .set_theme_color(afterhours::ui::Theme::Usage::Accent,
-                         afterhours::Color{255, 44, 156, 255}) // Hot pink
+                         afterhours::Color{240, 232, 92, 255}) // butter
         .set_theme_color(afterhours::ui::Theme::Usage::Background,
-                         afterhours::Color{23, 7, 26, 255}) // Deep purple-black
-        .set_theme_color(
-            afterhours::ui::Theme::Usage::Font,
-            afterhours::Color{225, 225, 255, 255}) // Soft blue-white
-        .set_theme_color(
-            afterhours::ui::Theme::Usage::DarkFont,
-            afterhours::Color{255, 44, 156,
-                              255}); // Hot pink for dark backgrounds
+                         afterhours::Color{46, 27, 105, 255}) // deep purple
+        .set_theme_color(afterhours::ui::Theme::Usage::Font,
+                         afterhours::Color{255, 255, 255, 255})
+        .set_theme_color(afterhours::ui::Theme::Usage::DarkFont,
+                         afterhours::Color{18, 10, 43, 255}); // ink
 
     // Set the default font for all components based on current language
     styling_defaults.set_default_font(
@@ -440,7 +438,8 @@ ElementResult create_player_card(UIContext<InputAction> &context,
 ElementResult create_styled_button(UIContext<InputAction> &context,
                                    Entity &parent, const std::string &label,
                                    std::function<void()> on_click,
-                                   int index = 0) {
+                                   int index = 0,
+                                   const std::string &debug_name = "") {
 
   auto config = ComponentConfig{}
       .with_label(label)
@@ -448,6 +447,11 @@ ElementResult create_styled_button(UIContext<InputAction> &context,
                             .left = imm::DefaultSpacing::tiny(),
                             .bottom = imm::DefaultSpacing::tiny(),
                             .right = imm::DefaultSpacing::tiny()});
+
+  // A stable debug name lets e2e target the button by id instead of by its
+  // visible text, so renaming copy stops breaking the suite.
+  if (!debug_name.empty())
+    config = config.with_debug_name(debug_name);
 
   animation_control::apply_slide_in(config);
 
@@ -2238,33 +2242,60 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
   auto top_left = ui_helpers::create_top_left_container(context, elem.ent(),
                                                         "main_top_left", 0);
 
+  // Title lockup. The game has never said its own name on screen.
+  // Two lines so CHAOS can take the accent colour on its own.
+  const auto title_line = [&](int idx, const char *text, float px,
+                              Theme::Usage color, const char *name) {
+    imm::div(context, mk(top_left.ent(), idx),
+             ComponentConfig{}
+                 .with_label(text)
+                 .with_font_size(px)
+                 .with_size(ComponentSize{pixels(560.f), pixels(px * 1.10f)})
+                 .with_text_color(color)
+                 .with_alignment(TextAlignment::Left)
+                 .with_transparent_bg()
+                 .with_skip_tabbing(true)
+                 .with_debug_name(name));
+  };
+  title_line(90, "CART", 78.f, Theme::Usage::Accent, "title_cart");
+  title_line(91, "CHAOS", 78.f, Theme::Usage::Primary, "title_chaos");
+  title_line(92, "BATTLE MODE FOR 2-8 PLAYERS", 15.f, Theme::Usage::Secondary,
+             "title_tagline");
+  // Breathing room between the lockup and the menu.
+  imm::div(context, mk(top_left.ent(), 93),
+           ComponentConfig{}
+               .with_size(ComponentSize{pixels(560.f), pixels(28.f)})
+               .with_transparent_bg()
+               .with_skip_tabbing(true)
+               .with_debug_name("title_spacer"));
+
   // Play button
   ui_helpers::create_styled_button(
       context, top_left.ent(),
       translation_manager::make_translatable_string(strings::i18n::play)
           .get_text(),
-      []() { navigation::to(GameStateManager::Screen::CharacterCreation); }, 0);
+      []() { navigation::to(GameStateManager::Screen::CharacterCreation); }, 0, "btn_play");
 
   // About button
   ui_helpers::create_styled_button(
       context, top_left.ent(),
       translation_manager::make_translatable_string(strings::i18n::about)
           .get_text(),
-      []() { navigation::to(GameStateManager::Screen::About); }, 1);
+      []() { navigation::to(GameStateManager::Screen::About); }, 1, "btn_howtoplay");
 
   // Settings button
   ui_helpers::create_styled_button(
       context, top_left.ent(),
       translation_manager::make_translatable_string(strings::i18n::settings)
           .get_text(),
-      []() { navigation::to(GameStateManager::Screen::Settings); }, 2);
+      []() { navigation::to(GameStateManager::Screen::Settings); }, 2, "btn_options");
 
   // Exit button
   ui_helpers::create_styled_button(
       context, top_left.ent(),
       translation_manager::make_translatable_string(strings::i18n::exit)
           .get_text(),
-      [this]() { exit_game(); }, 3);
+      [this]() { exit_game(); }, 3, "btn_quit");
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);

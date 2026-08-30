@@ -49,15 +49,19 @@ static vec2 get_spawn_position(size_t id) {
 // Forward declare RoundType to avoid heavy header include
 enum struct RoundType : size_t;
 struct ManagesAvailableColors : ::afterhours::BaseComponent {
+  // Memphis '93 player identity palette. The old set was raylib constants --
+  // BEIGE, DARKGREEN and MAROON are muddy and disappear against the purple
+  // ground. These are picked to stay separable at kart size on that ground,
+  // and to sit in the same family as the menu accents.
   constexpr static std::array<::raylib::Color, input::MAX_GAMEPAD_ID> colors = {{
-      ::raylib::BLUE,
-      ::raylib::ORANGE,
-      ::raylib::PURPLE,
-      ::raylib::SKYBLUE,
-      ::raylib::DARKGREEN,
-      ::raylib::BEIGE,
-      raylib::MAROON,
-      raylib::GOLD,
+      ::raylib::Color{224, 107, 221, 255}, // orchid
+      ::raylib::Color{91, 168, 240, 255},  // sky
+      ::raylib::Color{79, 214, 166, 255},  // mint
+      ::raylib::Color{240, 232, 92, 255},  // butter
+      ::raylib::Color{255, 122, 107, 255}, // coral
+      ::raylib::Color{169, 123, 255, 255}, // violet
+      ::raylib::Color{182, 232, 92, 255},  // lime
+      ::raylib::Color{255, 164, 60, 255},  // tangerine
   }};
 
   std::bitset<input::MAX_GAMEPAD_ID> used;

@@ -102,19 +102,11 @@ Preload &Preload::init(const char *title, afterhours::graphics::DisplayMode mode
       "post_processing_tag");
 
   ShaderLibrary::get().load(
-      files::get_resource_path("shaders", "entity_test.fs").string().c_str(),
-      "entity_test");
-
-  ShaderLibrary::get().load(
       files::get_resource_path("shaders", "car.fs").string().c_str(), "car");
 
   ShaderLibrary::get().load(
       files::get_resource_path("shaders", "car.fs").string().c_str(),
       "car_winner");
-
-  ShaderLibrary::get().load(
-      files::get_resource_path("shaders", "entity_enhanced.fs").string().c_str(),
-      "entity_enhanced");
 
   ShaderLibrary::get().load(
       files::get_resource_path("shaders", "text_mask.fs").string().c_str(),

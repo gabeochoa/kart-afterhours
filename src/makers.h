@@ -5,9 +5,6 @@
 #include "weapons.h"
 
 void make_explosion_anim(afterhours::Entity &parent);
-void make_poof_anim(afterhours::Entity &parent, const Weapon &wp, float angle_offset);
-void make_bullet(afterhours::Entity &parent, const Weapon &wp, float angle_offset);
-
 void make_poof_anim(afterhours::Entity &parent, Weapon::FiringDirection dir,
                     float base_angle, float angle_offset);
 void make_bullet(afterhours::Entity &parent, const ProjectileConfig &cfg,
