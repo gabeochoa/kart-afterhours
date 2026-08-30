@@ -46,6 +46,35 @@ Open as originally written, but effectively obsoleted: `Anim::on_appear().opacit
 covers the use case now. The real remaining item is on our side — adopt the declarative API and
 delete `src/ui/animation_slide_in.h`. See the TODO.
 
+### `UIStylingDefaults::apply_overrides` silently drops most visual fields
+`apply_overrides` (`plugins/ui/component_config.h:920`) merges a caller's config onto a
+registered default by forwarding an explicit, hand-maintained field list. Anything not on
+that list is discarded without warning. Verified against the current submodule: it forwards
+padding, margin, size, colors, label, corners, disabled/hidden, tabbing, font, texture,
+absolute, flex and debug fields — and never forwards
+
+    opacity, scale, translate_x, translate_y, flex_gap,
+    border_config, shadow_config, text_shadow_config,
+    on_draw_bg, on_draw_fg
+
+all of which are real `ComponentConfig` members (`:65`, `:119-122`, `:130-131`, `:141-153`).
+
+This only bites elements that *have* a registered default, i.e. everything routed through
+`SetupGameStylingDefaults` — `imm::button`, slider, checkbox, dropdown, navigation_bar.
+
+**Consequence beyond styling:** `animation_control::apply_slide_in()` animates via opacity
+and translate, both dropped. **The slide-in animation has therefore been a no-op on every
+button in the game.** `create_styled_button` has been building configs whose animation
+fields are thrown away before they reach the renderer. This is a second, independent reason
+`tests/e2e/10_slide_in_animation.e2e` cannot be testing anything (the first being that
+`animation_control::disabled` is a global never cleared between scripts).
+
+**Current workaround (in place):** `with_internal(true)` at the call site to bypass the
+defaults merge, then re-apply the font by hand. Commented where used.
+
+**Ideal:** one forwarding line per dropped field. The custom-draw hooks matter most — there
+is no caller-side way to get `on_draw_bg` onto a styled button.
+
 ---
 
 ## Closed by the `12a4571 -> fc4d625` bump

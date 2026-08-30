@@ -82,9 +82,14 @@ constexpr static int truncate_to_seconds(float total_seconds) {
   return static_cast<int>(total_seconds) % 60;
 }
 
+// Guarded because callers pass GetScreenWidth()/GetScreenHeight(), which are
+// both 0 under --headless: rand() % 0 is a divide-by-zero, not just a bad
+// number. Guarding here covers all three call sites at once.
 static vec2 vec_rand_in_box(const Rectangle &rect) {
+  const int w = static_cast<int>(rect.width);
+  const int h = static_cast<int>(rect.height);
   return vec2{
-      rect.x + static_cast<float>(rand() % static_cast<int>(rect.width)),
-      rect.y + static_cast<float>(rand() % static_cast<int>(rect.height)),
+      rect.x + (w > 0 ? static_cast<float>(rand() % w) : 0.f),
+      rect.y + (h > 0 ? static_cast<float>(rand() % h) : 0.f),
   };
 }

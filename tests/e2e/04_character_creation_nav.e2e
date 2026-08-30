@@ -5,8 +5,8 @@ disable_animations
 
 goto_screen CharacterCreation
 wait 0.2
-expect_text "round settings"
-expect_text "back"
+assert_ui btn_next hidden=false
+assert_ui btn_back hidden=false
 screenshot char_01_initial
 
 # Tab through controls

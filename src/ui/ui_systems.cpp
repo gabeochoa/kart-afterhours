@@ -155,9 +155,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
   input::PossibleInputCollector inpc;
 
   void update_resolution_cache();
-  void character_selector_column(Entity &parent,
-                                 UIContext<InputAction> &context,
-                                 const size_t index, const size_t num_slots);
   void round_end_player_column(Entity &parent, UIContext<InputAction> &context,
                                const size_t index,
                                const std::vector<OptEntity> &round_players,
@@ -178,11 +175,6 @@ struct ScheduleMainMenuUI : System<afterhours::ui::UIContext<InputAction>> {
                                const OptEntity &car, raylib::Color bg_color);
   void render_unknown_stats(UIContext<InputAction> &context, Entity &parent,
                             const OptEntity &car, raylib::Color bg_color);
-  void render_team_column(UIContext<InputAction> &context,
-                          Entity &team_columns_container,
-                          const std::string &team_name,
-                          const std::vector<size_t> &team_players,
-                          const size_t num_slots, int team_index);
   void render_team_results(UIContext<InputAction> &context, Entity &parent,
                            const std::vector<OptEntity> &round_players,
                            const std::vector<OptEntity> &round_ais);
@@ -609,170 +601,342 @@ bool ScheduleMainMenuUI::should_run(float) {
          (nav ? nav->ui_visible : true);
 }
 
-void ScheduleMainMenuUI::character_selector_column(
-    Entity &parent, UIContext<InputAction> &context, const size_t index,
-    const size_t num_slots) {
+// ----------------------------------------------------------------------------
+// Character select ("WHO'S DRIVING") -- see docs/ui-mock.html section 02.
+//
+// Eight slots are always on screen in a 4-wide grid. A filled slot shows the
+// kart the player will actually drive, tinted to their paint, plus the device
+// they're on, the eight-colour palette, and (for bots) a difficulty stepper.
+// An open slot is a dotted outline you can click to drop a bot in.
+//
+// Determinism: nothing here reads a clock, rand(), or an unordered container.
+// Bot names come from a fixed table indexed by seat, and the device chip falls
+// back to KEYBOARD under headless (is_gamepad_available is always false), so
+// the screenshot baselines stay byte-stable.
+// ----------------------------------------------------------------------------
+namespace character_select {
 
-  bool is_last_slot = index == num_slots - 1;
-  bool is_last_slot_ai = index >= players.size();
-  bool is_slot_ai = index >= players.size();
+using afterhours::Color;
 
-  OptEntity car;
-  if (!is_last_slot || index < (ais.size() + players.size())) {
-    car = index < players.size() //
-              ? players[index]
-              : ais[index - players.size()];
+constexpr Color ink{18, 10, 43, 255};
+constexpr Color panel_bg{27, 16, 64, 255};
+constexpr Color well_bg{21, 11, 51, 255};
+constexpr Color sky{91, 168, 240, 255};
+constexpr Color mint{79, 214, 166, 255};
+constexpr Color butter{240, 232, 92, 255};
+constexpr Color muted{179, 166, 214, 255};
+constexpr Color open_edge{92, 74, 148, 255};
+constexpr Color open_text{143, 131, 184, 255};
+constexpr Color team_a{91, 168, 240, 255};
+constexpr Color team_b{255, 164, 60, 255};
+
+constexpr std::array<const char *, input::MAX_GAMEPAD_ID> bot_names = {
+    "ROBO-DAVE", "PIXEL-8",   "NEON-NAN", "CHROME-JO",
+    "GLITCH-KO", "TURBO-MAX", "VECTOR-VI", "STATIC-SU"};
+
+// One grid position. `car` is null for an open slot.
+struct Slot {
+  Entity *car{nullptr};
+  size_t seat{0}; // player number, or bot number for AI
+  bool is_ai{false};
+};
+
+// imm::button routes its config through UIStylingDefaults::apply_overrides,
+// which only forwards a fixed list of fields -- border, shadow, opacity,
+// translate, custom hover background and the custom-draw hooks are all
+// silently dropped on the way through. Marking a config internal skips that
+// merge; the only thing we then have to put back by hand is the default font,
+// since font name/size are the other thing the merge was doing for us.
+inline ComponentConfig &keep_visuals(ComponentConfig &config, float font_px) {
+  return config
+      .with_font(get_font_name(translation_manager::get_font_for_language()),
+                 pixels(font_px))
+      .with_internal(true);
+}
+
+inline Padding card_padding() {
+  return Padding{.top = ui::h720(8.f),
+                 .left = ui::w1280(10.f),
+                 .bottom = ui::h720(8.f),
+                 .right = ui::w1280(10.f)};
+}
+
+inline std::string driver_name(const Slot &slot) {
+  if (slot.is_ai)
+    return bot_names[slot.seat % bot_names.size()];
+  return fmt::format("PLAYER {}", slot.seat + 1);
+}
+
+inline std::string device_chip(const Slot &slot) {
+  if (slot.is_ai)
+    return "CPU";
+  const auto id = slot.car->has<PlayerID>()
+                      ? slot.car->get<PlayerID>().id
+                      : static_cast<input::GamepadID>(0);
+  if (input::is_gamepad_available(id))
+    return fmt::format("PAD {}", id + 1);
+  return "KEYBOARD";
+}
+
+// The kart the player will drive, drawn in their paint. imm::sprite always
+// tints white (see docs/afterhours_gaps.md), so the tinted draw goes through
+// the custom-draw escape hatch instead.
+inline void kart_portrait(UIContext<InputAction> &context, Entity &card,
+                          int slot_index, Color tint,
+                          const std::function<void()> &on_click) {
+  auto *sheet_cmp = EntityHelper::get_singleton_cmp<
+      afterhours::texture_manager::HasSpritesheet>();
+  const std::string dbg = fmt::format("slot_{}_kart", slot_index);
+
+  auto config = ComponentConfig{}
+                    .with_size(ComponentSize{percent(1.f), expand()})
+                    .with_custom_background(well_bg)
+                    .with_custom_hover_bg(panel_bg)
+                    .with_corner_radius(10.f)
+                    .with_debug_name(dbg);
+  keep_visuals(config, 12.f);
+
+  if (sheet_cmp) {
+    const auto sheet = sheet_cmp->texture;
+    const auto src = afterhours::texture_manager::idx_to_sprite_frame(0, 1);
+    config.with_on_draw_fg([sheet, src, tint](RectangleType r) {
+      const float side = std::min(r.width, r.height) * 0.86f;
+      const RectangleType dest{r.x + (r.width - side) * 0.5f,
+                               r.y + (r.height - side) * 0.5f, side, side};
+      raylib::DrawTexturePro(sheet, src, dest, raylib::Vector2{0.f, 0.f}, 0.f,
+                             tint);
+    });
   }
 
-  ManagesAvailableColors &colorManager =
+  if (imm::button(context, mk(card, 1), config))
+    on_click();
+}
+
+// Eight swatches. The player's own colour gets a white ring; a colour another
+// driver already holds is dimmed and inert.
+inline void paint_palette(UIContext<InputAction> &context, Entity &card,
+                          int slot_index, ManagesAvailableColors &colors,
+                          EntityID car_id) {
+  const size_t current =
+      colors.users.contains(car_id) ? colors.users.at(car_id) : 0;
+
+  auto row = imm::hstack(context, mk(card, 4),
+                         ComponentConfig{}
+                             .with_size(ComponentSize{percent(1.f), ui::h720(16.f)})
+                             .with_gap(ui::w1280(3.f))
+                             .with_transparent_bg()
+                             .with_no_wrap()
+                             .with_debug_name(
+                                 fmt::format("slot_{}_paint", slot_index)));
+
+  for (size_t k = 0; k < ManagesAvailableColors::colors.size(); k++) {
+    const bool is_current = (k == current);
+    const bool taken_by_other = colors.used[k] && !is_current;
+
+    auto swatch =
+        ComponentConfig{}
+            .with_size(ComponentSize{ui::w1280(15.f), percent(1.f)})
+            .with_padding(Padding{})
+            .with_custom_background(ManagesAvailableColors::colors[k])
+            .with_custom_hover_bg(ManagesAvailableColors::colors[k])
+            .with_border(is_current ? afterhours::Color{255, 255, 255, 255}
+                                    : ink,
+                         2.f)
+            .with_corner_radius(4.f)
+            .with_opacity(taken_by_other ? 0.28f : 1.f)
+            .with_skip_grid_snap()
+            // 64 swatches on screen would swamp the tab order; the kart button
+            // is the tabbable way to change colour.
+            .with_skip_tabbing(true)
+            .with_debug_name(
+                fmt::format("slot_{}_swatch_{}", slot_index, k));
+    keep_visuals(swatch, 10.f);
+
+    if (imm::button(context, mk(row.ent(), static_cast<int>(k)), swatch) &&
+        !taken_by_other && !is_current) {
+      colors.release_only(car_id);
+      colors.used[k] = true;
+      colors.users[car_id] = k;
+    }
+  }
+}
+
+inline void difficulty_stepper(UIContext<InputAction> &context, Entity &card,
+                               int slot_index, Entity &car) {
+  const std::array<std::string, 4> options{
+      translation_manager::make_translatable_string(strings::i18n::easy)
+          .get_text(),
+      translation_manager::make_translatable_string(strings::i18n::medium)
+          .get_text(),
+      translation_manager::make_translatable_string(strings::i18n::hard)
+          .get_text(),
+      translation_manager::make_translatable_string(strings::i18n::expert)
+          .get_text()};
+
+  auto &difficulty = car.addComponentIfMissing<AIDifficulty>().difficulty;
+  size_t index = static_cast<size_t>(difficulty);
+
+  if (imm::stepper(context, mk(card, 5), options, index,
+                   ComponentConfig{}
+                       .with_size(ComponentSize{percent(1.f), ui::h720(24.f)})
+                       .with_custom_background(well_bg)
+                       .with_custom_text_color(butter)
+                       .with_corner_radius(10.f)
+                       .with_font_size(12.f)
+                       .with_debug_name(
+                           fmt::format("slot_{}_difficulty", slot_index)))) {
+    difficulty = static_cast<AIDifficulty::Difficulty>(index);
+  }
+}
+
+inline void open_card(UIContext<InputAction> &context, Entity &cell,
+                      int slot_index) {
+  auto config =
+      ComponentConfig{}
+          .with_size(ComponentSize{percent(1.f), percent(1.f)})
+          .with_label("+\nPRESS START")
+          .with_custom_background(well_bg)
+          .with_custom_hover_bg(panel_bg)
+          .with_custom_text_color(open_text)
+          .with_border(open_edge, 3.f, afterhours::ui::BorderStyle::Dotted)
+          .with_corner_radius(14.f)
+          .with_alignment(TextAlignment::Center)
+          .with_debug_name(fmt::format("slot_{}_open", slot_index));
+  keep_visuals(config, 13.f);
+
+  if (imm::button(context, mk(cell), config))
+    make_ai();
+}
+
+inline void filled_card(UIContext<InputAction> &context, Entity &cell,
+                        int slot_index, const Slot &slot, bool team_mode) {
+  Entity &car = *slot.car;
+  const Color paint = car.get<HasColor>().color();
+  ManagesAvailableColors &colors =
       *EntityHelper::get_singleton_cmp<ManagesAvailableColors>();
 
-  auto bg_color = car.has_value() //
-                      ? car->get<HasColor>().color()
-                      // Make it more transparent for empty slots
-                      : afterhours::colors::opacity_pct(
-                            colorManager.get_next_NO_STORE(index), 0.1f);
+  auto card = imm::vstack(
+      context, mk(cell),
+      ComponentConfig{}
+          .with_size(ComponentSize{percent(1.f), percent(1.f)})
+          .with_custom_background(panel_bg)
+          .with_border(mint, 3.f)
+          .with_corner_radius(14.f)
+          .with_padding(card_padding())
+          .with_debug_name(fmt::format("slot_{}_card", slot_index)));
 
-  bool team_mode = RoundManager::get().get_active_settings().team_mode_enabled;
+  // Top strip: team badge on the left, READY stamp on the right.
+  auto strip = imm::hstack(
+      context, mk(card.ent(), 0),
+      ComponentConfig{}
+          .with_size(ComponentSize{percent(1.f), ui::h720(16.f)})
+          .with_transparent_bg()
+          .with_no_wrap()
+          .with_debug_name(fmt::format("slot_{}_strip", slot_index)));
 
-  if (is_last_slot && (players.size() + ais.size()) >= input::MAX_GAMEPAD_ID) {
-    return;
+  if (team_mode) {
+    const int team_id = car.get<TeamID>().team_id;
+    auto badge = ComponentConfig{}
+                     .with_size(ComponentSize{ui::w1280(66.f), percent(1.f)})
+                     .with_padding(Padding{})
+                     .with_label(team_id == 0 ? "TEAM A" : "TEAM B")
+                     .with_custom_background(team_id == 0 ? team_a : team_b)
+                     .with_custom_text_color(ink)
+                     .with_corner_radius(8.f)
+                     // The team is in the debug name, not just the label:
+                     // assert_ui splits args on spaces so "TEAM A" is not a
+                     // value an e2e script can match on.
+                     .with_debug_name(fmt::format(
+                         "slot_{}_team_{}", slot_index, team_id == 0 ? "a"
+                                                                     : "b"));
+    keep_visuals(badge, 11.f);
+    if (imm::button(context, mk(strip.ent(), 0), badge))
+      car.get<TeamID>().team_id = (team_id == 0) ? 1 : 0;
   }
 
-  float card_width = 400.f;
-  float card_height = 100.f;
+  imm::div(context, mk(strip.ent(), 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{expand(), percent(1.f)})
+               .with_transparent_bg()
+               .with_skip_tabbing(true)
+               .with_debug_name(fmt::format("slot_{}_strip_gap", slot_index)));
 
-  auto column = imm::div(context, mk(parent, (int)index),
-                         ComponentConfig{}
-                             .with_size(ComponentSize{ui::w1280(card_width),
-                                                      ui::h720(card_height)})
-                             .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                                   .left = imm::DefaultSpacing::tiny(),
-                                                   .bottom = imm::DefaultSpacing::tiny(),
-                                                   .right = imm::DefaultSpacing::tiny()})
-                             .with_custom_background(bg_color)
-                             .disable_rounded_corners());
+  // Every occupied slot is ready -- the game has no per-driver ready gate yet.
+  imm::div(context, mk(strip.ent(), 2),
+           ComponentConfig{}
+               .with_size(ComponentSize{ui::w1280(52.f), percent(1.f)})
+               .with_label("READY")
+               .with_custom_background(mint)
+               .with_custom_text_color(ink)
+               .with_corner_radius(8.f)
+               .with_font_size(10.f)
+               .with_skip_tabbing(true)
+               .with_debug_name(fmt::format("slot_{}_ready", slot_index)));
 
-  // Create player card using helper function
-  std::string label = car.has_value() ? fmt::format("{} {}", index, car->id)
-                                      : fmt::format("{} Empty", index);
+  kart_portrait(context, card.ent(), slot_index, paint,
+                [&colors, id = car.id]() { colors.release_and_get_next(id); });
 
-  // Add team indicator to label in team mode
-  if (team_mode && car.has_value() && car->has<TeamID>()) {
-    int team_id = car->get<TeamID>().team_id;
-    std::string team_letter = (team_id == 0) ? "A" : "B";
-    label = fmt::format("{} {} ({})", index, car->id, team_letter);
-  }
+  imm::div(context, mk(card.ent(), 2),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(20.f)})
+               .with_label(driver_name(slot))
+               .with_transparent_bg()
+               .with_custom_text_color(butter)
+               .with_font_size(14.f)
+               .with_skip_tabbing(true)
+               .with_debug_name(fmt::format("slot_{}_name", slot_index)));
 
-  bool player_right = false;
-  if (index < players.size()) {
-    for (const auto &actions_done : inpc.inputs_pressed()) {
-      if (static_cast<size_t>(actions_done.id) != index) {
-        continue;
-      }
+  imm::div(context, mk(card.ent(), 3),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(17.f)})
+               .with_label(device_chip(slot))
+               .with_custom_background(well_bg)
+               .with_custom_text_color(muted)
+               .with_corner_radius(8.f)
+               .with_font_size(11.f)
+               .with_skip_tabbing(true)
+               .with_debug_name(fmt::format("slot_{}_device", slot_index)));
 
-      if (actions_done.medium == input::DeviceMedium::GamepadAxis) {
-        continue;
-      }
+  paint_palette(context, card.ent(), slot_index, colors, car.id);
 
-      player_right |=
-          action_matches(actions_done.action, InputAction::WidgetRight);
+  if (slot.is_ai)
+    difficulty_stepper(context, card.ent(), slot_index, car);
+  else
+    imm::div(context, mk(card.ent(), 5),
+             ComponentConfig{}
+                 .with_size(ComponentSize{percent(1.f), ui::h720(24.f)})
+                 .with_transparent_bg()
+                 .with_skip_tabbing(true)
+                 .with_debug_name(
+                     fmt::format("slot_{}_difficulty_gap", slot_index)));
 
-      if (player_right) {
-        break;
-      }
+  // The trashcan is gone; removing a bot is the same button that spawns it,
+  // held on the card itself so the row doesn't need a second control column.
+  if (slot.is_ai) {
+    auto remove = ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), ui::h720(18.f)})
+                      .with_padding(Padding{})
+                      .with_label("REMOVE")
+                      .with_transparent_bg()
+                      .with_custom_text_color(muted)
+                      .with_debug_name(fmt::format("slot_{}_remove", slot_index));
+    keep_visuals(remove, 11.f);
+    if (imm::button(context, mk(card.ent(), 6), remove)) {
+      colors.release_only(car.id);
+      car.cleanup = true;
     }
   }
-
-  bool show_next_color_button =
-      (is_last_slot && !is_last_slot_ai) ||
-      (!is_last_slot && colorManager.any_available_colors());
-
-  std::function<void()> on_next_color = nullptr;
-  if (show_next_color_button && car.has_value()) {
-    on_next_color = [&colorManager, &car]() {
-      colorManager.release_and_get_next(car->id);
-    };
-  }
-
-  std::function<void()> on_remove = nullptr;
-  if (is_slot_ai && car.has_value()) {
-    on_remove = [&colorManager, &car]() {
-      colorManager.release_only(car->id);
-      car->cleanup = true;
-    };
-  }
-
-  std::function<void()> on_add_ai = nullptr;
-  bool show_add_ai = false;
-  if (num_slots <= input::MAX_GAMEPAD_ID && is_last_slot) {
-    show_add_ai = true;
-    on_add_ai = []() { make_ai(); };
-  }
-
-  // AI Difficulty handling
-  std::optional<AIDifficulty::Difficulty> ai_difficulty = std::nullopt;
-  std::function<void(AIDifficulty::Difficulty)> on_difficulty_change = nullptr;
-
-  if (is_slot_ai && car.has_value()) {
-    if (car->has<AIDifficulty>()) {
-      ai_difficulty = car->get<AIDifficulty>().difficulty;
-    } else {
-      // Default to Medium if no difficulty component exists
-      ai_difficulty = AIDifficulty::Difficulty::Medium;
-    }
-
-    on_difficulty_change = [&car](AIDifficulty::Difficulty new_difficulty) {
-      if (car.has_value()) {
-        if (car->has<AIDifficulty>()) {
-          car->get<AIDifficulty>().difficulty = new_difficulty;
-        } else {
-          car->addComponent<AIDifficulty>(new_difficulty);
-        }
-      }
-    };
-  }
-
-  // Team switching functionality for team mode
-  std::function<void()> on_team_switch = nullptr;
-  bool show_team_switch = false;
-
-  if (team_mode && car.has_value()) {
-    show_team_switch = true;
-
-    // Initialize team assignment if not set
-    if (!car->has<TeamID>()) {
-      int initial_team = (index % 2 == 0) ? 0 : 1; // Alternate teams
-      car->addComponent<TeamID>(initial_team);
-    }
-
-    on_team_switch = [&car]() {
-      if (car.has_value() && car->has<TeamID>()) {
-        // Toggle team assignment
-        int current_team = car->get<TeamID>().team_id;
-        int new_team = (current_team == 0) ? 1 : 0;
-        car->get<TeamID>().team_id = new_team;
-        log_info("Player {} switched to team {}", car->id, new_team);
-      }
-    };
-  }
-
-  ui_helpers::PlayerCardData data{
-      .parent = column.ent(),
-      .index = 0,
-      .label = label,
-      .bg_color = bg_color,
-      .is_ai = is_slot_ai,
-      .on_next_color = on_next_color,
-      .on_remove = on_remove,
-      .on_add_ai = show_add_ai ? on_add_ai : nullptr,
-      .ai_difficulty = ai_difficulty,
-      .on_difficulty_change = on_difficulty_change,
-      .on_team_switch = show_team_switch ? on_team_switch : nullptr,
-  };
-
-  ui_helpers::create_player_card(context, column.ent(), data);
 }
+
+inline void slot_card(UIContext<InputAction> &context, Entity &cell,
+                      int slot_index, const Slot &slot, bool team_mode) {
+  if (slot.car)
+    filled_card(context, cell, slot_index, slot, team_mode);
+  else
+    open_card(context, cell, slot_index);
+}
+
+} // namespace character_select
 
 void ScheduleMainMenuUI::round_end_player_column(
     Entity &parent, UIContext<InputAction> &context, const size_t index,
@@ -860,8 +1024,11 @@ void ScheduleMainMenuUI::round_end_player_column(
       stats_text = translation_manager::translate_formatted(
           translation_manager::make_translatable_string(
               strings::i18n::not_it_timer)
+              // Rounded here, not in the format string: TranslatableString
+              // stringifies every param, so "{:.1f}" would throw.
               .set_param(translation_manager::i18nParam::number_time,
-                         car->get<HasTagAndGoTracking>().time_as_not_it,
+                         fmt::format("{:.1f}", car->get<HasTagAndGoTracking>()
+                                                   .time_as_not_it),
                          translation_manager::translation_param));
     }
     break;
@@ -935,11 +1102,11 @@ void ScheduleMainMenuUI::round_end_player_column(
   case RoundType::TagAndGo: {
     if (car->has<HasTagAndGoTracking>()) {
       float final_val = car->get<HasTagAndGoTracking>().time_as_not_it;
-      float shown = std::round(score_t * final_val * 10.0f) / 10.0f;
       animated_stats = translation_manager::translate_formatted(
           translation_manager::make_translatable_string(
               strings::i18n::not_it_timer)
-              .set_param(translation_manager::i18nParam::number_time, shown,
+              .set_param(translation_manager::i18nParam::number_time,
+                         fmt::format("{:.1f}", score_t * final_val),
                          translation_manager::translation_param));
     }
     break;
@@ -1013,62 +1180,10 @@ std::map<EntityID, int> ScheduleMainMenuUI::get_tag_and_go_rankings(
   return rankings;
 }
 
-void ScheduleMainMenuUI::render_team_column(
-    UIContext<InputAction> &context, Entity &team_columns_container,
-    const std::string &team_name, const std::vector<size_t> &team_players,
-    const size_t num_slots, int team_index) {
-  auto team_color =
-      team_index == 0
-          ? raylib::Color{100, 150, 255, 50}  // Light blue for Team A
-          : raylib::Color{255, 150, 100, 50}; // Light orange for Team B
-
-  auto column_container =
-      imm::vstack(context, mk(team_columns_container, team_index),
-               ComponentConfig{}
-                   .with_size(ComponentSize{ui::w1280(400.f), ui::h720(700.f)})
-                   .with_padding(Padding{.left = ui::w1280(20.f),
-                                         .right = ui::w1280(20.f)})
-                   .with_custom_background(team_color)
-                   .disable_rounded_corners()
-                   .with_debug_name(team_name + "_column"));
-
-  imm::div(context, mk(column_container.ent(), team_index),
-           ComponentConfig{}
-               .with_size(ComponentSize{ui::w1280(400.f), ui::h720(100.f)})
-               .with_label(team_name)
-               .with_debug_name(team_name + "_header"));
-
-  ////
-  if (team_players.empty()) {
-    imm::div(context, mk(column_container.ent(), team_index),
-             ComponentConfig{}
-                 .with_size(ComponentSize{ui::w1280(400.f), ui::h720(700.f)})
-                 .with_label("No players")
-                 .with_debug_name(team_name + "_empty"));
-  } else {
-    int cards_per_row = 1;
-    size_t team_rows = team_players.size();
-
-    for (size_t row_id = 0; row_id < team_rows; row_id++) {
-      auto team_row = imm::hstack(
-          context, mk(column_container.ent(), row_id),
-          ComponentConfig{}
-              .with_size(ComponentSize{ui::w1280(400.f), ui::h720(100.f)})
-              .with_debug_name(team_name + "_row"));
-
-      // Render players for this row
-      size_t start = row_id * cards_per_row;
-      for (size_t i = start;
-           i < std::min(team_players.size(), start + cards_per_row); i++) {
-        character_selector_column(team_row.ent(), context, team_players[i],
-                                  num_slots);
-      }
-    }
-  }
-}
-
 Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                                               UIContext<InputAction> &context) {
+  namespace cs = character_select;
+
   auto elem =
       imm::div(context, mk(entity),
                ComponentConfig{}
@@ -1076,102 +1191,200 @@ Screen ScheduleMainMenuUI::character_creation(Entity &entity,
                    .with_absolute_position()
                    .with_debug_name("character_creation"));
 
-  auto top_left = ui_helpers::create_top_left_container(
-      context, elem.ent(), "character_top_left", 0);
+  auto content =
+      imm::vstack(context, mk(elem.ent()),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{screen_pct(0.90f, 1.f),
+                                               screen_pct(0.86f, 1.f)})
+                      .with_absolute_position(screen_pct(0.05f),
+                                              screen_pct(0.07f))
+                      .with_transparent_bg()
+                      .with_debug_name("character_content"));
 
-  ui_helpers::create_styled_button(
-      context, top_left.ent(),
-      translation_manager::make_translatable_string(
-          strings::i18n::round_settings)
-          .get_text(),
-      []() { navigation::to(GameStateManager::Screen::RoundSettings); }, 0);
-
-  ui_helpers::create_styled_button(
-      context, top_left.ent(),
-      translation_manager::make_translatable_string(strings::i18n::back)
-          .get_text(),
-      []() { navigation::back(); }, 1);
-
-  // Team mode toggle
   auto &active_settings = RoundManager::get().get_active_settings();
-  if (imm::checkbox(context, mk(top_left.ent()),
-                    active_settings.team_mode_enabled,
-                    ComponentConfig{}
-                        .with_label("Team Mode")
-                        .with_debug_name("team_mode_checkbox")
-                        .with_margin(Margin{.top = screen_pct(0.01f)}))) {
-    // Value already toggled by checkbox binding
-    log_info("team mode toggled: {}", active_settings.team_mode_enabled);
-  }
+  const bool team_mode = active_settings.team_mode_enabled;
 
-  size_t num_slots = players.size() + ais.size() + 1;
-  bool team_mode = RoundManager::get().get_active_settings().team_mode_enabled;
+  // --- header: heading + FREE FOR ALL | TEAMS -------------------------------
+  auto header =
+      imm::hstack(context, mk(content.ent(), 0),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), ui::h720(54.f)})
+                      .with_align_items(AlignItems::Center)
+                      .with_transparent_bg()
+                      .with_no_wrap()
+                      .with_debug_name("character_header"));
 
-  auto btn_group = imm::div(
-      context, mk(elem.ent()),
-      ComponentConfig{}
-          .with_size(ComponentSize{screen_pct(0.7f), screen_pct(0.85f)})
-          .with_absolute_position(screen_pct(0.20f), screen_pct(0.15f))
-          .with_debug_name("btn_group"));
+  imm::div(context, mk(header.ent(), 0),
+           ComponentConfig{}
+               .with_size(ComponentSize{expand(), percent(1.f)})
+               .with_label("WHO'S DRIVING")
+               .with_font_size(34.f)
+               .with_alignment(TextAlignment::Left)
+               .with_transparent_bg()
+               .with_skip_tabbing(true)
+               .with_debug_name("character_heading"));
+
+  // The old imm::checkbox labelled "Team Mode" read as an afterthought. A
+  // two-up segmented control with the live half filled says which mode you
+  // are in without reading anything.
+  auto segmented =
+      imm::hstack(context, mk(header.ent(), 1),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{ui::w1280(320.f),
+                                               ui::h720(42.f)})
+                      .with_custom_background(cs::well_bg)
+                      .with_border(cs::butter, 3.f)
+                      .with_corner_radius(20.f)
+                      .with_no_wrap()
+                      .with_debug_name("mode_segmented"));
+
+  const auto segment = [&](int idx, const char *label, bool on,
+                           const char *debug_name) {
+    auto config =
+        ComponentConfig{}
+            .with_size(ComponentSize{expand(), percent(1.f)})
+            .with_padding(Padding{})
+            .with_label(label)
+            .with_custom_background(on ? cs::butter : cs::well_bg)
+            .with_custom_hover_bg(on ? cs::butter : cs::panel_bg)
+            .with_custom_text_color(on ? cs::ink : cs::muted)
+            .with_corner_radius(18.f)
+            .with_debug_name(debug_name);
+    cs::keep_visuals(config, 13.f);
+    return static_cast<bool>(
+               imm::button(context, mk(segmented.ent(), idx), config)) &&
+           !on;
+  };
+
+  if (segment(0, "FREE FOR ALL", !team_mode, "mode_free_for_all"))
+    active_settings.team_mode_enabled = false;
+  if (segment(1, "TEAMS", team_mode, "mode_teams"))
+    active_settings.team_mode_enabled = true;
+
+  imm::div(context, mk(content.ent(), 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{ui::w1280(260.f), ui::h720(8.f)})
+               .with_custom_background(cs::butter)
+               .with_skip_tabbing(true)
+               .with_debug_name("character_rule"));
+
+  // --- slots ----------------------------------------------------------------
+  std::vector<cs::Slot> slots;
+  slots.reserve(input::MAX_GAMEPAD_ID);
+  for (size_t i = 0; i < players.size(); i++)
+    slots.push_back({&players[i].get(), i, false});
+  for (size_t i = 0; i < ais.size(); i++)
+    slots.push_back({&ais[i].get(), i, true});
 
   if (team_mode) {
-    // Team mode: Two rows (Team A on top, Team B on bottom)
+    // Everyone needs a team before we can group by one.
+    for (size_t i = 0; i < slots.size(); i++)
+      slots[i].car->addComponentIfMissing<TeamID>(i % 2 == 0 ? 0 : 1);
+    // One grid, Team A first -- the user asked for grouping, not two columns.
+    std::stable_sort(slots.begin(), slots.end(),
+                     [](const cs::Slot &a, const cs::Slot &b) {
+                       return a.car->get<TeamID>().team_id <
+                              b.car->get<TeamID>().team_id;
+                     });
+  }
 
-    // Group players by team
-    std::vector<size_t> team_a_players;
-    std::vector<size_t> team_b_players;
+  slots.resize(input::MAX_GAMEPAD_ID);
 
-    for (size_t i = 0; i < num_slots; i++) {
-      OptEntity car;
-      if (i < players.size()) {
-        car = players[i];
-      } else if (i < players.size() + ais.size()) {
-        car = ais[i - players.size()];
-      }
+  auto grid = imm::vstack(context, mk(content.ent(), 2),
+                          ComponentConfig{}
+                              .with_size(ComponentSize{percent(1.f), expand()})
+                              .with_transparent_bg()
+                              .with_debug_name("character_grid"));
 
-      // Determine which team this player belongs to
-      bool is_team_a = true; // Default to team A
-      if (car.has_value() && car->has<TeamID>()) {
-        is_team_a = (car->get<TeamID>().team_id == 0);
-      } else {
-        // If no team assignment, alternate based on index
-        is_team_a = (i % 2 == 0);
-      }
+  constexpr int kRows = 2;
+  constexpr int kCols = input::MAX_GAMEPAD_ID / kRows;
+  for (int row_id = 0; row_id < kRows; row_id++) {
+    auto row = imm::hstack(
+        context, mk(grid.ent(), row_id),
+        ComponentConfig{}
+            .with_size(ComponentSize{percent(1.f), percent(1.f / kRows)})
+            .with_transparent_bg()
+            .with_no_wrap()
+            .with_debug_name(fmt::format("character_grid_row_{}", row_id)));
 
-      if (is_team_a) {
-        team_a_players.push_back(i);
-      } else {
-        team_b_players.push_back(i);
-      }
-    }
-
-    // Create centered container for team columns
-    auto team_columns_container =
-        imm::hstack(context, mk(btn_group.ent()),
-                 ComponentConfig{}
-                     .with_size(ComponentSize{percent(1.0f), percent(1.f)})
-                     .with_debug_name("team_columns_container"));
-
-    render_team_column(context, team_columns_container.ent(), "Team A",
-                       team_a_players, num_slots, 0);
-    render_team_column(context, team_columns_container.ent(), "Team B",
-                       team_b_players, num_slots, 1);
-  } else {
-    // Individual mode: Original grid layout
-    int fours =
-        static_cast<int>(std::ceil(static_cast<float>(num_slots) / 4.f));
-
-    for (int row_id = 0; row_id < fours; row_id++) {
-      auto row = imm::hstack(
-          context, mk(btn_group.ent(), row_id),
+    for (int col = 0; col < kCols; col++) {
+      const int slot_index = row_id * kCols + col;
+      auto cell = imm::div(
+          context, mk(row.ent(), col),
           ComponentConfig{}
-              .with_size(ComponentSize{percent(1.f), percent(0.5f, 0.4f)})
-              .with_debug_name("row"));
-      size_t start = row_id * 4;
-      for (size_t i = start; i < std::min(num_slots, start + 4); i++) {
-        character_selector_column(row.ent(), context, i, num_slots);
-      }
+              .with_size(ComponentSize{expand(), percent(1.f)})
+              .with_padding(Padding{.top = ui::h720(6.f),
+                                    .left = ui::w1280(6.f),
+                                    .bottom = ui::h720(6.f),
+                                    .right = ui::w1280(6.f)})
+              .with_transparent_bg()
+              .with_debug_name(fmt::format("slot_{}_cell", slot_index)));
+
+      cs::slot_card(context, cell.ent(), slot_index,
+                    slots[static_cast<size_t>(slot_index)], team_mode);
     }
+  }
+
+  // --- bottom bar -----------------------------------------------------------
+  auto bottom =
+      imm::hstack(context, mk(content.ent(), 3),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), ui::h720(54.f)})
+                      .with_align_items(AlignItems::Center)
+                      .with_transparent_bg()
+                      .with_no_wrap()
+                      .with_debug_name("character_bottom_bar"));
+
+  const auto chrome_button = [&](int idx, const std::string &label,
+                                 Color fill, Color text,
+                                 const char *debug_name) {
+    auto config = ComponentConfig{}
+                      .with_size(ComponentSize{ui::w1280(150.f),
+                                               ui::h720(42.f)})
+                      .with_label(label)
+                      .with_custom_background(fill)
+                      .with_custom_text_color(text)
+                      .with_border(cs::ink, 3.f)
+                      .with_corner_radius(12.f)
+                      .with_debug_name(debug_name);
+    cs::keep_visuals(config, 15.f);
+    animation_control::apply_slide_in(config);
+    return static_cast<bool>(imm::button(context, mk(bottom.ent(), idx), config));
+  };
+
+  if (chrome_button(0,
+                    translation_manager::make_translatable_string(
+                        strings::i18n::back)
+                        .get_text(),
+                    cs::well_bg, cs::mint, "btn_back")) {
+    navigation::back();
+  }
+
+  imm::div(context, mk(bottom.ent(), 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{expand(), percent(1.f)})
+               .with_label("A ADD BOT // X PAINT // < > SKILL")
+               .with_transparent_bg()
+               .with_custom_text_color(cs::mint)
+               .with_alignment(TextAlignment::Left)
+               .with_font_size(12.f)
+               .with_skip_tabbing(true)
+               .with_debug_name("character_hints"));
+
+  const size_t driver_count = players.size() + ais.size();
+  imm::div(context, mk(bottom.ent(), 2),
+           ComponentConfig{}
+               .with_size(ComponentSize{ui::w1280(120.f), percent(1.f)})
+               .with_label(fmt::format("{} DRIVER{}", driver_count,
+                                       driver_count == 1 ? "" : "S"))
+               .with_transparent_bg()
+               .with_custom_text_color(cs::butter)
+               .with_font_size(12.f)
+               .with_skip_tabbing(true)
+               .with_debug_name("character_driver_count"));
+
+  if (chrome_button(3, "NEXT", cs::butter, cs::ink, "btn_next")) {
+    navigation::to(GameStateManager::Screen::RoundSettings);
   }
 
   return GameStateManager::get().next_screen.value_or(

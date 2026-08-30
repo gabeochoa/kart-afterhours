@@ -1,0 +1,32 @@
+# Single-player Lives must not end on frame one
+#
+# CheckLivesWinFFA declared a winner at exactly one survivor, and exactly one
+# car is ever spawned (make_player(0) at startup), so a solo Lives round ended
+# the instant it began. The guard is most_contenders_seen > 1.
+#
+# No screenshots: the kart is live and moving.
+
+disable_animations
+
+set_round_type Lives
+goto_screen Main
+wait 0.2
+
+start_round
+
+# Frame one is the regression. Gameplay systems are registered ahead of the
+# e2e command handlers, so by the time this resolves CheckLivesWinFFA has
+# already had a pass with the game active.
+wait_frames 1
+expect_state Playing
+
+# And it stays up rather than ending a moment later
+wait_frames 30
+expect_state Playing
+expect_tracker lives 1
+
+end_round
+wait_frames 2
+expect_state Menu
+goto_screen Main
+wait 0.2

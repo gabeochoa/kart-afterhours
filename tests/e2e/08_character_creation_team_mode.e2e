@@ -1,27 +1,44 @@
 # Character Creation Team Mode Toggle
-# Tests toggling team mode on and off
+# Tests the FREE FOR ALL / TEAMS segmented control and the team badge it puts
+# on each card. Assertions target debug names, not label text.
+#
+# This script deliberately does NOT add a bot. AITargetSelection ticks on the
+# menu screens, and pre_round_ai_target calls rand() % GetScreenWidth(), which
+# is a divide-by-zero the moment a bot exists under --headless. See the bug
+# note in the character-select handoff.
 
 disable_animations
 
 goto_screen CharacterCreation
 wait 0.2
 
-expect_text "round settings"
-expect_text "back"
-expect_text "Team Mode"
+assert_ui btn_next hidden=false
+assert_ui btn_back hidden=false
+assert_ui mode_free_for_all hidden=false
+assert_ui mode_teams hidden=false
+assert_ui slot_0_card hidden=false
+assert_ui slot_0_kart hidden=false
+assert_ui slot_0_ready text=READY
+assert_ui slot_1_open hidden=false
 screenshot char_team_01_initial
 
-# Toggle team mode on via checkbox debug name
-toggle_checkbox team_mode_checkbox
+# Switch to team mode -- every occupied card grows a team badge
+click_ui mode_teams
 wait 0.3
-expect_text "Team A"
-expect_text "Team B"
+assert_ui slot_0_team_a hidden=false
 screenshot char_team_02_team_mode_on
 
-# Toggle team mode off
-toggle_checkbox team_mode_checkbox
+# Flip slot 0 to the other team
+click_ui slot_0_team_a
 wait 0.3
-screenshot char_team_03_team_mode_off
+assert_ui slot_0_team_b hidden=false
+screenshot char_team_03_team_switched
+
+# Back to free for all -- the badge goes away
+click_ui mode_free_for_all
+wait 0.3
+assert_ui slot_0_card hidden=false
+screenshot char_team_04_team_mode_off
 
 # Return to main
 goto_screen Main

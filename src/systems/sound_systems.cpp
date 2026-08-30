@@ -16,12 +16,6 @@
 
 using namespace afterhours;
 
-struct CarRumble : System<Transform, CanShoot> {
-  virtual void for_each_with(const Entity &, const Transform &,
-                             const CanShoot &, float) const override {
-  }
-};
-
 struct UIClickSounds
     : ui::SystemWithUIContext<ui::HasClickListener> {
   ui::UIContext<InputAction> *context;
@@ -158,5 +152,4 @@ void register_sound_systems(SystemManager &systems) {
   systems.register_update_system(std::make_unique<BackgroundMusic>());
   systems.register_update_system(std::make_unique<UISoundBindingSystem>());
   systems.register_update_system(std::make_unique<UIClickSounds>());
-  systems.register_render_system(std::make_unique<CarRumble>());
 }

@@ -120,7 +120,11 @@ LanguageMap create_translation_data() {
        TranslatableString("hippos: 0",
                           "Fallback text when no hippos collected")},
       {strings::i18n::not_it_timer,
-       TranslatableString("not it: {:.1f}s",
+       // {} not {:.1f}: TranslatableString stores every param as a string, so
+       // a numeric presentation spec throws fmt::format_error and aborts the
+       // process. This was the only such spec left. Round at the call site if
+       // the extra digits matter.
+       TranslatableString("not it: {}s",
                           "Label for tag game timer display")},
 
       // Round Settings Labels
@@ -228,7 +232,7 @@ LanguageMap create_translation_data() {
        TranslatableString("하마: 0",
                           "하마를 수집하지 않았을 때의 대체 텍스트")},
       {strings::i18n::not_it_timer,
-       TranslatableString("술래: {:.1f}초", "술래잡기 게임 타이머 표시 라벨")},
+       TranslatableString("술래: {}초", "술래잡기 게임 타이머 표시 라벨")},
 
       {strings::i18n::win_condition_label,
        TranslatableString("승리 조건: {}", "승리 조건 설정 라벨")},
@@ -334,7 +338,7 @@ LanguageMap create_translation_data() {
       {strings::i18n::hippos_zero,
        TranslatableString("カバ: 0", "カバを収集していない時の代替テキスト")},
       {strings::i18n::not_it_timer,
-       TranslatableString("鬼: {:.1f}초", "鬼ごっこゲームタイマー表示ラベル")},
+       TranslatableString("鬼: {}秒", "鬼ごっこゲームタイマー表示ラベル")},
 
       {strings::i18n::win_condition_label,
        TranslatableString("勝利条件: {}", "勝利条件設定ラベル")},

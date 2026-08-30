@@ -1,0 +1,48 @@
+# Two-Round Lives: per-round trackers must reset between rounds
+#
+# Guards reset_car_trackers in RoundManager::reset_for_new_round. Cars are
+# built once in make_car and outlive rounds, so without that reset round 2
+# inherits round 1's kills, lives, hippos and health.
+#
+# No screenshots anywhere in this file: a live round has moving karts, so
+# pixels are not reproducible. Every assertion is on game state.
+
+disable_animations
+
+set_round_type Lives
+goto_screen Main
+wait 0.2
+
+# --- Round 1 ---
+start_round
+wait_frames 5
+expect_state Playing
+
+# Dirty every tracker the fix claims to clear. This stands in for a round
+# actually played out -- physics and AI make that non-reproducible, and a
+# flaky test is worse than no test.
+set_tracker kills 7
+set_tracker hippos 4
+set_tracker lives 99
+set_tracker health 1
+expect_tracker kills 7
+expect_tracker health 1
+
+end_round
+wait_frames 5
+expect_state Menu
+
+# --- Round 2 must start clean ---
+start_round
+wait_frames 5
+expect_state Playing
+expect_tracker kills 0
+expect_tracker hippos 0
+expect_tracker lives 1
+expect_tracker health 120
+
+# Leave the game in Menu so the next script starts from a known state
+end_round
+wait_frames 2
+goto_screen Main
+wait 0.2

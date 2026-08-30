@@ -154,6 +154,10 @@ void game() {
 
     e2e_integration::register_systems(systems);
     register_ui_systems(systems);
+    // After register_ui_systems: UIClickSounds reads HasClickListener.down and
+    // UIComponent.was_rendered_to_screen, both of which the UI systems set this
+    // frame. Registered before it, they would be a frame stale.
+    register_sound_systems(systems);
 
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
 
@@ -310,5 +314,7 @@ int main(int argc, char *argv[]) {
 
   Preload_single.reset();
 
-  return 0;
+  // Without this, a failed expect_text or a timeout still exits 0 and `make
+  // e2e` can never fail.
+  return e2e_integration::has_failed() ? 1 : 0;
 }

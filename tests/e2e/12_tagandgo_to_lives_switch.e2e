@@ -1,0 +1,47 @@
+# TagAndGo -> Lives mode switch with a stale tagger flag
+#
+# Only RoundTagAndGoSettings::reset_temp_data clears is_tagger, and it only
+# runs while TagAndGo is active. Switch to Lives and the flag survives, so
+# HandleTagAndGoTagTransfer would run with a Lives settings object and
+# get_active_rt<RoundTagAndGoSettings> would reinterpret it -- the switch it
+# used to sit behind did an unchecked static_cast on every arm.
+#
+# No screenshots: tagger scaling and kart motion are not reproducible.
+
+disable_animations
+
+set_round_type TagAndGo
+goto_screen Main
+wait 0.2
+
+# --- TagAndGo round assigns a tagger ---
+start_round
+wait_frames 10
+expect_state Playing
+# InitializeTagAndGoGame picks a tagger from the cars; e2e spawns exactly one
+expect_tracker is_tagger 1
+
+end_round
+wait_frames 5
+expect_state Menu
+
+# --- Switch modes without ever clearing the tag state ---
+set_round_type Lives
+start_round
+wait_frames 10
+
+# The flag really is still set. This is the bug's precondition -- asserting it
+# keeps the test honest if reset_temp_data ever starts clearing it, at which
+# point this script stops covering the cast and should be revisited.
+expect_tracker is_tagger 1
+
+# ...and the Lives round is intact: still running, lives still the Lives
+# starting value rather than whatever a misread settings object would give.
+expect_state Playing
+expect_tracker lives 1
+expect_tracker health 120
+
+end_round
+wait_frames 2
+goto_screen Main
+wait 0.2

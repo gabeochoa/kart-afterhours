@@ -6,8 +6,8 @@ disable_animations
 # Navigate to character creation via play button
 goto_screen CharacterCreation
 wait 0.2
-expect_text "round settings"
-expect_text "back"
+assert_ui btn_next hidden=false
+assert_ui btn_back hidden=false
 screenshot flow_01_character_creation
 
 # Navigate to round settings

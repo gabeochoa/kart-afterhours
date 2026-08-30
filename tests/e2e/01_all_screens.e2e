@@ -35,8 +35,8 @@ screenshot 03_about
 # Character Creation Screen
 goto_screen CharacterCreation
 wait 0.2
-expect_text "round settings"
-expect_text "back"
+assert_ui btn_next hidden=false
+assert_ui btn_back hidden=false
 screenshot 04_character_creation
 
 # Round Settings Screen
