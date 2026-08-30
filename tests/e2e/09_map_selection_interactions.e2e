@@ -1,34 +1,48 @@
-# Map Selection Screen
-# Tests that all map buttons and preview info are visible
+# Track Select ("PICK A TRACK") -- docs/ui-mock.html section 04.
+#
+# Kills is pinned so the tile set is fixed: RANDOM, ARENA, MAZE, BATTLE PIT,
+# TEST MAP. Which tracks a mode allows is what decides the grid shape.
 
 disable_animations
+set_round_type Kills
 
 goto_screen MapSelection
 wait 0.2
 
-# Verify map buttons are present
+expect_text "PICK A TRACK"
 expect_text_i "back"
-expect_text "Arena"
-expect_text "win condition"
+
+# Every tile is one third of the grid. The old list sized each button to its
+# own text, so "ARENA" and "BATTLE PIT" came out different widths and the row
+# ran out past the column it lived in.
+assert_ui tile_random w=132
+assert_ui tile_map_3 w=132
+assert_no_overflow
 screenshot map_int_01_initial
 
-# Tab through the map buttons
-tab
+# A tile only records the choice; GO is what starts the round. The caption and
+# the preview follow the selection.
+click_ui tile_random
 wait 0.1
-screenshot map_int_02_tab1
+assert_ui map_caption_name text=RANDOM
+expect_text "WE PICK ANY TRACK THAT SUITS MOST KILLS."
+assert_no_overflow
+screenshot map_int_02_random
+
+click_ui tile_map_0
+wait 0.1
+assert_ui map_caption_name text=ARENA
+screenshot map_int_03_arena
+
+click_ui tile_map_1
+wait 0.1
+assert_ui map_caption_name text=MAZE
+assert_no_overflow
+screenshot map_int_04_maze
 
 tab
 wait 0.1
-screenshot map_int_03_tab2
+screenshot map_int_05_tab1
 
-tab
-wait 0.1
-screenshot map_int_04_tab3
-
-tab
-wait 0.1
-screenshot map_int_05_tab4
-
-# Return to main
 goto_screen Main
 wait 0.2

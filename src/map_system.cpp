@@ -7,9 +7,11 @@
 
 // Map preview constants
 namespace {
-// Preview texture dimensions (square for UI consistency)
-// Range: 200-500px works well for most screen resolutions
-constexpr int PREVIEW_TEXTURE_SIZE = 300;
+// Preview texture dimensions. 16:9 so the preview keeps the play area's
+// aspect -- a square texture letterboxed the map twice, once into the texture
+// and again into the panel it is drawn in.
+constexpr int PREVIEW_TEXTURE_W = 480;
+constexpr int PREVIEW_TEXTURE_H = 270;
 
 // Preview isolation offset (keeps preview entities far from main game)
 // Range: 50000+ to avoid any collision with main game area
@@ -32,29 +34,29 @@ vec2 get_preview_offset(int map_index) {
 } // namespace
 
 const std::array<MapConfig, MapManager::MAP_COUNT> MapManager::available_maps =
-    {{{.display_name = "Arena",
-       .description = "Classic open arena with strategic obstacles",
+    {{{.display_name = "ARENA",
+       .description = "OPEN GROUND WITH FOUR ROCKS AND A SLICK.",
        .compatible_round_types = std::bitset<4>(
            0b1111), // All round types (Lives, Kills, Score, TagAndGo)
        .create_map_func = create_arena_map},
-      {.display_name = "Maze",
-       .description = "Complex maze layout for tactical gameplay",
+      {.display_name = "MAZE",
+       .description = "TIGHT WALLS. NO LONG SHOTS, NO ESCAPE.",
        .compatible_round_types = std::bitset<4>(0b0011), // Lives, Kills
        .create_map_func = create_maze_map},
-      {.display_name = "Race Track",
-       .description = "Race track layout with speed-focused gameplay",
+      {.display_name = "RACE TRACK",
+       .description = "TWO RINGS OF BARRIERS. KEEP YOUR FOOT DOWN.",
        .compatible_round_types = std::bitset<4>(0b1100), // Score, TagAndGo
        .create_map_func = create_race_map},
-      {.display_name = "Battle Arena",
-       .description = "Combat-focused layout with cover points",
+      {.display_name = "BATTLE PIT",
+       .description = "EIGHT BLOCKS OF COVER. PICK YOUR CORNER.",
        .compatible_round_types = std::bitset<4>(0b0011), // Lives, Kills
        .create_map_func = create_battle_map},
-      {.display_name = "Tag And Go",
-       .description = "Special layout optimized for tag gameplay",
+      {.display_name = "TAG AND GO",
+       .description = "SAFE CORNERS AND A CROWDED MIDDLE.",
        .compatible_round_types = std::bitset<4>(0b1000), // TagAndGo only
        .create_map_func = create_tagandgo_map},
-      {.display_name = "Test Map",
-       .description = "Test map with green walls and big X for preview testing",
+      {.display_name = "TEST MAP",
+       .description = "ONE WALL, ONE OIL SLICK, ONE PATCH OF GOO.",
        .compatible_round_types = std::bitset<4>(
            0b1111), // All round types (Lives, Kills, Score, TagAndGo)
        .create_map_func = create_test_map}}};
@@ -65,7 +67,7 @@ void MapManager::initialize_preview_textures() {
 
   for (size_t i = 0; i < preview_textures.size(); i++) {
     preview_textures[i] =
-        raylib::LoadRenderTexture(PREVIEW_TEXTURE_SIZE, PREVIEW_TEXTURE_SIZE);
+        raylib::LoadRenderTexture(PREVIEW_TEXTURE_W, PREVIEW_TEXTURE_H);
   }
 
   preview_textures_initialized = true;
@@ -99,10 +101,10 @@ void MapManager::generate_map_preview(int map_index) {
   afterhours::window_manager::Resolution resolution = pcr->current_resolution;
 
   raylib::Camera2D camera = {};
-  float zoom_x = PREVIEW_TEXTURE_SIZE / static_cast<float>(resolution.width);
-  float zoom_y = PREVIEW_TEXTURE_SIZE / static_cast<float>(resolution.height);
+  float zoom_x = PREVIEW_TEXTURE_W / static_cast<float>(resolution.width);
+  float zoom_y = PREVIEW_TEXTURE_H / static_cast<float>(resolution.height);
   camera.zoom = std::min(zoom_x, zoom_y) * PREVIEW_ZOOM_MARGIN;
-  camera.offset = {PREVIEW_TEXTURE_SIZE / 2.0f, PREVIEW_TEXTURE_SIZE / 2.0f};
+  camera.offset = {PREVIEW_TEXTURE_W / 2.0f, PREVIEW_TEXTURE_H / 2.0f};
 
   // The map is created using screen coordinates, so the actual map bounds are:
   // X: preview_offset.x + 0 to preview_offset.x + resolution.width
@@ -112,10 +114,13 @@ void MapManager::generate_map_preview(int map_index) {
   camera.target = map_center;
 
   raylib::BeginTextureMode(preview_textures[map_index]);
-  raylib::ClearBackground(raylib::DARKGRAY);
+  // Slate, not DARKGRAY: obstacles are drawn in black and white, and the menu
+  // this ends up in is deep purple.
+  raylib::ClearBackground(raylib::Color{107, 95, 150, 255});
   raylib::BeginMode2D(camera);
 
   auto preview_entities = afterhours::EntityQuery({.force_merge = true})
+                              .whereHasTag(GameTag::MapGenerated)
                               .whereHasComponent<Transform>()
                               .whereHasComponent<afterhours::HasColor>()
                               .gen();
@@ -169,8 +174,13 @@ void MapManager::cleanup_preview_area(int map_index) {
       afterhours::window_manager::ProvidesCurrentResolution>();
   afterhours::window_manager::Resolution resolution = pcr->current_resolution;
 
-  auto entities_in_area =
-      afterhours::EntityQuery({.force_merge = true}).whereHasComponent<Transform>().gen();
+  // MapGenerated, not "anything with a Transform": this used to delete every
+  // entity that happened to sit in the preview rect, and the rect is only
+  // empty by luck of where the offsets landed.
+  auto entities_in_area = afterhours::EntityQuery({.force_merge = true})
+                              .whereHasTag(GameTag::MapGenerated)
+                              .whereHasComponent<Transform>()
+                              .gen();
 
   for (auto &entity : entities_in_area) {
     if (entity.get().has<Transform>()) {
