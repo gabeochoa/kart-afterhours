@@ -2496,30 +2496,56 @@ Screen ScheduleMainMenuUI::about_screen(Entity &entity,
         []() { navigation::back(); }, 0);
   }
 
+  // Clear the top-left back button, which shares this origin.
   auto control_group =
       imm::div(context, mk(elem.ent()),
                ComponentConfig{}
                    .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-                   .with_padding(button_group_padding)
+                   .with_padding(Padding{.top = pixels(104.f),
+                                         .left = pixels(28.f)})
                    .with_absolute_position()
                    .with_debug_name("control_group"));
 
-  raylib::Texture2D sheet = EntityHelper::get_singleton_cmp<
-                                afterhours::texture_manager::HasSpritesheet>()
-                                ->texture;
-  const auto scale = 5.f;
-
-  const std::array<afterhours::texture_manager::Rectangle, 3> about_frames{
-      afterhours::texture_manager::idx_to_sprite_frame(0, 4),
-      afterhours::texture_manager::idx_to_sprite_frame(1, 4),
-      afterhours::texture_manager::idx_to_sprite_frame(2, 4),
+  // This screen used to be a back button and three spritesheet icons, with no
+  // text at all. The controls only existed in HOW_TO_PLAY.md, where no player
+  // will ever look. English-only for now -- see TODO.
+  const auto line = [&](int idx, const char *text, float px,
+                        Theme::Usage color, const char *name) {
+    imm::div(context, mk(control_group.ent(), idx),
+             ComponentConfig{}
+                 .with_label(text)
+                 .with_font_size(px)
+                 .with_size(ComponentSize{pixels(900.f), pixels(px * 1.6f)})
+                 .with_text_color(color)
+                 .with_alignment(TextAlignment::Left)
+                 .with_transparent_bg()
+                 .with_skip_tabbing(true)
+                 .with_debug_name(name));
   };
 
-  imm::icon_row(context, mk(control_group.ent()), sheet, about_frames, scale,
-                ComponentConfig{}
-                    .with_size(ComponentSize{percent(1.f), percent(0.4f)})
-                    .with_margin(Margin{.top = percent(0.1f)})
-                    .with_debug_name("about_icons"));
+  line(10, "SMASH THEM. DON'T GET SMASHED.", 30.f, Theme::Usage::Accent,
+       "about_hook");
+  line(11, "EIGHT KARTS  //  ONE ARENA  //  FAR TOO MANY WEAPONS", 16.f,
+       Theme::Usage::Secondary, "about_sub");
+  line(12, " ", 10.f, Theme::Usage::Font, "about_gap1");
+
+  line(20, "FOUR WAYS TO PLAY", 18.f, Theme::Usage::Accent, "about_modes_hd");
+  line(21, "SURVIVAL     DON'T BLOW UP", 15.f, Theme::Usage::Font, "about_m1");
+  line(22, "MOST KILLS   BLOW UP EVERYONE ELSE", 15.f, Theme::Usage::Font,
+       "about_m2");
+  line(23, "HIPPO GRAB   HOOVER UP THE PICKUPS", 15.f, Theme::Usage::Font,
+       "about_m3");
+  line(24, "TAG          DON'T BE \"IT\"", 15.f, Theme::Usage::Font,
+       "about_m4");
+  line(25, " ", 10.f, Theme::Usage::Font, "about_gap2");
+
+  line(30, "CONTROLS", 18.f, Theme::Usage::Accent, "about_ctrl_hd");
+  line(31, "STICK / ARROWS     DRIVE", 15.f, Theme::Usage::Font, "about_c1");
+  line(32, "RT / SPACE         BOOST", 15.f, Theme::Usage::Font, "about_c2");
+  line(33, "LB & RB / Q & E    SHOOT LEFT & RIGHT", 15.f, Theme::Usage::Font,
+       "about_c3");
+  line(34, "RS / H             HONK", 15.f, Theme::Usage::Font, "about_c4");
+  line(35, "START / ESC        PAUSE", 15.f, Theme::Usage::Font, "about_c5");
 
   // back button moved to top-left
   return GameStateManager::get().next_screen.value_or(
