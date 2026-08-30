@@ -101,6 +101,32 @@ adding another; a screen-relative gap compiles, applies, and does nothing visibl
 
 ---
 
+### `disable_rounded_corners()` gives you a rounded focus ring
+`disable_rounded_corners` (`plugins/ui/component_config.h:484`) sets `rounded_corners` to an
+all-zero `bitset<4>`. `apply_visuals` (`plugins/ui/component_init.h:331`) attaches
+`HasRoundedCorners` only when `config.rounded_corners.value().any()` is true — so for an all-zero
+bitset the component is never attached at all. `focus_ring_for` (`plugins/ui/rendering.h:252`) then
+tests `entity.has<HasRoundedCorners>()`, sees false, and falls back to `context.theme.corner_radius`
+and `theme.rounded_corners`.
+
+Net effect: asking for square corners gets a square *border* and a theme-**rounded** focus ring
+inside it. The two disagree only while the element is focused, which is why it reads as a stray
+outline rather than a corner setting.
+
+"All corners off" and "nothing specified" are the same value here, so the config cannot express the
+difference. Found on the track tiles, where a selected tile drew a square butter frame with a
+rounded cream ring inside it.
+
+**Workaround (in place):** `.with_rounded_corners(RoundedCorners{}).with_corner_radius(0.f)` —
+corners on, radius zero. That passes `.any()`, so the component attaches and the ring matches.
+
+**Ideal:** attach `HasRoundedCorners` whenever `rounded_corners.has_value()`, regardless of `.any()`.
+
+**Still affected in our code** (square border, rounded focus ring): `ui_systems.cpp:309`, `:368`,
+`:395`, `:1632`, `:3004`. Only the track tile at `:1530` uses the workaround.
+
+---
+
 ### `UIStylingDefaults::apply_overrides` silently drops most visual fields
 `apply_overrides` (`plugins/ui/component_config.h:920`) merges a caller's config onto a
 registered default by forwarding an explicit, hand-maintained field list. Anything not on
