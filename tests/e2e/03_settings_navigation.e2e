@@ -1,5 +1,5 @@
-# Settings Screen Interaction
-# Tests tabbing through settings controls
+# Settings Screen Navigation
+# Drives the focused volume meter with the arrow keys, then tabs onward.
 
 disable_animations
 
@@ -7,27 +7,33 @@ goto_screen Settings
 wait 0.2
 screenshot settings_01_initial
 
-# Tab through controls
-tab
-wait 0.1
-screenshot settings_02_tab1
+# Focus starts on the first meter. The meter is a hand-drawn control, so its
+# left/right listener is ours -- if it goes missing these three assertions are
+# the only thing that notices.
+assert_ui row_master_value text=10
 
-tab
-wait 0.1
-screenshot settings_03_tab2
-
-tab
-wait 0.1
-screenshot settings_04_tab3
-
-# Arrow keys to interact with focused control
 arrow right
 wait 0.1
-screenshot settings_05_arrow_right
+assert_ui row_master_value text=15
+screenshot settings_02_master_up
 
 arrow left
 wait 0.1
-screenshot settings_06_arrow_left
+assert_ui row_master_value text=10
+screenshot settings_03_master_restored
+
+# Tab through the rest of the controls
+tab
+wait 0.1
+screenshot settings_04_tab_music
+
+tab
+wait 0.1
+screenshot settings_05_tab_effects
+
+tab
+wait 0.1
+screenshot settings_06_tab_size
 
 # Return to main
 goto_screen Main

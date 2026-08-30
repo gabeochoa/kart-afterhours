@@ -33,7 +33,7 @@ screenshot nav_05_wrap_to_play
 # Use goto_screen to navigate to settings (keyboard enter is tested separately)
 goto_screen Settings
 wait 0.2
-expect_text "master volume"
+expect_text "MASTER"
 screenshot nav_06_settings_screen
 
 # Return to main

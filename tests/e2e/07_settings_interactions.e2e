@@ -1,43 +1,55 @@
 # Settings Screen Interactions
-# Tests clicking buttons, toggling checkboxes, and verifying text on settings
+# Volume meters, the screen toggles, and back navigation.
 
 disable_animations
 
 goto_screen Settings
 wait 0.2
 
-# Verify all settings controls are visible
-expect_text_i "back"
-expect_text "master volume"
-expect_text "music volume"
-expect_text "sfx volume"
-expect_text "resolution"
-expect_text "fullscreen"
-expect_text "post processing"
+expect_text "OPTIONS"
+expect_text "SOUND"
+expect_text "SCREEN"
+expect_text "SAVED AUTOMATICALLY"
+expect_text "MASTER"
+expect_text "SIZE"
+expect_text "FULLSCREEN"
+expect_text "FILTER"
+
+# The three volume rows are why this screen was rebuilt: each was a 400px
+# imm::slider in a 372px column, so they overlapped each other and their own
+# parent. Pinned at 40px apart, inside a panel that runs x=36..604.
+assert_ui row_master y=150 h=40
+assert_ui row_music y=190 h=40
+assert_ui row_effects y=230 h=40
+assert_ui row_master_meter x=202 w=340
+assert_ui sound_panel x=36 w=568
 screenshot settings_int_01_initial
 
-# Click fullscreen checkbox to toggle it
-click_text "fullscreen"
+# Toggles are custom rows, not imm::checkbox, so they are clicked by id.
+click_ui row_fullscreen_switch
 wait 0.2
 screenshot settings_int_02_fullscreen_toggled
 
-# Click post processing checkbox to toggle it
-click_text "post processing"
+click_ui row_filter_switch
 wait 0.2
 screenshot settings_int_03_postproc_toggled
 
-# Click fullscreen again to toggle back
-click_text "fullscreen"
+click_ui row_fullscreen_switch
 wait 0.2
 screenshot settings_int_04_fullscreen_restored
 
-# Click post processing again to toggle back
-click_text "post processing"
+click_ui row_filter_switch
 wait 0.2
 screenshot settings_int_05_postproc_restored
 
-# Navigate back
+# The meter is a div; its drag listener is the only thing making it a control.
+# A click lands at the element centre, so the value must land on 50.
+click_ui row_master_meter
+wait 0.2
+assert_ui row_master_value text=50
+screenshot settings_int_06_master_dragged
+
 click_ui btn_back
 wait 0.2
 assert_ui btn_play hidden=false
-screenshot settings_int_06_back_to_main
+screenshot settings_int_07_back_to_main

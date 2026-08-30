@@ -17,13 +17,13 @@ screenshot 01_main_menu
 goto_screen Settings
 wait 0.2
 expect_text_i "back"
-expect_text "master volume"
-expect_text "music volume"
-expect_text "sfx volume"
-expect_text "resolution"
-expect_text "language"
-expect_text "fullscreen"
-expect_text "post processing"
+expect_text "MASTER"
+expect_text "MUSIC"
+expect_text "EFFECTS"
+expect_text "SIZE"
+expect_text "LANGUAGE"
+expect_text "FULLSCREEN"
+expect_text "FILTER"
 screenshot 02_settings
 
 # About Screen

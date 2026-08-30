@@ -41,6 +41,39 @@ whose children are often taller than the row, producing
 
 **Ideal:** `checkbox_row` auto-sizes to its children, or the children respect the parent height.
 
+**No longer hit here:** the Options screen was the last caller. Its toggles are now
+`round_rules::toggle_row`, which is a button with an `on_draw_fg` knob.
+
+### `imm::slider` with a label always overflows its own parent
+`slider` (`plugins/ui/imm_components.h:1382`) gives itself `config.size`, then lays two
+children in a Row inside it: `slider_text` at `config.size.scale_x(0.5f)` (`:1418`) and
+`slider_background` at `config.size.x - 6px` (`:1433-1441`). 0.5 + ~1.0 of the parent width,
+so the overflow is unconditional and roughly half the configured width — there is no value of
+`config.size` that makes it fit, because both children are derived from that same size.
+
+Verified: 462 occurrences each of `'slider_text' extends outside parent 'slider'` and
+`'slider_background' extends outside parent 'slider'` in one e2e run, from the three volume
+sliders. `child_size=[200,40]` and `[194,40]` against `parent_size=[400,25.6]` — over on both
+axes, since neither child respects the parent's height either.
+
+**Also unstylable.** `ComponentConfig::inherit_from` (`component_config.h:1008`) forwards only
+`apply_inheritable_from`'s list (`:1016-1032`): alignment, disabled/hidden, tabbing, font,
+internal, render layer, image alignment. No colour, no border, no `on_draw_*`. The track and
+handle therefore take `Theme::Usage::Secondary` and `Primary` and cannot be overridden from the
+caller at all. The handle is also 25% of the track wide and travels 0..75%, so it is a block,
+not a knob.
+
+**Workaround (in place on Options):** don't use it. `options::volume_row`
+(`src/ui/ui_systems.cpp`) draws the meter in an `on_draw_fg` and attaches
+`HasDragListener` + `HasLeftRightListener` to the element by hand — the same two components
+`slider` attaches at `:1495` and `:1576`. Both are driven by generic systems
+(`systems.h:1123`, `:1159`) keyed on the component, so a caller-built widget gets drag and
+keyboard for free. `can_be_focused` (`systems.h:974`) is "has a click or drag listener", so the
+element is tabbable on the same terms.
+
+**Ideal:** give `slider_text` and `slider_background` complementary fractions of the parent, and
+forward the visual fields through `inherit_from` so the track can be themed per call site.
+
 ### `with_opacity()` paints a dark rectangle over a transparent element
 `colors::opacity_pct` (`plugins/color.h:148`) **assigns** `a = 255 * pct` rather than
 scaling the colour's existing alpha. The background fill path

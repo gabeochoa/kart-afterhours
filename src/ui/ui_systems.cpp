@@ -432,31 +432,6 @@ ElementResult create_styled_button(UIContext<InputAction> &context,
   return {false, parent};
 }
 
-// Reusable volume slider component
-ElementResult create_volume_slider(UIContext<InputAction> &context,
-                                   Entity &parent, const std::string &label,
-                                   float &volume,
-                                   std::function<void(float)> on_change,
-                                   int index = 0) {
-
-  if (auto result = slider(context, mk(parent, index), volume,
-                           ComponentConfig{}
-                               .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-                               .with_label(label)
-                               .with_padding(
-                                   Padding{.top = spacing_to_size(Spacing::xs),
-                                           .left = pixels(0.f),
-                                           .bottom = spacing_to_size(Spacing::xs),
-                                           .right = pixels(0.f)}),
-                           SliderHandleValueLabelPosition::OnHandle)) {
-    volume = result.as<float>();
-    on_change(volume);
-    return {true, parent};
-  }
-
-  return {false, parent};
-}
-
 // Reusable screen container component
 ElementResult create_screen_container(UIContext<InputAction> &context,
                                       Entity &parent,
@@ -1589,6 +1564,144 @@ inline void preview_art(UIContext<InputAction> &context, Entity &panel,
 }
 
 } // namespace track_select
+
+// ----------------------------------------------------------------------------
+// Options ("OPTIONS") -- see docs/ui-mock.html section 05.
+//
+// Every control here used to be a stock imm widget, and between them they
+// produced all 2461 layout warnings left in the e2e suite. imm::slider is the
+// worst of it: it lays a half-width label beside a full-width track inside a
+// full-width parent, so every volume row overflowed itself by half its width
+// at any configured size, and inherit_from copies typography only, so the
+// track and handle take theme colours a caller cannot override.
+//
+// So the meter is drawn by hand and made interactive with the same two
+// listener components imm::slider attaches, and the toggles and steppers are
+// the ones round_rules already uses. See docs/afterhours_gaps.md.
+//
+// Determinism: no clock, no rand(). The resolution list is the window
+// manager's own order (one entry in headless) and the language list is
+// magic_enum's enum order.
+// ----------------------------------------------------------------------------
+namespace options {
+
+namespace cs = character_select;
+namespace rr = round_rules;
+using afterhours::Color;
+
+using VolumeGet = float (*)();
+using VolumeSet = void (*)(float);
+
+// mint at 55% over well_bg, precomputed: the stripe has to be opaque so the
+// scissor below is the only thing deciding where the fill ends.
+constexpr Color mint_stripe{53, 123, 114, 255};
+
+inline void draw_meter(RectangleType r, float value) {
+  constexpr float track_h = 20.f;
+  constexpr float band = 8.f;
+  constexpr float knob_w = 18.f;
+
+  const RectangleType track{r.x, r.y + (r.height - track_h) * 0.5f, r.width,
+                            track_h};
+  raylib::DrawRectangleRounded(track, 1.f, 8, cs::well_bg);
+
+  const float fill_w = track.width * value;
+  if (fill_w > 1.f) {
+    const RectangleType fill{track.x, track.y, fill_w, track.height};
+    raylib::DrawRectangleRounded(fill, 1.f, 8, cs::mint);
+    // Clipped to the fill rather than just drawn over it: an unclipped band is
+    // how the old fill came to bleed past the end of its track.
+    begin_scissor_mode(static_cast<int>(fill.x), static_cast<int>(fill.y),
+                       static_cast<int>(fill.width),
+                       static_cast<int>(fill.height));
+    for (float x = fill.x; x < fill.x + fill.width; x += band * 2.f)
+      raylib::DrawRectangleRec(RectangleType{x, fill.y, band, fill.height},
+                               mint_stripe);
+    end_scissor_mode();
+  }
+
+  raylib::DrawRectangleRoundedLinesEx(track, 1.f, 8, 3.f, cs::sky);
+
+  const RectangleType knob{track.x + fill_w - knob_w * 0.5f, r.y, knob_w,
+                           r.height};
+  raylib::DrawRectangleRec(knob, cs::butter);
+  raylib::DrawRectangleLinesEx(knob, 3.f, cs::ink);
+}
+
+inline void volume_row(UIContext<InputAction> &context, Entity &parent,
+                       int index, strings::i18n label_key, VolumeGet get,
+                       VolumeSet set, const std::string &debug_name) {
+  auto row = rr::settings_row(context, parent, index, rr::text_for(label_key),
+                              debug_name);
+
+  const float value = get();
+  auto config =
+      ComponentConfig{}
+          .with_size(ComponentSize{expand(), ui::h720(26.f)})
+          .with_padding(Padding{})
+          .with_transparent_bg()
+          .with_corner_radius(14.f)
+          .with_on_draw_fg([value](RectangleType r) { draw_meter(r, value); })
+          .with_debug_name(debug_name + "_meter");
+  cs::keep_visuals(config, 12.f);
+
+  // A button rather than a div only for the focus ring -- a bare div with a
+  // drag listener is focusable but draws nothing to say so. The two listeners
+  // below are the same ones imm::slider attaches to its track.
+  Entity &meter = imm::button(context, mk(row.ent(), 1), config).ent();
+  meter.addComponentIfMissing<HasDragListener>([set](Entity &self) {
+    const RectangleType r = self.get<UIComponent>().rect();
+    set(std::clamp((input::get_mouse_position().x - r.x) / r.width, 0.f, 1.f));
+  });
+  meter.addComponentIfMissing<HasLeftRightListener>(
+      [get, set](Entity &, int dir) {
+        set(std::clamp(get() + static_cast<float>(dir) * 0.05f, 0.f, 1.f));
+      });
+
+  imm::div(context, mk(row.ent(), 2),
+           ComponentConfig{}
+               .with_size(ComponentSize{ui::w1280(50.f), percent(1.f)})
+               .with_label(fmt::format(
+                   "{}", static_cast<int>(std::lround(value * 100.f))))
+               .with_transparent_bg()
+               .with_custom_text_color(cs::butter)
+               .with_alignment(TextAlignment::Right)
+               .with_font_size(13.f)
+               .with_skip_tabbing(true)
+               .with_debug_name(debug_name + "_value"));
+}
+
+inline void panel_header(UIContext<InputAction> &context, Entity &panel,
+                         const char *label, const char *debug_name) {
+  imm::div(context, mk(panel, 0),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(20.f)})
+               .with_label(label)
+               .with_transparent_bg()
+               .with_custom_text_color(cs::butter)
+               .with_alignment(TextAlignment::Left)
+               .with_font_size(12.f)
+               .with_skip_tabbing(true)
+               .with_debug_name(debug_name));
+}
+
+inline void sound_panel(UIContext<InputAction> &context, Entity &parent) {
+  auto panel = imm::vstack(context, mk(parent, 0),
+                           rr::panel_config(cs::mint, "sound_panel"));
+
+  panel_header(context, panel.ent(), "SOUND", "sound_panel_header");
+  volume_row(context, panel.ent(), 1, strings::i18n::master_volume,
+             &Settings::get_master_volume, &Settings::update_master_volume,
+             "row_master");
+  volume_row(context, panel.ent(), 2, strings::i18n::music_volume,
+             &Settings::get_music_volume, &Settings::update_music_volume,
+             "row_music");
+  volume_row(context, panel.ent(), 3, strings::i18n::sfx_volume,
+             &Settings::get_sfx_volume, &Settings::update_sfx_volume,
+             "row_effects");
+}
+
+} // namespace options
 
 void ScheduleMainMenuUI::round_end_player_column(
     Entity &parent, UIContext<InputAction> &context, const size_t index,
@@ -2734,172 +2847,160 @@ Screen ScheduleMainMenuUI::main_screen(Entity &entity,
 
 Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                                            UIContext<InputAction> &context) {
+  namespace cs = character_select;
+  namespace rr = round_rules;
+  namespace op = options;
+
   auto elem =
-      ui_helpers::create_screen_container(context, entity, "settings_screen");
-  auto top_left = ui_helpers::create_top_left_container(context, elem.ent(),
-                                                        "settings_top_left", 0);
-  {
-    ui_helpers::create_styled_button(
-        context, top_left.ent(),
-        translation_manager::make_translatable_string(strings::i18n::back)
-            .get_text(),
-        []() {
-          Settings::update_resolution(
-              EntityHelper::get_singleton_cmp<
-                  window_manager::ProvidesCurrentResolution>()
-                  ->current_resolution);
-          navigation::back();
-        },
-        0, "btn_back");
-  }
+      imm::div(context, mk(entity),
+               ComponentConfig{}
+                   .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
+                   .with_absolute_position()
+                   .with_debug_name("settings_screen"));
 
-  // Master volume slider
-  {
-    float master_volume = Settings::get_master_volume();
-    ui_helpers::create_volume_slider(
-        context, top_left.ent(),
-        translation_manager::make_translatable_string(
-            strings::i18n::master_volume)
-            .get_text(),
-        master_volume,
-        [](float volume) { Settings::update_master_volume(volume); }, 0);
-  }
+  auto content =
+      imm::vstack(context, mk(elem.ent()),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{screen_pct(0.90f, 1.f),
+                                               screen_pct(0.86f, 1.f)})
+                      .with_absolute_position(screen_pct(0.05f),
+                                              screen_pct(0.07f))
+                      .with_transparent_bg()
+                      .with_debug_name("settings_content"));
 
-  // Music volume slider
-  {
-    float music_volume = Settings::get_music_volume();
-    ui_helpers::create_volume_slider(
-        context, top_left.ent(),
-        translation_manager::make_translatable_string(
-            strings::i18n::music_volume)
-            .get_text(),
-        music_volume,
-        [](float volume) { Settings::update_music_volume(volume); }, 1);
-  }
+  imm::div(context, mk(content.ent(), 0),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), ui::h720(48.f)})
+               .with_label(translation_manager::make_translatable_string(
+                               strings::i18n::settings)
+                               .get_text())
+               .with_font_size(34.f)
+               .with_alignment(TextAlignment::Left)
+               .with_transparent_bg()
+               .with_skip_tabbing(true)
+               .with_debug_name("settings_heading"));
 
-  // SFX volume slider
-  {
-    float sfx_volume = Settings::get_sfx_volume();
-    ui_helpers::create_volume_slider(
-        context, top_left.ent(),
-        translation_manager::make_translatable_string(strings::i18n::sfx_volume)
-            .get_text(),
-        sfx_volume, [](float volume) { Settings::update_sfx_volume(volume); },
-        2);
-  }
+  imm::div(context, mk(content.ent(), 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{ui::w1280(160.f), ui::h720(8.f)})
+               .with_custom_background(cs::butter)
+               .with_skip_tabbing(true)
+               .with_debug_name("settings_rule"));
 
-  // Resolution dropdown
-  {
-    // TODO for some reason the dropdown button isnt wiggling
-    if (imm::dropdown(
-            context, mk(top_left.ent(), 3), resolution_strs, resolution_index,
-            ComponentConfig{}
-                .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-                .with_label(translation_manager::make_translatable_string(
-                                strings::i18n::resolution)
-                                .get_text())
-                .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                      .left = imm::DefaultSpacing::tiny(),
-                                      .bottom = imm::DefaultSpacing::tiny(),
-                                      .right = imm::DefaultSpacing::tiny()}))) {
+  auto panels =
+      imm::hstack(context, mk(content.ent(), 2),
+                  ComponentConfig{}
+                      // Tall enough for the four SCREEN rows and no taller:
+                      // the mock's panels are sized to their contents, with
+                      // the bottom bar pushed down by the gap below them.
+                      .with_size(ComponentSize{percent(1.f), ui::h720(204.f)})
+                      .with_gap(pixels(16.f))
+                      .with_margin(Margin{.top = ui::h720(12.f),
+                                          .bottom = ui::h720(12.f)})
+                      .with_transparent_bg()
+                      .with_no_wrap()
+                      .with_debug_name("settings_panels"));
+
+  op::sound_panel(context, panels.ent());
+
+  auto screen_panel =
+      imm::vstack(context, mk(panels.ent(), 1),
+                  rr::panel_config(rr::orchid, "screen_panel"));
+
+  op::panel_header(context, screen_panel.ent(), "SCREEN",
+                   "screen_panel_header");
+
+  if (!resolution_strs.empty() &&
+      rr::stepper_row(context, screen_panel.ent(), 1,
+                      rr::text_for(strings::i18n::resolution),
+                      resolution_strs, resolution_index, "row_size")) {
+    // Null in headless: update_resolution_cache fabricates the one entry
+    // rather than asking a window manager that isn't there.
+    if (resolution_provider)
       resolution_provider->on_data_changed(resolution_index);
-    }
   }
 
-  // Language dropdown
-  {
-    static std::vector<std::string> language_names =
-        translation_manager::get_available_languages();
-    static size_t language_dropdown_index =
-        0; // Unique variable for language dropdown
-    static translation_manager::Language last_language =
-        translation_manager::Language::English;
-
-    // Only update index when language actually changes
-    auto current_lang = translation_manager::get_language();
-    if (current_lang != last_language) {
-      language_dropdown_index =
-          translation_manager::get_language_index(current_lang);
-      last_language = current_lang;
-    }
-
-    if (imm::dropdown(
-            context, mk(top_left.ent(), 4), language_names,
-            language_dropdown_index,
-            ComponentConfig{}
-                .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-                .with_label(translation_manager::make_translatable_string(
-                                strings::i18n::language)
-                                .get_text())
-                .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                      .left = imm::DefaultSpacing::tiny(),
-                                      .bottom = imm::DefaultSpacing::tiny(),
-                                      .right = imm::DefaultSpacing::tiny()}))) {
-
-      auto new_language = translation_manager::Language::English;
-      // Update language when selection changes
-      switch (language_dropdown_index) {
-      case 0:
-        new_language = translation_manager::Language::English;
-        break;
-      case 1:
-        new_language = translation_manager::Language::Korean;
-        break;
-      case 2:
-        new_language = translation_manager::Language::Japanese;
-        break;
-      default:
-        // This will cause a compilation error if we add a new language without
-        // updating this switch
-        static_assert(magic_enum::enum_count<translation_manager::Language>() ==
-                          3,
-                      "Add new language case to this switch statement");
-        break;
-      }
-
-      translation_manager::set_language(new_language);
-      Settings::set_language(new_language);
-      Settings::write_save_file();
-
-      auto &styling_defaults = afterhours::ui::imm::UIStylingDefaults::get();
-      auto font_name =
-          get_font_name(translation_manager::get_font_for_language());
-      styling_defaults.set_default_font(font_name, 16.f);
-    }
-  }
-
-  // Fullscreen checkbox
-  if (imm::checkbox(
-          context, mk(top_left.ent(), 5), Settings::get_fullscreen_enabled(),
-          ComponentConfig{}
-              .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-              .with_label(translation_manager::make_translatable_string(
-                              strings::i18n::fullscreen)
-                              .get_text())
-              .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                    .left = imm::DefaultSpacing::tiny(),
-                                    .bottom = imm::DefaultSpacing::tiny(),
-                                    .right = imm::DefaultSpacing::tiny()}))) {
+  bool fullscreen = Settings::get_fullscreen_enabled();
+  if (rr::toggle_row(context, screen_panel.ent(), 2,
+                     rr::text_for(strings::i18n::fullscreen), fullscreen,
+                     "row_fullscreen")) {
+    // Not the flipped local copy: toggle_fullscreen also asks the window to
+    // change, which is the half a bare bool cannot do.
     Settings::toggle_fullscreen();
   }
 
-  // Post Processing checkbox
-  if (imm::checkbox(
-          context, mk(top_left.ent(), 6),
-          Settings::get_post_processing_enabled(),
-          ComponentConfig{}
-              .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
-              .with_label(translation_manager::make_translatable_string(
-                              strings::i18n::post_processing)
-                              .get_text())
-              .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
-                                    .left = imm::DefaultSpacing::tiny(),
-                                    .bottom = imm::DefaultSpacing::tiny(),
-                                    .right = imm::DefaultSpacing::tiny()}))) {
-    Settings::toggle_post_processing();
+  rr::toggle_row(context, screen_panel.ent(), 3,
+                 rr::text_for(strings::i18n::post_processing),
+                 Settings::get_post_processing_enabled(), "row_filter");
+
+  {
+    static const std::vector<std::string> language_names =
+        translation_manager::get_available_languages();
+    size_t index = translation_manager::get_language_index(
+        translation_manager::get_language());
+
+    if (rr::stepper_row(context, screen_panel.ent(), 4,
+                        rr::text_for(strings::i18n::language), language_names,
+                        index, "row_language")) {
+      const auto language =
+          magic_enum::enum_value<translation_manager::Language>(index);
+      translation_manager::set_language(language);
+      Settings::set_language(language);
+
+      auto &styling_defaults = afterhours::ui::imm::UIStylingDefaults::get();
+      styling_defaults.set_default_font(
+          get_font_name(translation_manager::get_font_for_language()), 16.f);
+    }
   }
 
-  // leave control group without the back button now that it's top-left
+  imm::div(context, mk(content.ent(), 3),
+           ComponentConfig{}
+               .with_size(ComponentSize{percent(1.f), expand()})
+               .with_transparent_bg()
+               .with_skip_tabbing(true)
+               .with_debug_name("settings_filler"));
+
+  auto bottom =
+      imm::hstack(context, mk(content.ent(), 4),
+                  ComponentConfig{}
+                      .with_size(ComponentSize{percent(1.f), ui::h720(48.f)})
+                      .with_align_items(AlignItems::Center)
+                      .with_transparent_bg()
+                      .with_no_wrap()
+                      .with_debug_name("settings_bottom_bar"));
+
+  auto back = ComponentConfig{}
+                  .with_size(ComponentSize{ui::w1280(150.f), ui::h720(42.f)})
+                  .with_label(translation_manager::make_translatable_string(
+                                  strings::i18n::back)
+                                  .get_text())
+                  .with_custom_background(cs::well_bg)
+                  .with_custom_text_color(cs::mint)
+                  .with_border(cs::ink, 3.f)
+                  .with_corner_radius(12.f)
+                  .with_debug_name("btn_back");
+  cs::keep_visuals(back, 15.f);
+  animation_control::apply_slide_in(back);
+
+  if (imm::button(context, mk(bottom.ent(), 0), back)) {
+    Settings::update_resolution(
+        EntityHelper::get_singleton_cmp<
+            window_manager::ProvidesCurrentResolution>()
+            ->current_resolution);
+    navigation::back();
+  }
+
+  // True as of the once-a-second Settings::save_if_changed poll in main.cpp.
+  imm::div(context, mk(bottom.ent(), 1),
+           ComponentConfig{}
+               .with_size(ComponentSize{expand(), percent(1.f)})
+               .with_label("SAVED AUTOMATICALLY")
+               .with_transparent_bg()
+               .with_custom_text_color(cs::mint)
+               .with_alignment(TextAlignment::Right)
+               .with_font_size(12.f)
+               .with_skip_tabbing(true)
+               .with_debug_name("settings_saved_note"));
 
   return GameStateManager::get().next_screen.value_or(
       GameStateManager::get().active_screen);
