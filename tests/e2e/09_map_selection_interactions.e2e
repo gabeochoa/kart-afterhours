@@ -15,8 +15,11 @@ expect_text_i "back"
 # Every tile is one third of the grid. The old list sized each button to its
 # own text, so "ARENA" and "BATTLE PIT" came out different widths and the row
 # ran out past the column it lived in.
-assert_ui tile_random w=132
-assert_ui tile_map_3 w=132
+assert_ui tile_random w=124
+assert_ui tile_map_3 w=124
+# A screen-relative gap resolves to zero (docs/afterhours_gaps.md), which put
+# the third tile's border one pixel from the preview panel's.
+assert_ui map_preview_panel x=456
 assert_no_overflow
 screenshot map_int_01_initial
 
@@ -24,7 +27,7 @@ screenshot map_int_01_initial
 # the preview follow the selection.
 click_ui tile_random
 wait 0.1
-assert_ui map_caption_name text=RANDOM
+expect_text "RANDOM TRACK"
 expect_text "WE PICK ANY TRACK THAT SUITS MOST KILLS."
 assert_no_overflow
 screenshot map_int_02_random

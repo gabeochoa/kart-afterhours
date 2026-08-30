@@ -23,7 +23,9 @@ struct MapManager {
   static constexpr int RANDOM_MAP_INDEX = -1;
   static constexpr int MAP_COUNT = 6;
   static const std::array<MapConfig, MAP_COUNT> available_maps;
-  int selected_map_index = 0;
+  // RANDOM by default, per docs/ui-mock.html section 04: the track screen
+  // opens with nothing committed.
+  int selected_map_index = RANDOM_MAP_INDEX;
 
   std::array<raylib::RenderTexture2D, MAP_COUNT> preview_textures;
   bool preview_textures_initialized = false;

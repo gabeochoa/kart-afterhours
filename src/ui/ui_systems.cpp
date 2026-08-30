@@ -700,7 +700,7 @@ inline void paint_palette(UIContext<InputAction> &context, Entity &card,
   auto row = imm::hstack(context, mk(card, 4),
                          ComponentConfig{}
                              .with_size(ComponentSize{percent(1.f), ui::h720(16.f)})
-                             .with_gap(ui::w1280(3.f))
+                             .with_gap(pixels(3.f))
                              .with_transparent_bg()
                              .with_no_wrap()
                              .with_debug_name(
@@ -1030,8 +1030,14 @@ inline ComponentConfig panel_config(Color edge, const std::string &debug_name) {
                             .bottom = ui::h720(12.f),
                             .right = ui::w1280(14.f)})
       .with_on_draw_fg([](RectangleType r) {
-        raylib::DrawRectangleRec(RectangleType{r.x, r.y, 16.f, 4.f}, cs::butter);
-        raylib::DrawRectangleRec(RectangleType{r.x, r.y, 4.f, 16.f}, cs::butter);
+        // Offset by the corner radius. Drawn at the corner itself the tick sits
+        // in the area the rounded border cuts away, so it reads as a detached
+        // mark floating beside the panel rather than an accent on its edge.
+        constexpr float inset = 16.f;
+        raylib::DrawRectangleRec(RectangleType{r.x + inset, r.y, 16.f, 4.f},
+                                 cs::butter);
+        raylib::DrawRectangleRec(RectangleType{r.x, r.y + inset, 4.f, 16.f},
+                                 cs::butter);
       })
       .with_debug_name(debug_name);
 }
@@ -1343,7 +1349,7 @@ inline void mode_tabs(UIContext<InputAction> &context, Entity &parent) {
                           ComponentConfig{}
                               .with_size(ComponentSize{percent(1.f),
                                                        ui::h720(38.f)})
-                              .with_gap(ui::w1280(8.f))
+                              .with_gap(pixels(8.f))
                               .with_transparent_bg()
                               .with_no_wrap()
                               .with_debug_name("round_mode_tabs"));
@@ -1465,6 +1471,14 @@ inline std::string track_name(int map_index) {
       .display_name;
 }
 
+// The tile is labelled RANDOM; the caption spells it out so a highlighted
+// RANDOM tile cannot read as "a track called RANDOM is already chosen".
+inline std::string caption_title(int map_index) {
+  if (map_index == MapManager::RANDOM_MAP_INDEX)
+    return "RANDOM TRACK";
+  return track_name(map_index);
+}
+
 inline std::string track_blurb(int map_index) {
   if (map_index == MapManager::RANDOM_MAP_INDEX)
     return fmt::format("WE PICK ANY TRACK THAT SUITS {}.",
@@ -1509,7 +1523,12 @@ inline void tile(UIContext<InputAction> &context, Entity &row, int column,
           .with_custom_text_color(cs::ink)
           .with_transparent_bg()
           .with_border(on ? cs::butter : cs::open_edge, 3.f)
-          .disable_rounded_corners()
+          // Corners on, radius zero. disable_rounded_corners() leaves
+          // HasRoundedCorners off the entity entirely, and the focus ring then
+          // falls back to the theme's rounded corners -- a rounded cream ring
+          // inside a square butter border.
+          .with_rounded_corners(RoundedCorners{})
+          .with_corner_radius(0.f)
           .with_alignment(TextAlignment::Center)
           .with_on_draw_bg([thumb = thumb_for(map_index)](RectangleType r) {
             draw_thumb(r, thumb);
@@ -1522,11 +1541,11 @@ inline void tile(UIContext<InputAction> &context, Entity &row, int column,
 
   imm::div(context, mk(cell.ent(), 1),
            ComponentConfig{}
-               .with_size(ComponentSize{percent(1.f), ui::h720(18.f)})
+               .with_size(ComponentSize{percent(1.f), ui::h720(20.f)})
                .with_label(track_name(map_index))
                .with_transparent_bg()
                .with_custom_text_color(on ? cs::butter : cs::muted)
-               .with_font_size(11.f)
+               .with_font_size(13.f)
                .with_skip_tabbing(true)
                .with_debug_name(dbg + "_name"));
 }
@@ -1546,7 +1565,7 @@ inline void preview_art(UIContext<InputAction> &context, Entity &panel,
   if (map_index == MapManager::RANDOM_MAP_INDEX ||
       !maps.preview_textures_initialized) {
     config.with_label("?").with_custom_text_color(cs::butter).with_font_size(
-        96.f);
+        160.f);
     imm::div(context, mk(panel, 0), config);
     return;
   }
@@ -2359,7 +2378,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
       imm::hstack(context, mk(content.ent(), 3),
                   ComponentConfig{}
                       .with_size(ComponentSize{percent(1.f), expand()})
-                      .with_gap(ui::w1280(16.f))
+                      .with_gap(pixels(16.f))
                       .with_margin(Margin{.top = ui::h720(12.f),
                                           .bottom = ui::h720(12.f)})
                       .with_transparent_bg()
@@ -2502,7 +2521,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
   auto body = imm::hstack(context, mk(content.ent(), 2),
                           ComponentConfig{}
                               .with_size(ComponentSize{percent(1.f), expand()})
-                              .with_gap(ui::w1280(16.f))
+                              .with_gap(pixels(24.f))
                               .with_margin(Margin{.top = ui::h720(12.f),
                                                   .bottom = ui::h720(12.f)})
                               .with_transparent_bg()
@@ -2511,7 +2530,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
 
   auto grid = imm::vstack(context, mk(body.ent(), 0),
                           ComponentConfig{}
-                              .with_size(ComponentSize{ui::w1280(420.f),
+                              .with_size(ComponentSize{ui::w1280(396.f),
                                                        percent(1.f)})
                               .with_transparent_bg()
                               .with_debug_name("map_grid"));
@@ -2558,7 +2577,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
   auto right = imm::vstack(context, mk(body.ent(), 1),
                            ComponentConfig{}
                                .with_size(ComponentSize{expand(), percent(1.f)})
-                               .with_gap(ui::h720(14.f))
+                               .with_gap(pixels(14.f))
                                .with_transparent_bg()
                                .with_debug_name("map_right"));
 
@@ -2576,7 +2595,7 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
   imm::div(context, mk(caption.ent(), 0),
            ComponentConfig{}
                .with_size(ComponentSize{percent(1.f), ui::h720(24.f)})
-               .with_label(ts::track_name(selected))
+               .with_label(ts::caption_title(selected))
                .with_transparent_bg()
                .with_custom_text_color(cs::butter)
                .with_alignment(TextAlignment::Left)

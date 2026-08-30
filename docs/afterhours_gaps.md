@@ -69,6 +69,38 @@ Open as originally written, but effectively obsoleted: `Anim::on_appear().opacit
 covers the use case now. The real remaining item is on our side — adopt the declarative API and
 delete `src/ui/animation_slide_in.h`. See the TODO.
 
+### `with_gap()` ignores the `Size` dim and reads the value as raw pixels
+`ComponentConfig::with_gap` (`plugins/ui/component_config.h:605`) stores a full `Size`, and
+`component_init.h:177` copies it to `UIComponent::desired_gap`. Every consumer then reads only the
+scalar: `autolayout.h:678`, `:1088` and `:1306` all call
+`resolve_pixels(widget.desired_gap.value, widget)`, and `resolve_pixels` (`:102`) does nothing but
+multiply by `ui_scale`. Nothing ever looks at `desired_gap.dim`, unlike the size constraints, which
+go through a dim-aware path (`:264`, `:340`, `:380`).
+
+So a gap expressed in anything other than `pixels()` is silently wrong by that dim's conversion
+factor. `ui::w1280(16.f)` is `screen_pct(16/1280)` (`layout_types.h:172-173`, `:147`), i.e.
+`.value == 0.0125` — a 0.0125px gap. The `> 0.f` guards at `:1087` and `:1305` still pass, so it is
+applied, just 1280x too small. It fails silently in the direction that looks like "gap is not
+implemented".
+
+Verified here: `map_selection`'s body hstack with `.with_gap(ui::w1280(16.f))` laid its two children
+out at `x=36 w=420` and `x=456 w=732` — 420 + 732 = 1152 = the full parent width, zero gap inserted
+(`dump_ui`, headless 1280x720). Swapping to `pixels(24.f)` produced exactly the 24px asked for, and
+`09_map_selection_interactions.e2e` now pins it with `assert_ui map_preview_panel x=456`.
+
+Consequence: this is why the Round Settings panels touched, and the character-select paint
+swatches. Every `with_gap` in `src/` now passes `pixels()` — `ui_systems.cpp:703`
+(`character_select::paint_palette`), `:1352` (`round_rules::mode_tabs`), `:2381`
+(`round_settings_panels`), `:2524` and `:2580` (`map_selection`). Grep for `with_gap(ui::` before
+adding another; a screen-relative gap compiles, applies, and does nothing visible.
+
+**Workaround (in place on Track Select):** pass `pixels()`. It still scales with resolution, because
+`resolve_pixels` applies `ui_scale` in Adaptive mode.
+
+**Ideal:** resolve `desired_gap` through the same dim-aware path the size constraints use.
+
+---
+
 ### `UIStylingDefaults::apply_overrides` silently drops most visual fields
 `apply_overrides` (`plugins/ui/component_config.h:920`) merges a caller's config onto a
 registered default by forwarding an explicit, hand-maintained field list. Anything not on
