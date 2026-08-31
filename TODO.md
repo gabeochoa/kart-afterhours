@@ -68,9 +68,10 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
   because `get_fullscreen_enabled` and `get_post_processing_enabled` return a `bool&` that
   callers mutate without going through a setter. Off under `--e2e` via
   `Settings::autosave_enabled`, so a test run cannot clobber the player's own file.
-- [ ] **`strings::pre_translation` is an unlinkable declaration.** `src/strings.h:97` declares it
-  `extern`; nothing defines it. `strings::get_string()` (`:101-115`) reads it, so any call is a
-  link error. Zero callers — delete both.
+- [x] ~~**`strings::pre_translation` is an unlinkable declaration.**~~ — deleted, along with the two
+  `strings::get_string()` overloads that read it. Zero callers confirmed;
+  `translation_manager::get_string` is a different function and is unaffected. `<map>` and
+  `<functional>` went with them.
 - [x] ~~**Japanese string contains a Korean character.**~~ — `translation_manager.cpp:410` now
   reads `"鬼: {}秒"`.
 - [x] ~~**Round-length dropdowns show raw enum identifiers.**~~ — done. The dropdowns are gone;
@@ -127,70 +128,70 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
 
 ## Tier 3 — Cleanup
 
-- [ ] **Delete dead files (~570 lines).** `src/multipass_integration.h` (0 includers),
-  `src/multipass_renderer.h` and `src/shader_pass_registry.h` (only included by the dead ones),
-  `src/utils.h` (0 includers; also defines a non-`inline` free function in a header),
-  `src/log/log_fakelog.h` (0). `shader_pass_registry.h:27` declares
-  `constexpr static std::vector<RenderPass>` as a class member — ill-formed, so it provably has
-  never been compiled. Deleting these orphans the `entity_test` / `entity_enhanced` shaders loaded
-  at `preload.cpp:103,114`.
-- [ ] **Delete dead functions and systems (~200 lines).** `make_poof_anim` / `make_bullet`
-  pre-`ProjectileConfig` overloads (`makers.cpp:34,83`), `Weapon::apply_recoil` (`weapons.h:69`,
-  reimplemented inline at `systems.h:1261`), `CanShoot::fire` (`weapons.h:185`).
-  Defined-but-never-registered: `RenderRenderTexture` (`systems.h:456`),
-  `BeginPostProcessingShader` (`:475`), `RenderDebugGridOverlay` (`:674` — complete and working,
-  just never registered).
-- [ ] **~46MB of unused fonts tracked in git.** `preload.cpp:27-40` loads exactly two:
-  `NotoSansMonoCJKkr-Bold.otf` and `NotoSansMonoCJKjp-Bold.otf`. Unreferenced:
-  `Sazanami-Hanazono-Mincho.ttf` (30MB), `NotoSansKR.ttf` (10MB), `SymbolsNerdFont-Regular.ttf` and
-  `-Mono-` (2.3MB each), `Gaegu-Bold.ttf` (3MB), `eqprorounded-regular.ttf` (94KB, commented out at
-  `:30`). The four largest files in the repo. Deleting only helps future clones unless history is
-  rewritten — decide which.
-- [ ] **`SYMBOL_FONT` returns the Korean CJK font** (`preload.cpp:37`) rather than either bundled
-  Nerd Font. Looks like a bug or a leftover.
-- [ ] **Untrack files that shouldn't be tracked.** `compile_commands.json` — all 9 entries point at
-  deleted xmake temp paths under `/var/folders/`, not one real source file, so clangd gets nothing;
-  regenerate from zig. `settings.json` at root — the game's *save file*, committed, on an older
-  schema, and dead (saves go to `~/Library/Application Support/Cart Chaos/`).
-  `.vscode/{launch,settings,tasks}.json` — tracked despite `.gitignore:32`; `launch.json:11` points
-  at `output/kart.exe` with a `C:\msys64\...\gdb.exe` debugger path.
-- [ ] **`.gitignore` bug:** `settings.json` has no leading slash, so it matches at any depth and
-  silently covers `.vscode/settings.json` and `.claude/settings.json`.
-- [ ] **300MB of stale build artifacts on disk.** `output/` (143MB of pre-zig `.o` files plus a
-  45MB leftover `output/kart.exe`), `output-win/`, `screenshots/` (48MB). All gitignored, but
-  `make clean` only removes `zig-out` and `.zig-cache`, so they never go away.
-- [ ] **`xmake.lua` is a stale third build system** — already broken, listing `src/*.cpp` and
-  `src/ui/*.cpp` but missing `src/library/` and `src/systems/`, both of which have real `.cpp`
-  files. `:87` has an `after_build` hook that launches the game; `:81` hardcodes
-  `F:/RayLib/lib/raylib.dll`. Delete it along with `make xmake` and `make cba`.
-- [ ] **`tools/dependency_baseline.json` is stale, so `make deps-check` fails on any tree.** It
-  references `intro.h`, `systems_roundtypes.h`, `ui_button_wiggle.h`, `ui_slide_in.h` — all renamed
-  or split — and records 64 systems where `src/` declares 59. Also: `deps-dot`/`deps-svg`/`deps-html`
-  invoke `./dependency_graph` with no build dependency and it's gitignored, so they fail on a clean
-  checkout; `deps-html` and `deps-dot` are byte-identical commands; `tools/dep_config.example.json`
-  documents a `--config` flag that doesn't exist in `main()`.
-- [ ] **`mcp.json` is broken** — points at `./output/kart.exe`, no longer a build output, and
-  hardcodes an absolute `cwd` under `$HOME`, committed to git. Real path is `zig-out/bin/kart`.
-  Worth deciding whether MCP and e2e both need to exist: both inject input, capture frames, and
-  dump the UI tree.
-- [ ] **`make output` never copies the executable** (`makefile:90-93`) — it creates
-  `output/resources/` and runs `cp vendor/raylib/*.dll` (a Windows DLL, on macOS). That's why
-  `output/kart.exe` only ever exists as a leftover.
-- [ ] **`HOW_TO_PLAY.md` tooling is stale** — says `./output/kart.exe`; the path is now
-  `zig-out/bin/kart`. `make MCP=1` still works. Gameplay sections are accurate.
-- [ ] **Delete completed plan docs.** `CLEANUP_PLAN.md` — every item verified done in vendor
-  (`ui/providers.h` gone, `ui/behaviors/` gone, `ui/immediate/` flattened,
-  `ProviderConsumer`/`make_dropdown` zero refs). `automatic.md` — all 6 steps landed
-  (`apply_automatic_defaults()` at `component_config.h:752`, presets at `:885`, grid snapping at
-  `autolayout.h:231`). Both still present as TODO lists. `rfc_worker_threads.md` is a postmortem of
-  a reverted attempt ("don't do this") that reads like an active RFC — retitle as an ADR.
-- [ ] **Unreferenced vendored headers:** `vendor/claylib.h` (16KB, 0 refs, added in `0e0f9d0` and
-  never used), `vendor/RaylibOpOverloads.h` (24KB, 0 refs).
+- [x] ~~Delete dead files (~570 lines).~~ — **already done in `464eebe`**, before this pass started.
+  `multipass_integration.h`, `multipass_renderer.h`, `shader_pass_registry.h`, `utils.h`,
+  `log/log_fakelog.h` do not exist. That commit also removed the `entity_test` / `entity_enhanced`
+  loads from `preload.cpp`, so the two `.fs` files were orphaned on disk; deleted now, along with
+  their `ShaderType` enum entries.
+- [x] ~~Delete dead functions and systems (~200 lines).~~ — mostly **already done in `464eebe`**:
+  `Weapon::apply_recoil`, `CanShoot::fire` and the pre-`ProjectileConfig` `make_poof_anim` /
+  `make_bullet` overloads all grep to zero occurrences (the surviving `make_poof_anim` /
+  `make_bullet` are the `ProjectileConfig` versions, called from `systems.h`). What was still
+  there and is now deleted: `RenderRenderTexture` and `BeginPostProcessingShader`, 46 lines.
+  `LetterboxLayout` / `compute_letterbox_layout` / `mainRT` stay — they have other callers.
+- [ ] **`RenderDebugGridOverlay` (`systems.h:631`) is still defined and never registered.** Left in
+  place deliberately. It is complete and self-toggling, but it toggles on
+  `InputAction::ToggleUIDebug`, which already drives the afterhours UI debug overlay
+  (`ui_systems.cpp:1969`). Registering it as-is makes one key drive two overlays. Wire it to its own
+  action, or to the debug UI, before registering.
+- [x] ~~`ui_helpers::create_control_group`~~ — deleted, zero callers after the Memphis redesign.
+  `control_group_padding`, the module-level `Padding` it was named after, was also unreferenced and
+  went with it.
+- [x] ~~**~46MB of unused fonts tracked in git.**~~ — deleted from the working tree.
+  `Sazanami-Hanazono-Mincho.ttf` (30MB), `NotoSansKR.ttf` (10MB), both Nerd Fonts (2.3MB each),
+  `Gaegu-Bold.ttf` (3MB), `eqprorounded-regular.ttf`. 45.9MB out of the index. All three `FontID`
+  cases resolve to the two `NotoSansMonoCJK*-Bold.otf` files that remain, so no language path
+  changed. **History is not rewritten** — a fresh clone still pays for them. That call is the
+  user's.
+- [ ] **`SYMBOL_FONT` returns the Korean CJK font** (`preload.cpp:40`) rather than a Nerd Font.
+  Confirmed still true. Not changed: both Nerd Fonts are now deleted, so "fixing" it would mean
+  re-adding 2.3MB for a symbol set nothing currently asks for. Either delete the `SYMBOL_FONT`
+  `FontID` case, or restore a Nerd Font and point it there — a decision, not a cleanup.
+- [x] ~~Untrack files that shouldn't be tracked.~~ — `compile_commands.json`, root `settings.json`
+  and `.vscode/{launch,settings,tasks}.json` are all out of the index. The two dead files
+  (`compile_commands.json`, `settings.json`) are also off disk; `.vscode/` is left alone locally.
+  Replaced with `compile_flags.txt`: zig emits no compile DB, and clangd's flat-flag file cannot go
+  stale when a source file is added.
+- [x] ~~`.gitignore` bug: `settings.json` has no leading slash~~ — now `/settings.json`. Note the
+  original claim was half wrong: `.vscode/settings.json` and `.claude/settings.json` are matched by
+  the `.vscode/` and `.claude` rules, not by this one. What it actually covered was any future
+  `src/settings.json` and the like. There is no `TODO.md ` entry in `.gitignore` — never was.
+- [x] ~~300MB of stale build artifacts on disk.~~ — `output/` and `output-win/` deleted, and
+  `make clean` now removes them. `screenshots/` still has its own `clean-screenshots` target.
+- [x] ~~`xmake.lua` is a stale third build system~~ — deleted, with `make xmake`, `cba`,
+  `clean-cba`, `getxm` and `xm`.
+- [x] ~~`tools/dependency_baseline.json` is stale~~ — **retired rather than regenerated.**
+  `deps-check` diffs a hand-copied snapshot that nothing keeps current, so it has failed on every
+  tree since the last rename and would go stale again on the next one; a lint nobody can pass is
+  worse than no lint. Gone with it: the baseline, `tools/dep_config.example.json` (documents a
+  `--config` flag `main()` has never had), and `deps-html` (byte-identical to `deps-dot`).
+  `deps` and `deps-svg` remain as ad-hoc analysis and now build `dependency_graph` first, so they
+  work on a clean checkout.
+- [x] ~~`mcp.json` is broken~~ — points at `./zig-out/bin/kart`. The absolute `cwd` stays: the game
+  loads `resources/` relative to cwd and MCP clients have no portable repo-root variable.
+- [x] ~~`make output` never copies the executable~~ — it now depends on `build`, copies the
+  executable, and only copies the raylib DLL under `TARGET=windows`.
+- [x] ~~`HOW_TO_PLAY.md` tooling is stale~~ — both `./output/kart.exe` references are now
+  `./zig-out/bin/kart`.
+- [x] ~~Delete completed plan docs.~~ — `CLEANUP_PLAN.md` and `automatic.md` deleted, both
+  re-verified first. `rfc_worker_threads.md` is now `adr_worker_threads.md`, with a Rejected status
+  line and "Proposed Solution" retitled "What Was Tried".
+- [x] ~~Unreferenced vendored headers~~ — `vendor/claylib.h` and `vendor/RaylibOpOverloads.h`
+  deleted, 0 refs each.
 - [ ] **Prune 24 remote branches**, most from 2024–2025 (`origin/box2d` and `origin/padding` from
   Dec 2024, a dozen `feature/*` and `cursor/*` from Aug 2025).
-- [ ] **`.PHONY` is missing** `count`, `countall`, `cppcheck`, `cba`, `clean-cba`, `prof`, `leak`,
-  `alloc`, `getxm`, `xm`, `brawlhalla`. Also `make brawlhalla` copies the binary over
-  `F:\SteamLibrary\...\Brawlhalla.exe` — presumably a joke, still one typo from surprising someone.
+- [x] ~~`.PHONY` is missing several targets~~ — `count`, `countall`, `cppcheck`, `prof`, `leak`,
+  `alloc` added; `cba`, `clean-cba`, `getxm`, `xm` and `brawlhalla` deleted instead.
 - [ ] **`build.zig:52` collects afterhours plugins flat** while `src/` is walked recursively.
   Correct today (only `files.cpp` + `settings.cpp` exist) but it will silently drop a future `.cpp`
   in a plugin subdirectory.

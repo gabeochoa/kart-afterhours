@@ -222,23 +222,6 @@ ElementResult create_screen_container(UIContext<InputAction> &context,
           .with_debug_name(debug_name));
 }
 
-// Reusable control group component
-ElementResult create_control_group(UIContext<InputAction> &context,
-                                   Entity &parent,
-                                   const std::string &debug_name) {
-
-  return imm::div(
-      context, mk(parent),
-      ComponentConfig{}
-          .with_size(ComponentSize{screen_pct(1.f), screen_pct(1.f)})
-          .with_padding(Padding{.top = imm::DefaultSpacing::large(),
-                                .left = imm::DefaultSpacing::large(),
-                                .bottom = imm::DefaultSpacing::large(),
-                                .right = imm::DefaultSpacing::large()})
-          .with_absolute_position()
-          .with_debug_name(debug_name));
-}
-
 ElementResult create_top_left_container(UIContext<InputAction> &context,
                                         Entity &parent,
                                         const std::string &debug_name,
@@ -261,13 +244,6 @@ ElementResult create_top_left_container(UIContext<InputAction> &context,
 using Screen = GameStateManager::Screen;
 
 Padding button_group_padding = Padding{
-    .top = imm::DefaultSpacing::large(),
-    .left = imm::DefaultSpacing::large(),
-    .bottom = imm::DefaultSpacing::large(),
-    .right = imm::DefaultSpacing::large(),
-};
-
-Padding control_group_padding = Padding{
     .top = imm::DefaultSpacing::large(),
     .left = imm::DefaultSpacing::large(),
     .bottom = imm::DefaultSpacing::large(),

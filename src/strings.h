@@ -1,8 +1,6 @@
 #pragma once
 
-#include <functional>
 #include "magic_enum/magic_enum.hpp"
-#include <map>
 #include <string>
 
 namespace strings {
@@ -92,26 +90,5 @@ enum struct i18n {
   // Count for array sizing
   Count
 };
-
-// Global translation map - will be populated by language files
-extern std::map<i18n, std::string> pre_translation;
-
-// Helper function to get translated string
-[[nodiscard]] inline std::string get_string(const i18n &key) {
-  if (!pre_translation.contains(key)) {
-    // Fallback to enum name if translation missing
-    return std::string(magic_enum::enum_name<i18n>(key));
-  }
-  return pre_translation.at(key);
-}
-
-// Helper function to get translated string with fallback
-[[nodiscard]] inline std::string get_string(const i18n &key,
-                                            const std::string &fallback) {
-  if (!pre_translation.contains(key)) {
-    return fallback;
-  }
-  return pre_translation.at(key);
-}
 
 } // namespace strings

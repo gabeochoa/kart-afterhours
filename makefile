@@ -40,8 +40,8 @@ cp_lib_cmd = cp vendor/raylib/*.dll $(OUTPUT_FOLDER)/
 cp_resources_cmd = cp -r resources/* $(OUTPUT_FOLDER)/resources/
 
 
-.PHONY: all build clean output count countall old xmake e2e clean-screenshots windows shrink-baselines
-.PHONY: update-baselines validate-screenshots ci dirs sign run
+.PHONY: all build clean output count countall old e2e clean-screenshots windows shrink-baselines
+.PHONY: update-baselines validate-screenshots ci dirs sign run cppcheck prof leak alloc
 
 
 all: build
@@ -49,17 +49,13 @@ all: build
 build:
 	zig build $(ZIG_FLAGS)
 
-xmake:
-	xmake build
-
 old: build
 
 dirs:
 	$(mkdir_cmd)
 
 clean:
-	rm -rf zig-out .zig-cache
-	$(mkdir_cmd)
+	rm -rf zig-out .zig-cache output output-win
 
 windows:
 	$(MAKE) TARGET=windows
@@ -109,10 +105,13 @@ validate-screenshots:
 ci: validate-screenshots
 	@echo "CI passed."
 
-output:
+output: build
 	$(mkdir_cmd)
-	$(cp_lib_cmd)
 	$(cp_resources_cmd)
+	cp $(OUTPUT_EXE) $(OUTPUT_FOLDER)/
+ifeq ($(TARGET),windows)
+	$(cp_lib_cmd)
+endif
 
 sign:
 	codesign -s - -f --verbose --entitlements ent.plist $(OUTPUT_EXE)
@@ -122,11 +121,7 @@ run: build
 	$(cp_resources_cmd)
 	$(run_cmd)
 
-brawlhalla: 
-	cp $(OUTPUT_EXE) F:\SteamLibrary\steamapps\common\Brawlhalla\Brawlhalla.exe
-
-
-count: 
+count:
 	git ls-files | grep "src" | grep -v "resources" | grep -v "vendor" | xargs wc -l | sort -rn | pr -2 -t -w 100
 	make -C vendor/afterhours
 
@@ -135,21 +130,6 @@ countall:
 
 cppcheck:
 	cppcheck src/ -Ivendor/afterhours --enable=all --std=c++23 --language=c++ --suppress=noConstructor --suppress=noExplicitConstructor --suppress=useStlAlgorithm --suppress=unusedStructMember --suppress=useInitializationList --suppress=duplicateCondition --suppress=nullPointerRedundantCheck --suppress=cstyleCast
-
-# ClangBuildAnalyzer integration
-cba:
-	@echo "Building with xmake to generate trace data..."
-	xmake build
-	@echo "Analyzing build performance..."
-	ClangBuildAnalyzer --all build/.objs/kart/macosx/arm64/debug/src/ build-analysis.html
-	ClangBuildAnalyzer --analyze build-analysis.html | tee build-analysis.txt
-	@echo ""
-	@echo "Top 5 slowest files to parse:"
-	@head -15 build-analysis.txt | grep -A 10 "Files that took longest to parse" || true
-
-clean-cba:
-	rm -f build-analysis.html build-analysis.txt
-	@echo "Analysis files cleaned"
 
 prof:
 	$(mkdir_cmd)
@@ -173,36 +153,13 @@ alloc:
 	xctrace record --template 'Allocations' --output 'recording.trace' --launch $(OUTPUT_EXE)
 
 
-getxm: 
-	powershell -command  "Invoke-Expression (Invoke-Webrequest 'https://xmake.io/psget.text' -UseBasicParsing).Content"
-xm:
-	xmake create -l c++ -t module.binary kart.exe
+.PHONY: deps deps-svg
 
-.PHONY: deps deps-html deps-check deps-dot deps-svg cba clean-cba
-
+# Ad-hoc analysis only. tools/Makefile builds the binary first, so both targets
+# work on a clean checkout. deps-svg needs graphviz 'dot' on PATH.
 deps:
-	cd tools && make run
+	cd tools && $(MAKE) run
 
-# Generate DOT files for visualization
-deps-dot:
-	cd tools && ./dependency_graph --src ../src --main ../src/main.cpp --outdir ../output
-
-# Generate SVG files from DOT files (requires graphviz)
 deps-svg:
-	cd tools && ./dependency_graph --src ../src --main ../src/main.cpp --outdir ../output --svg
-
-# Legacy Python target (commented out since Python tool doesn't exist)
-# deps-python:
-# 	python3 tools/dependency_graph.py --src src --main src/main.cpp --outdir build
-
-# Requires graphviz 'dot' on PATH
-deps-html:
-	cd tools && ./dependency_graph --src ../src --main ../src/main.cpp --outdir ../output
-
-# Create or update baseline: cp output/dependency_summary.json tools/dependency_baseline.json
-# Fails if current summary differs from baseline
-deps-check: deps
-	@echo "Checking dependency graph against baseline..."
-	@[ -f tools/dependency_baseline.json ] || (echo "No baseline found at tools/dependency_baseline.json" && exit 2)
-	@diff -u tools/dependency_baseline.json output/dependency_summary.json || (echo "Dependency summary changed. Run 'make deps' and update baseline if intentional." && exit 1)
+	cd tools && $(MAKE) && ./dependency_graph --src ../src --main ../src/main.cpp --outdir ../output --svg
 

@@ -18,8 +18,6 @@ enum class ShaderType {
   // Entity shaders
   car,
   car_winner,
-  entity_enhanced,
-  entity_test,
 
   // Post-processing shaders
   post_processing,
@@ -36,7 +34,7 @@ enum class UniformLocation {
   // Common uniforms (used by most shaders)
   Time,        // Used by: Car, CarWinner, PostProcessing, PostProcessingTag
   Resolution,  // Used by: Car, CarWinner, PostProcessing, PostProcessingTag
-  EntityColor, // Used by: Car, CarWinner, EntityEnhanced, EntityTest
+  EntityColor, // Used by: Car, CarWinner
 
   // Car-specific uniforms
   Speed,         // Used by: Car
@@ -51,8 +49,8 @@ enum class UniformLocation {
   DesaturateAmount,  // Used by: PostProcessingTag
 
   // UV bounds (used by sprite-based shaders)
-  UvMin, // Used by: Car, CarWinner, EntityEnhanced, EntityTest
-  UvMax, // Used by: Car, CarWinner, EntityEnhanced, EntityTest
+  UvMin, // Used by: Car, CarWinner
+  UvMax, // Used by: Car, CarWinner
 
   // Add new uniforms here as needed
 };

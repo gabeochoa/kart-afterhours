@@ -4,7 +4,7 @@ A local multiplayer kart battle game with multiple game modes, weapons, and chao
 
 ## Quick Start
 
-1. **Launch the game**: `./output/kart.exe`
+1. **Launch the game**: `./zig-out/bin/kart`
 2. **Main Menu**: Use arrow keys to navigate, Enter to select
 3. **Add players**: Select "play" → navigate to empty slots → press Enter to add players
 4. **Start game**: Once players are added, navigate and press Enter to start
@@ -103,7 +103,7 @@ The game supports the Model Context Protocol for AI automation:
 make MCP=1
 
 # Run in MCP mode
-./output/kart.exe --mcp
+./zig-out/bin/kart --mcp
 ```
 
 Available MCP tools:

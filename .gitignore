@@ -27,7 +27,7 @@ art_storage/*
 *.exe
 build/*
 .xmake/*
-settings.json
+/settings.json
 .watchman*
 resources/sounds/possibles/*
 tools/dependency_graph

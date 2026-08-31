@@ -456,52 +456,6 @@ compute_letterbox_layout(const int window_width, const int window_height,
   return layout;
 }
 
-struct RenderRenderTexture : System<window_manager::ProvidesCurrentResolution> {
-  virtual ~RenderRenderTexture() {}
-  virtual void for_each_with(const Entity &,
-                             const window_manager::ProvidesCurrentResolution &,
-                             float) const override {
-    const int window_w = raylib::GetScreenWidth();
-    const int window_h = raylib::GetScreenHeight();
-    const int content_w = mainRT.texture.width;
-    const int content_h = mainRT.texture.height;
-    const LetterboxLayout layout =
-        compute_letterbox_layout(window_w, window_h, content_w, content_h);
-
-    const raylib::Rectangle src{0.0f, 0.0f, (float)mainRT.texture.width,
-                                -(float)mainRT.texture.height};
-    raylib::DrawTexturePro(mainRT.texture, src, layout.dst, {0.0f, 0.0f}, 0.0f,
-                           raylib::WHITE);
-  }
-};
-
-struct BeginPostProcessingShader : System<> {
-  virtual void once(float) const override {
-    if (!ShaderLibrary::get().contains(ShaderType::post_processing_tag)) {
-      return;
-    }
-    const auto &shader =
-        ShaderLibrary::get().get(ShaderType::post_processing_tag);
-    raylib::BeginShaderMode(shader);
-    // Update common uniforms
-    float t = static_cast<float>(raylib::GetTime());
-    int timeLoc = raylib::GetShaderLocation(shader, "time");
-    if (timeLoc != -1) {
-      raylib::SetShaderValue(shader, timeLoc, &t, raylib::SHADER_UNIFORM_FLOAT);
-    }
-    auto *rez = EntityHelper::get_singleton_cmp<
-        window_manager::ProvidesCurrentResolution>();
-    if (rez) {
-      vec2 r = {static_cast<float>(rez->current_resolution.width),
-                static_cast<float>(rez->current_resolution.height)};
-      int rezLoc = raylib::GetShaderLocation(shader, "resolution");
-      if (rezLoc != -1) {
-        raylib::SetShaderValue(shader, rezLoc, &r, raylib::SHADER_UNIFORM_VEC2);
-      }
-    }
-  }
-};
-
 struct ConfigureTaggerSpotlight : System<> {
   virtual void once(float) const override {
     if (!ShaderLibrary::get().contains(ShaderType::post_processing_tag)) {

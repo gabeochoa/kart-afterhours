@@ -1,10 +1,9 @@
 {
   "mcpServers": {
     "kart-game": {
-      "command": "./output/kart.exe",
+      "command": "./zig-out/bin/kart",
       "args": ["--mcp"],
       "cwd": "/Users/gabeochoa/p/kart-afterhours"
     }
   }
 }
-
