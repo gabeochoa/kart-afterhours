@@ -32,13 +32,13 @@ assert_ui btn_main_menu hidden=false
 assert_ui btn_change_rules hidden=false
 assert_ui btn_run_it_back hidden=false
 
-# One driver, so one column, and it is the winner: bar at the full 150px.
+# One driver, so one column, and it is the winner: bar at the full 132px.
 # A bar that stopped tracking the score would sit at the 30px floor.
 assert_ui podium_0 hidden=false
 assert_ui podium_0_kart hidden=false
 assert_ui podium_0_name hidden=false
 assert_ui podium_0_bar text=6
-assert_ui podium_0_bar h=150
+assert_ui podium_0_bar h=132
 expect_text "PLAYER 1"
 
 # The pill has to name the mode, not just exist -- it is the only thing on the

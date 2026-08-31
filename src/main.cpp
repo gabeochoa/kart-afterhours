@@ -175,7 +175,6 @@ void game() {
     // renders
     {
       systems.register_render_system(std::make_unique<BeginWorldRender>());
-      systems.register_render_system(std::make_unique<RenderMenuBackdrop>());
 
       {
         camera::register_begin_camera(systems);
@@ -195,6 +194,9 @@ void game() {
         camera::register_end_camera(systems);
         // (UI moved to pass 2 so it is after tag shader)
       }
+      // After the world, not before it: in a menu the backdrop repaints the
+      // ground and buries the karts, which outlive the round that spawned them.
+      systems.register_render_system(std::make_unique<RenderMenuBackdrop>());
       systems.register_render_system(std::make_unique<EndWorldRender>());
       // pass 2: render mainRT with tag shader into screenRT, then draw UI into
       // screenRT

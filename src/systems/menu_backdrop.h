@@ -8,8 +8,16 @@
 #include "../game_state_manager.h"
 
 // Memphis-'93 backdrop: a fixed set of geometric shapes drifting and slowly
-// spinning behind the menu UI. Drawn into the world render target before
-// anything else, so it sits behind everything.
+// spinning behind the menu UI.
+//
+// Drawn at the *end* of the world pass, over the karts and the arena, and it
+// repaints the ground first. The world entities exist whatever screen you are
+// on -- karts outlive rounds -- so a menu used to have the last round's kart
+// parked in the middle of it. Painting over them is one system; gating the
+// eight systems of the world pass individually is eight.
+//
+// Menu state only. Pause is its own state precisely so the arena stays
+// visible under the scrim, which is what the mock asks for.
 //
 // Determinism: layout comes from a per-shape integer seed (no rand(), no
 // GetTime()) and the animation clock is a locally accumulated dt that never
@@ -107,7 +115,7 @@ struct RenderMenuBackdrop
       const afterhours::Entity &,
       const afterhours::window_manager::ProvidesCurrentResolution &resolution,
       float dt) const override {
-    if (GameStateManager::get().is_game_active())
+    if (!GameStateManager::get().is_menu_active())
       return;
 
     // Frozen at t=0 under e2e so screenshots are reproducible byte-for-byte.
@@ -116,6 +124,11 @@ struct RenderMenuBackdrop
 
     const float width = static_cast<float>(resolution.width());
     const float height = static_cast<float>(resolution.height());
+    // Same colour BeginWorldRender clears to; this is that clear again, after
+    // the karts and the arena have drawn into the pass.
+    raylib::DrawRectangle(0, 0, static_cast<int>(width),
+                          static_cast<int>(height),
+                          raylib::Color{46, 27, 105, 255});
     for (int i = 0; i < SHAPE_COUNT; i++)
       draw_shape(i, clock, width, height);
   }

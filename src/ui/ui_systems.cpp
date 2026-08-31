@@ -1551,10 +1551,15 @@ namespace rr = round_rules;
 namespace ts = track_select;
 using afterhours::Color;
 
-// Podium geometry. A zero score still gets bar_min so the kart above it has
-// something to stand on and the row keeps a common baseline.
+// The mock's own bars: shortest 30, winner 132. A zero score still gets
+// bar_min so the kart above it has something to stand on and the row keeps a
+// common baseline.
 constexpr float bar_min = 30.f;
-constexpr float bar_max = 150.f;
+constexpr float bar_max = 132.f;
+// The bar is a bar, not the whole cell. Columns stay a quarter of the podium
+// so a short field still reads as a four-up grid, but the bar inside one is
+// the mock's width whether there is one driver or four.
+constexpr float bar_width = 64.f;
 
 // butter with the mock's 12% black over it, precomputed: the stripe has to be
 // opaque, because it is painted by the same bg hook as the fill under it.
@@ -1668,6 +1673,7 @@ inline void podium_column(UIContext<InputAction> &context, Entity &row,
                       .with_size(ComponentSize{expand(), percent(1.f)})
                       .with_padding(Padding{.left = ui::w1280(8.f),
                                             .right = ui::w1280(8.f)})
+                      .with_align_items(AlignItems::Center)
                       .with_transparent_bg()
                       .with_debug_name(dbg));
 
@@ -1718,7 +1724,7 @@ inline void podium_column(UIContext<InputAction> &context, Entity &row,
   imm::div(
       context, mk(column.ent(), 3),
       ComponentConfig{}
-          .with_size(ComponentSize{percent(1.f), pixels(height)})
+          .with_size(ComponentSize{ui::w1280(bar_width), pixels(height)})
           .with_label(std::to_string(shown))
           // The fill goes in the bg hook, not with_custom_background: the
           // widget's own fill would paint over it, and the fg hook draws after

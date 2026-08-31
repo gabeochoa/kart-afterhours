@@ -82,8 +82,10 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
 - [x] ~~Fix the e2e state leak~~ — done. `--e2e` now starts from `SettingsData` defaults and never
   writes the save file, so a screenshot depends on the build and nothing else. All 52 screenshots
   are byte-identical across runs. Also stops test runs clobbering the player's own settings.
-- [x] ~~`screenshot-baselines/` has never existed~~ — done. 52 baselines committed (quantized,
-  16MB), `make ci` passes 52/52, and verified it fails at 3.09% on an injected change.
+- [x] ~~`screenshot-baselines/` has never existed~~ — done, and regenerated after the Memphis
+  redesign: 59 baselines (18MB), `make validate-screenshots` passes 59/59, and all 59 are
+  byte-identical across consecutive runs. Verified earlier that it fails at 3.09% on an injected
+  change.
 - [ ] **Test 10 tests nothing.** `screenshots/anim_0{1..4}*.png` are byte-identical.
   `tests/e2e/10_slide_in_animation.e2e:2` claims animations are enabled, but
   `animation_control::disabled` is a plain global (`src/ui/animation_control.h:6`) never cleared
@@ -96,8 +98,13 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
   depends on `clean-screenshots` (`makefile:62-65`), so `make e2e && make ci` copies stale PNGs.
   Less dangerous now that runs are deterministic (a stale PNG equals a fresh one unless the build
   changed), but still wrong across a rebuild.
+- [ ] **`assert_no_overflow` is weaker than it looks.** Now used by scripts 09, 13a and 13b, but
+  it checks only the *viewport*, not parent bounds — it could not have caught the
+  `map_card`-in-`map_list` overflow it was originally suggested as coverage for, and a squeezed
+  child never trips it. Established by deliberately breaking the Track Select layout two ways and
+  watching the suite stay green. Keep it as a cheap net; do not read it as layout coverage.
 - [ ] **Use the assertions that already exist.** Zero scripts use `set_slider`, `expect_slider`,
-  `select_dropdown`, `expect_checkbox`, `expect_focused`, `expect_no_text`, `assert_no_overflow`,
+  `select_dropdown`, `expect_checkbox`, `expect_focused`, `expect_no_text`,
   `dump_ui`, `enter`, `escape`, `key`, `drag`, `resize`. `assert_no_overflow` is free coverage for
   the checkbox-overflow gap the docs already describe.
 - [ ] **No CI at all** — no `.github/`, `make ci` is local-only. Worth adding once baselines land.
