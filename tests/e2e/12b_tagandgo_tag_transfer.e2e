@@ -1,0 +1,51 @@
+# The tag actually transfers on contact
+#
+# The positive control for 12a. 12a asserts the transfer does NOT happen in
+# Lives mode, which is only worth something if the same setup does make it
+# happen in TagAndGo -- otherwise 12a would pass on a system that never fires.
+# HandleTagAndGoTagTransfer had no coverage of its own either way; one kart can
+# never tag anybody.
+#
+# No screenshots: karts are live and the tagger is scaled up.
+
+disable_animations
+
+set_round_type TagAndGo
+goto_screen Main
+wait 0.2
+
+add_player 1
+wait_frames 3
+expect_car_count 2
+
+start_round
+wait_frames 5
+expect_state Playing
+
+# InitializeTagAndGoGame already picked a tagger; say which one so the
+# assertion below is about the transfer and not about the pick.
+set_tracker_at 0 is_tagger 1
+set_tracker_at 1 is_tagger 0
+
+# raylib::GetTime() is 0 under --headless while reset_temp_data leaves
+# last_tag_time at -1, so every runner reads as tagged 1 second ago and the 2s
+# cooldown declines every tag. Backdating the runner is the only way a tag can
+# land in a headless run at all.
+set_tracker_at 1 last_tag_time -100
+
+warp_car 0 640 360
+warp_car 1 640 360
+wait_frames 2
+
+expect_tracker_at 0 is_tagger 0
+expect_tracker_at 1 is_tagger 1
+
+end_round
+wait_frames 3
+expect_state Menu
+
+remove_player 1
+wait_frames 3
+expect_car_count 1
+goto_screen Main
+wait 0.2

@@ -2,10 +2,10 @@
 # Tests the FREE FOR ALL / TEAMS segmented control and the team badge it puts
 # on each card. Assertions target debug names, not label text.
 #
-# This script deliberately does NOT add a bot. AITargetSelection ticks on the
-# menu screens, and pre_round_ai_target calls rand() % GetScreenWidth(), which
-# is a divide-by-zero the moment a bot exists under --headless. See the bug
-# note in the character-select handoff.
+# No bot here because this screen does not need one, not because it cannot have
+# one: vec_rand_in_box guards the zero-width case (math_util.h:88) and bots run
+# fine headless. 13d has one. What team mode does to the results screen is
+# covered by 13c.
 
 disable_animations
 

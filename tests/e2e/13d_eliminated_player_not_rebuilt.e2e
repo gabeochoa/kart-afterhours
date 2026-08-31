@@ -1,0 +1,67 @@
+# An eliminated player stays eliminated while the round is still running
+#
+# The other half of the fix 14 covers. MatchKartsToPlayers is gated on
+# is_menu_active() because make_player puts PlayerID on the kart itself, so a
+# mid-round rebuild hands an eliminated player a fresh kart with a full stock of
+# lives. 14 cannot see it: with one kart, killing it also ends the round, and
+# with no gamepad ProvidesMaxGamepadID::count() is 1, so once the last player is
+# gone "size() + 1 == count()" is true and the function returns before it could
+# rebuild anyone.
+#
+# Reaching the rebuild needs a player missing while another player is still
+# there, and the round still running -- so three karts: two players and a bot.
+# Two players is the ceiling; at three, MatchKartsToPlayers' "a player left"
+# branch (size() > count() + 1) fires in the menu and deletes the ones with no
+# gamepad. Hence the bot for the third contender.
+#
+# No screenshots: a bot is on the field.
+
+disable_animations
+
+set_round_type Lives
+goto_screen Main
+wait 0.2
+
+add_player 1
+add_ai
+wait_frames 3
+expect_car_count 3
+
+start_round
+wait_frames 3
+expect_state Playing
+
+# reset_car_trackers has run by now. The two survivors get spare lives so the
+# bot cannot end the round from under the assertion; only the scripted death
+# below is meant to count.
+set_tracker_at 1 lives 5
+set_tracker_at 2 lives 5
+expect_tracker_at 0 lives 1
+
+set_tracker_at 0 health 0
+wait_frames 10
+
+# Player 0 is gone, the round is still going because two contenders remain,
+# and nothing put player 0 back. Without the menu-only guard MatchKartsToPlayers
+# rebuilds them here and this is 3.
+expect_state Playing
+expect_car_count 2
+expect_tracker_at 0 lives 5
+
+wait_frames 20
+expect_car_count 2
+
+end_round
+wait_frames 5
+expect_state Menu
+
+# From the menu the rebuild is correct, and is what puts player 0 back for the
+# scripts after this one.
+remove_ai
+wait_frames 3
+remove_player 1
+wait_frames 5
+expect_car_count 1
+
+goto_screen Main
+wait 0.2

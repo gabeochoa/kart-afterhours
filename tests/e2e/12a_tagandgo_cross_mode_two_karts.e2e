@@ -1,0 +1,69 @@
+# The stale-tagger cross-mode bug, with a runner to actually find
+#
+# 12 sets up the precondition -- is_tagger surviving a switch to Lives -- but
+# with one kart HandleTagAndGoTagTransfer's `runners` query is empty, so the
+# find_if predicate never runs and the bad cast is never reached. Reverting the
+# fix leaves 12 green. This script adds the second kart and parks it on top of
+# the first, so the predicate runs and the tag would transfer.
+#
+# The assertion is that it does NOT: in Lives mode the transfer system must
+# return before it touches RoundTagAndGoSettings at all.
+#
+# Two players rather than a bot: a player kart with no input is stationary, so
+# where the two karts are is decided entirely by warp_car.
+#
+# No screenshots: karts are live and moving.
+
+disable_animations
+
+set_round_type Lives
+goto_screen Main
+wait 0.2
+
+add_player 1
+wait_frames 3
+expect_car_count 2
+
+start_round
+wait_frames 3
+expect_state Playing
+
+# After start_round: reset_car_trackers clears is_tagger on every kart, so the
+# stale flag has to be planted on this side of it.
+set_tracker_at 0 is_tagger 1
+set_tracker_at 1 is_tagger 0
+expect_tracker_at 0 is_tagger 1
+expect_tracker_at 1 is_tagger 0
+
+# raylib::GetTime() is 0 under --headless, and reset_temp_data leaves
+# last_tag_time at -1, so "now - last_tag_time" is 1 against a 2s cooldown and
+# the transfer would decline for the wrong reason. Backdate the runner so the
+# only thing left that can stop it is the guard under test.
+set_tracker_at 1 last_tag_time -100
+
+# Same point, so CheckCollisionRecs is true. Collision resolution starts
+# pushing them apart immediately, which is why the assertion is two frames
+# later and not twenty.
+warp_car 0 640 360
+warp_car 1 640 360
+wait_frames 2
+
+# The tag has not moved, because the transfer system is not allowed to run
+# outside TagAndGo. Without the guard car 1 is the tagger by now.
+expect_tracker_at 0 is_tagger 1
+expect_tracker_at 1 is_tagger 0
+
+# ...and the Lives round is unharmed by the near miss.
+expect_state Playing
+expect_tracker_at 0 lives 1
+expect_tracker_at 1 lives 1
+
+end_round
+wait_frames 3
+expect_state Menu
+
+remove_player 1
+wait_frames 3
+expect_car_count 1
+goto_screen Main
+wait 0.2

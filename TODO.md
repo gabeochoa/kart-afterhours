@@ -20,12 +20,14 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
   until eliminating a player could actually destroy a kart. Now renders from `after()`.
   Covered by `tests/e2e/14`, which segfaults without the fix. **Audit the other systems that
   cache component pointers across a hook boundary** — this one was found by accident.
-- [ ] **`MatchKartsToPlayers` can rebuild eliminated players mid-round.** Guarded to
-  `is_menu_active()` (`systems.h:802`), because `make_player` puts `PlayerID` on the car itself
-  and `ProcessDeath` destroys the car when lives run out. **Not covered:** with no gamepad,
-  `ProvidesMaxGamepadID::count()` is 1, so after the only player dies `size() + 1 == count()` is
-  true and the function returns early. Reaching the respawn needs two eliminations, so at least
-  two karts. Reverting the guard leaves all 14 passing.
+- [x] ~~**`MatchKartsToPlayers` can rebuild eliminated players mid-round.**~~ — done, and now
+  covered. Guarded to `is_menu_active()` (`systems.h:805`), because `make_player` puts `PlayerID`
+  on the car itself and `ProcessDeath` destroys the car when lives run out.
+  `tests/e2e/13d_eliminated_player_not_rebuilt.e2e` needs three karts to see it: a player missing
+  while another player is still there and the round still running. Two players is the ceiling —
+  at three, the "a player left" branch below fires in the menu and deletes the ones with no
+  gamepad — so the third contender is a bot. Reverting the guard gives
+  `expect_car_count (line 48): expected 2 karts but was 3`.
 - [ ] **The "we are good" early return is off by one.** `existing_players.size() + 1 ==
   maxGamepadID.count()` with `count() == max_gamepad_available + 1` reduces to `players == max`,
   but steady state is `players == max + 1`. So the guard is essentially never true when things
@@ -44,11 +46,17 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
 - [x] ~~**Per-round state never resets.**~~ — done. `RoundManager::reset_car_trackers()`
   (`round_settings.h:325`) clears lives, kills, hippos and health on every car at round start.
   Covered by `tests/e2e/11_two_round_lives_reset.e2e`.
-- [x] ~~**Cross-mode UB in TagAndGo.**~~ — fixed, **but not under a discriminating test.**
-  `tests/e2e/12` exercises the mode switch and holds the stale `is_tagger` flag, but with one car
-  the `runners` query is empty, so the `find_if` predicate never runs and the bad cast is never
-  dereferenced — reverting both halves of the fix leaves all 14 passing. Closing the gap needs a
-  second car with `HasTagAndGoTracking` positioned to collide.
+- [x] ~~**Cross-mode UB in TagAndGo.**~~ — fixed, and now under a discriminating test.
+  `tests/e2e/12` holds the stale `is_tagger` flag but has nobody to tag, so it only reaches
+  `get_active_rt` and not the transfer.
+  `tests/e2e/12a_tagandgo_cross_mode_two_karts.e2e` parks a second kart on the first in Lives
+  mode; reverting both halves gives `expected is_tagger == 1 but was 0`.
+  `12b_tagandgo_tag_transfer.e2e` is its positive control — the same setup in TagAndGo, where the
+  tag must move. Note `raylib::GetTime()` is 0 under `--headless` while `reset_temp_data` leaves
+  `last_tag_time` at `-1`, so every runner reads as tagged one second ago and the 2s cooldown
+  declines every tag. Both scripts backdate `last_tag_time` to get past it. **A headless run can
+  never observe a tag land on its own** — worth remembering before writing any other TagAndGo
+  test.
 - [x] ~~**Single-player Lives mode ends instantly.**~~ — done. `CheckLivesWinFFA` tracks
   `most_contenders_seen` and only declares a one-survivor winner if there were ever two.
   Covered by `tests/e2e/13`.

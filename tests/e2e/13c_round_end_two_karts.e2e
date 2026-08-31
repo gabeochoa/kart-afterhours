@@ -1,0 +1,133 @@
+# Results with two drivers: the bar ratio, and the team pill
+#
+# 13a can only ever pin the ends of the bar scale. One driver is always the top
+# score, so its bar is always at the 132px ceiling; h=132 at score 6 and h=30 at
+# score 0 say "the bar responds to the score" but nothing pins the ratio in
+# between. A second driver on half the winner's score does: 30 + 0.5 * (132-30).
+#
+# And a single driver cannot populate two teams, so the TEAM A n // TEAM B n
+# pill had no coverage at all.
+#
+# Numbered 13c so it lands after 13b and before 14, which destroys the only
+# kart. It hands the world back with exactly one kart and team mode off.
+#
+# No screenshots: everything on this screen that a second kart changes is
+# asserted below, and adding baselines for it would mean regenerating the
+# existing three.
+
+disable_animations
+
+set_round_type Kills
+goto_screen Main
+wait 0.2
+
+add_player 1
+wait_frames 3
+expect_car_count 2
+
+# --- Bar height is a ratio, not a flag ---
+
+start_round
+wait_frames 2
+set_tracker_at 0 kills 6
+set_tracker_at 1 kills 3
+end_round
+wait_frames 2
+wait 0.2
+
+expect_state Menu
+assert_ui podium_0 hidden=false
+assert_ui podium_1 hidden=false
+assert_ui podium_0_bar text=6
+assert_ui podium_0_bar h=132
+assert_ui podium_1_bar text=3
+assert_ui podium_1_bar h=81
+expect_text "PLAYER 1 WINS"
+assert_no_overflow
+
+# A third of the winner's score, so a third of the way up the scale:
+# 30 + (2/6) * 102 = 64.
+start_round
+wait_frames 2
+set_tracker_at 0 kills 6
+set_tracker_at 1 kills 2
+end_round
+wait_frames 2
+wait 0.2
+assert_ui podium_0_bar h=132
+assert_ui podium_1_bar h=64
+
+# Equal scores are equal bars, and nobody wins outright.
+start_round
+wait_frames 2
+set_tracker_at 0 kills 5
+set_tracker_at 1 kills 5
+end_round
+wait_frames 2
+wait 0.2
+assert_ui podium_0_bar h=132
+assert_ui podium_1_bar h=132
+expect_text "DEAD HEAT"
+
+# --- Team mode results ---
+
+# TeamID is stamped on a kart when it is created, so switching the mode is not
+# enough -- both karts have to be rebuilt under it.
+goto_screen CharacterCreation
+wait 0.2
+click_ui mode_teams
+wait 0.3
+goto_screen Main
+wait 0.2
+
+# Highest id first. Removing player 0 while player 1 is still around leaves
+# MatchKartsToPlayers with a gamepad and no kart for it, and it rebuilds player
+# 0 on the next menu frame -- without the TeamID this section needs.
+remove_player 1
+wait_frames 3
+remove_player 0
+wait_frames 3
+expect_car_count 0
+
+add_player 0
+add_player 1
+wait_frames 3
+expect_car_count 2
+
+start_round
+wait_frames 2
+set_tracker_at 0 kills 4
+set_tracker_at 1 kills 2
+end_round
+wait_frames 2
+wait 0.2
+
+assert_ui round_end_team_pill hidden=false
+expect_text "TEAM A 4 // TEAM B 2"
+expect_text "TEAM A WINS"
+assert_no_overflow
+
+# Team mode also takes the outright winner off the podium: the bars stay per
+# driver, but no column is the winner, so none of them is butter.
+assert_ui podium_0_bar h=132
+assert_ui podium_1_bar h=81
+
+# --- Hand back one kart, free for all, no TeamID ---
+
+goto_screen CharacterCreation
+wait 0.2
+click_ui mode_free_for_all
+wait 0.3
+goto_screen Main
+wait 0.2
+
+remove_player 1
+wait_frames 3
+remove_player 0
+wait_frames 3
+add_player 0
+wait_frames 3
+expect_car_count 1
+
+goto_screen Main
+wait 0.2

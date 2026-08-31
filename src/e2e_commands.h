@@ -3,6 +3,7 @@
 #include "components.h"
 #include "game_state_manager.h"
 #include "input_mapping.h"
+#include "makers.h"
 #include "query.h"
 #include "round_settings.h"
 #include "ui/animation_control.h"
@@ -88,13 +89,25 @@ struct HandleAppActionCommand : System<PendingE2ECommand> {
 
 namespace detail {
 
-// e2e spawns exactly one car (make_player(0) at startup), so "the car" is
-// unambiguous. Every per-round tracker the reset fix touches lives on it.
-inline OptEntity first_car() {
+// Karts in creation order. Indexed rather than keyed on PlayerID because AI
+// karts do not carry one, and a script that adds both needs to address either.
+// Entities destroyed this frame are still in the list with cleanup set, and a
+// script that just killed one must not see it.
+inline std::vector<RefEntity> cars() {
     return EntityQuery({.ignore_temp_warning = true})
         .whereHasComponent<HasMultipleLives>()
-        .gen_first();
+        .whereLambda([](const Entity &e) { return !e.cleanup; })
+        .gen();
 }
+
+inline OptEntity nth_car(size_t n) {
+    auto all = cars();
+    return n < all.size() ? OptEntity{all[n]} : OptEntity{};
+}
+
+// Startup spawns make_player(0) before any script runs, so scripts that never
+// add a kart still mean "the car" when they say set_tracker.
+inline OptEntity first_car() { return nth_car(0); }
 
 // is_tagger is a bool but reads as 0/1, so one int-valued accessor pair covers
 // every tracker a script needs to see.
@@ -110,6 +123,10 @@ inline std::optional<int> tracker_get(const Entity &car,
         return car.get<HasHealth>().amount;
     if (field == "is_tagger" && car.has<HasTagAndGoTracking>())
         return car.get<HasTagAndGoTracking>().is_tagger ? 1 : 0;
+    // Whole seconds is all a script needs: it only ever pushes this far enough
+    // into the past to clear the tag cooldown.
+    if (field == "last_tag_time" && car.has<HasTagAndGoTracking>())
+        return static_cast<int>(car.get<HasTagAndGoTracking>().last_tag_time);
     return std::nullopt;
 }
 
@@ -132,6 +149,11 @@ inline bool tracker_set(Entity &car, const std::string &field, int value) {
     }
     if (field == "is_tagger" && car.has<HasTagAndGoTracking>()) {
         car.get<HasTagAndGoTracking>().is_tagger = value != 0;
+        return true;
+    }
+    if (field == "last_tag_time" && car.has<HasTagAndGoTracking>()) {
+        car.get<HasTagAndGoTracking>().last_tag_time =
+            static_cast<float>(value);
         return true;
     }
     return false;
@@ -163,9 +185,25 @@ struct HandleGameplayCommand : System<PendingE2ECommand> {
         if (cmd.is("expect_state"))
             return expect_state(cmd);
         if (cmd.is("set_tracker"))
-            return set_tracker(cmd);
+            return tracker_write(cmd, 0);
+        if (cmd.is("set_tracker_at"))
+            return tracker_write(cmd, 1);
         if (cmd.is("expect_tracker"))
-            return expect_tracker(cmd);
+            return tracker_read(cmd, 0);
+        if (cmd.is("expect_tracker_at"))
+            return tracker_read(cmd, 1);
+        if (cmd.is("add_ai"))
+            return add_ai(cmd);
+        if (cmd.is("add_player"))
+            return add_player(cmd);
+        if (cmd.is("remove_ai"))
+            return remove_ai(cmd);
+        if (cmd.is("remove_player"))
+            return remove_player(cmd);
+        if (cmd.is("expect_car_count"))
+            return expect_car_count(cmd);
+        if (cmd.is("warp_car"))
+            return warp_car(cmd);
     }
 
 private:
@@ -230,46 +268,159 @@ private:
         cmd.consume();
     }
 
-    static void set_tracker(PendingE2ECommand &cmd) {
-        if (!cmd.has_args(2)) {
-            cmd.fail("set_tracker requires <field> <value>");
-            return;
+    // The `_at` forms take a leading kart index; base is how many args that
+    // costs, so both spellings share one body.
+    static OptEntity tracker_car(PendingE2ECommand &cmd, size_t base) {
+        if (!cmd.has_args(base + 2)) {
+            cmd.fail(cmd.name + " requires " +
+                     (base ? "<n> <field> <value>" : "<field> <value>"));
+            return {};
         }
-        auto car = detail::first_car();
-        if (!car.valid()) {
-            cmd.fail("set_tracker: no car found");
+        const size_t idx = base ? static_cast<size_t>(cmd.arg_as<int>(0)) : 0;
+        auto car = detail::nth_car(idx);
+        if (!car.valid())
+            cmd.fail(cmd.name + ": no car at index " + std::to_string(idx));
+        return car;
+    }
+
+    static void tracker_write(PendingE2ECommand &cmd, size_t base) {
+        auto car = tracker_car(cmd, base);
+        if (!car.valid())
             return;
-        }
-        if (!detail::tracker_set(car.asE(), cmd.arg(0),
-                                 cmd.arg_as<int>(1))) {
-            cmd.fail("set_tracker: unknown field " + cmd.arg(0));
+        if (!detail::tracker_set(car.asE(), cmd.arg(base),
+                                 cmd.arg_as<int>(base + 1))) {
+            cmd.fail(cmd.name + ": unknown field " + cmd.arg(base));
             return;
         }
         cmd.consume();
     }
 
-    static void expect_tracker(PendingE2ECommand &cmd) {
-        if (!cmd.has_args(2)) {
-            cmd.fail("expect_tracker requires <field> <value>");
+    static void tracker_read(PendingE2ECommand &cmd, size_t base) {
+        auto car = tracker_car(cmd, base);
+        if (!car.valid())
             return;
-        }
-        auto car = detail::first_car();
-        if (!car.valid()) {
-            cmd.fail("expect_tracker: no car found");
-            return;
-        }
-        const auto actual = detail::tracker_get(car.asE(), cmd.arg(0));
+        const auto actual = detail::tracker_get(car.asE(), cmd.arg(base));
         if (!actual) {
-            cmd.fail("expect_tracker: unknown field " + cmd.arg(0));
+            cmd.fail(cmd.name + ": unknown field " + cmd.arg(base));
             return;
         }
-        const int expected = cmd.arg_as<int>(1);
+        const int expected = cmd.arg_as<int>(base + 1);
         if (*actual != expected) {
-            cmd.fail("expected " + cmd.arg(0) + " == " +
+            cmd.fail("expected " + cmd.arg(base) + " == " +
                      std::to_string(expected) + " but was " +
                      std::to_string(*actual));
             return;
         }
+        cmd.consume();
+    }
+
+    // Karts added mid-round miss reset_car_trackers and are invisible to
+    // MatchKartsToPlayers, which only reconciles from the menu -- so a script
+    // that spawns one while Playing gets a kart in an undefined state.
+    static bool require_menu(PendingE2ECommand &cmd) {
+        if (GameStateManager::get().is_menu_active())
+            return true;
+        cmd.fail(cmd.name + ": only valid from the menu");
+        return false;
+    }
+
+    static void add_ai(PendingE2ECommand &cmd) {
+        if (!require_menu(cmd))
+            return;
+        make_ai();
+        cmd.consume();
+    }
+
+    static void add_player(PendingE2ECommand &cmd) {
+        if (!cmd.has_args(1)) {
+            cmd.fail("add_player requires <gamepad_id>");
+            return;
+        }
+        const int id = cmd.arg_as<int>(0);
+        if (!require_menu(cmd))
+            return;
+        // Three players is one too many: MatchKartsToPlayers' "a player left"
+        // branch fires at size() > count() + 1, and with no gamepad connected
+        // count() is 1, so it would delete the ones it just found.
+        auto players = EntityQuery({.force_merge = true})
+                           .whereHasComponent<PlayerID>()
+                           .gen();
+        for (Entity &p : players) {
+            if (p.get<PlayerID>().id == id) {
+                cmd.fail("add_player: player " + std::to_string(id) +
+                         " already exists");
+                return;
+            }
+        }
+        if (players.size() >= 2) {
+            cmd.fail("add_player: two players is the most the menu will keep");
+            return;
+        }
+        make_player(static_cast<input::GamepadID>(id));
+        cmd.consume();
+    }
+
+    static void remove_ai(PendingE2ECommand &cmd) {
+        auto ais = EntityQuery({.force_merge = true})
+                       .whereHasComponent<AIControlled>()
+                       .gen();
+        if (ais.empty()) {
+            cmd.fail("remove_ai: no AI karts");
+            return;
+        }
+        for (Entity &ai : ais)
+            ai.cleanup = true;
+        cmd.consume();
+    }
+
+    static void remove_player(PendingE2ECommand &cmd) {
+        if (!cmd.has_args(1)) {
+            cmd.fail("remove_player requires <gamepad_id>");
+            return;
+        }
+        const int id = cmd.arg_as<int>(0);
+        for (Entity &p : EntityQuery({.force_merge = true})
+                             .whereHasComponent<PlayerID>()
+                             .gen()) {
+            if (p.get<PlayerID>().id != id)
+                continue;
+            p.cleanup = true;
+            cmd.consume();
+            return;
+        }
+        cmd.fail("remove_player: no player " + std::to_string(id));
+    }
+
+    static void expect_car_count(PendingE2ECommand &cmd) {
+        if (!cmd.has_args(1)) {
+            cmd.fail("expect_car_count requires <n>");
+            return;
+        }
+        const size_t actual = detail::cars().size();
+        const size_t expected = static_cast<size_t>(cmd.arg_as<int>(0));
+        if (actual != expected) {
+            cmd.fail("expected " + std::to_string(expected) + " karts but was " +
+                     std::to_string(actual));
+            return;
+        }
+        cmd.consume();
+    }
+
+    // Spawn points are a fifth of the arena apart, so nothing ever touches on
+    // its own. Collision-driven rules need the karts put on top of each other.
+    static void warp_car(PendingE2ECommand &cmd) {
+        if (!cmd.has_args(3)) {
+            cmd.fail("warp_car requires <n> <x> <y>");
+            return;
+        }
+        auto car = detail::nth_car(static_cast<size_t>(cmd.arg_as<int>(0)));
+        if (!car.valid()) {
+            cmd.fail("warp_car: no car at index " + cmd.arg(0));
+            return;
+        }
+        Transform &transform = car.asE().get<Transform>();
+        transform.position = vec2{cmd.arg_as<float>(1), cmd.arg_as<float>(2)};
+        transform.velocity = vec2{0.f, 0.f};
         cmd.consume();
     }
 };
