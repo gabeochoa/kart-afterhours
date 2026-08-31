@@ -1,0 +1,15 @@
+The Ultimate Oldschool PC Font Pack (v2.2) by VileR — https://int10h.org/oldschool-pc-fonts/
+Licensed CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/).
+
+Fonts kept here (candidates for the flavor / CRT-terminal text — see todo.md #5):
+  PxPlus_IBM_BIOS-2y.ttf
+  PxPlus_Amstrad_PC-2y.ttf
+  Ac437_ACM_VGA_8x14.ttf
+  Ac437_Copam_BIOS.ttf
+  Ac437_IBM_DOS_ISO9.ttf
+  Ac437_NEC_APC3_8x16.ttf
+  Ac437_SeequaCm.ttf
+  PxPlus_ToshibaSat_8x14.ttf
+
+Attribution required: "VileR / int10h.org". Adaptations must ship under a
+compatible license. The full 57MB pack is gitignored; only these are tracked.

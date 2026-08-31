@@ -28,8 +28,7 @@ using namespace afterhours;
 std::string get_font_name(FontID id) {
   switch (id) {
   case FontID::English:
-    // return "eqprorounded-regular.ttf";
-    return "NotoSansMonoCJKkr-Bold.otf";
+    return "PxPlus_IBM_BIOS-2y.ttf";
   case FontID::Korean:
     return "NotoSansMonoCJKkr-Bold.otf";
   case FontID::Japanese:
