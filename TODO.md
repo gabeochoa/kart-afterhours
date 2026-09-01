@@ -95,36 +95,65 @@ fixable upstream lives in Tier 4 and is recorded rather than acted on.
   redesign: 59 baselines (18MB), `make validate-screenshots` passes 59/59, and all 59 are
   byte-identical across consecutive runs. Verified earlier that it fails at 3.09% on an injected
   change.
-- [ ] **Test 10 tests nothing.** `screenshots/anim_0{1..4}*.png` are byte-identical.
-  `tests/e2e/10_slide_in_animation.e2e:2` claims animations are enabled, but
-  `animation_control::disabled` is a plain global (`src/ui/animation_control.h:6`) never cleared
-  between scripts, and 01–09 each call `disable_animations`. An `enable_animations` command exists
-  (`src/e2e_commands.h:87`); script 10 never calls it.
-- [ ] **`05_full_menu_flow.e2e` is mislabeled** — claims to test keyboard navigation but uses
-  `goto_screen` for every transition, making it a duplicate of 01. This is Phase 5 of
-  `docs/plans/2026-02-25-e2e-test-coverage.md`, still undelivered.
-- [ ] **`validate-screenshots` and `update-baselines` never clean `screenshots/`** — only `e2e`
-  depends on `clean-screenshots` (`makefile:62-65`), so `make e2e && make ci` copies stale PNGs.
-  Less dangerous now that runs are deterministic (a stale PNG equals a fresh one unless the build
-  changed), but still wrong across a rebuild.
+- [x] ~~**Test 10 tests nothing.**~~ — fixed, and it now captures the slide-in mid-flight.
+  There were **three** reasons it tested nothing, not one: `disable_animations` is never cleared
+  (correct as stated); the script never called `enable_animations`; and `UpdateUISlideIn` only
+  retriggers on a screen *change*, while script 09 leaves the game on Main, so `goto_screen Main`
+  was a no-op and every frame was post-animation. The script now detours via RoundSettings.
+  **The gap doc's stronger claim was wrong**: `docs/afterhours_gaps.md:212-217` says the slide-in
+  "has been a no-op on every button in the game" because `apply_overrides` drops opacity and
+  translate. It drops them from the *config*, but the animation is driven by
+  `UpdateUISlideIn`/`ApplyInitialSlideInMask` writing `HasUIModifiers` and `HasOpacity` onto the
+  entity directly (`animation_slide_in.h:120-127`, `:255-262`), which never goes through
+  `apply_overrides`. The main-menu buttons visibly slide in. That makes
+  `animation_control::apply_slide_in` (`animation_control.h:18`) the dead half — for
+  `create_styled_button` it is dropped, and for the two `keep_visuals` call sites it duplicates
+  what the mask system already does one frame later.
+  Now three screenshots, not four: headless dt is a fixed 0.167s and every command costs two
+  frames, so the 0.43-0.55s animation is exactly three samples wide. A fourth is byte-identical
+  to the third however the waits are arranged.
+- [x] ~~**`05_full_menu_flow.e2e` is mislabeled**~~ — done. Now drives Main -> CharacterCreation
+  -> RoundSettings -> MapSelection with `enter` and back with `escape`, asserting the focus holder
+  at every step with `expect_focused`. `shift_tab` reaches the confirm button in one keystroke:
+  it is last in the tab ring on both screens (forward would be 11 and 12 tabs). All four
+  `flow_*` baselines are unchanged — focus auto-grabs the same first element whether the screen
+  was entered by keyboard or by `goto_screen`.
+- [x] ~~**`validate-screenshots` and `update-baselines` never clean `screenshots/`**~~ — both now
+  depend on `clean-screenshots`.
 - [ ] **`assert_no_overflow` is weaker than it looks.** Now used by scripts 09, 13a and 13b, but
   it checks only the *viewport*, not parent bounds — it could not have caught the
   `map_card`-in-`map_list` overflow it was originally suggested as coverage for, and a squeezed
   child never trips it. Established by deliberately breaking the Track Select layout two ways and
   watching the suite stay green. Keep it as a cheap net; do not read it as layout coverage.
-- [ ] **Use the assertions that already exist.** Zero scripts use `set_slider`, `expect_slider`,
-  `select_dropdown`, `expect_checkbox`, `expect_focused`, `expect_no_text`,
-  `dump_ui`, `enter`, `escape`, `key`, `drag`, `resize`. `assert_no_overflow` is free coverage for
-  the checkbox-overflow gap the docs already describe.
-- [ ] **No CI at all** — no `.github/`, `make ci` is local-only. Worth adding once baselines land.
-  Note headless GL is macOS/Linux only (see Tier 4).
-- [ ] **No unit tests anywhere.** Zero coverage of physics, weapons, AI, collision, win conditions.
-  `automatic.md`'s one unfinished line was "add simple verification tests".
-- [ ] **`compare_baselines.py` defects:** `--save-diffs` is `store_true, default=True` so it's
-  always on (`:86`); a `manifest.json` `default_tolerance` silently overrides `--threshold`
-  (`:105`); the JSON summary reports `args.threshold` rather than the effective per-screen value
-  (`:174`). The per-screen `overrides` mechanism is implemented but unreachable — it lives in
-  `screenshot-baselines/manifest.json`, which doesn't exist.
+- [ ] **Use the assertions that already exist.** `expect_focused`, `enter`, `escape` and
+  `shift_tab` are now used by script 05. Still zero scripts: `set_slider`, `expect_slider`,
+  `select_dropdown`, `expect_checkbox`, `expect_no_text`, `dump_ui`, `key`, `drag`, `resize`.
+  `assert_no_overflow` is free coverage for the checkbox-overflow gap the docs already describe.
+- [x] ~~**No CI at all**~~ — `.github/workflows/ci.yml` added: checkout with submodules, zig
+  0.16.0, `brew install pkg-config raylib`, Pillow, `make build`, `make validate-screenshots`,
+  screenshots uploaded as an artifact on failure. **It has never run on a real runner** — what is
+  verified is that the same commands pass locally on macOS, and that the runner deps are the ones
+  the build actually links (`build.zig:73-74` resolves raylib through pkg-config and links the
+  OpenGL framework). Unproven until it runs: whether a headless macOS runner can create the CGL
+  context, and whether Homebrew's raylib is still 5.5 on the day it runs.
+  **The "macOS/Linux" note was wrong.** Headless GL is macOS-only:
+  `vendor/afterhours/src/graphics/platform/headless_gl_linux.h` is an `assert(false)` stub. A
+  Linux runner cannot run the suite at all, and `build.zig:74` links the OpenGL *framework*
+  unconditionally, which would not compile there either. Both are Tier 4.
+- [ ] **No unit tests anywhere.** Not attempted, deliberately. The named subjects — physics,
+  weapons, AI, collision, win conditions — are all `System` subclasses in `src/systems/` that need
+  entities, singletons and the afterhours runtime to say anything; standing that up is the e2e
+  suite, which already covers win conditions, elimination, round reset and TagAndGo. What is left
+  that is pure enough to unit test is `src/math_util.h`, 95 lines of one-line vector helpers.
+  A test binary would also need a second root module in `build.zig` (src/ has a `main`). Worth
+  doing when there is a non-trivial pure function to point it at; there isn't one today.
+- [x] ~~**`compare_baselines.py` defects:**~~ — all three fixed. `--save-diffs` is now
+  `BooleanOptionalAction` so `--no-save-diffs` exists. The manifest mechanism is **deleted**
+  rather than given a `manifest.json`: it existed to allow a per-screen tolerance, every one of
+  the 55 stable baselines currently matches to within 0.03%, and nothing has ever needed a
+  looser one. With it gone the threshold has a single source, which makes the third defect (the
+  JSON summary reporting `args.threshold`) correct by construction. Re-add it the day one
+  screenshot genuinely cannot be made deterministic.
 
 ## Tier 3 — Cleanup
 
@@ -214,6 +243,12 @@ from this repo.
   and adopting `Anim::on_appear()` in place of our own slide-in.
 - [x] ~~Windows blocked on three afterhours issues~~ — **all three fixed upstream.**
   `make windows` now compiles clean through afterhours and reaches the link.
+- [ ] **Headless GL is not implemented on Linux.**
+  `vendor/afterhours/src/graphics/platform/headless_gl_linux.h` is an `assert(false)` stub with a
+  "use Xvfb as workaround" note, so `--headless` — which the entire e2e suite runs under — cannot
+  come up on Linux. This is why CI is a macOS-only workflow. Fixing it upstream (EGL surfaceless
+  context, the way `headless_gl_macos.h` uses CGL) would let CI move to a free Linux runner.
+  `build.zig:74` would need the OpenGL framework link guarded to macOS at the same time.
 - [ ] **`make windows` link fails on one symbol: `IsKeyPressedRepeat`.** `vendor/raylib/raylib.h`
   is 5.5 and declares it (`:1174`), but `vendor/raylib/raylib.dll` and `libraylibdll.a` don't
   export it — the vendored Windows binaries are an older raylib than the header beside them. Drop

@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    # macOS only. The headless GL backend has no Linux implementation --
+    # vendor/afterhours/src/graphics/platform/headless_gl_linux.h is an
+    # assert(false) stub -- so `--headless`, which the whole e2e suite runs
+    # under, cannot come up on a Linux runner at all.
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      # build.zig resolves raylib through pkg-config, so both are needed.
+      # Homebrew's raylib is 5.5 today and there is no way to pin it here; if
+      # it moves to 5.6 this is the step that will start failing.
+      - run: brew install pkg-config raylib
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Without Pillow compare_baselines.py falls back to exact hash equality,
+      # which every baseline fails: baselines are palette-quantized on the way
+      # into git and fresh captures are not.
+      - run: pip install Pillow
+
+      # The shipping configuration. validate-screenshots below only ever
+      # compiles with -De2e=true.
+      - run: make build
+
+      # Builds with E2E=1, runs the suite (a failing script exits non-zero and
+      # aborts the recipe), then diffs every screenshot against its baseline.
+      - run: make validate-screenshots
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: |
+            screenshots/
+            test-failures/
+          if-no-files-found: ignore

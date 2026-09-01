@@ -69,21 +69,14 @@ def create_diff_image(baseline: Path, current: Path, output: Path):
     diff.save(str(output), "PNG")
 
 
-def load_manifest(baseline_dir: Path) -> dict:
-    manifest_path = baseline_dir.parent / "manifest.json"
-    if manifest_path.exists():
-        with open(manifest_path) as f:
-            return json.load(f)
-    return {}
-
-
 def main():
     parser = argparse.ArgumentParser(description="Compare screenshots against baselines")
     parser.add_argument("baseline_dir", nargs="?", default=DEFAULT_BASELINE_DIR)
     parser.add_argument("current_dir", nargs="?", default=DEFAULT_CURRENT_DIR)
     parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD)
     parser.add_argument("--json", type=str, default=None)
-    parser.add_argument("--save-diffs", action="store_true", default=True)
+    parser.add_argument("--save-diffs", action=argparse.BooleanOptionalAction,
+                        default=True)
     parser.add_argument("--failures-dir", type=str, default=DEFAULT_FAILURES_DIR)
     args = parser.parse_args()
 
@@ -99,10 +92,6 @@ def main():
     if not current_dir.exists():
         print(f"ERROR: Current screenshots directory not found: {current_dir}")
         sys.exit(1)
-
-    manifest = load_manifest(baseline_dir)
-    overrides = manifest.get("overrides", {})
-    default_tolerance = manifest.get("default_tolerance", args.threshold)
 
     baselines = sorted(baseline_dir.glob("*.png"))
     if not baselines:
@@ -121,7 +110,6 @@ def main():
     for baseline in baselines:
         current = current_dir / baseline.name
         screen_name = baseline.stem
-        threshold = overrides.get(screen_name, default_tolerance)
 
         if not current.exists():
             print(f"  MISSING  {baseline.name}")
@@ -131,16 +119,16 @@ def main():
 
         diff_pct = compare_images(baseline, current)
 
-        if diff_pct <= threshold:
+        if diff_pct <= args.threshold:
             print(f"  PASS     {baseline.name} ({diff_pct:.4f}%)")
             passed += 1
         else:
-            print(f"  FAIL     {baseline.name} ({diff_pct:.4f}% > {threshold}%)")
+            print(f"  FAIL     {baseline.name} ({diff_pct:.4f}% > {args.threshold}%)")
             failed += 1
             failures.append({
                 "name": screen_name,
                 "diff_percent": round(diff_pct, 4),
-                "threshold": threshold,
+                "threshold": args.threshold,
                 "baseline": str(baseline),
                 "current": str(current),
             })

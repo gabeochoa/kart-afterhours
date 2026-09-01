@@ -80,7 +80,7 @@ VALIDATE_DIR := /tmp/kart-screenshot-validate
 shrink-baselines:
 	@python3 -c "from PIL import Image; import glob; [Image.open(f).convert('RGB').quantize(colors=256).save(f, optimize=True) for f in glob.glob('$(BASELINE_DIR)/*.png')]"
 
-update-baselines:
+update-baselines: clean-screenshots
 	$(MAKE) E2E=1 build
 	@mkdir -p $(BASELINE_DIR)
 	@rm -f $(BASELINE_DIR)/*.png
@@ -92,7 +92,7 @@ update-baselines:
 	@echo "Review changes with: git diff --stat screenshot-baselines/"
 	@echo "Then commit: git add screenshot-baselines/ and git commit -m 'update screenshot baselines'"
 
-validate-screenshots:
+validate-screenshots: clean-screenshots
 	$(MAKE) E2E=1 build
 	@mkdir -p $(VALIDATE_DIR)
 	@rm -f $(VALIDATE_DIR)/*.png

@@ -210,11 +210,19 @@ This only bites elements that *have* a registered default, i.e. everything route
 `SetupGameStylingDefaults` — `imm::button`, slider, checkbox, dropdown, navigation_bar.
 
 **Consequence beyond styling:** `animation_control::apply_slide_in()` animates via opacity
-and translate, both dropped. **The slide-in animation has therefore been a no-op on every
-button in the game.** `create_styled_button` has been building configs whose animation
-fields are thrown away before they reach the renderer. This is a second, independent reason
-`tests/e2e/10_slide_in_animation.e2e` cannot be testing anything (the first being that
-`animation_control::disabled` is a global never cleared between scripts).
+and translate, both dropped, so on `create_styled_button` that call does nothing.
+
+**Corrected 2026-08-31 — this paragraph used to claim the slide-in was therefore a no-op on
+every button in the game, and it is not.** The slide-in is driven by `UpdateUISlideIn` and
+`ApplyInitialSlideInMask` (`src/ui/animation_slide_in.h`), which write `HasUIModifiers` and
+`HasOpacity` onto the entity directly and never touch `ComponentConfig`, so `apply_overrides`
+cannot drop them. `tests/e2e/10_slide_in_animation.e2e` now captures the main-menu buttons
+mid-flight; with `enable_animations` removed the three frames collapse to byte-identical
+again, which is the discriminating check.
+
+What the dropped fields actually cost is `apply_slide_in` itself: dead at
+`ui_systems.cpp:202`, and redundant at `:409` and `:2796` where `keep_visuals` bypasses the
+merge but only sets the same first-frame state the mask system sets anyway.
 
 **Current workaround (in place):** `with_internal(true)` at the call site to bypass the
 defaults merge, then re-apply the font by hand. Commented where used.

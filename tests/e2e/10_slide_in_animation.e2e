@@ -1,15 +1,24 @@
 # Slide-In Animation Test
-# Animations are NOT disabled - captures the slide-in at different timings
+# The only script in the suite that runs with animations on. Scripts 01-09 each
+# call disable_animations and nothing ever cleared it, so this has to turn it
+# back on explicitly -- and off again on the way out, because 11+ each assume
+# it is already off for the lines above their own disable_animations.
+enable_animations
 
+# UpdateUISlideIn only retriggers on a screen *change*, and 09 leaves us on
+# Main. Without this detour every frame below is post-animation.
+goto_screen RoundSettings
+wait 0.3
+
+# Headless dt is a fixed 1/60 * time_scale = 0.167s and every command costs two
+# frames, so the whole 0.43-0.55s slide-in is only three samples wide. Three is
+# all there is: a fourth shot is byte-identical to anim_03 whichever way the
+# waits are arranged.
 goto_screen Main
 wait 0.05
-screenshot anim_01_early
+screenshot anim_01_offscreen
+screenshot anim_02_midflight
+screenshot anim_03_settled
 
-wait 0.15
-screenshot anim_02_mid
-
-wait 0.3
-screenshot anim_03_settling
-
-wait 0.5
-screenshot anim_04_complete
+disable_animations
+wait 0.2

@@ -1,30 +1,58 @@
-# Full Menu Flow via Input
-# Tests entering screens via button press where focus is predictable
+# Full Menu Flow via Keyboard
+# Walks Main -> CharacterCreation -> RoundSettings -> MapSelection and back
+# using only tab/enter/escape. No goto_screen: that is script 01's job, and a
+# flow driven by goto_screen cannot catch a button that stops navigating.
 
 disable_animations
 
-# Navigate to character creation via play button
-goto_screen CharacterCreation
-wait 0.2
-assert_ui btn_next hidden=false
-assert_ui btn_back hidden=false
-screenshot flow_01_character_creation
-
-# Navigate to round settings
-goto_screen RoundSettings
-wait 0.2
-assert_ui btn_select_map hidden=false
-assert_ui btn_back hidden=false
-screenshot flow_02_round_settings
-
-# Navigate to map selection
-goto_screen MapSelection
-wait 0.2
-expect_text_i "back"
-screenshot flow_03_map_selection
-
-# Return to main
 goto_screen Main
 wait 0.2
+
+# Focus auto-grabs the first button on entering a screen, so PLAY is already
+# focused and enter presses it.
+expect_focused btn_play
+enter
+wait 0.3
+
+assert_ui btn_next hidden=false
+assert_ui btn_back hidden=false
+expect_focused mode_free_for_all
+screenshot flow_01_character_creation
+
+# btn_next is last in the tab ring, so one reverse tab reaches it. Walking
+# forward would be eleven tabs through the mode toggles and eight kart slots.
+shift_tab
+wait 0.2
+expect_focused btn_next
+enter
+wait 0.3
+
+assert_ui btn_select_map hidden=false
+assert_ui btn_back hidden=false
+expect_focused tab_mode_lives
+screenshot flow_02_round_settings
+
+shift_tab
+wait 0.2
+expect_focused btn_select_map
+enter
+wait 0.3
+
+expect_text_i "back"
+expect_focused tile_random
+screenshot flow_03_map_selection
+
+# Escape unwinds the same three screens.
+escape
+wait 0.3
+expect_focused tab_mode_lives
+
+escape
+wait 0.3
+expect_focused mode_free_for_all
+
+escape
+wait 0.3
 assert_ui btn_play hidden=false
+expect_focused btn_play
 screenshot flow_04_back_main

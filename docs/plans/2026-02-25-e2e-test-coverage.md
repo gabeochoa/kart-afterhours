@@ -190,8 +190,12 @@ New `character_creation_flow.e2e` — test team mode toggle, player slot interac
 New `round_settings_modes.e2e` — switch between win conditions, toggle weapons, adjust mode-specific settings.
 New `map_selection_flow.e2e` — tab through maps, verify preview, select map.
 
-### Phase 5: Full navigation flow via real input
-New `full_input_navigation.e2e` — start at main menu, tab to play, enter, tab through character creation, navigate to round settings, pick map, all via keyboard input (no `goto_screen` teleporting).
+### Phase 5: Full navigation flow via real input — done 2026-08-31
+Delivered as a rewrite of the existing `05_full_menu_flow.e2e` rather than a new script: 05 was
+already claiming to be this test while using `goto_screen` for every transition, so a second
+script would have left the liar in place. Main -> CharacterCreation -> RoundSettings ->
+MapSelection by `enter`, back by `escape`, `expect_focused` at every step. Uses `shift_tab` to
+reach the confirm button, which is last in the tab ring on both screens.
 
 ### Phase 6: Screenshot baselines
 - Add `scripts/compare_baselines.py` (port from wm_afterhours)
