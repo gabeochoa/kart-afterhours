@@ -102,7 +102,10 @@ validate-screenshots: clean-screenshots
 	@echo "Comparing against baselines..."
 	python3 scripts/compare_baselines.py $(BASELINE_DIR) $(VALIDATE_DIR)
 
-ci: validate-screenshots
+check:
+	python3 scripts/check_correct.py src
+
+ci: check validate-screenshots
 	@echo "CI passed."
 
 output: build
