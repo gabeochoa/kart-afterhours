@@ -10,10 +10,9 @@ template <typename T> int sgn(const T &val) {
   return (T(0) < val) - (val < T(0));
 }
 
-constexpr float distance_sq(const vec2 a, const vec2 b) {
-  return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
-}
-
+// distance_sq is provided by afterhours (afterhours::distance_sq, with a
+// global re-export). Kart used to define its own identical copy here; the
+// two definitions conflict, so this file deliberately does not define it.
 constexpr static float vec_dot(const vec2 &a, const vec2 &b) {
   return a.x * b.x + a.y * b.y;
 }

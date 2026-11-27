@@ -96,27 +96,23 @@ struct UpdateUISlideIn : afterhours::ui::SystemWithUIContext<> {
 
     bool newly_triggered = false;
     if (!triggered_ids.contains(static_cast<size_t>(entity.id))) {
-      afterhours::animation::anim(UIKey::SlideInAll,
-                                  static_cast<size_t>(entity.id))
+      afterhours::motion::anim(UIKey::SlideInAll,
+                                   static_cast<size_t>(entity.id))
           .from(0.0f)
-          .sequence({
-              {.to_value = 0.0f,
-               .duration = delay,
-               .easing = afterhours::animation::EasingType::Hold},
-              {.to_value = 1.1f,
-               .duration = 0.18f,
-               .easing = afterhours::animation::EasingType::EaseOutQuad},
-              {.to_value = 1.0f,
-               .duration = 0.08f,
-               .easing = afterhours::animation::EasingType::EaseOutQuad},
-          });
+          .to(0.0f, ui_anims::eased_step(delay, nullptr))
+          .then(1.1f,
+                ui_anims::eased_step(0.18f,
+                                     afterhours::motion::curves::ease_out_quad))
+          .then(1.0f,
+                ui_anims::eased_step(0.08f,
+                                     afterhours::motion::curves::ease_out_quad));
       triggered_ids.insert(static_cast<size_t>(entity.id));
       newly_triggered = true;
     }
 
     float slide_v = newly_triggered ? 0.0f : 1.0f;
-    if (auto mv = afterhours::animation::get_value(
-            UIKey::SlideInAll, static_cast<size_t>(entity.id));
+    if (auto mv = ui_anims::active_value(afterhours::motion::anim(
+            UIKey::SlideInAll, static_cast<size_t>(entity.id)));
         mv.has_value()) {
       slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
     }
@@ -175,27 +171,23 @@ private:
 
       bool newly_triggered = false;
       if (!triggered_ids.contains(static_cast<size_t>(child.id))) {
-        afterhours::animation::anim(UIKey::SlideInAll,
-                                    static_cast<size_t>(child.id))
+        afterhours::motion::anim(UIKey::SlideInAll,
+                                     static_cast<size_t>(child.id))
             .from(0.0f)
-            .sequence({
-                {.to_value = 0.0f,
-                 .duration = delay,
-                 .easing = afterhours::animation::EasingType::Hold},
-                {.to_value = 1.1f,
-                 .duration = 0.18f,
-                 .easing = afterhours::animation::EasingType::EaseOutQuad},
-                {.to_value = 1.0f,
-                 .duration = 0.08f,
-                 .easing = afterhours::animation::EasingType::EaseOutQuad},
-            });
+            .to(0.0f, ui_anims::eased_step(delay, nullptr))
+            .then(1.1f,
+                  ui_anims::eased_step(
+                      0.18f, afterhours::motion::curves::ease_out_quad))
+            .then(1.0f,
+                  ui_anims::eased_step(
+                      0.08f, afterhours::motion::curves::ease_out_quad));
         triggered_ids.insert(static_cast<size_t>(child.id));
         newly_triggered = true;
       }
 
       float slide_v = newly_triggered ? 0.0f : 1.0f;
-      if (auto mv = afterhours::animation::get_value(
-              UIKey::SlideInAll, static_cast<size_t>(child.id));
+      if (auto mv = ui_anims::active_value(afterhours::motion::anim(
+              UIKey::SlideInAll, static_cast<size_t>(child.id)));
           mv.has_value()) {
         slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
       }
@@ -248,8 +240,8 @@ struct ApplyInitialSlideInMask : afterhours::ui::SystemWithUIContext<> {
     if (initialized_ids.contains(static_cast<size_t>(entity.id)))
       return;
 
-    if (afterhours::animation::get_value(UIKey::SlideInAll,
-                                         static_cast<size_t>(entity.id))
+    if (ui_anims::active_value(afterhours::motion::anim(
+            UIKey::SlideInAll, static_cast<size_t>(entity.id)))
             .has_value())
       return;
 

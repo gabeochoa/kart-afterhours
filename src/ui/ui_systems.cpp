@@ -794,11 +794,10 @@ void ScheduleMainMenuUI::round_end_player_column(
 
   float card_v = 1.0f;
   if (!animation_control::disabled()) {
-    afterhours::animation::one_shot(
-        UIKey::RoundEndCard, index,
-        ui_anims::make_round_end_card_stagger(index));
-    card_v = afterhours::animation::clamp_value(UIKey::RoundEndCard, index,
-                                                0.0f, 1.0f);
+    ui_anims::one_shot(UIKey::RoundEndCard, index,
+                         ui_anims::make_round_end_card_stagger(index));
+    card_v = ui_anims::clamp_value(ui_anims::track_for(UIKey::RoundEndCard, index),
+                                   0.0f, 1.0f);
   }
   auto column =
       imm::div(context, mk(parent, (int)index),
@@ -881,12 +880,12 @@ void ScheduleMainMenuUI::round_end_player_column(
   // Score roll-up value (0..1). We keep it generic regardless of round type
   float score_t = 1.0f;
   if (!animation_control::disabled()) {
-    afterhours::animation::one_shot(UIKey::RoundEndScore, index, [](auto h) {
-      h.from(0.0f).to(1.0f, 0.8f,
-             afterhours::animation::EasingType::EaseOutQuad);
+    ui_anims::one_shot(UIKey::RoundEndScore, index, [](auto &h) {
+      h.from(0.0f).to(1.0f, ui_anims::eased_step(
+                               0.8f, afterhours::motion::curves::ease_out_quad));
     });
-    score_t = afterhours::animation::clamp_value(UIKey::RoundEndScore, index,
-                                                 0.0f, 1.0f);
+    score_t = ui_anims::clamp_value(
+        ui_anims::track_for(UIKey::RoundEndScore, index), 0.0f, 1.0f);
   }
 
   // Compute animated stats text per-round
@@ -1315,20 +1314,20 @@ void ScheduleMainMenuUI::render_map_preview(
     const std::vector<std::pair<int, MapConfig>> &compatible_maps,
     bool overriding_preview, int prev_preview_index) {
   auto maybe_shuffle =
-      afterhours::animation::manager<UIKey>().get_value(UIKey::MapShuffle);
+      ui_anims::active_value(ui_anims::track_for(UIKey::MapShuffle));
 
   {
-    float container_fade = afterhours::animation::manager<UIKey>()
-                               .get_value(UIKey::MapPreviewFade)
+    float container_fade = ui_anims::active_value(
+                               ui_anims::track_for(UIKey::MapPreviewFade))
                                .value_or(1.0f);
     container_fade = std::clamp(container_fade, 0.0f, 1.0f);
     preview_box.addComponentIfMissing<afterhours::ui::HasOpacity>().value =
         container_fade;
   }
 
-  float fade_v = afterhours::animation::manager<UIKey>()
-                     .get_value(UIKey::MapPreviewFade)
-                     .value_or(1.0f);
+  float fade_v = ui_anims::active_value(
+                        ui_anims::track_for(UIKey::MapPreviewFade))
+                        .value_or(1.0f);
   fade_v = std::clamp(fade_v, 0.0f, 1.0f);
 
   if (effective_preview_index == MapManager::RANDOM_MAP_INDEX &&
@@ -1998,14 +1997,13 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
       size_t random_index = compatible_maps.size();
       float slide_v = 1.0f;
       if (!animation_control::disabled()) {
-        afterhours::animation::one_shot(
-            UIKey::MapCard, random_index,
-            ui_anims::make_map_card_slide(random_index));
+        ui_anims::one_shot(UIKey::MapCard, random_index,
+                             ui_anims::make_map_card_slide(random_index));
 
         static int random_card_anim_state = 0;
         slide_v = 0.0f;
-        if (auto mv =
-                afterhours::animation::get_value(UIKey::MapCard, random_index);
+        if (auto mv = ui_anims::active_value(
+                ui_anims::track_for(UIKey::MapCard, random_index));
             mv.has_value()) {
           slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
           random_card_anim_state = 1;
@@ -2066,13 +2064,14 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
     float pulse_v = 0.0f;
     float slide_v = 1.0f;
     if (!animation_control::disabled()) {
-      afterhours::animation::one_shot(UIKey::MapCard, i,
-                                      ui_anims::make_map_card_slide(i));
-      pulse_v = afterhours::animation::get_value(UIKey::MapCardPulse, i)
+      ui_anims::one_shot(UIKey::MapCard, i, ui_anims::make_map_card_slide(i));
+      pulse_v = ui_anims::active_value(
+                    ui_anims::track_for(UIKey::MapCardPulse, i))
                     .value_or(0.0f);
 
       slide_v = 0.0f;
-      if (auto mv = afterhours::animation::get_value(UIKey::MapCard, i);
+      if (auto mv =
+              ui_anims::active_value(ui_anims::track_for(UIKey::MapCard, i));
           mv.has_value()) {
         slide_v = std::clamp(mv.value(), 0.0f, 1.0f);
         map_card_anim_state[i] = 1;
@@ -2159,16 +2158,18 @@ Screen ScheduleMainMenuUI::map_selection(Entity &entity,
 
   if (!animation_control::disabled()) {
     if (effective_preview_index >= 0 && last_effective_preview_index < 0) {
-      afterhours::animation::anim(UIKey::MapPreviewFade)
+      ui_anims::track_for(UIKey::MapPreviewFade)
           .from(0.0f)
-          .to(1.0f, 0.2f, afterhours::animation::EasingType::EaseOutQuad);
+          .to(1.0f, ui_anims::eased_step(
+                        0.2f, afterhours::motion::curves::ease_out_quad));
     } else if (effective_preview_index >= 0 &&
                last_effective_preview_index >= 0 &&
                effective_preview_index != last_effective_preview_index) {
       prev_preview_index = last_effective_preview_index;
-      afterhours::animation::anim(UIKey::MapPreviewFade)
+      ui_anims::track_for(UIKey::MapPreviewFade)
           .from(0.0f)
-          .to(1.0f, 0.12f, afterhours::animation::EasingType::EaseOutQuad);
+          .to(1.0f, ui_anims::eased_step(
+                        0.12f, afterhours::motion::curves::ease_out_quad));
     }
   }
   last_effective_preview_index = effective_preview_index;
@@ -2199,18 +2200,24 @@ void ScheduleMainMenuUI::start_game_with_random_animation() {
   int chosen = raylib::GetRandomValue(0, n - 1);
   int final_map_index = maps[static_cast<size_t>(chosen)].first;
 
-  afterhours::animation::anim(UIKey::MapShuffle)
+  auto &shuffle_track = ui_anims::track_for(UIKey::MapShuffle);
+  shuffle_track
       .from(0.0f)
-      .sequence({
-          {.to_value = static_cast<float>(n * 2),
-           .duration = 0.45f,
-           .easing = afterhours::animation::animation::EasingType::Linear},
-          {.to_value = static_cast<float>(n + chosen),
-           .duration = 0.55f,
-           .easing = afterhours::animation::animation::EasingType::EaseOutQuad},
-      })
-      .hold(0.5f)
-      .on_step(
+      .to(static_cast<float>(n * 2), ui_anims::eased_step(0.45f, nullptr))
+      .then(static_cast<float>(n + chosen),
+            ui_anims::eased_step(0.55f,
+                                 afterhours::motion::curves::ease_out_quad))
+      // Old .hold(0.5f): stay at the final value for 0.5s before
+      // on_complete starts the game.
+      .then(static_cast<float>(n + chosen), ui_anims::eased_step(0.5f, nullptr));
+  {
+    // motion::Track::from() does not clear watchers (the old AnimHandle
+    // did), so register the step watcher once; re-registering it per
+    // shuffle would play the tick once per registration.
+    static bool shuffle_step_watcher_registered = false;
+    if (!shuffle_step_watcher_registered) {
+      shuffle_step_watcher_registered = true;
+      shuffle_track.on_step(
           1.0f,
           [](int) {
             auto opt = EntityQuery({.force_merge = true})
@@ -2223,8 +2230,10 @@ void ScheduleMainMenuUI::start_game_with_random_animation() {
               req.policy = sound_system::PlaySoundRequest::Policy::Name;
               req.name = sound_file_to_str(SoundFile::UI_Move);
             }
-          })
-      .on_complete([final_map_index]() {
+          });
+    }
+  }
+  shuffle_track.on_complete([final_map_index]() {
         MapManager::get().set_selected_map(final_map_index);
         MapManager::get().create_map();
         GameStateManager::get().start_game();
@@ -2756,9 +2765,7 @@ void register_ui_systems(afterhours::SystemManager &systems) {
     systems.register_update_system(
         std::make_unique<SetupGameStylingDefaults>());
 
-    afterhours::animation::register_update_systems<UIKey>(systems);
-    afterhours::animation::register_update_systems<
-        afterhours::animation::CompositeKey>(systems);
+    afterhours::animation::register_update_systems(systems);
     systems.register_update_system(
         std::make_unique<ui_game::UpdateUIWiggle<InputAction>>());
     systems.register_update_system(std::make_unique<NavigationSystem>());

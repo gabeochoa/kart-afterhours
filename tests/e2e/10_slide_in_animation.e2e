@@ -1,6 +1,9 @@
 # Slide-In Animation Test
 # Animations are NOT disabled - captures the slide-in at different timings
+# Scripts 01-09 call disable_animations, and the instant flag is a
+# process-wide global, so re-enable here or every frame is settled.
 
+enable_animations
 goto_screen Main
 wait 0.05
 screenshot anim_01_early

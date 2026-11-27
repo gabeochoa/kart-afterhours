@@ -8,6 +8,7 @@
 #include <cstddef>
 
 #include "animation_control.h"
+#include "animation_key.h"
 
 using namespace afterhours;
 
@@ -65,22 +66,21 @@ struct UpdateUIWiggle : afterhours::ui::SystemWithUIContext<> {
     else if (is_hot || is_focused)
       target = cfg.hover_focus_scale;
 
-    auto handle =
-        afterhours::animation::anim(ui_anim::Key::UIWiggle, (size_t)entity.id);
+    auto &handle =
+        afterhours::motion::anim(ui_anim::Key::UIWiggle, (size_t)entity.id);
     float current = handle.value();
     if (current <= 0.f)
       current = 1.0f;
-    if (std::abs(current - target) > 0.001f && !handle.is_active()) {
+    if (std::abs(current - target) > 0.001f && !handle.active()) {
       float duration =
           is_active ? cfg.press_duration : cfg.hover_focus_duration;
-      afterhours::animation::anim(ui_anim::Key::UIWiggle, (size_t)entity.id)
-          .from(current)
-          .to(target, duration, afterhours::animation::EasingType::EaseOutQuad);
+      handle.from(current).to(
+          target, ui_anims::eased_step(
+                    duration, afterhours::motion::curves::ease_out_quad));
     }
 
-    float scale = afterhours::animation::clamp_value(
-        ui_anim::Key::UIWiggle, (size_t)entity.id, cfg.press_scale,
-        cfg.hover_focus_scale);
+    float scale = ui_anims::clamp_value(handle, cfg.press_scale,
+                                        cfg.hover_focus_scale);
 
     entity.addComponentIfMissing<afterhours::ui::HasUIModifiers>().scale =
         scale;
@@ -200,23 +200,21 @@ private:
       else if (is_hot || is_focused)
         target = cfg.hover_focus_scale;
 
-      auto handle =
-          afterhours::animation::anim(ui_anim::Key::UIWiggle, (size_t)child.id);
+      auto &handle =
+          afterhours::motion::anim(ui_anim::Key::UIWiggle, (size_t)child.id);
       float current = handle.value();
       if (current <= 0.f)
         current = 1.0f;
-      if (std::abs(current - target) > 0.001f && !handle.is_active()) {
+      if (std::abs(current - target) > 0.001f && !handle.active()) {
         float duration =
             is_active ? cfg.press_duration : cfg.hover_focus_duration;
-        afterhours::animation::anim(ui_anim::Key::UIWiggle, (size_t)child.id)
-            .from(current)
-            .to(target, duration,
-                afterhours::animation::EasingType::EaseOutQuad);
+        handle.from(current).to(
+            target, ui_anims::eased_step(
+                      duration, afterhours::motion::curves::ease_out_quad));
       }
 
-      float scale = afterhours::animation::clamp_value(
-          ui_anim::Key::UIWiggle, (size_t)child.id, cfg.press_scale,
-          cfg.hover_focus_scale);
+      float scale = ui_anims::clamp_value(handle, cfg.press_scale,
+                                          cfg.hover_focus_scale);
 
       child.addComponentIfMissing<afterhours::ui::HasUIModifiers>().scale =
           scale;
