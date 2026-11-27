@@ -88,8 +88,19 @@ inline size_t get_language_index(Language language) {
 
 [[nodiscard]] inline std::string
 translate_formatted(const TranslatableString &trs) {
-  return fmt::vformat(trs.underlying_TL_ONLY(),
-                      trs.get_params(translation_param));
+  // Params are stringified by set_param, so a format string with a
+  // numeric specifier (e.g. "{:.1f}") throws on the string arg and
+  // used to abort mid-frame (RoundEnd in TagAndGo mode). Mirror the
+  // library's format(): render the raw string and log, never throw.
+  // Callers that need a precision must pre-format the value.
+  try {
+    return fmt::vformat(trs.underlying_TL_ONLY(),
+                        trs.get_params(translation_param));
+  } catch (const std::exception &e) {
+    log_error("translation format failed for \"{}\": {}",
+              trs.underlying_TL_ONLY(), e.what());
+    return trs.underlying_TL_ONLY();
+  }
 }
 
 TranslationPlugin::LanguageMap get_translation_data();

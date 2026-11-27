@@ -464,11 +464,13 @@ ElementResult create_volume_slider(UIContext<InputAction> &context,
                                    Entity &parent, const std::string &label,
                                    float &volume,
                                    std::function<void(float)> on_change,
-                                   int index = 0) {
+                                   int index = 0,
+                                   const std::string &debug_name = "") {
 
   if (auto result = slider(context, mk(parent, index), volume,
                            ComponentConfig{}
                                .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
+                               .with_debug_name(debug_name)
                                .with_label(label)
                                .with_padding(
                                    Padding{.top = spacing_to_size(Spacing::xs),
@@ -856,7 +858,9 @@ void ScheduleMainMenuUI::round_end_player_column(
           translation_manager::make_translatable_string(
               strings::i18n::not_it_timer)
               .set_param(translation_manager::i18nParam::number_time,
-                         car->get<HasTagAndGoTracking>().time_as_not_it,
+                         fmt::format("{:.1f}",
+                                     car->get<HasTagAndGoTracking>()
+                                         .time_as_not_it),
                          translation_manager::translation_param));
     }
     break;
@@ -934,7 +938,8 @@ void ScheduleMainMenuUI::round_end_player_column(
       animated_stats = translation_manager::translate_formatted(
           translation_manager::make_translatable_string(
               strings::i18n::not_it_timer)
-              .set_param(translation_manager::i18nParam::number_time, shown,
+              .set_param(translation_manager::i18nParam::number_time,
+                         fmt::format("{:.1f}", shown),
                          translation_manager::translation_param));
     }
     break;
@@ -1466,19 +1471,21 @@ void ScheduleMainMenuUI::for_each_with(Entity &entity,
 
 bool ScheduleDebugUI::should_run(float dt) {
   enableCooldown -= dt;
+  input::PossibleInputCollector inpc = input::get_input_collector();
 
-  if (enableCooldown < 0) {
+  // Sample every frame; the cooldown only debounces after a toggle.
+  // The old shape checked the press only inside the cooldown window,
+  // so a 2-frame injected press was sampled only if it happened to
+  // land on a window-open frame, and inputs() (held) toggled twice
+  // when it did. inputs_pressed() is the edge: one press, one toggle.
+  bool debug_pressed =
+      std::ranges::any_of(inpc.inputs_pressed(), [](const auto &actions_done) {
+        return action_matches(actions_done.action,
+                              InputAction::ToggleUIDebug);
+      });
+  if (debug_pressed && enableCooldown < 0) {
+    enabled = !enabled;
     enableCooldown = enableCooldownReset;
-    input::PossibleInputCollector inpc = input::get_input_collector();
-
-    bool debug_pressed =
-        std::ranges::any_of(inpc.inputs(), [](const auto &actions_done) {
-          return action_matches(actions_done.action,
-                                InputAction::ToggleUIDebug);
-        });
-    if (debug_pressed) {
-      enabled = !enabled;
-    }
   }
   return enabled;
 }
@@ -1627,6 +1634,7 @@ void ScheduleDebugUI::for_each_with(Entity &entity,
               slider(context, mk(row_elem.ent(), row * items_per_row + j), pct,
                      ComponentConfig{}
                          .with_size(ComponentSize{pixels(200.f), pixels(50.f)})
+                         .with_debug_name(spec.debug_name)
                          .with_label(std::move(label))
                          .with_skip_tabbing(true));
           result) {
@@ -1688,6 +1696,7 @@ void SchedulePauseUI::for_each_with(Entity &entity,
 
   if (imm::button(context, mk(left_col.ent(), 1),
                   ComponentConfig{}
+                      .with_debug_name("pause_resume_button")
                       .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
                                             .left = imm::DefaultSpacing::tiny(),
                                             .bottom = imm::DefaultSpacing::tiny(),
@@ -1700,6 +1709,7 @@ void SchedulePauseUI::for_each_with(Entity &entity,
 
   if (imm::button(context, mk(left_col.ent(), 2),
                   ComponentConfig{}
+                      .with_debug_name("pause_back_to_setup_button")
                       .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
                                             .left = imm::DefaultSpacing::tiny(),
                                             .bottom = imm::DefaultSpacing::tiny(),
@@ -1712,6 +1722,7 @@ void SchedulePauseUI::for_each_with(Entity &entity,
 
   if (imm::button(context, mk(left_col.ent(), 3),
                   ComponentConfig{}
+                      .with_debug_name("pause_exit_game_button")
                       .with_padding(Padding{.top = imm::DefaultSpacing::tiny(),
                                             .left = imm::DefaultSpacing::tiny(),
                                             .bottom = imm::DefaultSpacing::tiny(),
@@ -1856,7 +1867,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
       static size_t selected_round_type =
           static_cast<size_t>(RoundManager::get().active_round_type);
 
-      auto nav_config = ComponentConfig{};
+      auto nav_config = ComponentConfig{}.with_debug_name("win_condition_nav");
       animation_control::apply_slide_in(nav_config);
       if (auto result = imm::navigation_bar(
               context, mk(win_condition_div.ent()), RoundType_NAMES,
@@ -1870,6 +1881,7 @@ Screen ScheduleMainMenuUI::round_settings(Entity &entity,
     auto enabled_weapons = RoundManager::get().get_enabled_weapons();
 
     auto cg_config = ComponentConfig{}
+        .with_debug_name("weapon_checkbox_group")
         .with_flex_direction(FlexDirection::Column)
         .with_margin(Margin{.top = screen_pct(0.01f)});
     animation_control::apply_slide_in(cg_config);
@@ -2309,7 +2321,8 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
             strings::i18n::master_volume)
             .get_text(),
         master_volume,
-        [](float volume) { Settings::update_master_volume(volume); }, 0);
+        [](float volume) { Settings::update_master_volume(volume); }, 0,
+        "master_volume_slider");
   }
 
   // Music volume slider
@@ -2321,7 +2334,8 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
             strings::i18n::music_volume)
             .get_text(),
         music_volume,
-        [](float volume) { Settings::update_music_volume(volume); }, 1);
+        [](float volume) { Settings::update_music_volume(volume); }, 1,
+        "music_volume_slider");
   }
 
   // SFX volume slider
@@ -2331,8 +2345,8 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
         context, top_left.ent(),
         translation_manager::make_translatable_string(strings::i18n::sfx_volume)
             .get_text(),
-        sfx_volume, [](float volume) { Settings::update_sfx_volume(volume); },
-        2);
+        sfx_volume, [](float volume) { Settings::update_sfx_volume(volume); }, 2,
+        "sfx_volume_slider");
   }
 
   // Resolution dropdown
@@ -2342,6 +2356,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
             context, mk(top_left.ent(), 3), resolution_strs, resolution_index,
             ComponentConfig{}
                 .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
+                .with_debug_name("resolution_dropdown")
                 .with_label(translation_manager::make_translatable_string(
                                 strings::i18n::resolution)
                                 .get_text())
@@ -2349,7 +2364,13 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
                                       .left = imm::DefaultSpacing::tiny(),
                                       .bottom = imm::DefaultSpacing::tiny(),
                                       .right = imm::DefaultSpacing::tiny()}))) {
-      resolution_provider->on_data_changed(resolution_index);
+      // Headless has no available-resolutions provider (the cache
+      // synthesizes the single current resolution instead); selecting
+      // it is a no-op rather than a null deref. Selecting it used to
+      // abort here (found while probing e2e dropdown tests).
+      if (resolution_provider) {
+        resolution_provider->on_data_changed(resolution_index);
+      }
     }
   }
 
@@ -2375,6 +2396,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
             language_dropdown_index,
             ComponentConfig{}
                 .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
+                .with_debug_name("language_dropdown")
                 .with_label(translation_manager::make_translatable_string(
                                 strings::i18n::language)
                                 .get_text())
@@ -2420,6 +2442,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
           context, mk(top_left.ent(), 5), Settings::get_fullscreen_enabled(),
           ComponentConfig{}
               .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
+              .with_debug_name("fullscreen_checkbox")
               .with_label(translation_manager::make_translatable_string(
                               strings::i18n::fullscreen)
                               .get_text())
@@ -2436,6 +2459,7 @@ Screen ScheduleMainMenuUI::settings_screen(Entity &entity,
           Settings::get_post_processing_enabled(),
           ComponentConfig{}
               .with_size(ComponentSize{pixels(400.f), pixels(40.f)})
+              .with_debug_name("post_processing_checkbox")
               .with_label(translation_manager::make_translatable_string(
                               strings::i18n::post_processing)
                               .get_text())

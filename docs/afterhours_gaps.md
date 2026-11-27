@@ -12,6 +12,149 @@ blockers and every headless workaround but one are gone.
 
 ## Still open
 
+Found while writing e2e tests against `5383fc6c` (2026-11-27). Every entry
+below was checked against the current submodule; the kart-side workarounds
+named in them are in the working tree at the time of writing. The first
+three mislead in the same way: the script passes, or times out, for a
+reason unrelated to what it claims to test.
+
+### e2e: `expect_slider` tolerance is silently dropped by the script parser
+The handler documents `expect_slider name value [tolerance]` and reads
+`pos[2]` as the tolerance (`ui_commands.h:1000`, `:1017-1020`). The
+script parser never delivers it: `expect_slider` is in
+`two_arg_commands` (`runner.h:126-129`), and the parse branch reads
+exactly 2 args (`runner.h:367-371`). A script asserting
+`expect_slider max_speed 0.5 0.5` therefore runs with the default 0.01
+tolerance and times out reporting the value 0.4737 — a difference of
+0.026 against a tolerance of 0.5 that was never applied. The same
+truncation applies to the inner command of `wait_until`, which re-parses
+through the same table.
+
+**Current workaround:** never pass a tolerance; assert the exact value a
+`set_slider` just landed on (default tolerance only). That is what
+the debug-screen probe did: `set_slider max_speed 0.8` followed by
+`expect_slider max_speed 0.8` passes, whereas `expect_slider
+max_speed 0.5 0.5` timed out at a value 0.026 away from expected.
+
+**Ideal:** `expect_slider` needs an optional-arg parse (or a
+`three_arg_commands`-style entry with the third arg optional), so the
+documented tolerance reaches the handler. Any other two-arg command that
+grows an optional third argument will hit the same table.
+
+### e2e: `select_dropdown` ignores the option it requires
+`HandleSelectDropdownCommand` requires `name and option`
+(`ui_commands.h:870`), then never reads `pos[1]`: it clicks the centre
+of the dropdown entity and consumes the command. The tray opens, no
+option is selected, the selection does not change, and the script passes
+believing it selected something. The tray options themselves are named
+`dropdown_opt_{i}` per dropdown (`imm_containers.h:199`) with no
+dropdown identity, so even the manual follow-up click needs
+`under=<dropdown>` scoping to pick the right tray.
+
+**Current workaround:** `select_dropdown <name> <option>` to open the
+tray, then `click_ui dropdown_opt_N under=<dropdown>` to choose. Kart
+probed this against the resolution dropdown (which also exposed a
+kart-side null deref, fixed on our side, not the engine's).
+
+**Ideal:** after opening the tray, the handler should click the tray
+option whose label equals the requested option (over frames, like
+`set_slider`'s press/move/release phases), and fail naming the
+available options if none matches. A command that requires an argument
+it never reads should not consume.
+
+### e2e: `expect_no_text` can never pass on a screen with no visible labels
+`HandleExpectNoTextCommand` retries while `seen_render == gen ||
+registry.get_all().empty()` (`command_handlers.h:746`). The registry is
+cleared before every render pass (`ui/utilities.h:369`) and `clear()`
+bumps the generation (`visible_text.h:24-27`), so a fresh render with
+zero labels is already definitive absence — but the `empty` clause
+retries regardless of how many generations have moved. In gameplay,
+where no UI labels render, the command times out after 30 frames
+reporting an empty registry, even though the text is genuinely absent.
+The generation check alone already distinguishes "not yet rendered"
+from "rendered with nothing in it".
+
+**Current workaround:** assert positively instead — e.g. `expect_text
+"paused"` after Escape proves the game left the menu. Kart dropped
+the `expect_no_text "select map"` gameplay assertion for exactly
+this reason.
+
+**Ideal:** drop the `|| registry.get_all().empty()` clause (or only
+retry on empty while the generation has not moved). `expect_no_text`
+should be provable on label-free screens, not only on screens that
+happen to show other text.
+
+### Capture: `draw_texture_pro` records nothing, so `expect_drawn` is blind to sprites
+Every other primitive records into the capture buffer — `rectangle`,
+`circle`, `line`, `triangle`, and `texture_quad`
+(`backends/raylib/drawing_helpers.h:240,521,494,600,578`).
+`draw_texture_pro` does not, on either backend
+(`backends/raylib/drawing_helpers.h:688`,
+`backends/sokol/drawing_helpers.h:1575`). `texture_manager::draw_texture_pro`
+— the path every sprite draw in kart funnels through
+(`plugins/texture_manager.h:247`) — therefore leaves no trace, and
+`expect_drawn` / `expect_drawn_at` / `dump_draws` cannot see a car
+sprite, only UI draws that happen to go through the other helpers.
+
+**Current workaround:** kart's `11_draw_assertions.e2e` asserts recorded
+UI draws only; sprites are covered by screenshot baselines.
+
+**Ideal:** `capture::record("texture", dest, tint)` in both backends'
+`draw_texture_pro`, matching the `texture_quad` op in shape. Shipping
+builds already pay the one-branch check per draw, so this is the
+same cost as the primitives that already record.
+
+### Composite widgets lose their label before naming, so every instance shares a debug name
+`add_missing_components` derives a debug name from `config.label` when
+no explicit debug name is set (`component_init.h:709-715`). Composite
+widgets clear `config.label` before `init_component`, so that branch
+never fires for them:
+
+- `slider()` clears the label (`imm_value.h:122`) and passes the
+  literal fallback `"slider"` (`imm_value.h:131`) — every slider on
+a screen is named `slider`.
+- `checkbox()` clears the label (`imm_controls.h:183`) and passes
+  `"checkbox_row"` (`imm_controls.h:190`) — every checkbox shares
+  one name.
+- `dropdown()` clears the label (`imm_containers.h:70-73`) and passes
+  no fallback at all — a dropdown with no explicit debug name has
+  an empty name, unaddressable by any DebugName lookup.
+
+Name-based commands (`set_slider`, `expect_slider`, `expect_checkbox`,
+`select_dropdown`, `focus_ui`, `click_ui`) then fail ambiguous or
+not-found unless the caller sets `with_debug_name` on every instance.
+An explicit debug name already wins (`component_init.h:709-710`), so
+this is a defaults-only fix.
+
+**Current workaround:** kart sets `with_debug_name` on every volume
+slider, dropdown, checkbox, debug-screen slider, pause button,
+round-settings nav bar and weapon group (`src/ui/ui_systems.cpp`).
+
+**Ideal:** derive the default name from the saved label before it is
+cleared — e.g. `"<label> slider"`, `"<label> dropdown"`,
+`"<label> checkbox"` — so the common case (labelled widgets, no
+explicit name) is addressable without per-instance boilerplate.
+
+### e2e: `drag` is not a drag
+`HandleDragCommand` (`command_handlers.h:373`) calls
+`simulate_click` at the start point, then moves the pointer to the
+end point in the same invocation. `simulate_click` auto-releases
+after one frame (`test_input.h:119-122`, press with `auto_release`), so
+by the time any system could see the pointer at the end point, the
+button is already up: no drag gesture is ever delivered. `drag_to`
+(`command_handlers.h:586`) does it correctly over three frames
+(press, move while held, release), as does
+`mouse_down_ui` + `mouse_move_ui` + `mouse_up`.
+
+**Current workaround:** kart's drag test uses `drag_to` (slider landed
+at 0.93) and the named mouse gestures (0.76); plain `drag` was not
+used.
+
+**Ideal:** make `drag` share `drag_to`'s phase machine, or document
+it as click-then-move and steer scripts to `drag_to`. Two commands
+with the same four arguments should not differ in whether the button
+is held.
+
 ### `GetFontDefault()` returns an invalid font in headless mode
 Still open. `backends/raylib/font_helper.h:33,88,96,107` return `raylib::GetFontDefault()`
 with no `is_headless()` branch, and `plugins/ui/utilities.h:115-116` load it into

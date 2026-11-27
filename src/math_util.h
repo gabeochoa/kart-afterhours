@@ -82,8 +82,17 @@ constexpr static int truncate_to_seconds(float total_seconds) {
 }
 
 static vec2 vec_rand_in_box(const Rectangle &rect) {
+  // A zero-size box (e.g. raylib::GetScreenWidth() headless, where there
+  // is no window and the size is 0) used to divide by zero: rand() % 0.
+  // The AI retarget systems build their box from the screen size and run
+  // in menus, so adding an AI in headless aborted the process. A
+  // degenerate box has only one point in it.
+  const int w = static_cast<int>(rect.width);
+  const int h = static_cast<int>(rect.height);
+  if (w <= 0 || h <= 0)
+    return vec2{rect.x, rect.y};
   return vec2{
-      rect.x + static_cast<float>(rand() % static_cast<int>(rect.width)),
-      rect.y + static_cast<float>(rand() % static_cast<int>(rect.height)),
+      rect.x + static_cast<float>(rand() % w),
+      rect.y + static_cast<float>(rand() % h),
   };
 }
