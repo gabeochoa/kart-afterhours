@@ -1,0 +1,27 @@
+# Draw assertions: what was painted, not just what exists in the layout
+# tree. Registered by afterhours' register_ui_commands (capture is
+# enabled there); no kart code needed.
+#
+# LIMIT: only draws through afterhours' drawing helpers are recorded.
+# Kart's world sprites go through raw raylib::DrawTexturePro via
+# texture_manager, which afterhours::draw_texture_pro does not record,
+# so a car sprite cannot be asserted this way yet. These assertions
+# cover the recorded UI draws; the world-sprite gap is upstream
+# (record in draw_texture_pro), not something to work around here.
+
+disable_animations
+
+goto_screen Main
+wait 0.2
+
+# The four menu buttons paint rounded rectangles in the menu colour.
+expect_drawn rectangle_rounded color=#6000ffff min_count=4
+
+# The Play button's label is painted as text.
+expect_drawn text text=play
+
+# The first button lands where the layout says it does.
+expect_drawn_at rectangle_rounded x=24 y=24 w=200 h=52 tol=2
+
+# Nothing paints a pure-red rectangle on this screen.
+expect_not_drawn rectangle color=#ff0000ff

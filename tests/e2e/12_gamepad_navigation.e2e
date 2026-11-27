@@ -1,0 +1,31 @@
+# Menu navigation via an injected gamepad (no hardware needed).
+# D-pad down is WidgetNext, the A button (RightFaceDown) is WidgetPress
+# in src/input_mapping.h. Mirrors 02_menu_navigation.e2e, which covers
+# the same path with the keyboard.
+
+disable_animations
+
+gamepad_connect 0
+goto_screen Main
+wait 0.2
+
+# Play is already focused (auto-grab)
+screenshot gp_01_focus_play
+
+# D-pad down to about
+gamepad_button 0 LEFT_FACE_DOWN
+wait 0.1
+screenshot gp_02_focus_about
+
+# D-pad down to settings
+gamepad_button 0 LEFT_FACE_DOWN
+wait 0.1
+screenshot gp_03_focus_settings
+
+# A button activates the focused button: settings screen opens.
+gamepad_button 0 RIGHT_FACE_DOWN
+wait 0.2
+expect_text "master volume"
+screenshot gp_04_settings_screen
+
+gamepad_disconnect 0

@@ -1,8 +1,11 @@
 # Afterhours bump: `fc4d625` → `5383fc6c` — onboarding
 
-Status: **§2 landed.** The bump + motion migration + re-baseline are
-committed (see §6 step 3). §3/P1 work follows in later commits. The
-evidence for each §2 item is recorded inline below.
+Status: **Landed.** §2 (migration) committed in `5d2f7af`; §6 step 4
+(P1) landed in the follow-up commits below. §6 step 5 (P2) was worked
+through item by item in §7: most items were adopted, declined with a
+reason, or explicitly deferred to the next edit of the owning screen.
+Items below marked [x] in §3 were verified; items marked DECLINED were
+evaluated and rejected for the reason given, not skipped.
 
 - Old: `fc4d6253` — "Merge origin/main" (the `12a4571 -> fc4d625` bump in
   `d5e9083`, then `d31bf73` adopted what it provided).
@@ -911,3 +914,100 @@ the "Closed" section:
 6. Everything marked — / ADOPT-IF-NEEDED: only on a demonstrated need,
    with the evidence noted in §3. Do not turn this document into a
    feature backlog by ticking those boxes speculatively.
+
+## 7. P1/P2 outcomes (worked through after §2 landed)
+
+Each item below records what actually happened. "Done" means landed and
+verified by `make e2e` (13/13 scripts) + `make ci` (58/58 baselines)
+unless stated otherwise.
+
+### Done
+
+- **Motion helpers (§2.1)** — `ui_anims::{track_for, active_value,
+  clamp_value, one_shot, eased_step}` in `animation_key.h`, preserving
+  old `get_value` (active-only) / `clamp_value` (inactive → max) /
+  `one_shot` (once-ever) semantics. Probe (since removed) showed slide
+  values 0 → 0.18 → 0.65 → 0.96 → 1.0 over four frames.
+- **`register_command` + harness (§3.6)** — `goto_screen` / `action`
+  rewritten on typed `register_command<std::string>`; `parse_e2e_args` /
+  `configure_runner` wired in `e2e_integration::init(argc, argv)`
+  (`--screenshot-dir`, `--results-json`, `--timeout`,
+  `--test-script`/`--test-script-dir`); `main` returns 1 on e2e failure
+  (verified: exit 1 on a bad assertion, exit 0 on the full suite).
+- **Audio (§3.3/§3.5)** — `register_sound_systems` is now called in
+  `main.cpp` (was defined, never called); menu music moved to the
+  upstream `MusicLibrary` (kart's `src/library/music_library.h`
+  deleted); `BackgroundMusic` is a state machine on
+  `fade_to`/`stop_with_fade` with a 0.5s fade-in from silence;
+  `load_sounds()`/menu music now load in headless too (raylib stubs
+  the buffers; the recording log is the headless fake backend);
+  weapon sounds are positional via `play_at` at 1/100 scale with the
+  camera target as listener (prefix pools stay full-volume:
+  `play_random_match` has no positional variant); audio recording +
+  `register_audio_commands` enabled in e2e, with
+  `expect_sound_played menu_music` in `01_all_screens.e2e` (exactly 1
+  play; a headless stub stream never reports playing, so the state
+  machine, not an `is_playing()` poll, avoids replaying every frame).
+- **`expect_drawn` script (§3.5)** — new `11_draw_assertions.e2e`
+  (menu rectangles/text/`expect_drawn_at`/`expect_not_drawn`).
+- **Gamepad script (§3.6)** — new `12_gamepad_navigation.e2e`
+  (dpad-down + A button; focus screenshots differ per step).
+- **Resize script (§3.5)** — new `13_resize_steps.e2e`
+  (`resize_steps`/`wait_resized`/`expect_window_size`, always
+  resized back to 1280×720).
+- **Gaps doc (§5)** — re-triaged in `docs/afterhours_gaps.md`:
+  `--screenshot-dir` closed, `--e2e-speed` closed-as-parsed,
+  checkbox overflow closed, `with_slide_in()` closed by the rewrite.
+  `GetFontDefault()` headless remains open (workaround still in place
+  in `preload.cpp`; the `load_font_for_string` fallback only partly
+  covers it).
+
+### Declined with a reason (evaluated, not skipped)
+
+- **`E2EApp` one-call setup (§3.6)** — kart has a custom frame loop and
+  custom screenshot compositing (`screenRT` → backend RT headless,
+  `LoadImageFromScreen` windowed) that `E2EApp::post_render` would
+  lose, and its separate handler pass would reorder handlers relative
+  to game systems. Adopted the harness parts that fit instead.
+- **`add_singleton<Component>` (§3.5)** — no kart site fits: plugin
+  singletons add several components to one shared entity via
+  `add_singleton_components`, and the two hand-registered singletons
+  share `sophie`. Using it would split them onto new entities and
+  shift entity ids for no benefit.
+- **`settings_table.h` + storage codecs (§3.1/§3.5)** — `SettingsData`
+  is mostly types the table does not cover (`Pct`, `Resolution`,
+  `Language`, a raw `round_settings` JSON blob); the table would only
+  cover two bools. A save-format change stays one deliberate change,
+  not a bump side-effect. Existing saves are unversioned and keep
+  loading via the hand-written codec.
+- **`reset_for_new_session()` (§3.5)** — does not fit: it clears all
+  entities and singleton registrations and restarts ids at 0, but
+  kart's cars outlive rounds and the UI/input/window singletons are
+  built once in `Preload::make_singleton`, not per round. The Tier-1
+  per-round reset stays a per-component fix.
+- **Interned asset handles (§3.5)** — hot paths are prefix searches
+  (`play_random_match`) or one-time `get()`s (intro), not per-frame
+  string lookups of the same name; the integer-handle gain is
+  marginal and not worth a second lookup API alongside names.
+- **`load_pool` for horn aliases (§3.5)** — kart's aliases are
+  `_a1.._a3` plus the base; `load_pool` makes `_a0.._a2`. Renumbering
+  would change the round-robin the playback system expects.
+- **`expect_screenshot` (§3.5)** — not adopted: kart's 52-baseline
+  `compare_baselines.py` flow already works and is now re-baselined;
+  running two baseline systems over the same screens would split
+  ownership. Revisit only for a screen with no PNG baseline.
+- **World-sprite `expect_drawn` (§3.5)** — cannot be asserted today:
+  kart's cars draw through raw `draw_texture_pro`, which
+  `capture::record` does not observe (only `draw_texture_quad` and
+  the primitive helpers record). Script 11 asserts the recorded UI
+  draws; recording in `draw_texture_pro` is an upstream change.
+
+### Deferred to the next edit of the owning screen (per §3, not done now)
+
+`imm::prompt_bar`/`keycap` (pause/round-end), `imm::disclosure`
+(settings), `form` rows + `SettingsPreset` (settings screen),
+`with_slider_style` (volume sliders), `motion::Reveal` (panel
+open/close), `crash::install`/`bug_note::capture` (needs a report-path
+decision), `jobs::Pool` for save I/O (with the settings-persistence
+fix), global `Theme::text_scale` toggle, system groups, and every
+item marked — / ADOPT-IF-NEEDED in §3.

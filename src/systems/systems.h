@@ -1268,11 +1268,36 @@ struct WeaponRecoilSystem : System<WeaponFired, Transform> {
 };
 
 struct WeaponSoundSystem : System<WeaponFired> {
-  virtual void for_each_with(Entity &, WeaponFired &evt, float) override {
+  virtual void for_each_with(Entity &entity, WeaponFired &evt,
+                             float) override {
     if (evt.sound.has_multiple) {
+      // play_random_match has no positional variant; prefix pools
+      // (shotgun/machine-gun) stay full-volume for now.
       sound_system::SoundLibrary::get().play_random_match(evt.sound.name);
-    } else {
+      return;
+    }
+    if (!entity.has<Transform>()) {
       sound_system::SoundLibrary::get().play(evt.sound.name.c_str());
+      return;
+    }
+    // Positional: the world is authored in pixels, sound_system's
+    // falloff is in metres (full at 1m, inverse-distance after), so
+    // scale positions by 1/100. The listener is the camera target --
+    // what the player sees -- and the range covers the visible map.
+    constexpr float kPixelsPerMetre = 100.f;
+    constexpr float kAudibleRangeMetres = 15.f;
+    if (auto *cam = EntityHelper::get_singleton_cmp<camera::HasCamera>()) {
+      sound_system::set_listener_position(
+          Vector3Type{cam->camera.target.x / kPixelsPerMetre,
+                        cam->camera.target.y / kPixelsPerMetre, 0.f});
+    }
+    const auto pos = entity.get<Transform>().pos();
+    if (!sound_system::play_at(
+            evt.sound.name.c_str(),
+            Vector3Type{pos.x / kPixelsPerMetre, pos.y / kPixelsPerMetre,
+                          0.f},
+            1.f, kAudibleRangeMetres)) {
+      // Out of range: play_at already decided it is inaudible.
     }
   }
 };

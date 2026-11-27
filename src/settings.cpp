@@ -1,5 +1,4 @@
 #include "settings.h"
-#include "library/music_library.h"
 #include "rl.h"
 #include "library/sound_library.h"
 #include <fstream>
@@ -88,7 +87,7 @@ float Settings::get_music_volume() {
 }
 
 void Settings::update_music_volume(float vol) {
-  MusicLibrary::get().update_volume(vol);
+  sound_system::MusicLibrary::get().update_volume(vol);
   Settings::get().music_volume.set(vol);
 }
 

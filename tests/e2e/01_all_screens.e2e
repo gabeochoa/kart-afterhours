@@ -7,6 +7,12 @@ disable_animations
 # Main Menu
 goto_screen Main
 wait 0.2
+# Regression test for the dead menu-music bug: BackgroundMusic is
+# registered (it was defined but never called) and plays menu_music
+# with a fade-in on the menu screen. No clear_sound_log here:
+# music plays once per process on entering the menu, so clearing
+# after startup would erase the only play this script can observe.
+expect_sound_played menu_music
 expect_text "play"
 expect_text "about"
 expect_text "settings"

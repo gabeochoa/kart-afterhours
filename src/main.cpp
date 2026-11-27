@@ -153,6 +153,10 @@ void game() {
 
     e2e_integration::register_systems(systems);
     register_ui_systems(systems);
+    // Was defined but never called (TODO Tier 1: menu/UI sound was dead).
+    // Registered after the UI systems so click sounds fire for UI built
+    // this frame on the next one, like the rest of the UI systems.
+    register_sound_systems(systems);
 
     systems.register_update_system(std::make_unique<UpdateRenderTexture>());
     systems.register_update_system(std::make_unique<MarkEntitiesWithShaders>());

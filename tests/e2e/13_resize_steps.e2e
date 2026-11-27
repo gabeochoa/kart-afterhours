@@ -1,0 +1,18 @@
+# Resize in steps, assert the size lands, and always resize back.
+# (A script that resized to 1080p and never resized back was a real
+# upstream failure mode for this command family.)
+
+disable_animations
+
+goto_screen Main
+wait 0.2
+
+resize_steps 800 450 4
+wait_resized 800 450
+expect_window_size 800 450
+screenshot resize_01_small
+
+resize_steps 1280 720 4
+wait_resized 1280 720
+expect_window_size 1280 720
+screenshot resize_02_restored

@@ -2,7 +2,7 @@
 
 Feedback and feature requests for the afterhours engine, discovered while working on kart-afterhours.
 
-Last re-triaged 2026-08-29 against afterhours `fc4d625`. Every entry below was
+Last re-triaged against afterhours `5383fc6c` (bump landed in 5d2f7af; e2e/audio adoptions in follow-up commits). Every entry below was
 checked against the current submodule, not carried forward on trust.
 
 **Score: 10 of 17 previously-open gaps are now closed.** All three Windows
@@ -11,17 +11,6 @@ blockers and every headless workaround but one are gone.
 ---
 
 ## Still open
-
-### e2e: no `--screenshot-dir` flag
-The runner still writes to a hardcoded `screenshots/` path (`src/e2e_integration.h:32`, `:65`).
-This is the one gap that directly blocks a clean baseline workflow: `make update-baselines`
-and `make validate-screenshots` have to write to the same directory and then `cp` out of it,
-which is why neither target can safely skip a `clean-screenshots` first.
-
-**Ideal:** `--screenshot-dir <path>`, or a settable `e2e::screenshot_directory`.
-
-### e2e: no `--e2e-speed` flag
-No way to scale wait durations. Useful for CI. wordproc's runner has one.
 
 ### `GetFontDefault()` returns an invalid font in headless mode
 Still open. `backends/raylib/font_helper.h:33,88,96,107` return `raylib::GetFontDefault()`
@@ -47,6 +36,34 @@ covers the use case now. The real remaining item is on our side — adopt the de
 delete `src/ui/animation_slide_in.h`. See the TODO.
 
 ---
+
+## Closed by the `fc4d625 -> 5383fc6c` bump
+
+### e2e: `--screenshot-dir` flag — **CLOSED**
+The shipped harness (`e2e_testing/harness.h: E2EArgs`, `parse_e2e_args`,
+`configure_runner`) parses `--screenshot-dir`, and kart wires it through
+`e2e_integration::init(argc, argv)` (`screenshot_path_for`, verified with
+`--screenshot-dir /tmp/e2e-json`). `--results-json`, `--timeout` and
+single-script selection (`--test-script` / `--test-script-dir`) came with it.
+
+### e2e: `--e2e-speed` flag — **CLOSED (parsed, not applied)**
+`parse_e2e_args` accepts `--e2e-speed` as a spelling of `--time-scale`.
+Kart parses it but deliberately does not apply it: kart's loop is
+variable-dt, not fixed-step, so scaling `dt` would speed up the game
+itself. Applying it needs the fixed-step wiring (`apply_time_scale` /
+`run_fixed_steps`), which kart does not have.
+
+### Checkbox internal layout overflow — **CLOSED (kart-specific)**
+"A labelled checkbox's toggle fits its row (kart)" in the changelog. The
+`checkbox label extends outside parent checkbox_row` layout warning no
+longer appears in e2e runs after the bump (verified in the `make e2e`
+output of the bump commit).
+
+### `with_slide_in()` config option — **CLOSED by the motion rewrite**
+The declarative API it pointed at is itself gone. Kart's slide-in is now
+`motion::Track` chains in `src/ui/animation_slide_in.h` (the file is
+still hand-rolled, as the declarative widget sugar does not cover a
+per-entity staggered slide-in driven by a system). No engine gap remains.
 
 ## Closed by the `12a4571 -> fc4d625` bump
 

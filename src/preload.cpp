@@ -11,7 +11,6 @@
 #include "font_info.h"
 #include "settings.h"
 
-#include "library/music_library.h"
 #include "library/shader_library.h"
 #include "library/sound_library.h"
 #include "library/texture_library.h"
@@ -84,13 +83,16 @@ Preload &Preload::init(const char *title, afterhours::graphics::DisplayMode mode
     // Only relevant in windowed mode
     raylib::SetExitKey(0);
 
-    // Sound and music only in windowed mode
     load_gamepad_mappings();
-    load_sounds();
-    MusicLibrary::get().load(
-        files::get_resource_path("sounds", "replace/cobolt.mp3").string().c_str(),
-        "menu_music");
   }
+  // Sounds/music load in headless too: with no audio device raylib stubs
+  // the buffers and plays are no-ops, but the libraries are populated so
+  // sound_system's recording log (the headless fake backend) can assert
+  // on plays, and windowed/headless library contents no longer differ.
+  load_sounds();
+  sound_system::MusicLibrary::get().load(
+      files::get_resource_path("sounds", "replace/cobolt.mp3").string().c_str(),
+      "menu_music");
 
   ShaderLibrary::get().load(
       files::get_resource_path("shaders", "post_processing.fs").string().c_str(),

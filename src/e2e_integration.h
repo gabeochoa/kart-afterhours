@@ -6,6 +6,7 @@
 #include <afterhours/src/plugins/e2e_testing/e2e_testing.h>
 #include <afterhours/src/plugins/e2e_testing/harness.h>
 #include <afterhours/src/plugins/e2e_testing/ui_commands.h>
+#include <afterhours/src/plugins/e2e_testing/audio_commands.h>
 #include <afterhours/src/graphics.h>
 
 // Extern reference to render texture for headless screenshot capture
@@ -36,6 +37,10 @@ inline std::string screenshot_path_for(const std::string &name) {
 // single-script selection (--test-script / --test-script-dir).
 inline void init(int argc, char *argv[]) {
     detail::enabled = true;
+    // Record every named play (volume/pan/pitch) so scripts can assert
+    // on sound with expect_sound_played / expect_sound_level / pan.
+    // Recording is off in normal runs: the log only grows while on.
+    sound_system::set_recording(true);
     detail::args = parse_e2e_args(argc, argv);
     test_input::detail::test_mode = true;
 
@@ -95,6 +100,8 @@ inline void register_systems(SystemManager& sm) {
     e2e_commands::register_app_commands(sm);
 
     ui_commands::register_ui_commands<InputAction>(sm);
+
+    testing::audio_commands::register_audio_commands(sm);
 
     register_unknown_handler(sm);
     register_cleanup(sm);
