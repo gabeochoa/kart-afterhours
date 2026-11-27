@@ -4,6 +4,7 @@
 #include "game.h"
 #include "input_mapping.h"
 #include <afterhours/src/plugins/e2e_testing/e2e_testing.h>
+#include <afterhours/src/plugins/e2e_testing/harness.h>
 #include <afterhours/src/plugins/e2e_testing/ui_commands.h>
 #include <afterhours/src/graphics.h>
 
@@ -19,17 +20,30 @@ namespace detail {
 inline bool enabled = false;
 inline std::unique_ptr<E2ERunner> runner;
 inline std::string pending_screenshot;
+inline E2EArgs args;
+inline std::string screenshot_path_for(const std::string &name) {
+  return screenshot_path(args, name, "screenshots");
+}
 }
 
-inline void init(const std::string& script_dir = "tests/e2e/") {
+// Kart does not use testing::E2EApp: it has a custom frame loop (not
+// graphics::run) and custom screenshot compositing in post_render()
+// (screenRT into the backend render texture headless, LoadImageFromScreen
+// windowed) that E2EApp::post_render would lose, and E2EApp's separate
+// handler pass would reorder e2e handlers relative to game systems.
+// What kart does take from the harness is argument parsing and runner
+// configuration: --screenshot-dir, --results-json, --timeout, and
+// single-script selection (--test-script / --test-script-dir).
+inline void init(int argc, char *argv[]) {
     detail::enabled = true;
+    detail::args = parse_e2e_args(argc, argv);
     test_input::detail::test_mode = true;
-    
+
     detail::runner = std::make_unique<E2ERunner>();
-    detail::runner->set_timeout(30.0f);
-    
+    configure_runner(*detail::runner, detail::args);
+
     detail::runner->set_screenshot_callback([](const std::string& name) {
-        detail::pending_screenshot = "screenshots/" + name + ".png";
+        detail::pending_screenshot = detail::screenshot_path_for(name);
     });
     
     detail::runner->set_reset_callback([]() {
@@ -42,12 +56,19 @@ inline void init(const std::string& script_dir = "tests/e2e/") {
         }
     });
     
-    detail::runner->load_scripts_from_directory(script_dir);
-    
-    if (detail::runner->has_commands()) {
-        log_info("E2E: Loaded scripts from {}", script_dir);
+    if (!detail::args.script_path.empty()) {
+        detail::runner->load_script(detail::args.script_path);
     } else {
-        log_warn("E2E: No scripts found in {}", script_dir);
+        const std::string script_dir = detail::args.script_dir.empty()
+                                           ? "tests/e2e/"
+                                           : detail::args.script_dir;
+        detail::runner->load_scripts_from_directory(script_dir);
+    }
+
+    if (detail::runner->has_commands()) {
+        log_info("E2E: Loaded scripts");
+    } else {
+        log_warn("E2E: No scripts found");
     }
 }
 
@@ -62,7 +83,7 @@ inline void register_systems(SystemManager& sm) {
     
     sm.register_update_system(
         std::make_unique<HandleScreenshotCommand>([](const std::string& name) {
-            detail::pending_screenshot = "screenshots/" + name + ".png";
+            detail::pending_screenshot = detail::screenshot_path_for(name);
         }));
     
     sm.register_update_system(

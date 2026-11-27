@@ -290,7 +290,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (cmdl[{"--e2e"}]) {
-    e2e_integration::init();
+    e2e_integration::init(argc, argv);
   }
 
   if (cmdl[{"-i", "--show-intro"}]) {
@@ -309,5 +309,7 @@ int main(int argc, char *argv[]) {
 
   Preload_single.reset();
 
-  return 0;
+  // A failed e2e run must fail the process: previously main always
+  // returned 0, so `make e2e` could not fail on a failed assertion.
+  return (e2e_mode && e2e_integration::has_failed()) ? 1 : 0;
 }
